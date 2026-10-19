@@ -12,6 +12,7 @@ decided by how the terminal re-wraps the rows prompt_toolkit already wrote.
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import shutil
@@ -39,8 +40,23 @@ def _reply(turn: int) -> str:
     return "\n".join(" ".join(words[j:j + 21]) for j in range(0, len(words), 21))
 
 
+@pytest.fixture
+def unchanged_install_launchers():
+    # A sandbox SCI_HOME must never be published into the shared checkout's
+    # launchers: its Python disappears when the test directory is cleaned up.
+    def snapshot():
+        directory = REPO_ROOT / ".sci" / "bin"
+        return {path.name: (hashlib.sha256(path.read_bytes()).hexdigest(),
+                            path.stat().st_mode, path.stat().st_mtime_ns)
+                for path in directory.iterdir() if path.is_file()} if directory.is_dir() else {}
+
+    before = snapshot()
+    yield
+    assert snapshot() == before, "CLI E2E changed the shared installation's launchers"
+
+
 @pytest.mark.live_system_guard_bypass  # diagnostics signal only this test's private tmux pane
-def test_resizes_keep_each_transcript_line_once_in_tmux_scrollback(tmp_path: Path) -> None:
+def test_resizes_keep_each_transcript_line_once_in_tmux_scrollback(tmp_path: Path, unchanged_install_launchers) -> None:
     sock = f"sci-e2e-{uuid.uuid4().hex[:8]}"
     home = tmp_path / "home"
     (tmp_path / "work").mkdir()

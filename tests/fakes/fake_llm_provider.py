@@ -419,7 +419,8 @@ def write_sci_home(
 
     Auxiliary tasks use the same endpoint (``auto`` resolves to the main
     provider), retries are capped so fault tests finish quickly, and no real
-    provider credential is ever present.
+    provider credential is ever present. Sandbox homes must not republish the
+    shared checkout's launchers against their disposable tool store.
     """
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(
@@ -430,6 +431,8 @@ def write_sci_home(
         "  context_length: 128000\n"
         "agent:\n"
         "  api_max_retries: 1\n"
+        "cli:\n"
+        "  expose_on_path: false\n"
         + extra_config,
         encoding="utf-8",
     )
