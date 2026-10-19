@@ -368,37 +368,27 @@ def _model_flow_openai_codex(config, current_model=""):
     """OpenAI Codex provider: ensure logged in, then pick model."""
     from sci_cli.auth import (
         get_codex_auth_status, _prompt_model_selection, _login_openai_codex, PROVIDER_REGISTRY, DEFAULT_CODEX_BASE_URL,
+        resolve_codex_runtime_credentials, AuthError, format_auth_error,
     )
+    from sci_cli.auth_codex_shared import reuse_current_login, validate
     from sci_cli.codex_models import get_codex_model_ids
-    if not _oauth_gate(
-        bool(get_codex_auth_status().get("logged_in")), "OpenAI Codex", _login_openai_codex, argparse.Namespace(),
-        PROVIDER_REGISTRY["openai-codex"], recheck=lambda: get_codex_auth_status().get("logged_in")):
-        return
-
-    # Prefer the credential pool (where `sci auth` stores device_code tokens),
-    # fall back to legacy provider state.
-    # Token and route base travel together (#121486): a pooled gateway key must never be sent to
-    # the chatgpt.com default by the catalog probe.
-    _codex_token = _codex_base = None
-    with contextlib.suppress(Exception):
-        _codex_status = get_codex_auth_status()
-        if _codex_status.get("logged_in"):
-            _codex_token, _codex_base = _codex_status.get("api_key"), _codex_status.get("base_url")
-    if not _codex_token:
-        with contextlib.suppress(Exception):
-            from sci_cli.auth import resolve_codex_runtime_credentials
-            _creds = resolve_codex_runtime_credentials()
-            _codex_token, _codex_base = _creds.get("api_key"), _creds.get("base_url")
-
-    from sci_cli.auth_codex_shared import validate
-    from sci_cli.auth import AuthError, format_auth_error
     try:
-        validate(_codex_token or "", _codex_base or DEFAULT_CODEX_BASE_URL)
-    except AuthError as exc:
+        creds = reuse_current_login()
+        if creds is None:
+            if not _oauth_gate(
+                bool(get_codex_auth_status().get("logged_in")), "OpenAI Codex", _login_openai_codex, argparse.Namespace(),
+                PROVIDER_REGISTRY["openai-codex"], recheck=lambda: get_codex_auth_status().get("logged_in")):
+                return
+            # Status is read-only and may expose an expired, refreshable token.
+            # Resolve for use here; keep the credential paired with its own route.
+            creds = resolve_codex_runtime_credentials()
+            validate(creds.get("api_key") or "", creds.get("base_url") or DEFAULT_CODEX_BASE_URL)
+    except (AuthError, ValueError) as exc:
         print("Codex login check failed: " + format_auth_error(exc))
         print("Use sci auth add openai-codex --type oauth to choose the current Codex login or sign in again.")
         return
 
+    _codex_token, _codex_base = creds.get("api_key"), creds.get("base_url") or DEFAULT_CODEX_BASE_URL
     codex_models = get_codex_model_ids(access_token=_codex_token, base_url=_codex_base)
     selected = _prompt_model_selection(
         codex_models, current_model=current_model, confirm_provider="openai-codex",

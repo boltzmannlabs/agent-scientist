@@ -112,6 +112,34 @@ def link_external(home, *, expected_token=None):
         auth._save_auth_store(store)
 
 
+def reuse_current_login():
+    """Explicit model setup prefers the current Codex file over stale SCI copies.
+
+    Discovery/status never call this writer. An existing link still enforces its
+    approved account/workspace; a rejected source never triggers a new OAuth flow.
+    """
+    from sci_cli.auth_codex import _codex_base_url
+    from sci_cli.shared_provider_lifecycle import publish
+
+    linked = external_credentials(read_only=True)
+    if linked:
+        print("Checking the linked Codex login; no new browser sign-in is required.")
+        validate(linked["api_key"], linked["base_url"])
+        publish("openai-codex", preferred_token=linked["api_key"])
+        print("Codex authentication verified. Using the existing shared login.")
+        return linked
+    home = codex_home()
+    if not (home / "auth.json").exists() and not (home / "config.toml").exists():
+        return None
+    print(f"Using the current Codex login from {home}; no new browser sign-in is required.")
+    tokens = read_external(home)
+    validate(tokens["access_token"], _codex_base_url())
+    link_external(home, expected_token=tokens["access_token"])
+    publish("openai-codex", preferred_token=tokens["access_token"])
+    print("Codex authentication verified. Shared login available in main and all profiles. Selected models unchanged.")
+    return external_credentials(read_only=True)
+
+
 def choose_credentials(args, *, force_new=False):
     """Return (kind, credentials); kinds are external, saved, fresh. Never report success here."""
     from sci_cli import auth

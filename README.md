@@ -237,6 +237,11 @@ Other running conversations pick up provider configuration changes in a new sess
 In the interactive CLI, `/login` opens the same provider/sign-in menu as `sci model`,
 not a vendor portal. It returns to your unchanged conversation; saved defaults apply
 to new sessions. Use `/model` for an explicit current-session model switch.
+Selecting Codex in this setup automatically validates and reuses the current
+file-backed Codex login (`CODEX_HOME`, or the current user's `.codex` directory),
+ahead of stale SCI credentials, without another browser sign-in. This also applies
+on a fresh installation. Missing logins use normal setup; invalid or unsupported
+sources stop with recovery guidance, never a silent fallback or account switch.
 
 ## Release versions
 

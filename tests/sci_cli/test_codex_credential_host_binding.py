@@ -156,8 +156,9 @@ def test_setup_flow_status_carries_a_pool_row_own_gateway_url(monkeypatch):
     assert get_codex_auth_status()["base_url"] == OTHER_GW
 
 
-def test_model_setup_refuses_oauth_validation_against_a_custom_gateway(monkeypatch, picker_http, capsys):
+def test_model_setup_refuses_oauth_validation_against_a_custom_gateway(monkeypatch, picker_http, capsys, tmp_path):
     """The OAuth setup flow must not send a login to a non-OpenAI endpoint."""
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "no-current-codex-login"))
     home = _home(monkeypatch)
     _write_config(home, base_url=GW)
     _write_pool(home, OPAQUE)

@@ -155,9 +155,10 @@ def test_astra_requires_live_codex_account_discovery(monkeypatch, tmp_path):
 
 
 
-def test_model_command_prompts_to_reuse_or_reauthenticate_codex_session(monkeypatch, capsys):
+def test_model_command_prompts_to_reuse_or_reauthenticate_codex_session(monkeypatch, capsys, tmp_path):
     from sci_cli.model_setup_flows import _model_flow_openai_codex
 
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "no-current-codex-login"))
     captured = {"login_calls": 0}
     choices = iter(["2"])
 
