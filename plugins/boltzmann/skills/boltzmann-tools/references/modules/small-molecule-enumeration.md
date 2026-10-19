@@ -20,9 +20,9 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `scrap_id` | string | yes | value | Required by the current public submit-job form; supersedes the old optional table. |
-| `data_type` | string | yes | value | Required by the current public submit-job form; supersedes the old optional table. |
-| `assay_type` | string | yes | value | Required by the current public submit-job form; supersedes the old optional table. |
+| `scrap_id` | string | yes | value | Gene or protein name entered in the current product UI; the UI serializes this value under the historical wire key `scrap_id`. |
+| `data_type` | string | yes | value | Bioactivity endpoint selected in the current product UI. |
+| `assay_type` | string | yes | value | Assay context selected in the current product UI. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -35,12 +35,12 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "scrap_id": {
-      "description": "Required by the current public submit-job form; supersedes the old optional table.",
+      "description": "Gene or protein name entered in the current product UI; the UI serializes this value under the historical wire key `scrap_id`.",
       "type": "string",
       "x-input-kind": "value"
     },
     "data_type": {
-      "description": "Required by the current public submit-job form; supersedes the old optional table.",
+      "description": "Bioactivity endpoint selected in the current product UI.",
       "type": "string",
       "enum": [
         "IC50",
@@ -50,7 +50,7 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "value"
     },
     "assay_type": {
-      "description": "Required by the current public submit-job form; supersedes the old optional table.",
+      "description": "Assay context selected in the current product UI.",
       "type": "string",
       "enum": [
         "Cell free",
@@ -65,7 +65,7 @@ Only local files require a new upload. Never infer input mode from a field name.
     "data_type",
     "assay_type"
   ],
-  "additionalProperties": true
+  "additionalProperties": false
 }
 ```
 

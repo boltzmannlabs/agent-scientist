@@ -145,6 +145,70 @@ def test_historical_worker_failure_warns_without_prohibiting_reviewed_submission
     assert decision(store.validate_payload("Vina_basic_docking", payload), True)["status"] == "not_started"
 
 
+def test_current_small_molecule_ui_wire_contracts_reject_stale_payloads():
+    from plugins.boltzmann.contracts import ContractStore
+    from plugins.boltzmann.nodeapi_helpers import _tool_timeout
+
+    store = ContractStore()
+    current = {
+        "Custom_Property_Model_DL": {
+            "property_name": "fixture", "filepath": "fixture/train.csv", "modeltype": "regression",
+            "modelName": "DL", "model_category": "DL",
+        },
+        "Custom_Property_Model_Automl": {
+            "property_name": "fixture", "filepath": "fixture/train.csv", "modeltype": "regression",
+            "features": "fingerprints", "splittype": "scaffoldsplit",
+            "modelName": ["automl"], "model_category": "ML",
+        },
+        "Butina_Clustering": {
+            "Path": "fixture/library.csv", "model": "Butina", "DimReduce": "tSNE",
+            "sampling_type": "Min_Max", "cutoff": 0.4, "sampling": "yes",
+        },
+        "K_Means_Clustering": {
+            "Path": "fixture/library.csv", "Features": "descriptors", "DimReduce": "tSNE",
+            "no_of_clusters": "4",
+        },
+        "Binding_Site_Prediction": {"pdb_path": "8AZY"},
+        "dataset_creation": {"scrap_id": "EGFR", "data_type": "IC50", "assay_type": "Cell free"},
+        "Lead_Generation_Reinvent": {
+            "n_mols": 10, "n_steps": 1, "finetune": "False", "dataType": "Global",
+            "global_models": [{"name": "CaCo2 permeability", "min_threshold": "11", "max_threshold": ""}],
+            "custom_models": [{"id": "fixture-model", "min_threshold": "", "max_threshold": "22"}],
+        },
+        "Vina_Score_only_docking": {
+            "target_name": "fixture", "processed_pdb": "fixture/receptor.pdb",
+            "center_x": "-1.5", "center_y": "2", "center_z": "3.25",
+            "max_radius_size": "20", "exhaustivness": "16", "upload_sdf": "True",
+            "sdf_file": "fixture/ligand.sdf",
+        },
+    }
+    for job, payload in current.items():
+        assert not store.validate_payload(job, payload).errors, job
+
+    stale = [
+        ("Custom_Property_Model_DL", dict(current["Custom_Property_Model_DL"], transformation="no")),
+        ("Custom_Property_Model_Automl", dict(current["Custom_Property_Model_Automl"], modelName=["AutoML"])),
+        ("Custom_Property_Model_Automl", dict(current["Custom_Property_Model_Automl"], transformation="no")),
+        ("Butina_Clustering", dict(current["Butina_Clustering"], DimReduce="TSNE", sampling_type="Min_max")),
+        ("K_Means_Clustering", {
+            "Path": "fixture/library.csv", "Features": "descriptors", "DimReduce": "tSNE",
+            "no_of_cluster": 4,
+        }),
+        ("K_Means_Clustering", dict(current["K_Means_Clustering"], no_of_clusters=4)),
+        *[("Lead_Generation_Reinvent", dict(current["Lead_Generation_Reinvent"], **{field: "fixture"}))
+          for field in ("name", "reward", "tar_seq", "off_tar_seqs")],
+        *[("Vina_Score_only_docking", dict(current["Vina_Score_only_docking"], **{field: "fixture"}))
+          for field in ("pdb_file", "smiles")],
+    ]
+    for job, payload in stale:
+        assert store.validate_payload(job, payload).errors, job
+
+    assert store.file_fields("Binding_Site_Prediction")["pdb_path"]["x-input-kind"] == "file_or_value"
+    assert set(store.file_fields("Vina_Score_only_docking")) == {"processed_pdb", "sdf_file"}
+    assert _tool_timeout("K_Means_Clustering", {"num_smiles": 1_000, "no_of_clusters": "auto"}) \
+        > _tool_timeout("K_Means_Clustering", {"num_smiles": 1_000, "no_of_clusters": "4"})
+
+
 def test_unreconciled_entries_are_visible_without_granting_execution():
     from plugins.boltzmann.contracts import ContractStore
     from sci_cli.science_catalog_view import catalog_rows

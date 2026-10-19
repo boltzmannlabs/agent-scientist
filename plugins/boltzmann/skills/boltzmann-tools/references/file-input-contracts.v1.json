@@ -363,7 +363,7 @@
           ],
           "allow_pdb_id": true,
           "header_case_sensitive": true,
-          "notes": "Paste a bare four-character RCSB PDB ID such as `1AKE`, or upload a `.pdb` file; no SMILES input is used."
+          "notes": "Use a documented inline PDB ID or AlphaFold UniProt ID, or upload a `.pdb` file and use its platform path; no SMILES input is used."
         }
       }
     },
@@ -572,35 +572,21 @@
       }
     },
     "Vina_Score_only_docking": {
-      "source": "modules/small-molecule-toolbox.md: Vina score-only + user verified inputparams",
+      "source": "modules/small-molecule-toolbox.md: current Vina score-only product UI payload",
       "files": {
         "processed_pdb": {
           "formats": [
             "pdb"
           ],
           "header_case_sensitive": true,
-          "notes": ""
+          "notes": "Upload the processed receptor PDB and use the returned platform storage path."
         },
         "sdf_file": {
           "formats": [
             "sdf"
           ],
           "header_case_sensitive": true,
-          "notes": "Platform path to ligand SDF"
-        },
-        "pdb_file": {
-          "formats": [
-            "pdb"
-          ],
-          "header_case_sensitive": true,
-          "notes": ""
-        },
-        "smiles": {
-          "formats": [
-            "sdf"
-          ],
-          "header_case_sensitive": true,
-          "notes": ""
+          "notes": "Upload the ligand SDF and use the returned platform storage path."
         }
       }
     },

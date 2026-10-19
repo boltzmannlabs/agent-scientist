@@ -1,5 +1,34 @@
 # Boltzmann contract standardization — 2026-10-14
 
+## Follow-up corrections — 2026-10-19
+
+Owner-supplied recordings of the current product UI and its generated Python
+requests reconciled eight Small Molecule Design contracts. These recordings
+establish current UI serialization, not production worker acceptance or
+scientific correctness.
+
+- Custom Property Model ML and DL now require their exact `model_category`
+  selectors; DL uses scalar `modelName="DL"`, while ML preserves the lowercase
+  `automl` identifier in its model-name array. The unobserved historical
+  `transformation` field is no longer accepted by these strict contracts.
+- Butina preserves the current case-sensitive `tSNE` and `Min_Max` values.
+- K-Means uses the plural wire key `no_of_clusters` and a numeric string value.
+- Binding Site Prediction accepts a documented PDB ID, AlphaFold UniProt ID, or
+  uploaded PDB platform path through the same `pdb_path` field.
+- Create Dataset maps the UI's Gene/Protein Name to `scrap_id` and records the
+  displayed endpoint and assay enums.
+- Reinvent no longer accepts the owner-confirmed removed `off_tar_seqs` field or
+  other retired inputs. It no longer requires an internal duplicate experiment
+  name, and model thresholds follow the UI's numeric-string/empty-string wire
+  representation.
+- Vina score-only now requires the complete current UI payload, including target,
+  binding-pocket, historical `exhaustivness`, receptor, and ligand fields. Old
+  `pdb_file` and `smiles` aliases are not accepted for this mode.
+
+Generated module sheets and focused behavior tests are synchronized with these
+definitions. The dated October 14 CSV/JSON and source hashes remain a historical
+snapshot and intentionally predate these corrections.
+
 ## Follow-up correction — 2026-10-15
 
 `Solublempnn.num_seq` now uses `type: string` with `x-numeric-string: true`.
@@ -64,11 +93,13 @@ Authentication, profile permission checks, unsafe archives and known-invalid
 inputs remain enforced. User approval does not make those inputs safe.
 
 The retained sources do not fully specify these optional nested shapes:
-`boltzgen.atom1_list`, `boltzgen.atom2_list`, `boltzgen.total_len`, and
-`Lead_Generation_Reinvent.off_tar_seqs`. Existing descriptions/examples are
-preserved, but full item/object constraints were not fabricated. These do not
-create a blanket tool-level block. A platform-owner request example/specification
-is needed before claiming every optional mode is precisely modeled.
+`boltzgen.atom1_list`, `boltzgen.atom2_list`, and `boltzgen.total_len`. Existing
+descriptions/examples are preserved, but full item/object constraints were not
+fabricated. These do not create a blanket tool-level block. A platform-owner
+request example/specification is needed before claiming every optional mode is
+precisely modeled. `Lead_Generation_Reinvent.off_tar_seqs` is not part of this
+boundary: the platform owner confirmed that field was removed, and the active
+contract rejects it.
 
 Seven historical entries below lack a complete reconciled executable request
 and remain outside the 122-job catalog. Twenty-six additional historical names

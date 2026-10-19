@@ -684,15 +684,11 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 | `n_mols` | integer | yes | value | Number of molecules |
 | `n_steps` | integer | yes | value | Number of RL steps |
 | `data_path` | string | no / mode-dependent | file | S3 path to CSV (upload first) |
-| `name` | string | yes | value | Experiment name |
-| `dataType` | string | no / mode-dependent | value | Type of models tobe used; preserve the exact documented choices. |
-| `reward` | string | no / mode-dependent | value | Default: `"MWS"` |
+| `dataType` | string | no / mode-dependent | value | Type of property models to use; preserve the exact case-sensitive choices. |
 | `model_path` | string | no / mode-dependent | artifact | Authorized existing fine-tuned platform model reference; required for dataType CMD. Not a local executable-model upload. |
 | `finetune` | string | yes | value | if true, required data_path (or) if false, no finetuned model will be returned |
-| `tar_seq` | string | no / mode-dependent | value | Target sequence |
-| `off_tar_seqs` | array | no / mode-dependent | value | Off-target sequences |
-| `global_models` | array | no / mode-dependent | value | Optional selected model objects with name and numeric min_threshold/max_threshold. |
-| `custom_models` | array | no / mode-dependent | value | Selected custom models using the documented object fields below; use authorized model identifiers. |
+| `global_models` | array | no / mode-dependent | value | Optional selected global-property models. Thresholds are numeric strings; the current UI emits an empty string for an unset bound. |
+| `custom_models` | array | no / mode-dependent | value | Selected custom models using authorized document IDs. Thresholds are numeric strings; the current UI emits an empty string for an unset bound. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -719,23 +715,13 @@ Only local files require a new upload. Never infer input mode from a field name.
       "type": "string",
       "x-input-kind": "file"
     },
-    "name": {
-      "description": "Experiment name",
-      "type": "string",
-      "x-input-kind": "value"
-    },
     "dataType": {
-      "description": "Type of models tobe used; preserve the exact documented choices.",
+      "description": "Type of property models to use; preserve the exact case-sensitive choices.",
       "type": "string",
       "enum": [
         "CMD",
         "Global"
       ],
-      "x-input-kind": "value"
-    },
-    "reward": {
-      "description": "Default: `\"MWS\"`",
-      "type": "string",
       "x-input-kind": "value"
     },
     "model_path": {
@@ -752,18 +738,8 @@ Only local files require a new upload. Never infer input mode from a field name.
       "description": "if true, required data_path (or) if false, no finetuned model will be returned",
       "x-input-kind": "value"
     },
-    "tar_seq": {
-      "description": "Target sequence",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "off_tar_seqs": {
-      "description": "Off-target sequences",
-      "type": "array",
-      "x-input-kind": "value"
-    },
     "global_models": {
-      "description": "Optional selected model objects with name and numeric min_threshold/max_threshold.",
+      "description": "Optional selected global-property models. Thresholds are numeric strings; the current UI emits an empty string for an unset bound.",
       "type": "array",
       "items": {
         "type": "object",
@@ -825,10 +801,14 @@ Only local files require a new upload. Never infer input mode from a field name.
             ]
           },
           "min_threshold": {
-            "type": "number"
+            "type": "string",
+            "x-numeric-string": true,
+            "x-allow-empty": true
           },
           "max_threshold": {
-            "type": "number"
+            "type": "string",
+            "x-numeric-string": true,
+            "x-allow-empty": true
           }
         },
         "required": [
@@ -841,7 +821,7 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "value"
     },
     "custom_models": {
-      "description": "Selected custom models using the documented object fields below; use authorized model identifiers.",
+      "description": "Selected custom models using authorized document IDs. Thresholds are numeric strings; the current UI emits an empty string for an unset bound.",
       "type": "array",
       "x-input-kind": "value",
       "items": {
@@ -851,10 +831,14 @@ Only local files require a new upload. Never infer input mode from a field name.
             "type": "string"
           },
           "min_threshold": {
-            "type": "number"
+            "type": "string",
+            "x-numeric-string": true,
+            "x-allow-empty": true
           },
           "max_threshold": {
-            "type": "number"
+            "type": "string",
+            "x-numeric-string": true,
+            "x-allow-empty": true
           }
         },
         "required": [
@@ -869,10 +853,9 @@ Only local files require a new upload. Never infer input mode from a field name.
   "required": [
     "n_mols",
     "n_steps",
-    "name",
     "finetune"
   ],
-  "additionalProperties": true,
+  "additionalProperties": false,
   "x-required-if": [
     {
       "when": {
@@ -904,7 +887,6 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
   "experiment_data": {
     "n_mols": "<user value; see n_mols schema>",
     "n_steps": "<user value; see n_steps schema>",
-    "name": "<user value; see name schema>",
     "finetune": "<user value; see finetune schema>"
   }
 }

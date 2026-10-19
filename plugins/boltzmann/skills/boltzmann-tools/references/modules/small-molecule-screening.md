@@ -20,8 +20,8 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 |---|---|---|---|---|
 | `Path` | string | yes | file | Uploaded CSV containing `SMILES`. Capital `P` is required. |
 | `model` | string | yes | value | `Butina` or `Murcko-Butina`. |
-| `DimReduce` | string | yes | value | API schema values `PCA` or `TSNE`; the UI may display `tSNE`. Only `PCA` is live-proven in the current evidence. |
-| `sampling_type` | string | yes | value | `Random` or `Min_max`. It is still sent when `sampling` is `no`. |
+| `DimReduce` | string | yes | value | Exact current UI values `PCA` or `tSNE`. Preserve case. |
+| `sampling_type` | string | yes | value | Exact current UI values `Random` or `Min_Max`. Preserve case. It is still sent when `sampling` is `no`. |
 | `cutoff` | number | yes | value | Clustering cutoff. `0.4` is end-to-end verified; `-1` is newly submission-accepted as an automatic/default sentinel, but its terminal semantics are not yet verified. |
 | `sampling` | string | yes | value | Exact lowercase string `yes` or `no`, not a boolean. |
 
@@ -50,7 +50,7 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "value"
     },
     "DimReduce": {
-      "description": "API schema values `PCA` or `TSNE`; the UI may display `tSNE`. Only `PCA` is live-proven in the current evidence.",
+      "description": "Exact current UI values `PCA` or `tSNE`. Preserve case.",
       "type": "string",
       "enum": [
         "PCA",
@@ -59,7 +59,7 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "value"
     },
     "sampling_type": {
-      "description": "`Random` or `Min_max`. It is still sent when `sampling` is `no`.",
+      "description": "Exact current UI values `Random` or `Min_Max`. Preserve case. It is still sent when `sampling` is `no`.",
       "type": "string",
       "enum": [
         "Random",
@@ -90,7 +90,7 @@ Only local files require a new upload. Never infer input mode from a field name.
     "cutoff",
     "sampling"
   ],
-  "additionalProperties": true
+  "additionalProperties": false
 }
 ```
 
@@ -156,7 +156,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 | `Path` | string | yes | file | S3 path to CSV (upload first) — capital P |
 | `Features` | string | yes | value | `"descriptors"` or `"fingerprints"` |
 | `DimReduce` | string | yes | value | `"PCA"` or `"tSNE"` |
-| `no_of_cluster` | integer | yes | value | Number of clusters |
+| `no_of_clusters` | string | yes | value | Number of clusters. The current UI serializes the value as a numeric string under this plural wire key. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -191,9 +191,10 @@ Only local files require a new upload. Never infer input mode from a field name.
       ],
       "x-input-kind": "value"
     },
-    "no_of_cluster": {
-      "description": "Number of clusters",
-      "type": "integer",
+    "no_of_clusters": {
+      "description": "Number of clusters. The current UI serializes the value as a numeric string under this plural wire key.",
+      "type": "string",
+      "x-numeric-string": true,
       "x-input-kind": "value"
     }
   },
@@ -201,9 +202,9 @@ Only local files require a new upload. Never infer input mode from a field name.
     "Path",
     "Features",
     "DimReduce",
-    "no_of_cluster"
+    "no_of_clusters"
   ],
-  "additionalProperties": true
+  "additionalProperties": false
 }
 ```
 
@@ -218,7 +219,7 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
     "Path": "<user value; see Path schema>",
     "Features": "<user value; see Features schema>",
     "DimReduce": "<user value; see DimReduce schema>",
-    "no_of_cluster": "<user value; see no_of_cluster schema>"
+    "no_of_clusters": "<user value; see no_of_clusters schema>"
   }
 }
 ```

@@ -18,7 +18,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `pdb_path` | string | yes | file | Paste a bare four-character RCSB PDB ID such as `1AKE`, or upload a `.pdb` file; no SMILES input is used. |
+| `pdb_path` | string | yes | file_or_value | PDB ID, AlphaFold UniProt ID, or an uploaded `.pdb` platform path; no SMILES input is used. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -31,15 +31,15 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "pdb_path": {
-      "description": "Paste a bare four-character RCSB PDB ID such as `1AKE`, or upload a `.pdb` file; no SMILES input is used.",
+      "description": "PDB ID, AlphaFold UniProt ID, or an uploaded `.pdb` platform path; no SMILES input is used.",
       "type": "string",
-      "x-input-kind": "file"
+      "x-input-kind": "file_or_value"
     }
   },
   "required": [
     "pdb_path"
   ],
-  "additionalProperties": true
+  "additionalProperties": false
 }
 ```
 
@@ -68,7 +68,7 @@ For mode-dependent fields, include the fields required by the selected schema br
     ],
     "allow_pdb_id": true,
     "header_case_sensitive": true,
-    "notes": "Paste a bare four-character RCSB PDB ID such as `1AKE`, or upload a `.pdb` file; no SMILES input is used."
+    "notes": "Use a documented inline PDB ID or AlphaFold UniProt ID, or upload a `.pdb` file and use its platform path; no SMILES input is used."
   }
 }
 ```
@@ -421,11 +421,15 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `sdf_file` | string | yes | file | Platform path to ligand SDF |
-| `upload_sdf` | string | yes | value | String boolean |
-| `processed_pdb` | string | yes | file |  |
-| `pdb_file` | string | no / mode-dependent | file |  |
-| `smiles` | string | no / mode-dependent | file |  |
+| `target_name` | string | yes | value | Name of the target protein or receptor. |
+| `processed_pdb` | string | yes | file | Uploaded and processed receptor PDB platform path. |
+| `center_x` | string | yes | value | Binding-pocket center X coordinate serialized as a numeric string. |
+| `center_y` | string | yes | value | Binding-pocket center Y coordinate serialized as a numeric string. |
+| `center_z` | string | yes | value | Binding-pocket center Z coordinate serialized as a numeric string. |
+| `max_radius_size` | string | yes | value | Binding-pocket diameter from the product UI, serialized under the historical `max_radius_size` wire key as a numeric string. |
+| `exhaustivness` | string | yes | value | Docking exhaustiveness. Preserve the historical misspelled wire key. |
+| `sdf_file` | string | yes | file | Uploaded ligand SDF platform path used to calculate complex binding affinity. |
+| `upload_sdf` | string | yes | value | Whether to return docked poses in SDF format. This is a string boolean, not a JSON boolean. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -437,42 +441,77 @@ Only local files require a new upload. Never infer input mode from a field name.
 {
   "type": "object",
   "properties": {
+    "target_name": {
+      "description": "Name of the target protein or receptor.",
+      "type": "string",
+      "x-input-kind": "value"
+    },
+    "processed_pdb": {
+      "description": "Uploaded and processed receptor PDB platform path.",
+      "type": "string",
+      "x-input-kind": "file"
+    },
+    "center_x": {
+      "description": "Binding-pocket center X coordinate serialized as a numeric string.",
+      "type": "string",
+      "x-numeric-string": true,
+      "x-input-kind": "value"
+    },
+    "center_y": {
+      "description": "Binding-pocket center Y coordinate serialized as a numeric string.",
+      "type": "string",
+      "x-numeric-string": true,
+      "x-input-kind": "value"
+    },
+    "center_z": {
+      "description": "Binding-pocket center Z coordinate serialized as a numeric string.",
+      "type": "string",
+      "x-numeric-string": true,
+      "x-input-kind": "value"
+    },
+    "max_radius_size": {
+      "description": "Binding-pocket diameter from the product UI, serialized under the historical `max_radius_size` wire key as a numeric string.",
+      "type": "string",
+      "x-numeric-string": true,
+      "x-input-kind": "value"
+    },
+    "exhaustivness": {
+      "description": "Docking exhaustiveness. Preserve the historical misspelled wire key.",
+      "type": "string",
+      "enum": [
+        "8",
+        "16",
+        "32"
+      ],
+      "x-input-kind": "value"
+    },
     "sdf_file": {
-      "description": "Platform path to ligand SDF",
+      "description": "Uploaded ligand SDF platform path used to calculate complex binding affinity.",
       "type": "string",
       "x-input-kind": "file"
     },
     "upload_sdf": {
-      "description": "String boolean",
+      "description": "Whether to return docked poses in SDF format. This is a string boolean, not a JSON boolean.",
       "type": "string",
       "enum": [
         "True",
         "False"
       ],
       "x-input-kind": "value"
-    },
-    "processed_pdb": {
-      "description": "",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "pdb_file": {
-      "description": "",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "smiles": {
-      "description": "",
-      "type": "string",
-      "x-input-kind": "file"
     }
   },
   "required": [
-    "sdf_file",
+    "target_name",
+    "processed_pdb",
+    "center_x",
+    "center_y",
+    "center_z",
+    "max_radius_size",
+    "exhaustivness",
     "upload_sdf",
-    "processed_pdb"
+    "sdf_file"
   ],
-  "additionalProperties": true
+  "additionalProperties": false
 }
 ```
 
@@ -484,9 +523,15 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
   "job_name": "Vina_Score_only_docking",
   "experiment_name": "<confirmed experiment name>",
   "experiment_data": {
-    "sdf_file": "<user value; see sdf_file schema>",
+    "target_name": "<user value; see target_name schema>",
+    "processed_pdb": "<user value; see processed_pdb schema>",
+    "center_x": "<user value; see center_x schema>",
+    "center_y": "<user value; see center_y schema>",
+    "center_z": "<user value; see center_z schema>",
+    "max_radius_size": "<user value; see max_radius_size schema>",
+    "exhaustivness": "<user value; see exhaustivness schema>",
     "upload_sdf": "<user value; see upload_sdf schema>",
-    "processed_pdb": "<user value; see processed_pdb schema>"
+    "sdf_file": "<user value; see sdf_file schema>"
   }
 }
 ```
@@ -502,28 +547,14 @@ For mode-dependent fields, include the fields required by the selected schema br
       "pdb"
     ],
     "header_case_sensitive": true,
-    "notes": ""
+    "notes": "Upload the processed receptor PDB and use the returned platform storage path."
   },
   "sdf_file": {
     "formats": [
       "sdf"
     ],
     "header_case_sensitive": true,
-    "notes": "Platform path to ligand SDF"
-  },
-  "pdb_file": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": ""
-  },
-  "smiles": {
-    "formats": [
-      "sdf"
-    ],
-    "header_case_sensitive": true,
-    "notes": ""
+    "notes": "Upload the ligand SDF and use the returned platform storage path."
   }
 }
 ```

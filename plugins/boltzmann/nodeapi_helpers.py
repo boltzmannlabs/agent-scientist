@@ -251,7 +251,7 @@ def _tool_timeout(job_name: str, experiment_data: dict | None = None) -> float:
     #      ~0.000776 × n + 10.69 – use the larger coefficient
     if job_name == "K_Means_Clustering":
         n = int(data.get("num_smiles", 1_000))
-        is_autok = str(data.get("no_of_cluster", "")).strip() in ("0", "auto")
+        is_autok = str(data.get("no_of_clusters", "")).strip() in ("0", "auto")
         coeff = 0.000776 if is_autok else 0.000183
         return _apply_buffer(coeff * n + 10.69)
 

@@ -16,9 +16,12 @@ values. Saved datasets are available in the dataset library and provide the
 required training data for the platform's Custom Property Model workflow,
 supporting regression or classification of molecular properties.
 
-Existing connector job: `dataset_creation`. Product labels such as target gene
-and dataset name do not establish new API keys or a mapping to `scrap_id`.
-Use the canonical request fields; do not invent dataset-upload or project-ID fields.
+Existing connector job: `dataset_creation`. The current product UI labels the
+required `scrap_id` value as **Gene/Protein Name** and sends that entered string
+unchanged under the historical wire key. The other required fields are
+`data_type` (`IC50`, `EC50`, or `Ki`) and `assay_type` (`Cell free`, `Cell based`,
+or `Both`). Do not reinterpret `scrap_id` as a dataset, project, or upload ID, and
+do not invent dataset-upload or project-ID fields.
 Do not mix incompatible units, endpoints or assay conditions without an explicit,
 reviewed data-preparation step.
 

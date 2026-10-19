@@ -21,9 +21,8 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 | `property_name` | string | yes | value | Name of the model or molecular property being predicted (e.g., activity, solubility). |
 | `filepath` | string | yes | file | Path to the CSV file containing ligand data with 'SMILES' and 'ACTIVITY' columns. |
 | `modeltype` | string | yes | value | Task type for model building. |
-| `modelName` | string | yes | value | Specific model to use. 'AutoML' will automatically select the best model. |
-| `transformation` | string | no / mode-dependent | value | `"no"` (Morgan/other transforms exist) |
-| `model_category` | string | yes | value |  |
+| `modelName` | string | yes | value | Exact deep-learning selector emitted by the current product UI. |
+| `model_category` | string | yes | value | Exact category selector emitted by the current product UI. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -55,17 +54,15 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "value"
     },
     "modelName": {
-      "description": "Specific model to use. 'AutoML' will automatically select the best model.",
+      "description": "Exact deep-learning selector emitted by the current product UI.",
       "type": "string",
-      "x-input-kind": "value"
-    },
-    "transformation": {
-      "description": "`\"no\"` (Morgan/other transforms exist)",
-      "type": "string",
+      "enum": [
+        "DL"
+      ],
       "x-input-kind": "value"
     },
     "model_category": {
-      "description": "",
+      "description": "Exact category selector emitted by the current product UI.",
       "type": "string",
       "enum": [
         "DL"
@@ -80,7 +77,7 @@ Only local files require a new upload. Never infer input mode from a field name.
     "modelName",
     "model_category"
   ],
-  "additionalProperties": true
+  "additionalProperties": false
 }
 ```
 
@@ -160,8 +157,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 | `features` | string | yes | value | SMILES-based molecular features to use in model building. |
 | `splittype` | string | yes | value | Data split strategy for training and testing. |
 | `modelName` | array | yes | value | Array of selected model names. The documented automatic-selection identifier is lowercase automl; preserve service identifiers, not UI labels. |
-| `transformation` | string | no / mode-dependent | value | `"no"` |
-| `model_category` | string | yes | value |  |
+| `model_category` | string | yes | value | Exact category selector emitted by the current product UI. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -214,17 +210,16 @@ Only local files require a new upload. Never infer input mode from a field name.
       "description": "Array of selected model names. The documented automatic-selection identifier is lowercase automl; preserve service identifiers, not UI labels.",
       "type": "array",
       "x-input-kind": "value",
+      "minItems": 1,
       "items": {
-        "type": "string"
+        "type": "string",
+        "enum": [
+          "automl"
+        ]
       }
     },
-    "transformation": {
-      "description": "`\"no\"`",
-      "type": "string",
-      "x-input-kind": "value"
-    },
     "model_category": {
-      "description": "",
+      "description": "Exact category selector emitted by the current product UI.",
       "type": "string",
       "enum": [
         "ML"
@@ -241,7 +236,7 @@ Only local files require a new upload. Never infer input mode from a field name.
     "modelName",
     "model_category"
   ],
-  "additionalProperties": true
+  "additionalProperties": false
 }
 ```
 

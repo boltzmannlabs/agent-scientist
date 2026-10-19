@@ -854,17 +854,15 @@
             "x-input-kind": "value"
           },
           "modelName": {
-            "description": "Specific model to use. 'AutoML' will automatically select the best model.",
+            "description": "Exact deep-learning selector emitted by the current product UI.",
             "type": "string",
-            "x-input-kind": "value"
-          },
-          "transformation": {
-            "description": "`\"no\"` (Morgan/other transforms exist)",
-            "type": "string",
+            "enum": [
+              "DL"
+            ],
             "x-input-kind": "value"
           },
           "model_category": {
-            "description": "",
+            "description": "Exact category selector emitted by the current product UI.",
             "type": "string",
             "enum": [
               "DL"
@@ -879,7 +877,7 @@
           "modelName",
           "model_category"
         ],
-        "additionalProperties": true
+        "additionalProperties": false
       },
       "review_notes": [],
       "examples": [],
@@ -958,17 +956,16 @@
             "description": "Array of selected model names. The documented automatic-selection identifier is lowercase automl; preserve service identifiers, not UI labels.",
             "type": "array",
             "x-input-kind": "value",
+            "minItems": 1,
             "items": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "automl"
+              ]
             }
           },
-          "transformation": {
-            "description": "`\"no\"`",
-            "type": "string",
-            "x-input-kind": "value"
-          },
           "model_category": {
-            "description": "",
+            "description": "Exact category selector emitted by the current product UI.",
             "type": "string",
             "enum": [
               "ML"
@@ -985,7 +982,7 @@
           "modelName",
           "model_category"
         ],
-        "additionalProperties": true
+        "additionalProperties": false
       },
       "review_notes": [],
       "examples": [],
@@ -1078,15 +1075,15 @@
         "type": "object",
         "properties": {
           "pdb_path": {
-            "description": "Paste a bare four-character RCSB PDB ID such as `1AKE`, or upload a `.pdb` file; no SMILES input is used.",
+            "description": "PDB ID, AlphaFold UniProt ID, or an uploaded `.pdb` platform path; no SMILES input is used.",
             "type": "string",
-            "x-input-kind": "file"
+            "x-input-kind": "file_or_value"
           }
         },
         "required": [
           "pdb_path"
         ],
-        "additionalProperties": true
+        "additionalProperties": false
       },
       "review_notes": [],
       "examples": [],
@@ -1455,7 +1452,7 @@
             "x-input-kind": "value"
           },
           "DimReduce": {
-            "description": "API schema values `PCA` or `TSNE`; the UI may display `tSNE`. Only `PCA` is live-proven in the current evidence.",
+            "description": "Exact current UI values `PCA` or `tSNE`. Preserve case.",
             "type": "string",
             "enum": [
               "PCA",
@@ -1464,7 +1461,7 @@
             "x-input-kind": "value"
           },
           "sampling_type": {
-            "description": "`Random` or `Min_max`. It is still sent when `sampling` is `no`.",
+            "description": "Exact current UI values `Random` or `Min_Max`. Preserve case. It is still sent when `sampling` is `no`.",
             "type": "string",
             "enum": [
               "Random",
@@ -1495,7 +1492,7 @@
           "cutoff",
           "sampling"
         ],
-        "additionalProperties": true
+        "additionalProperties": false
       },
       "review_notes": [],
       "examples": [],
@@ -2039,12 +2036,12 @@
         "type": "object",
         "properties": {
           "scrap_id": {
-            "description": "Required by the current public submit-job form; supersedes the old optional table.",
+            "description": "Gene or protein name entered in the current product UI; the UI serializes this value under the historical wire key `scrap_id`.",
             "type": "string",
             "x-input-kind": "value"
           },
           "data_type": {
-            "description": "Required by the current public submit-job form; supersedes the old optional table.",
+            "description": "Bioactivity endpoint selected in the current product UI.",
             "type": "string",
             "enum": [
               "IC50",
@@ -2054,7 +2051,7 @@
             "x-input-kind": "value"
           },
           "assay_type": {
-            "description": "Required by the current public submit-job form; supersedes the old optional table.",
+            "description": "Assay context selected in the current product UI.",
             "type": "string",
             "enum": [
               "Cell free",
@@ -2069,7 +2066,7 @@
           "data_type",
           "assay_type"
         ],
-        "additionalProperties": true
+        "additionalProperties": false
       },
       "review_notes": [],
       "examples": [],
@@ -3722,9 +3719,10 @@
             ],
             "x-input-kind": "value"
           },
-          "no_of_cluster": {
-            "description": "Number of clusters",
-            "type": "integer",
+          "no_of_clusters": {
+            "description": "Number of clusters. The current UI serializes the value as a numeric string under this plural wire key.",
+            "type": "string",
+            "x-numeric-string": true,
             "x-input-kind": "value"
           }
         },
@@ -3732,9 +3730,9 @@
           "Path",
           "Features",
           "DimReduce",
-          "no_of_cluster"
+          "no_of_clusters"
         ],
-        "additionalProperties": true
+        "additionalProperties": false
       },
       "review_notes": [],
       "examples": [],
@@ -4097,23 +4095,13 @@
             "type": "string",
             "x-input-kind": "file"
           },
-          "name": {
-            "description": "Experiment name",
-            "type": "string",
-            "x-input-kind": "value"
-          },
           "dataType": {
-            "description": "Type of models tobe used; preserve the exact documented choices.",
+            "description": "Type of property models to use; preserve the exact case-sensitive choices.",
             "type": "string",
             "enum": [
               "CMD",
               "Global"
             ],
-            "x-input-kind": "value"
-          },
-          "reward": {
-            "description": "Default: `\"MWS\"`",
-            "type": "string",
             "x-input-kind": "value"
           },
           "model_path": {
@@ -4130,18 +4118,8 @@
             "description": "if true, required data_path (or) if false, no finetuned model will be returned",
             "x-input-kind": "value"
           },
-          "tar_seq": {
-            "description": "Target sequence",
-            "type": "string",
-            "x-input-kind": "value"
-          },
-          "off_tar_seqs": {
-            "description": "Off-target sequences",
-            "type": "array",
-            "x-input-kind": "value"
-          },
           "global_models": {
-            "description": "Optional selected model objects with name and numeric min_threshold/max_threshold.",
+            "description": "Optional selected global-property models. Thresholds are numeric strings; the current UI emits an empty string for an unset bound.",
             "type": "array",
             "items": {
               "type": "object",
@@ -4203,10 +4181,14 @@
                   ]
                 },
                 "min_threshold": {
-                  "type": "number"
+                  "type": "string",
+                  "x-numeric-string": true,
+                  "x-allow-empty": true
                 },
                 "max_threshold": {
-                  "type": "number"
+                  "type": "string",
+                  "x-numeric-string": true,
+                  "x-allow-empty": true
                 }
               },
               "required": [
@@ -4219,7 +4201,7 @@
             "x-input-kind": "value"
           },
           "custom_models": {
-            "description": "Selected custom models using the documented object fields below; use authorized model identifiers.",
+            "description": "Selected custom models using authorized document IDs. Thresholds are numeric strings; the current UI emits an empty string for an unset bound.",
             "type": "array",
             "x-input-kind": "value",
             "items": {
@@ -4229,10 +4211,14 @@
                   "type": "string"
                 },
                 "min_threshold": {
-                  "type": "number"
+                  "type": "string",
+                  "x-numeric-string": true,
+                  "x-allow-empty": true
                 },
                 "max_threshold": {
-                  "type": "number"
+                  "type": "string",
+                  "x-numeric-string": true,
+                  "x-allow-empty": true
                 }
               },
               "required": [
@@ -4247,10 +4233,9 @@
         "required": [
           "n_mols",
           "n_steps",
-          "name",
           "finetune"
         ],
-        "additionalProperties": true,
+        "additionalProperties": false,
         "x-required-if": [
           {
             "when": {
@@ -4965,42 +4950,77 @@
       "request_schema": {
         "type": "object",
         "properties": {
+          "target_name": {
+            "description": "Name of the target protein or receptor.",
+            "type": "string",
+            "x-input-kind": "value"
+          },
+          "processed_pdb": {
+            "description": "Uploaded and processed receptor PDB platform path.",
+            "type": "string",
+            "x-input-kind": "file"
+          },
+          "center_x": {
+            "description": "Binding-pocket center X coordinate serialized as a numeric string.",
+            "type": "string",
+            "x-numeric-string": true,
+            "x-input-kind": "value"
+          },
+          "center_y": {
+            "description": "Binding-pocket center Y coordinate serialized as a numeric string.",
+            "type": "string",
+            "x-numeric-string": true,
+            "x-input-kind": "value"
+          },
+          "center_z": {
+            "description": "Binding-pocket center Z coordinate serialized as a numeric string.",
+            "type": "string",
+            "x-numeric-string": true,
+            "x-input-kind": "value"
+          },
+          "max_radius_size": {
+            "description": "Binding-pocket diameter from the product UI, serialized under the historical `max_radius_size` wire key as a numeric string.",
+            "type": "string",
+            "x-numeric-string": true,
+            "x-input-kind": "value"
+          },
+          "exhaustivness": {
+            "description": "Docking exhaustiveness. Preserve the historical misspelled wire key.",
+            "type": "string",
+            "enum": [
+              "8",
+              "16",
+              "32"
+            ],
+            "x-input-kind": "value"
+          },
           "sdf_file": {
-            "description": "Platform path to ligand SDF",
+            "description": "Uploaded ligand SDF platform path used to calculate complex binding affinity.",
             "type": "string",
             "x-input-kind": "file"
           },
           "upload_sdf": {
-            "description": "String boolean",
+            "description": "Whether to return docked poses in SDF format. This is a string boolean, not a JSON boolean.",
             "type": "string",
             "enum": [
               "True",
               "False"
             ],
             "x-input-kind": "value"
-          },
-          "processed_pdb": {
-            "description": "",
-            "type": "string",
-            "x-input-kind": "file"
-          },
-          "pdb_file": {
-            "description": "",
-            "type": "string",
-            "x-input-kind": "file"
-          },
-          "smiles": {
-            "description": "",
-            "type": "string",
-            "x-input-kind": "file"
           }
         },
         "required": [
-          "sdf_file",
+          "target_name",
+          "processed_pdb",
+          "center_x",
+          "center_y",
+          "center_z",
+          "max_radius_size",
+          "exhaustivness",
           "upload_sdf",
-          "processed_pdb"
+          "sdf_file"
         ],
-        "additionalProperties": true
+        "additionalProperties": false
       },
       "review_notes": [],
       "examples": [],
