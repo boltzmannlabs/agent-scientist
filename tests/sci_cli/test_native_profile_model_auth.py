@@ -179,3 +179,83 @@ def test_unshareable_reference_stops_before_profile_review(model_homes, problem)
     assert 'inline API key' not in output
     assert 'main-fixture-secret' not in output and 'different-secret' not in output
     assert not a.exists()
+
+
+@pytest.mark.parametrize('catalog', ['providers', 'custom_providers'])
+@pytest.mark.parametrize('credential', ['key_env', 'api_key_env', 'api_key'])
+def test_bare_custom_creates_profiles_using_the_exact_shared_route(model_homes, catalog, credential):
+    from sci_cli.config import atomic_config_replace, read_user_config_raw
+    from sci_cli.native_profile_creation import create_native, profile_scope
+    from sci_cli.runtime_provider import resolve_runtime_provider
+
+    main, a, b = model_homes
+    url = 'http://127.0.0.1:54321/v1'
+    entry = {'name': 'Lab display name', 'base_url': url,
+             credential: '${SCI_FIXTURE_LLM_KEY}' if credential == 'api_key' else 'SCI_FIXTURE_LLM_KEY'}
+    other = {'name': 'other', 'base_url': 'http://127.0.0.1:54322/v1', 'key_env': 'OTHER_FIXTURE_KEY'}
+    provider = 'custom:lab' if catalog == 'providers' else 'custom:lab-display-name'
+    model = {'provider': 'custom', 'default': 'fixture', 'base_url': url + '/',
+             'api_key': '${env:SCI_FIXTURE_LLM_KEY}', 'context_length': 8192}
+    original = {'model': model, catalog: {'other': other, 'lab': entry} if catalog == 'providers' else [other, entry]}
+    atomic_config_replace(main / 'config.yaml', original)
+    (main / '.env').write_text('SCI_FIXTURE_LLM_KEY=main-fixture-secret\nOTHER_FIXTURE_KEY=other-secret\n')
+    before = {p: p.read_bytes() for p in (main / 'config.yaml', main / '.env')}
+    for home in (a, b):
+        with profile_scope(b, {}):
+            create_native(home.name, main, [], [], [], {'backend': 'local'}, 'Scientist')
+        config = read_user_config_raw(home / 'config.yaml')
+        assert config['model'] == {**{k: v for k, v in model.items() if k != 'api_key'}, 'provider': provider}
+        assert not config.get('providers') and not config.get('custom_providers')
+        for name in ('config.yaml', '.env', 'auth.json'):
+            path = home / name
+            if path.exists():
+                assert 'main-fixture-secret' not in path.read_text()
+    for home in (a, b, a):
+        with profile_scope(home):
+            runtime = resolve_runtime_provider(requested=provider, target_model='fixture')
+            assert runtime['api_key'] == 'main-fixture-secret'
+            assert runtime['base_url'].rstrip('/') == url
+    assert all(path.read_bytes() == data for path, data in before.items())
+
+
+@pytest.mark.parametrize('problem', ['ambiguous', 'missing-route', 'wrong-route', 'wrong-key',
+                                     'disabled', 'disabled-legacy', 'disabled-keyed-override', 'local-override'])
+def test_bare_custom_never_guesses_or_bypasses_access_checks(model_homes, problem):
+    from copy import deepcopy
+    from sci_cli.config import atomic_config_replace
+    from sci_cli.native_profile_creation import profile_scope
+    from sci_cli.native_profile_wizard import create_wizard
+
+    main, a, b = model_homes
+    url = 'http://127.0.0.1:54321/v1'
+    entry = {'name': 'lab', 'base_url': url, 'key_env': 'SCI_FIXTURE_LLM_KEY'}
+    model = {'provider': 'custom', 'default': 'fixture', 'base_url': url, 'api_key': '${SCI_FIXTURE_LLM_KEY}'}
+    changes = {
+        'ambiguous': {'custom_providers': [entry, {**entry, 'name': 'other'}]},
+        'missing-route': {'model': {k: v for k, v in model.items() if k != 'base_url'}},
+        'wrong-route': {'model': {**model, 'base_url': 'http://127.0.0.1:54322/v1'}},
+        'wrong-key': {'model': {**model, 'api_key': '${OTHER_FIXTURE_KEY}'}},
+        'disabled': {'custom_providers': [], 'providers': {'lab': {**entry, 'enabled': False}}},
+        'disabled-legacy': {'custom_providers': [{**entry, 'enabled': False}]},
+        'disabled-keyed-override': {'providers': {'lab': {'enabled': False}}},
+    }
+    original = {'model': model, 'custom_providers': [entry], **changes.get(problem, {})}
+    atomic_config_replace(main / 'config.yaml', original)
+    (main / '.env').write_text('SCI_FIXTURE_LLM_KEY=main-fixture-secret\nOTHER_FIXTURE_KEY=other-secret\n')
+    source = main
+    if problem == 'local-override':
+        b.mkdir(parents=True)
+        local = deepcopy(original)
+        local['custom_providers'][0]['key_env'] = 'OTHER_FIXTURE_KEY'
+        atomic_config_replace(b / 'config.yaml', local)
+        source = b
+    before = (main / 'config.yaml').read_bytes()
+    ui = SimpleNamespace(show=Mock(), ask=Mock(), choose=Mock())
+    with profile_scope(source):
+        create_wizard(SimpleNamespace(), '/create_profile a', ui=ui, source_home=source)
+    ui.ask.assert_not_called()
+    ui.choose.assert_not_called()
+    assert 'Profile creation failed' in str(ui.show.call_args_list)
+    assert 'main-fixture-secret' not in str(ui.show.call_args_list)
+    assert not a.exists()
+    assert (main / 'config.yaml').read_bytes() == before

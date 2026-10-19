@@ -56,12 +56,26 @@ def _use_shared_model_credential(config, original, source_home, references):
     from sci_constants import get_default_sci_root
     from sci_cli.auth import has_usable_secret
     from sci_cli.config import get_compatible_custom_providers, is_provider_enabled, read_user_config_raw
-    from sci_cli.providers import custom_provider_aliases
+    from sci_cli.providers import custom_provider_aliases, custom_provider_slug
     from sci_cli.route_identity import normalize_route_base_url
 
     model = config.get('model') or {}
     requested = str(model.get('provider') or '').strip().lower()
     main = get_default_sci_root(home=source_home)
+    shared_config = read_user_config_raw(main / 'config.yaml')
+    bare_custom = requested == 'custom'
+    if bare_custom:
+        # Bare custom stores its route in model.base_url, not in its provider
+        # name. Resolve that exact route before checking credential ownership;
+        # never select the first catalog entry or infer identity from a model id.
+        route = normalize_route_base_url(model.get('base_url'))
+        candidates = [entry for entry in get_compatible_custom_providers(shared_config)
+                      if route and normalize_route_base_url(entry['base_url']) == route]
+        if len(candidates) != 1:
+            raise ValueError("The custom model endpoint must match exactly one saved provider in main's shared "
+                             "catalog. Select a named provider with sci model and retry; no credential was copied or changed.")
+        candidate = candidates[0]
+        requested = custom_provider_slug(candidate['name'], candidate.get('provider_key', ''))
 
     def matching_entries(raw):
         # Runtime checks keyed providers before the legacy list. Do not let
@@ -72,10 +86,13 @@ def _use_shared_model_credential(config, original, source_home, references):
             if any(not is_provider_enabled(entry) for entry in keyed.values()):
                 raise ValueError('The selected model provider is disabled. Review its access before creating a profile.')
             return get_compatible_custom_providers({'providers': keyed})
-        return [entry for entry in get_compatible_custom_providers({'custom_providers': raw.get('custom_providers', [])})
-                if requested in custom_provider_aliases(entry['name'], entry.get('provider_key', ''))]
+        legacy = [entry for entry in raw.get('custom_providers', [])
+                  if isinstance(entry, dict) and requested in custom_provider_aliases(entry.get('name', ''), entry.get('provider_key', ''))]
+        if any(not is_provider_enabled(entry) for entry in legacy):
+            raise ValueError('The selected model provider is disabled. Review its access before creating a profile.')
+        return get_compatible_custom_providers({'custom_providers': legacy})
 
-    shared = matching_entries(read_user_config_raw(main / 'config.yaml'))
+    shared = matching_entries(shared_config)
     local = matching_entries(original)
     if len(shared) != 1 or (local and local != shared):
         raise ValueError("The model credential reference needs a matching named provider in main's shared "
@@ -96,6 +113,8 @@ def _use_shared_model_credential(config, original, source_home, references):
                          "Save the referenced key in main before creating this profile; no credential was copied or changed.")
     for key in ('api_key', 'key_env', 'api_key_env'):
         model.pop(key, None)
+    if bare_custom:
+        model['provider'] = requested
     config.pop('providers', None)
 
 
