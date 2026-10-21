@@ -47,6 +47,25 @@ numeric bounds and anyOf, plus documented `x-*` annotations. Do not add unsuppor
 JSON Schema keywords and imply they are enforced. Threshold numeric strings and
 explicitly permitted empty bounds are separate cases, not silent conversions.
 
+## Enzyme CSV headers and credit-calculation errors
+
+For `Enzymes`, prepare CSV files with exact `Seq_id,Sequences` headers, matching
+the frontend's `ENZ_PROP` credit checker. `Sequence_ID` is not a supported alias.
+The connector rejects incompatible headers before upload and reports the expected
+columns. Best-effort approval does not bypass a known header error. If an existing
+input needs conversion, create a separately reviewed copy without changing its
+sequences or overwriting the original. The canonical file rule and generated
+workflow sheet provide the same guidance.
+
+HTTP 500 with `Failed to calculate credits` is a submission-stage service error,
+not evidence of missing credentials, a DNS failure, or an insufficient balance.
+Preserve the server's diagnostic and distinguish it from local input validation.
+Without a returned job ID, report submission outcome as unknown; do not resubmit
+automatically, fabricate a credit amount, or bypass `/api/submit-job` through the
+browser's private submission flow. Reconcile the previous experiment before a
+retry, or obtain explicit approval for a separately named new test. Acceptance
+does not establish completed predictions or the actual credit charge.
+
 ## Maintenance and verification
 
 Module Markdown is generated, never independently edited:

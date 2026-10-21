@@ -420,6 +420,75 @@ def test_partial_file_preflight_upload_and_submit_with_real_profile_receipts(tmp
             manager.unload()
 
 
+def test_enzyme_upload_enforces_headers_and_profile_scoped_current_rules(tmp_path, monkeypatch, auth_server):
+    state, endpoint = auth_server
+    a, b = tmp_path / "a", tmp_path / "b"
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("SCI_HOME", str(a))
+    monkeypatch.delenv("SCI_BUNDLED_PLUGINS", raising=False)
+    monkeypatch.chdir(tmp_path)
+    with profile(a):
+        manager, module = discover(monkeypatch, endpoint)
+        try:
+            helpers = sys.modules[module.__name__ + ".nodeapi_helpers"]
+            auth = sys.modules[module.__name__ + ".auth"]
+            preflight = sys.modules[module.__name__ + ".preflight"]
+            base = endpoint.removesuffix("/api/get-projects")
+            monkeypatch.setattr(helpers, "_UPLOAD_URL", base + "/upload")
+            source = tmp_path / "enzymes.csv"
+            original = b"Sequence_ID,Sequences\nenzyme-1,MKT\n"
+            corrected = b"Seq_id,Sequences\nenzyme-1,MKT\n"
+            source.write_bytes(original)
+            args = {"local_path": str(source), "job_name": "Enzymes", "input_field": "dataPath",
+                    "experiment_data": {"property_name": ["enzyme_solubility"]}}
+            save_env_value("BOLTZMANN_API_KEY", "fixture-valid")
+            auth.authorize_saved_key()
+            rejected = json.loads(module.tools.handle_boltzmann_upload(**args, allow_partial_validation=True))
+            assert rejected["status"] == "not_started", rejected
+            assert rejected["validation"]["errors"]
+            assert "/upload" not in state["calls"] and "/submit" not in state["calls"]
+            assert source.read_bytes() == original
+
+            # A reviewed copy, not a silent rewrite of the user's original input.
+            reviewed = tmp_path / "enzymes-reviewed.csv"
+            reviewed.write_bytes(corrected)
+            args["local_path"] = str(reviewed)
+            payload = {"dataPath": "fixture/enzymes.csv", "property_name": ["enzyme_solubility"]}
+            state["upload_path"] = payload["dataPath"]
+            for home in (a, b, a):
+                with profile(home):
+                    save_env_value("BOLTZMANN_API_KEY", "fixture-valid")
+                    auth.authorize_saved_key()
+                    if home == b:
+                        unvalidated = preflight.preflight_submission("Enzymes", payload)
+                        assert any("no current-profile validation receipt" in w for w in unvalidated.warnings)
+                    if home == b or "/upload" not in state["calls"]:
+                        uploaded = json.loads(module.tools.handle_boltzmann_upload(**args))
+                        assert uploaded["status"] == "uploaded", uploaded
+                        assert not uploaded["validation"]["errors"]
+                        assert not uploaded["validation"]["warnings"]
+                        assert corrected in state["upload_bytes"]
+                    report = preflight.preflight_submission("Enzymes", payload)
+                    assert not report.errors and not report.warnings, report.as_dict()
+                    assert source.read_bytes() == original and reviewed.read_bytes() == corrected
+
+            # Receipts from before the stricter header rule must be revalidated.
+            from sci_cli.plugins_state import PluginState
+            old_store = preflight.ContractStore()
+            old_rule = old_store.files["Enzymes"]["files"]["dataPath"]
+            old_rule.pop("columns", None)
+            key = preflight._receipt_key("Enzymes", "dataPath", payload["dataPath"])
+            receipt = PluginState("boltzmann").get(key)
+            receipt["contract"] = preflight._contract_digest(old_store, "Enzymes")
+            PluginState("boltzmann").set(key, receipt)
+            stale = preflight.preflight_submission("Enzymes", payload)
+            assert any("validate and upload again" in error for error in stale.errors)
+            assert preflight.decision(stale, True)["status"] == "not_started"
+            assert state["calls"].count("/upload") == 2 and "/submit" not in state["calls"]
+        finally:
+            manager.unload()
+
+
 def test_service_diagnostics_are_safe_and_status_failures_do_not_resubmit(tmp_path, monkeypatch, auth_server):
     state, endpoint = auth_server
     monkeypatch.setattr(Path, "home", lambda: tmp_path)

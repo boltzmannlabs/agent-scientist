@@ -44,7 +44,9 @@ def _csv(data, rule, payload, report):
             selected = variant, mapping
             break
     if selected is None:
-        report.errors.append("CSV columns do not match a documented layout (including case, aliases and extra-column rules).")
+        layouts = " or ".join(", ".join(v.get("columns", [])) for v in variants)
+        report.errors.append("CSV columns do not match a documented layout (including case, aliases and extra-column rules). "
+                             f"Expected required columns: {layouts}.")
         return
     variant, mapping = selected
     values = dict(variant.get("values", rule.get("values", {})))

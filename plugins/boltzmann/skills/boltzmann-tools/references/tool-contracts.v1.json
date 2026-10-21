@@ -2622,7 +2622,7 @@
         "type": "object",
         "properties": {
           "dataPath": {
-            "description": "The first group accepts either exact Sequence_ID or Seq_id; Sequences is also required.",
+            "description": "CSV with exact case-sensitive Seq_id and Sequences headers. Sequence_ID is not accepted by the frontend credit checker; offer a reviewed copy instead of silently renaming columns.",
             "type": "string",
             "x-input-kind": "file"
           },

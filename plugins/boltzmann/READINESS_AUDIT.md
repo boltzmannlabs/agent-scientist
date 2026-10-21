@@ -1,5 +1,36 @@
 # Boltzmann contract standardization — 2026-10-14
 
+## Enzyme CSV correction — 2026-10-19
+
+The current public frontend bundle `main.5b329b08.js` declares exact `Seq_id`
+and `Sequences` required columns for the `ENZ_PROP` credit checker. The canonical
+`Enzymes.dataPath` rule now checks those headers and nonempty values before upload;
+the previously documented `Sequence_ID` alias is not accepted. Differently named
+columns require an explicitly reviewed copy, not a silent source-file rewrite.
+The generated workflow sheet uses the same rule. Historical evidence is unchanged.
+
+The frontend calculates credits separately with `tool="ENZ_PROP"`, the selected
+property count, and input-mode information before creating the experiment. The
+connector continues to use the published `/api/submit-job` contract; it does not
+invent credit amounts or bypass that endpoint. The reported API response was
+HTTP 500, `Failed to calculate credits`. The header incompatibility is established,
+but its causal connection to that server exception is not independently verified.
+
+After the owner explicitly approved one new production credit-path test, a reviewed
+copy of the same three public enzyme sequences with the corrected header passed
+upload validation and was accepted by `/api/submit-job` with a job ID. Exactly one
+submission was made; the credit-calculation error did not recur. This establishes
+acceptance for that corrected request, not completed predictions, an exact credit
+charge, universal worker readiness, or the outcome of the older ambiguous attempt.
+No automatic retry or follow-up scientific job was run. Credentials, private storage
+references, and the user's experiment identifiers are not distributed in this repo.
+
+145 focused tests passed through `scripts/run_tests.sh`, including invalid-header
+rejection before upload despite best-effort approval, unchanged source bytes,
+valid-header upload, A-to-B-to-A receipt isolation, and stale-receipt rejection.
+Backend logs or a sanitized successful request comparison remain necessary if
+credit calculation fails for another correctly headed request.
+
 ## Follow-up corrections — 2026-10-19
 
 Owner-supplied recordings of the current product UI and its generated Python

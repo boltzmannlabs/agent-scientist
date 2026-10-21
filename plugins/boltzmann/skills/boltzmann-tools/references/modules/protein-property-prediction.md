@@ -130,7 +130,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `dataPath` | string | yes | file | The first group accepts either exact Sequence_ID or Seq_id; Sequences is also required. |
+| `dataPath` | string | yes | file | CSV with exact case-sensitive Seq_id and Sequences headers. Sequence_ID is not accepted by the frontend credit checker; offer a reviewed copy instead of silently renaming columns. |
 | `property_name` | array | yes | value | One or more exact backend property identifiers from the fixed mapping below. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
@@ -144,7 +144,7 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "dataPath": {
-      "description": "The first group accepts either exact Sequence_ID or Seq_id; Sequences is also required.",
+      "description": "CSV with exact case-sensitive Seq_id and Sequences headers. Sequence_ID is not accepted by the frontend credit checker; offer a reviewed copy instead of silently renaming columns.",
       "type": "string",
       "x-input-kind": "file"
     },
@@ -196,8 +196,13 @@ For mode-dependent fields, include the fields required by the selected schema br
     "formats": [
       "csv"
     ],
+    "columns": [
+      "Seq_id",
+      "Sequences"
+    ],
     "header_case_sensitive": true,
-    "notes": "The first group accepts either exact Sequence_ID or Seq_id; Sequences is also required. Column-group semantics require review."
+    "notes": "Use exact Seq_id and Sequences headers, matching the ENZ_PROP frontend credit checker. Sequence_ID is not an accepted alias. For an existing differently named column, offer a reviewed copy; never silently rewrite the original. Structural validation does not establish scientific correctness or guarantee credit calculation.",
+    "evidence": "https://app.boltzmann.co/static/js/main.5b329b08.js (ENZ_PROP requiredfields; inspected 2026-10-19)"
   }
 }
 ```

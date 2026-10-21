@@ -126,6 +126,38 @@ def test_known_invalid_is_blocked_but_missing_detailed_file_rules_are_partial(tm
     assert decision(blocked, True)["status"] == "not_started"
 
 
+def test_enzyme_csv_requires_frontend_headers_without_rewriting_inputs(tmp_path):
+    from plugins.boltzmann.contracts import ContractStore
+    from plugins.boltzmann.file_validation import validate_file
+    from plugins.boltzmann.preflight import decision
+
+    store = ContractStore()
+    rule = store.file_rule("Enzymes", "dataPath")
+    source = tmp_path / "enzymes.csv"
+    payload = {"property_name": ["enzyme_solubility"]}
+    fixtures = [
+        (b"Seq_id,Sequences\nenzyme-1,MKT\n", True),
+        (b"\xef\xbb\xbfSeq_id,Sequences\r\nenzyme-1,MKT\r\n", True),
+        (b"Seq_id,Sequences,smiles\nenzyme-1,MKT,CC\n", True),
+        (b"Sequence_ID,Sequences\nenzyme-1,MKT\n", False),
+        (b"seq_id,Sequences\nenzyme-1,MKT\n", False),
+        (b"Seq_id,Sequence\nenzyme-1,MKT\n", False),
+        (b"Seq_id,Sequences\nenzyme-1,\n", False),
+        (b"Seq_id,Sequences\n,MKT\n", False),
+        (b"Seq_id,Sequences\n", False),
+        (b"Seq_id,Sequences,Sequences\nenzyme-1,MKT,MKT\n", False),
+    ]
+    for content, valid in fixtures:
+        source.write_bytes(content)
+        report = validate_file(source, rule, payload)
+        assert bool(report.errors) is not valid, (content, report.as_dict())
+        assert source.read_bytes() == content
+        if valid:
+            assert not report.warnings
+        else:
+            assert decision(report, True)["status"] == "not_started"
+
+
 def test_historical_worker_failure_warns_without_prohibiting_reviewed_submission():
     from plugins.boltzmann.contracts import ContractStore
     from plugins.boltzmann.preflight import decision
