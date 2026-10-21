@@ -53,6 +53,10 @@ SCI_OVERLAYS: Dict[str, SciOverlay] = {
                                    base_url_override="https://api.minimax.io/anthropic"),
     "minimax-cn": SciOverlay(transport="anthropic_messages", base_url_env_var="MINIMAX_CN_BASE_URL"),
     "deepseek": SciOverlay(base_url_env_var="DEEPSEEK_BASE_URL"),
+    # Keep the shipped key/endpoint contract when models.dev adds or renames its entry.
+    "commandcode": SciOverlay(extra_env_vars=("COMMANDCODE_API_KEY", "CMD_API_KEY"),
+                                 base_url_override="https://api.commandcode.ai/provider/v1",
+                                 base_url_env_var="COMMANDCODE_BASE_URL"),
     "alibaba": SciOverlay(base_url_env_var="DASHSCOPE_BASE_URL"),
     "alibaba-coding-plan": SciOverlay(base_url_env_var="ALIBABA_CODING_PLAN_BASE_URL"),
     "vercel": SciOverlay(is_aggregator=True),
@@ -147,6 +151,7 @@ _LABEL_OVERRIDES: Dict[str, str] = {
     "upstage": "Upstage Solar", "actual": "Actual Computer", "tencent-tokenhub": "Tencent TokenHub",
     "nebius-token-factory": "Nebius Token Factory", "tencent-tokenplan": "Tencent TokenPlan", "lmstudio": "LM Studio",
     "custom": "Custom endpoint", "bedrock": "AWS Bedrock", "vertex": "Google Vertex AI", "ollama-cloud": "Ollama Cloud",
+    "commandcode": "CommandCode",
     "xai-oauth": "xAI Grok OAuth (SuperGrok / Premium+)",
 }
 
