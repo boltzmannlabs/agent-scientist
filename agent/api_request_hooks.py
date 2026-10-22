@@ -33,7 +33,14 @@ class ApiRequestHooksMixin:
     """Hook payload sanitising + ``api_request_error`` dispatch (see module docstring)."""
 
     def _usage_summary_for_api_request_hook(self, response: Any) -> Optional[Dict[str, Any]]:
-        """Token buckets for ``post_api_request`` plugins (no raw ``response`` object)."""
+        """Token buckets and an explicitly reported numeric cost for request hooks.
+
+        The raw provider usage object is never exposed: it can grow provider-specific
+        fields without the lifecycle payload's redaction contract.  Aggregators such
+        as OpenRouter may report the already-billed request cost alongside token
+        counts, however, and observability plugins need that value to attribute a
+        multi-call agent turn accurately.
+        """
         if response is None:
             return None
         raw_usage = getattr(response, "usage", None)
@@ -46,6 +53,12 @@ class ApiRequestHooksMixin:
         summary.pop("raw_usage", None)
         summary["prompt_tokens"] = cu.prompt_tokens
         summary["total_tokens"] = cu.total_tokens
+        raw_usage = cu.raw_usage if isinstance(cu.raw_usage, dict) else {}
+        reported_cost = raw_usage.get("cost")
+        if not isinstance(reported_cost, (int, float)) or isinstance(reported_cost, bool):
+            reported_cost = raw_usage.get("total_cost")
+        if isinstance(reported_cost, (int, float)) and not isinstance(reported_cost, bool):
+            summary["provider_cost_usd"] = float(reported_cost)
         return summary
 
     @staticmethod
