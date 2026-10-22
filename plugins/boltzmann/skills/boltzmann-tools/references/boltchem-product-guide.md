@@ -3,6 +3,8 @@
 Source: product descriptions and Binding Affinity Energy documentation supplied
 by the project owner on 2026-10-15. This guide standardizes that supplied content;
 it is not evidence of a successful API call or a replacement for request schemas.
+Binding Affinity Energy's Node API route and payload fields were subsequently
+supplied by the project owner on 2026-10-22.
 Feature paths below are product navigation routes, not API endpoints.
 
 ## Create Dataset
@@ -56,9 +58,10 @@ assign physical energy units, convert the score to a dissociation constant, or
 describe it as experimentally measured affinity without an explicit model/output
 specification.
 
-No executable connector job name or request schema for this feature is established
-in the current catalog. This description does not register or enable a tool and
-must not be mapped to `global_ic50` or the protein–protein `Prodigy` tool.
+The connector job name is `global_binding_affinity`, routed through the existing
+authorized `boltzmann_submit` operation. Its canonical request schema is in
+`tool-contracts.v1.json`; do not map it to `global_ic50` or protein–protein
+`Prodigy`. This is an owner-supplied contract, not a live-verified service result.
 
 ### Purpose and input workflow
 
@@ -71,13 +74,23 @@ Binding Affinity Energy**, choose the project and enter an experiment name.
   per row. Extra-column rules and accepted header aliases are not established.
 - **Draw Molecule / direct input:** provide the compound's SMILES and the target
   protein's amino-acid sequence when a CSV is not supplied.
-- Review the chosen input mode and submit through the product UI. These UI labels
-  do not establish the backend field names or authorize the agent to invent an
-  API request.
+- For the connector, review one mode: direct `smiles` plus `sequence`, or
+  `input_csv`. Upload CSV files with `boltzmann_upload` using this exact job name
+  and `input_field="input_csv"`; use the returned storage path, not a local path
+  or a placeholder. Omit fields for the unused mode; precedence if both modes
+  are supplied is not established.
+- Submit through `boltzmann_submit` with `job_name="global_binding_affinity"`,
+  the reviewed `experiment_name` and those fields in `experiment_data`. Never put
+  credentials or runtime user/experiment IDs in that payload. Keep the returned
+  job ID for subsequent status/download operations; do not automatically retry
+  an ambiguous submission.
 
 Do not silently generate all combinations of compounds and sequences. Preserve
-the pairs supplied by the user. File-column names above are product documentation,
-not a claim that a connector validator has been implemented or tested for this job.
+the pairs supplied by the user. The connector checks CSV headers, row shape and
+nonempty paired values, but does not establish scientific validity or backend
+acceptance. Review partial-validation warnings before execution. No numeric input
+limits, extra-column behavior, or diagnostic collection mapping are established
+by the supplied handoff; do not invent them.
 
 ### Documented output table
 

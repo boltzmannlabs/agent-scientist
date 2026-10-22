@@ -36,7 +36,14 @@ def render_module(module, catalog, files, limits):
                   "For mode-dependent fields, include the fields required by the selected schema branch.", ""]
         rules = files["tools"].get(job, {}).get("files", {})
         if rules:
-            lines += ["### File checks", "", "```json", json.dumps(rules, indent=2, ensure_ascii=False), "```", ""]
+            # Full uploaded JSON schemas remain canonical file rules. Their human
+            # guide is linked above; avoid duplicating thousands of lines per sheet.
+            shown = {name: {k: v for k, v in rule.items() if k != "json_schema"}
+                     for name, rule in rules.items()}
+            lines += ["### File checks", "", "```json", json.dumps(shown, indent=2, ensure_ascii=False), "```", ""]
+            if any("json_schema" in rule for rule in rules.values()):
+                lines += ["Uploaded JSON content is validated against the full schema in",
+                          "`file-input-contracts.v1.json`; see the linked guide for field definitions.", ""]
         bounds = limits["tools"].get(job, {})
         if bounds:
             lines += ["### Input limits", "", "```json", json.dumps(bounds, indent=2, ensure_ascii=False), "```", ""]

@@ -300,6 +300,116 @@ Accepted is not completed. Poll the returned job ID without resubmitting.
 Preserve every returned artifact link; download and inspect requested outputs before reporting success.
 Report actual service errors and incomplete outputs. Refresh status for expired links.
 
+## Binding Affinity Energy
+
+Predict the binding affinity of a compound–protein pair from direct SMILES and protein sequence input or a CSV of paired inputs. Returns NESSO's affinity score: lower values indicate stronger predicted binding for comparable predictions. No physical energy units or experimentally measured affinity are established by this contract.
+
+[Product description and result interpretation](../boltchem-product-guide.md#binding-affinity-energy)
+
+Exact job name: `global_binding_affinity`.
+
+### Inputs
+
+Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
+
+| Field | Type | Required | Input kind | Description |
+|---|---|---|---|---|
+| `input_csv` | string | no / mode-dependent | file | Alternative to direct input: upload a CSV with SMILES and SEQUENCE columns, one compound–protein pair per row, and pass its returned platform storage path. Omit this field in direct-input mode. |
+| `smiles` | string | no / mode-dependent | value | One compound SMILES for direct-input mode; supply together with sequence. Omit in CSV mode. |
+| `sequence` | string | no / mode-dependent | value | One target protein amino-acid sequence for direct-input mode; supply together with smiles. Omit in CSV mode. |
+
+Input kinds: `value` is inline data; `file` requires a platform file reference;
+`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
+Only local files require a new upload. Never infer input mode from a field name.
+
+### Exact request schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "input_csv": {
+      "description": "Alternative to direct input: upload a CSV with SMILES and SEQUENCE columns, one compound–protein pair per row, and pass its returned platform storage path. Omit this field in direct-input mode.",
+      "type": "string",
+      "x-input-kind": "file"
+    },
+    "smiles": {
+      "description": "One compound SMILES for direct-input mode; supply together with sequence. Omit in CSV mode.",
+      "type": "string",
+      "x-input-kind": "value"
+    },
+    "sequence": {
+      "description": "One target protein amino-acid sequence for direct-input mode; supply together with smiles. Omit in CSV mode.",
+      "type": "string",
+      "x-input-kind": "value"
+    }
+  },
+  "required": [],
+  "anyOf": [
+    {
+      "required": [
+        "input_csv"
+      ]
+    },
+    {
+      "required": [
+        "smiles",
+        "sequence"
+      ]
+    }
+  ],
+  "additionalProperties": false
+}
+```
+
+### Submission envelope
+
+Shape only: replace placeholders with the user's values. This is not a runnable sample.
+```json
+{
+  "job_name": "global_binding_affinity",
+  "experiment_name": "<confirmed experiment name>",
+  "experiment_data": {}
+}
+```
+
+For mode-dependent fields, include the fields required by the selected schema branch.
+
+### File checks
+
+```json
+{
+  "input_csv": {
+    "formats": [
+      "csv"
+    ],
+    "columns": [
+      "SMILES",
+      "SEQUENCE"
+    ],
+    "values": {
+      "SMILES": "smiles",
+      "SEQUENCE": "protein"
+    },
+    "header_case_sensitive": true,
+    "coverage": "partial",
+    "notes": "Headers are from the owner-supplied product documentation. Preserve one intended compound–protein pair per row. Accepted header aliases and extra-column behavior are not established; generic parsing is not scientific or backend validation."
+  }
+}
+```
+
+### Execution notices
+
+- Route and payload fields supplied by the project owner on 2026-10-22; production acceptance and returned artifacts have not been live-verified.
+- Review one input mode: direct smiles plus sequence, or uploaded input_csv. Precedence when both modes are supplied is not established. Do not infer missing sequences, compounds, or pairings.
+- Generic validation checks input shape, not SMILES chemistry, protein validity, model applicability, or scientific correctness.
+
+### Results
+
+Accepted is not completed. Poll the returned job ID without resubmitting.
+Preserve every returned artifact link; download and inspect requested outputs before reporting success.
+Report actual service errors and incomplete outputs. Refresh status for expired links.
+
 ## global_ic50
 
 Predict inhibitory potency for compound–protein pairs from direct SMILES and protein-sequence input or a CSV of paired inputs. The product describes pIC50, IC50 in nanomolar units and an activity label; confirm the columns actually returned. Higher pIC50 and lower IC50 indicate greater predicted inhibitory potency, not necessarily binding affinity or experimentally established activity.

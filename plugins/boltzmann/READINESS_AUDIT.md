@@ -1,5 +1,48 @@
 # Boltzmann contract standardization — 2026-10-14
 
+## Five enzyme integrations — 2026-10-22
+
+The historical counts below describe the October 14 snapshot, not today's catalog.
+Added callable canonical definitions, domain/module discovery, generated sheets,
+complete advanced/template guides and file/limit rules for:
+
+| Job | Domain/module | Latest recorded live reference outcome |
+|---|---|---|
+| `deepallo` | Protein Engineering / Enzyme Generation | Completed; three pocket predictions downloaded |
+| `enzycontrol` | Protein Engineering / Enzyme Generation | Completed; ten backbone PDBs and summary downloaded |
+| `Enzyme_RFD3` | Protein Engineering / Enzyme Generation | Accepted, then worker failed: `job_name` missing |
+| `Catalytic_Geometry` | Protein Engineering / Protein Toolbox | Completed; 20 candidates / 40 geometry checks passed |
+| `Mol_Probity` | Protein Engineering / Protein Toolbox | Accepted; last recorded status pending, no output |
+
+No tool is blocked merely for missing contract details. Authentication, profile
+access, invalid-input rejection and reviewed partial validation still apply.
+RFD3's exact routing name was already correct; this integration does not claim
+to repair its downstream worker failure. Existing pending/ambiguous jobs must
+not be duplicated. No new scientific jobs were submitted during this integration.
+
+The supplied three JSON files, sanitized bundle/notebook examples and API
+snapshot were reconciled with observed submission outcomes. All five routes
+use the existing helpers and no additional model tools or dependencies.
+Node rejects Catalytic Geometry mapping CSV; the active contract uses JSON.
+EnzyControl's required seed, Catalytic Geometry's required binding path,
+MolProbity's conditional thresholds and all supplied RFD3 nested options are
+represented. Notebook `"True"` is retained as historical evidence, not accepted
+as a canonical lowercase `"true"`/`"false"` flag.
+
+155 targeted tests passed across six files via `scripts/run_tests.sh`, including
+localhost upload/submit/status, A→B→A authorization/receipt isolation, unchanged
+wire payloads, no polling resubmission, inline threshold objects, JSON schemas,
+invalid combinations, gzip handling, discovery and existing prompt stability.
+These checks do not establish scientific validity or resolve worker deployment.
+Structure-dependent chemistry, native contig parsing and diffusion schedule
+validation remain disclosed specialized checks, not falsely claimed local checks.
+
+See [complete usage and evidence guide](skills/boltzmann-tools/references/enzyme-tools-guide.md)
+and [source provenance](contract_sources/enzyme-tools-2026-10-22/provenance.json).
+Keys, live IDs, uploaded paths, signed URLs and bulk private artifacts are not
+shipped. Generated backbones do not establish enzyme function; the geometry
+reference checks user-defined preservation ranges, not catalytic activity.
+
 ## Enzyme CSV correction — 2026-10-19
 
 The current public frontend bundle `main.5b329b08.js` declares exact `Seq_id`

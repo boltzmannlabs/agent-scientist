@@ -1,0 +1,1052 @@
+{
+  "source": "https://boltproapis.boltzmann.co/openapi.json",
+  "retrieved_at_utc": "2026-10-21",
+  "paths": {
+    "/v5/EnzymeGeneration/EnzymeBackBoneGen": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnzymeBackBoneGenUserInput"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/v5/EnzymeGeneration/EnzymeDeepallo": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnzymeDeepalloUserInput"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/v5/EnzymeGeneration/RFD3": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RFD3EnzymeUserInput"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/v5/Toolbox/mol_probity": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MolProbityUserInput"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/v5/Toolbox/catalytic_geometry": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalyticGeometryUserInput"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CatalyticGeometryUserInput": {
+        "properties": {
+          "job_name": {
+            "type": "string",
+            "title": "Job Name"
+          },
+          "experiment_id": {
+            "type": "string",
+            "title": "Experiment Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "tokenid": {
+            "type": "string",
+            "title": "Tokenid"
+          },
+          "input_path": {
+            "type": "string",
+            "title": "Input Path"
+          },
+          "reaction_template": {
+            "type": "string",
+            "title": "Reaction Template"
+          },
+          "template_binding": {
+            "type": "string",
+            "title": "Template Binding"
+          },
+          "mapping_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mapping Path"
+          },
+          "input_source": {
+            "type": "string",
+            "title": "Input Source",
+            "default": "auto"
+          },
+          "execution_mode": {
+            "type": "string",
+            "enum": [
+              "measurement_only",
+              "validation"
+            ],
+            "title": "Execution Mode",
+            "default": "measurement_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_name",
+          "experiment_id",
+          "user_id",
+          "tokenid",
+          "input_path",
+          "reaction_template",
+          "template_binding"
+        ],
+        "title": "CatalyticGeometryUserInput"
+      },
+      "EnzymeBackBoneGenUserInput": {
+        "properties": {
+          "job_name": {
+            "type": "string",
+            "title": "Job Name"
+          },
+          "experiment_id": {
+            "type": "string",
+            "title": "Experiment Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "tokenid": {
+            "type": "string",
+            "title": "Tokenid"
+          },
+          "pdb_path": {
+            "type": "string",
+            "title": "Pdb Path"
+          },
+          "chain_id": {
+            "type": "string",
+            "title": "Chain Id"
+          },
+          "motif_residues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Motif Residues"
+          },
+          "smiles": {
+            "type": "string",
+            "title": "Smiles"
+          },
+          "n_samples": {
+            "type": "integer",
+            "title": "N Samples",
+            "default": 1
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_name",
+          "experiment_id",
+          "user_id",
+          "tokenid",
+          "pdb_path",
+          "chain_id",
+          "motif_residues",
+          "smiles",
+          "seed"
+        ],
+        "title": "EnzymeBackBoneGenUserInput"
+      },
+      "EnzymeDeepalloUserInput": {
+        "properties": {
+          "job_name": {
+            "type": "string",
+            "title": "Job Name"
+          },
+          "experiment_id": {
+            "type": "string",
+            "title": "Experiment Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "tokenid": {
+            "type": "string",
+            "title": "Tokenid"
+          },
+          "input_path": {
+            "type": "string",
+            "title": "Input Path"
+          },
+          "chain_id": {
+            "type": "string",
+            "title": "Chain Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_name",
+          "experiment_id",
+          "user_id",
+          "tokenid",
+          "input_path",
+          "chain_id"
+        ],
+        "title": "EnzymeDeepalloUserInput"
+      },
+      "MolProbityQualityThresholds": {
+        "properties": {
+          "max_clashscore": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Clashscore"
+          },
+          "max_ramachandran_outlier_percent": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Ramachandran Outlier Percent"
+          },
+          "min_ramachandran_favored_percent": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Ramachandran Favored Percent"
+          },
+          "max_rotamer_outlier_percent": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Rotamer Outlier Percent"
+          },
+          "max_cbeta_outliers": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Cbeta Outliers"
+          },
+          "max_cablam_outlier_percent": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Cablam Outlier Percent"
+          },
+          "max_cablam_disfavored_percent": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Cablam Disfavored Percent"
+          },
+          "max_bond_outliers": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Bond Outliers"
+          },
+          "max_angle_outliers": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Angle Outliers"
+          },
+          "max_cis_nonproline": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Cis Nonproline"
+          },
+          "max_twisted_peptides": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Twisted Peptides"
+          }
+        },
+        "type": "object",
+        "title": "MolProbityQualityThresholds"
+      },
+      "MolProbityUserInput": {
+        "properties": {
+          "job_name": {
+            "type": "string",
+            "title": "Job Name"
+          },
+          "experiment_id": {
+            "type": "string",
+            "title": "Experiment Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "tokenid": {
+            "type": "string",
+            "title": "Tokenid"
+          },
+          "input_path": {
+            "type": "string",
+            "title": "Input Path"
+          },
+          "execution_mode": {
+            "type": "string",
+            "enum": [
+              "measurement_only",
+              "validation"
+            ],
+            "title": "Execution Mode",
+            "default": "measurement_only"
+          },
+          "quality_thresholds": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MolProbityQualityThresholds"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality Thresholds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_name",
+          "experiment_id",
+          "user_id",
+          "tokenid",
+          "input_path"
+        ],
+        "title": "MolProbityUserInput"
+      },
+      "RFD3AdvancedSettings": {
+        "properties": {
+          "contig": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contig"
+          },
+          "select_fixed_atoms": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Select Fixed Atoms"
+          },
+          "select_unfixed_sequence": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Select Unfixed Sequence"
+          },
+          "select_buried": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Select Buried"
+          },
+          "select_partially_buried": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Select Partially Buried"
+          },
+          "select_exposed": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Select Exposed"
+          },
+          "select_hbond_donor": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Select Hbond Donor"
+          },
+          "select_hbond_acceptor": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Select Hbond Acceptor"
+          },
+          "select_hotspots": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Select Hotspots"
+          },
+          "redesign_motif_sidechains": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redesign Motif Sidechains"
+          },
+          "ori_token": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ori Token"
+          },
+          "infer_ori_strategy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Infer Ori Strategy"
+          },
+          "plddt_enhanced": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plddt Enhanced"
+          },
+          "is_non_loopy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Non Loopy"
+          },
+          "partial_t": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partial T"
+          },
+          "allow_ligand_on_existing_chain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allow Ligand On Existing Chain"
+          },
+          "geometry_constraints": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/RFD3GeometryConstraint"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geometry Constraints"
+          },
+          "diffusion_batch_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diffusion Batch Size"
+          },
+          "n_batches": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Batches"
+          },
+          "inference_sampler": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RFD3InferenceSampler"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "RFD3AdvancedSettings"
+      },
+      "RFD3AtomReference": {
+        "properties": {
+          "residue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Residue"
+          },
+          "ligand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ligand"
+          },
+          "atom": {
+            "type": "string",
+            "title": "Atom"
+          }
+        },
+        "type": "object",
+        "required": [
+          "atom"
+        ],
+        "title": "RFD3AtomReference"
+      },
+      "RFD3EnzymeUserInput": {
+        "properties": {
+          "job_name": {
+            "type": "string",
+            "title": "Job Name"
+          },
+          "tokenid": {
+            "type": "string",
+            "title": "Tokenid"
+          },
+          "experiment_id": {
+            "type": "string",
+            "title": "Experiment Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "input_path": {
+            "type": "string",
+            "title": "Input Path"
+          },
+          "motif_residues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Motif Residues"
+          },
+          "ligand": {
+            "type": "string",
+            "title": "Ligand"
+          },
+          "min_length": {
+            "type": "integer",
+            "title": "Min Length"
+          },
+          "max_length": {
+            "type": "integer",
+            "title": "Max Length"
+          },
+          "n_samples": {
+            "type": "integer",
+            "title": "N Samples",
+            "default": 1
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "task_name": {
+            "type": "string",
+            "title": "Task Name",
+            "default": "rfd3"
+          },
+          "advanced_settings_enabled": {
+            "type": "string",
+            "title": "Advanced Settings Enabled",
+            "default": "false"
+          },
+          "advanced_settings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RFD3AdvancedSettings"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_name",
+          "tokenid",
+          "experiment_id",
+          "user_id",
+          "input_path",
+          "motif_residues",
+          "ligand",
+          "min_length",
+          "max_length"
+        ],
+        "title": "RFD3EnzymeUserInput"
+      },
+      "RFD3GeometryConstraint": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "distance",
+              "angle"
+            ],
+            "title": "Type"
+          },
+          "atoms": {
+            "items": {
+              "$ref": "#/components/schemas/RFD3AtomReference"
+            },
+            "type": "array",
+            "title": "Atoms"
+          },
+          "min": {
+            "type": "number",
+            "title": "Min"
+          },
+          "max": {
+            "type": "number",
+            "title": "Max"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "atoms",
+          "min",
+          "max"
+        ],
+        "title": "RFD3GeometryConstraint"
+      },
+      "RFD3InferenceSampler": {
+        "properties": {
+          "num_timesteps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Timesteps"
+          },
+          "n_recycle": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Recycle"
+          },
+          "step_scale": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Scale"
+          },
+          "noise_scale": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Noise Scale"
+          },
+          "p": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "use_classifier_free_guidance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use Classifier Free Guidance"
+          },
+          "cfg_t_max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cfg T Max"
+          },
+          "cfg_scale": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cfg Scale"
+          },
+          "center_option": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Center Option"
+          },
+          "s_trans": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "S Trans"
+          },
+          "allow_realignment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allow Realignment"
+          },
+          "gamma_0": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gamma 0"
+          },
+          "gamma_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gamma Min"
+          },
+          "s_jitter_origin": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "S Jitter Origin"
+          }
+        },
+        "type": "object",
+        "title": "RFD3InferenceSampler"
+      }
+    }
+  }
+}

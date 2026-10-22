@@ -48,6 +48,35 @@ def test_solublempnn_requires_numeric_string_count_in_distributed_contract(tmp_p
             assert any("num_seq" in error for error in report.errors), count
 
 
+def test_binding_affinity_modes_and_paired_csv_contract(tmp_path):
+    from plugins.boltzmann.contracts import ContractStore
+    from plugins.boltzmann.file_validation import validate_file
+    from sci_cli.science_catalog_view import catalog_rows
+
+    store = ContractStore(ROOT)
+    job = "global_binding_affinity"
+    for payload in ({"smiles": "fixture-smiles", "sequence": "fixture-sequence"},
+                    {"input_csv": "fixture/pairs.csv"}):
+        assert not store.validate_payload(job, payload).errors
+    for payload in ({}, {"smiles": "fixture-smiles"}, {"sequence": "fixture-sequence"},
+                    {"input_csv": ""}, {"smiles": "fixture-smiles", "sequence": ""}):
+        assert store.validate_payload(job, payload).errors
+    assert set(store.file_fields(job)) == {"input_csv"}
+    source = tmp_path / "pairs.csv"
+    rule = store.file_rule(job, "input_csv")
+    for contents, valid in (("SMILES,SEQUENCE\nfixture-smiles,fixture-sequence\n", True),
+                            ("SMILES,SEQUENCES\nfixture-smiles,fixture-sequence\n", False),
+                            ("SMILES,SEQUENCE\nfixture-smiles,\n", False)):
+        source.write_text(contents)
+        report = validate_file(source, rule, {})
+        assert bool(report.errors) is not valid
+        if valid:
+            assert report.warnings  # Shape checks are not scientific validation.
+    rows = catalog_rows(ROOT / "tool-contracts.v1.json", query="Binding Affinity Energy")
+    assert any(row["name"] == store.tool(job)["display_name"]
+               and row["domain"] == "Small Molecule Design" for row in rows)
+
+
 @pytest.mark.parametrize("job", sorted(CATALOG["tools"]))
 def test_every_job_has_one_input_definition_and_accepts_its_documented_shape(job):
     from plugins.boltzmann.contracts import ContractStore
@@ -59,10 +88,14 @@ def test_every_job_has_one_input_definition_and_accepts_its_documented_shape(job
     props = schema["properties"]
     assert "file_fields" not in tool
     assert set(schema.get("required", [])) <= set(props)
-    fixture = shape_fixture(schema)
+    examples = [example["experiment_data"] for example in tool.get("examples", [])
+                if isinstance(example, dict) and "experiment_data" in example]
+    fixture = json.loads(json.dumps(examples[0])) if examples else shape_fixture(schema)
     for name, bound in store.limits.get(job, {}).get("fields", {}).items():
         assert name in props
         assert "required" not in bound and "type" not in bound
+        if examples:
+            continue  # Reviewed multi-field examples preserve their documented relationships.
         if "minimum" in bound:
             fixture[name] = bound["minimum"]
         elif "exclusive_minimum" in bound:
@@ -86,7 +119,7 @@ def test_every_job_has_one_input_definition_and_accepts_its_documented_shape(job
     for name, prop in props.items():
         # The same schema must reject incompatible wire types, not merely accept
         # the generated happy path. No scientific values are inferred here.
-        bad = [] if prop.get("type") == "object" else {}
+        bad = [] if prop.get("type") == "boolean" else True
         assert store.validate_payload(job, dict(fixture, **{name: bad})).errors, (job, name)
         if prop.get("x-numeric-string"):
             assert "string" in prop["type"]
@@ -98,7 +131,9 @@ def test_every_job_has_one_input_definition_and_accepts_its_documented_shape(job
             missing.pop(name, None)
             assert any(name in error for error in store.validate_payload(job, missing).errors)
     for name, prop in store.file_fields(job).items():
-        assert prop["type"] == "string"
+        alternatives = prop.get("oneOf", prop.get("anyOf", [prop]))
+        assert any("string" in (p.get("type") if isinstance(p.get("type"), list)
+                                else [p.get("type")]) for p in alternatives)
         if prop["x-input-kind"] != "artifact":
             assert isinstance(store.file_rule(job, name), dict)
     for field in store.files.get(job, {}).get("files", {}):

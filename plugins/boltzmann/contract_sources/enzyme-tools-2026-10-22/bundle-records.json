@@ -1,0 +1,315 @@
+{
+  "agent_scientist_dev_reference_test_bundle/enzycontrol/enzycontrol_call.json": {
+    "experimentData": {
+      "pdb_path": "REPLACE_WITH_UPLOADED_PATH/1TCA.pdb",
+      "chain_id": "A",
+      "motif_residues": [
+        "105",
+        "187",
+        "224"
+      ],
+      "smiles": "CCCC(=O)Oc1ccc([N+](=O)[O-])cc1",
+      "n_samples": 10,
+      "seed": 123
+    },
+    "job_name": "enzycontrol",
+    "experimentName": "AgentScientist_EnzyControl_CALB_reference"
+  },
+  "agent_scientist_dev_reference_test_bundle/enzycontrol/local_reference_benchmark.json": {
+    "success": true,
+    "elapsed_seconds": 140.974,
+    "cpu_user_seconds": 525.733,
+    "cpu_system_seconds": 11.122,
+    "peak_process_ram_mib": 2969.64,
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "gpu_total_vram_mib": 24120.19,
+    "peak_pytorch_gpu_allocated_mib": 734.75,
+    "peak_pytorch_gpu_reserved_mib": 1054.0,
+    "n_samples": 10,
+    "seed": 123,
+    "production_storage_or_database_used": false,
+    "measurement_notes": "Elapsed time includes runner startup, preflight, NFS asset verification, generation and local result copy; excludes Docker startup and production network upload/database time. RAM is peak for this process only. PyTorch GPU memory does not include all driver/context or other processes' memory."
+  },
+  "agent_scientist_dev_reference_test_bundle/catalytic_geometry/catalytic_geometry_call.json": {
+    "experimentData": {
+      "input_path": "REPLACE_WITH_UPLOADED_PATH/rfd3_20_results.zip",
+      "reaction_template": "REPLACE_WITH_UPLOADED_PATH/rfd3_reaction_template.json",
+      "template_binding": "REPLACE_WITH_UPLOADED_PATH/rfd3_template_binding.json",
+      "mapping_path": "REPLACE_WITH_UPLOADED_PATH/rfd3_mapping_path.csv",
+      "input_source": "rfd3",
+      "execution_mode": "validation"
+    },
+    "job_name": "Catalytic_Geometry",
+    "experimentName": "AgentScientist_CatalyticGeometry_RFD3_20_reference"
+  },
+  "agent_scientist_dev_reference_test_bundle/catalytic_geometry/local_reference_manifest.json": {
+    "tool": "catalytic_geometry",
+    "template_id": "rfd3_1mg5_geometry_preservation",
+    "template_version": "1.0",
+    "reaction_state": "prepared_scaffold_engineering_check",
+    "input_path": "rfd3_20_results.zip",
+    "rules_path": "reaction_rules.json",
+    "mapping_path": "geometry_mapping.csv",
+    "candidate_count": 20,
+    "measurement_count": 40,
+    "counts": {
+      "passed": 20,
+      "rejected": 0,
+      "invalid": 0
+    },
+    "created_at": "2026-10-07T07:45:20.098372+00:00",
+    "interpretation": "Passed means the candidate satisfied the supplied geometric rules. It is not evidence that the enzyme is catalytically active."
+  },
+  "agent_scientist_dev_reference_test_bundle/rfd3/rfd3_call.json": {
+    "experimentData": {
+      "input_path": "REPLACE_WITH_UPLOADED_PATH/RFD3_M0255_1mg5.pdb",
+      "motif_residues": [
+        "A108",
+        "A139",
+        "A152",
+        "A156"
+      ],
+      "ligand": "NAI,ACT",
+      "min_length": 180,
+      "max_length": 200,
+      "n_samples": 1,
+      "seed": 124,
+      "task_name": "rfd3",
+      "advanced_settings_enabled": "true",
+      "advanced_settings": {
+        "contig": "40-45,A108,40-45,A139,40-45,A152,56-61,A156",
+        "select_fixed_atoms": {
+          "A108": "ND2,CG",
+          "A139": "OG,CB,CA",
+          "A152": "OH,CZ",
+          "A156": "NZ,CE,CD",
+          "NAI": "ALL",
+          "ACT": "ALL"
+        },
+        "select_unfixed_sequence": "false",
+        "redesign_motif_sidechains": "false",
+        "plddt_enhanced": "true",
+        "allow_ligand_on_existing_chain": "false",
+        "geometry_constraints": [
+          {
+            "type": "distance",
+            "atoms": [
+              {
+                "residue": "A139",
+                "atom": "OG"
+              },
+              {
+                "ligand": "ACT",
+                "atom": "C"
+              }
+            ],
+            "min": 3.45,
+            "max": 4.0
+          },
+          {
+            "type": "angle",
+            "atoms": [
+              {
+                "residue": "A139",
+                "atom": "OG"
+              },
+              {
+                "ligand": "ACT",
+                "atom": "C"
+              },
+              {
+                "ligand": "ACT",
+                "atom": "O"
+              }
+            ],
+            "min": 163.0,
+            "max": 180.0
+          }
+        ],
+        "diffusion_batch_size": 1,
+        "n_batches": 1,
+        "inference_sampler": {
+          "num_timesteps": 200,
+          "n_recycle": 1,
+          "step_scale": 1.5,
+          "noise_scale": 1.003,
+          "p": 7.0,
+          "kind": "default",
+          "use_classifier_free_guidance": "false",
+          "cfg_scale": 1.5,
+          "center_option": "all",
+          "s_trans": 1.0,
+          "allow_realignment": "false",
+          "gamma_0": 0.6,
+          "gamma_min": 1.0,
+          "s_jitter_origin": 0.0
+        }
+      }
+    },
+    "job_name": "Enzyme_RFD3",
+    "experimentName": "AgentScientist_RFD3_1mg5_reference"
+  },
+  "agent_scientist_dev_reference_test_bundle/rfd3/local_reference_report.json": {
+    "input_measurements": [
+      3.7266645925419417,
+      173.8980722491801
+    ],
+    "production_network_used": false,
+    "geometry_checks": {
+      "round_2_specification_enzyme_0_model_0": [
+        {
+          "rule": 1,
+          "type": "distance",
+          "value": 3.729239408042879,
+          "unit": "angstroms",
+          "min": 3.45,
+          "max": 4.0,
+          "passed": true
+        },
+        {
+          "rule": 2,
+          "type": "angle",
+          "value": 173.34594703168935,
+          "unit": "degrees",
+          "min": 163.0,
+          "max": 180.0,
+          "passed": true
+        }
+      ]
+    },
+    "manifest": {
+      "tool": "rfd3",
+      "foundry_commit": "0932f1cb165ae7d413c11b1a7acc04ee31758817",
+      "checkpoint_sha256": "9b3f85923e0d51e9453e15cdd2f8c666e7ce096a60577f57d11bbc54ae6d67c1",
+      "seed": 124,
+      "requested_samples": 1,
+      "returned_samples": 1,
+      "generation_attempts": [
+        {
+          "round": 1,
+          "seed": 124,
+          "requested": 1,
+          "accepted": [],
+          "rejected": [
+            {
+              "file": "specification_enzyme_0_model_0.cif.gz",
+              "reason": "specification_enzyme_0_model_0: generation finished, but the structure failed quality checks: 1 backbone break(s) (n_chainbreaks=1). Required count: 0. Seed used: 124. Try another seed or review the input motif constraints; a new sample is not guaranteed to pass. No output will be uploaded"
+            }
+          ],
+          "batch_size": 1
+        },
+        {
+          "round": 2,
+          "seed": 125,
+          "requested": 1,
+          "accepted": [
+            "round_2_specification_enzyme_0_model_0"
+          ],
+          "rejected": [],
+          "batch_size": 1
+        }
+      ],
+      "generation_budget_seconds": 5400,
+      "retry_policy": "Up to three rounds; passing samples retained; replacement rounds run sequentially. Only explicit quality rejections are retried. No incomplete uploads.",
+      "advanced_settings": {
+        "contig": "40-45,A108,40-45,A139,40-45,A152,56-61,A156",
+        "select_fixed_atoms": {
+          "A108": "ND2,CG",
+          "A139": "OG,CB,CA",
+          "A152": "OH,CZ",
+          "A156": "NZ,CE,CD",
+          "NAI": "ALL",
+          "ACT": "ALL"
+        },
+        "select_unfixed_sequence": false,
+        "redesign_motif_sidechains": false,
+        "plddt_enhanced": true,
+        "allow_ligand_on_existing_chain": false,
+        "geometry_constraints": [
+          {
+            "type": "distance",
+            "atoms": [
+              {
+                "residue": "A139",
+                "atom": "OG"
+              },
+              {
+                "ligand": "ACT",
+                "atom": "C"
+              }
+            ],
+            "min": 3.45,
+            "max": 4.0
+          },
+          {
+            "type": "angle",
+            "atoms": [
+              {
+                "residue": "A139",
+                "atom": "OG"
+              },
+              {
+                "ligand": "ACT",
+                "atom": "C"
+              },
+              {
+                "ligand": "ACT",
+                "atom": "O"
+              }
+            ],
+            "min": 163.0,
+            "max": 180.0
+          }
+        ],
+        "diffusion_batch_size": 1,
+        "n_batches": 1,
+        "inference_sampler": {
+          "num_timesteps": 200,
+          "step_scale": 1.5,
+          "noise_scale": 1.003,
+          "p": 7.0,
+          "kind": "default",
+          "use_classifier_free_guidance": false,
+          "cfg_scale": 1.5,
+          "center_option": "all",
+          "s_trans": 1.0,
+          "allow_realignment": false,
+          "gamma_0": 0.6,
+          "gamma_min": 1.0,
+          "s_jitter_origin": 0.0
+        }
+      },
+      "geometry_rule_count": 2,
+      "geometry_policy": "post_generation_validation_only; no custom sampling guidance",
+      "backbone_policy": "Coordinate-based N-CA, CA-C and adjacent same-chain C-N bonds screened at 0.9-1.9 A; fixed motif identities checked against native input selections",
+      "ligand_chemistry": {
+        "round_2_specification_enzyme_0_model_0": {
+          "NAI": {
+            "max_bond_length_difference_angstrom": 0.014479032835136962,
+            "max_bond_angle_difference_degrees": 1.314790416589119,
+            "ccd_formal_charge": 0
+          },
+          "ACT": {
+            "max_bond_length_difference_angstrom": 0.01493019233436077,
+            "max_bond_angle_difference_degrees": 1.0666735035803185,
+            "ccd_formal_charge": -1
+          }
+        }
+      },
+      "ligand_policy": "Complete disconnected CCD ligands only; CCD formal charges, no pH inference. Input bond/angle deviations <=0.25 A/30 degrees from CCD; output <=0.20 A/20 degrees from input. Distortion screening, not energy or catalytic validation.",
+      "claim": "Computational scaffold designs; catalytic activity is not established"
+    },
+    "success": true,
+    "archive": "/tmp/rfd3-bybxx0fz/results.zip",
+    "impossible_geometry_control": {
+      "rejected": true,
+      "message": "specification_enzyme_0_model_0: geometry rule 1 measured 3.729 angstroms; expected 0.1–0.2. No output will be uploaded"
+    },
+    "seconds": 181.019,
+    "events": [
+      "running",
+      "completed"
+    ],
+    "upload_count": 1
+  }
+}

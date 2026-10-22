@@ -271,6 +271,27 @@
         }
       }
     },
+    "global_binding_affinity": {
+      "source": "boltchem-product-guide.md#binding-affinity-energy",
+      "files": {
+        "input_csv": {
+          "formats": [
+            "csv"
+          ],
+          "columns": [
+            "SMILES",
+            "SEQUENCE"
+          ],
+          "values": {
+            "SMILES": "smiles",
+            "SEQUENCE": "protein"
+          },
+          "header_case_sensitive": true,
+          "coverage": "partial",
+          "notes": "Headers are from the owner-supplied product documentation. Preserve one intended compound–protein pair per row. Accepted header aliases and extra-column behavior are not established; generic parsing is not scientific or backend validation."
+        }
+      }
+    },
     "global_ic50": {
       "source": "modules/small-molecule-qspr.md",
       "files": {
@@ -1443,6 +1464,1716 @@
           ],
           "header_case_sensitive": true,
           "notes": "Upload the target CIF structure."
+        }
+      }
+    },
+    "deepallo": {
+      "source": "DeepAllo/deepallo_validation.py; live EnzymeDeepalloUserInput",
+      "files": {
+        "input_path": {
+          "formats": [
+            "pdb"
+          ],
+          "content_format": "pdb",
+          "notes": "Exactly one model; requested case-sensitive chain must exist; >10 standard amino-acid residues with CA. No ambiguous alternate locations.",
+          "values_by_field": {
+            "chain_id": {},
+            "motif_residues": {}
+          },
+          "coverage": "partial"
+        }
+      }
+    },
+    "enzycontrol": {
+      "source": "EnzyControl/platform_app/validation.py; live EnzymeBackBoneGenUserInput",
+      "files": {
+        "pdb_path": {
+          "formats": [
+            "pdb"
+          ],
+          "content_format": "pdb",
+          "notes": "Exactly one model; selected chain 2-2000 standard residues, finite N/CA/C coordinates; motif labels present and at least one non-motif residue.",
+          "values_by_field": {
+            "chain_id": {},
+            "motif_residues": {}
+          },
+          "coverage": "partial"
+        }
+      }
+    },
+    "Catalytic_Geometry": {
+      "source": "CatalyticGeometry/geometry_validation.py and user_examples/README.md; live CatalyticGeometryUserInput",
+      "files": {
+        "input_path": {
+          "formats": [
+            "pdb",
+            "cif",
+            "mmcif",
+            "pdb.gz",
+            "cif.gz",
+            "mmcif.gz",
+            "zip"
+          ],
+          "content_format": "protein_structure_or_bundle",
+          "notes": "Prepared PDB/CIF/mmCIF or ZIP. Candidate labels, atom names, and structure numbering must match template/binding/mapping.",
+          "coverage": "partial"
+        },
+        "reaction_template": {
+          "formats": [
+            "json"
+          ],
+          "content_format": "utf8_json_object",
+          "max_bytes": 1048576,
+          "notes": "Live FastAPI accepts a relative .json storage path, not an inline object. Full template fields/check types are in modules/catalytic-geometry-template.md; no universal reaction geometry values.",
+          "json_schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://local.invalid/catalytic-geometry-reaction-template-upload.schema.json",
+            "title": "Catalytic Geometry uploaded runtime reaction template",
+            "description": "Agent-created file shape. Worker overwrites template_id, version, status. Cross-field min<=max, distinct atoms/check IDs and actual structure/evidence are checked by worker, not this schema.",
+            "type": "object",
+            "properties": {
+              "reaction_state": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048
+                },
+                "minItems": 1,
+                "maxItems": 100
+              },
+              "checks": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "check_id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                        },
+                        "type": {
+                          "const": "distance"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024
+                        },
+                        "rationale": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4096
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "minItems": 1,
+                          "maxItems": 20
+                        },
+                        "evidence_level": {
+                          "type": "string",
+                          "enum": [
+                            "direct_experimental",
+                            "mechanistic_review",
+                            "homolog_transfer",
+                            "user_defined"
+                          ]
+                        },
+                        "atoms": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "entity_type": {
+                                "type": "string",
+                                "enum": [
+                                  "residue",
+                                  "ligand",
+                                  "metal",
+                                  "water",
+                                  "cofactor"
+                                ]
+                              },
+                              "chain_id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 32
+                              },
+                              "residue_number": {
+                                "type": "integer",
+                                "minimum": -999999,
+                                "maximum": 999999
+                              },
+                              "atom_name": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9'\\\"*+\\-]{1,8}$"
+                              },
+                              "insertion_code": {
+                                "type": "string",
+                                "maxLength": 1
+                              },
+                              "component_id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9]{1,8}$"
+                              },
+                              "altloc": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1
+                              },
+                              "mapping_key": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                              }
+                            },
+                            "required": [
+                              "entity_type",
+                              "chain_id",
+                              "residue_number",
+                              "atom_name"
+                            ],
+                            "additionalProperties": false,
+                            "if": {
+                              "properties": {
+                                "entity_type": {
+                                  "enum": [
+                                    "ligand",
+                                    "metal",
+                                    "water",
+                                    "cofactor"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "entity_type"
+                              ]
+                            },
+                            "then": {
+                              "required": [
+                                "component_id"
+                              ]
+                            }
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        },
+                        "min": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "max": {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "check_id",
+                        "type",
+                        "rationale",
+                        "sources",
+                        "evidence_level",
+                        "atoms",
+                        "min",
+                        "max"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "check_id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                        },
+                        "type": {
+                          "const": "angle"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024
+                        },
+                        "rationale": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4096
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "minItems": 1,
+                          "maxItems": 20
+                        },
+                        "evidence_level": {
+                          "type": "string",
+                          "enum": [
+                            "direct_experimental",
+                            "mechanistic_review",
+                            "homolog_transfer",
+                            "user_defined"
+                          ]
+                        },
+                        "atoms": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "entity_type": {
+                                "type": "string",
+                                "enum": [
+                                  "residue",
+                                  "ligand",
+                                  "metal",
+                                  "water",
+                                  "cofactor"
+                                ]
+                              },
+                              "chain_id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 32
+                              },
+                              "residue_number": {
+                                "type": "integer",
+                                "minimum": -999999,
+                                "maximum": 999999
+                              },
+                              "atom_name": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9'\\\"*+\\-]{1,8}$"
+                              },
+                              "insertion_code": {
+                                "type": "string",
+                                "maxLength": 1
+                              },
+                              "component_id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9]{1,8}$"
+                              },
+                              "altloc": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1
+                              },
+                              "mapping_key": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                              }
+                            },
+                            "required": [
+                              "entity_type",
+                              "chain_id",
+                              "residue_number",
+                              "atom_name"
+                            ],
+                            "additionalProperties": false,
+                            "if": {
+                              "properties": {
+                                "entity_type": {
+                                  "enum": [
+                                    "ligand",
+                                    "metal",
+                                    "water",
+                                    "cofactor"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "entity_type"
+                              ]
+                            },
+                            "then": {
+                              "required": [
+                                "component_id"
+                              ]
+                            }
+                          },
+                          "minItems": 3,
+                          "maxItems": 3
+                        },
+                        "min": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 180
+                        },
+                        "max": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 180
+                        }
+                      },
+                      "required": [
+                        "check_id",
+                        "type",
+                        "rationale",
+                        "sources",
+                        "evidence_level",
+                        "atoms",
+                        "min",
+                        "max"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "check_id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                        },
+                        "type": {
+                          "const": "burgi_dunitz_angle"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024
+                        },
+                        "rationale": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4096
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "minItems": 1,
+                          "maxItems": 20
+                        },
+                        "evidence_level": {
+                          "type": "string",
+                          "enum": [
+                            "direct_experimental",
+                            "mechanistic_review",
+                            "homolog_transfer",
+                            "user_defined"
+                          ]
+                        },
+                        "atoms": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "entity_type": {
+                                "type": "string",
+                                "enum": [
+                                  "residue",
+                                  "ligand",
+                                  "metal",
+                                  "water",
+                                  "cofactor"
+                                ]
+                              },
+                              "chain_id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 32
+                              },
+                              "residue_number": {
+                                "type": "integer",
+                                "minimum": -999999,
+                                "maximum": 999999
+                              },
+                              "atom_name": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9'\\\"*+\\-]{1,8}$"
+                              },
+                              "insertion_code": {
+                                "type": "string",
+                                "maxLength": 1
+                              },
+                              "component_id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9]{1,8}$"
+                              },
+                              "altloc": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1
+                              },
+                              "mapping_key": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                              }
+                            },
+                            "required": [
+                              "entity_type",
+                              "chain_id",
+                              "residue_number",
+                              "atom_name"
+                            ],
+                            "additionalProperties": false,
+                            "if": {
+                              "properties": {
+                                "entity_type": {
+                                  "enum": [
+                                    "ligand",
+                                    "metal",
+                                    "water",
+                                    "cofactor"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "entity_type"
+                              ]
+                            },
+                            "then": {
+                              "required": [
+                                "component_id"
+                              ]
+                            }
+                          },
+                          "minItems": 3,
+                          "maxItems": 3
+                        },
+                        "min": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 180
+                        },
+                        "max": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 180
+                        }
+                      },
+                      "required": [
+                        "check_id",
+                        "type",
+                        "rationale",
+                        "sources",
+                        "evidence_level",
+                        "atoms",
+                        "min",
+                        "max"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "check_id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                        },
+                        "type": {
+                          "const": "dihedral"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024
+                        },
+                        "rationale": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4096
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "minItems": 1,
+                          "maxItems": 20
+                        },
+                        "evidence_level": {
+                          "type": "string",
+                          "enum": [
+                            "direct_experimental",
+                            "mechanistic_review",
+                            "homolog_transfer",
+                            "user_defined"
+                          ]
+                        },
+                        "atoms": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "entity_type": {
+                                "type": "string",
+                                "enum": [
+                                  "residue",
+                                  "ligand",
+                                  "metal",
+                                  "water",
+                                  "cofactor"
+                                ]
+                              },
+                              "chain_id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 32
+                              },
+                              "residue_number": {
+                                "type": "integer",
+                                "minimum": -999999,
+                                "maximum": 999999
+                              },
+                              "atom_name": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9'\\\"*+\\-]{1,8}$"
+                              },
+                              "insertion_code": {
+                                "type": "string",
+                                "maxLength": 1
+                              },
+                              "component_id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9]{1,8}$"
+                              },
+                              "altloc": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1
+                              },
+                              "mapping_key": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                              }
+                            },
+                            "required": [
+                              "entity_type",
+                              "chain_id",
+                              "residue_number",
+                              "atom_name"
+                            ],
+                            "additionalProperties": false,
+                            "if": {
+                              "properties": {
+                                "entity_type": {
+                                  "enum": [
+                                    "ligand",
+                                    "metal",
+                                    "water",
+                                    "cofactor"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "entity_type"
+                              ]
+                            },
+                            "then": {
+                              "required": [
+                                "component_id"
+                              ]
+                            }
+                          },
+                          "minItems": 4,
+                          "maxItems": 4
+                        },
+                        "min": {
+                          "type": "number",
+                          "minimum": -180,
+                          "maximum": 180
+                        },
+                        "max": {
+                          "type": "number",
+                          "minimum": -180,
+                          "maximum": 180
+                        }
+                      },
+                      "required": [
+                        "check_id",
+                        "type",
+                        "rationale",
+                        "sources",
+                        "evidence_level",
+                        "atoms",
+                        "min",
+                        "max"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "check_id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                        },
+                        "type": {
+                          "const": "metal_coordination"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024
+                        },
+                        "rationale": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4096
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "minItems": 1,
+                          "maxItems": 20
+                        },
+                        "evidence_level": {
+                          "type": "string",
+                          "enum": [
+                            "direct_experimental",
+                            "mechanistic_review",
+                            "homolog_transfer",
+                            "user_defined"
+                          ]
+                        },
+                        "atoms": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "entity_type": {
+                                "type": "string",
+                                "enum": [
+                                  "residue",
+                                  "ligand",
+                                  "metal",
+                                  "water",
+                                  "cofactor"
+                                ]
+                              },
+                              "chain_id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 32
+                              },
+                              "residue_number": {
+                                "type": "integer",
+                                "minimum": -999999,
+                                "maximum": 999999
+                              },
+                              "atom_name": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9'\\\"*+\\-]{1,8}$"
+                              },
+                              "insertion_code": {
+                                "type": "string",
+                                "maxLength": 1
+                              },
+                              "component_id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9]{1,8}$"
+                              },
+                              "altloc": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1
+                              },
+                              "mapping_key": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                              }
+                            },
+                            "required": [
+                              "entity_type",
+                              "chain_id",
+                              "residue_number",
+                              "atom_name"
+                            ],
+                            "additionalProperties": false,
+                            "if": {
+                              "properties": {
+                                "entity_type": {
+                                  "enum": [
+                                    "ligand",
+                                    "metal",
+                                    "water",
+                                    "cofactor"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "entity_type"
+                              ]
+                            },
+                            "then": {
+                              "required": [
+                                "component_id"
+                              ]
+                            }
+                          },
+                          "minItems": 2,
+                          "maxItems": 17
+                        },
+                        "min": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "max": {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "check_id",
+                        "type",
+                        "rationale",
+                        "sources",
+                        "evidence_level",
+                        "atoms",
+                        "min",
+                        "max"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "check_id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                        },
+                        "type": {
+                          "const": "hydrogen_bond"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024
+                        },
+                        "rationale": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4096
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "minItems": 1,
+                          "maxItems": 20
+                        },
+                        "evidence_level": {
+                          "type": "string",
+                          "enum": [
+                            "direct_experimental",
+                            "mechanistic_review",
+                            "homolog_transfer",
+                            "user_defined"
+                          ]
+                        },
+                        "atoms": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "entity_type": {
+                                "type": "string",
+                                "enum": [
+                                  "residue",
+                                  "ligand",
+                                  "metal",
+                                  "water",
+                                  "cofactor"
+                                ]
+                              },
+                              "chain_id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 32
+                              },
+                              "residue_number": {
+                                "type": "integer",
+                                "minimum": -999999,
+                                "maximum": 999999
+                              },
+                              "atom_name": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9'\\\"*+\\-]{1,8}$"
+                              },
+                              "insertion_code": {
+                                "type": "string",
+                                "maxLength": 1
+                              },
+                              "component_id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9]{1,8}$"
+                              },
+                              "altloc": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1
+                              },
+                              "mapping_key": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                              }
+                            },
+                            "required": [
+                              "entity_type",
+                              "chain_id",
+                              "residue_number",
+                              "atom_name"
+                            ],
+                            "additionalProperties": false,
+                            "if": {
+                              "properties": {
+                                "entity_type": {
+                                  "enum": [
+                                    "ligand",
+                                    "metal",
+                                    "water",
+                                    "cofactor"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "entity_type"
+                              ]
+                            },
+                            "then": {
+                              "required": [
+                                "component_id"
+                              ]
+                            }
+                          },
+                          "minItems": 2,
+                          "maxItems": 3
+                        },
+                        "distance_min": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "distance_max": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "angle_min": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 180
+                        },
+                        "angle_max": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 180
+                        }
+                      },
+                      "required": [
+                        "check_id",
+                        "type",
+                        "rationale",
+                        "sources",
+                        "evidence_level",
+                        "atoms",
+                        "distance_min",
+                        "distance_max"
+                      ],
+                      "additionalProperties": false,
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "atoms": {
+                                "minItems": 3
+                              }
+                            },
+                            "required": [
+                              "atoms"
+                            ]
+                          },
+                          "then": {
+                            "required": [
+                              "angle_min",
+                              "angle_max"
+                            ]
+                          },
+                          "else": {
+                            "not": {
+                              "anyOf": [
+                                {
+                                  "required": [
+                                    "angle_min"
+                                  ]
+                                },
+                                {
+                                  "required": [
+                                    "angle_max"
+                                  ]
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "check_id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                        },
+                        "type": {
+                          "const": "plane_orientation"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024
+                        },
+                        "rationale": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4096
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "minItems": 1,
+                          "maxItems": 20
+                        },
+                        "evidence_level": {
+                          "type": "string",
+                          "enum": [
+                            "direct_experimental",
+                            "mechanistic_review",
+                            "homolog_transfer",
+                            "user_defined"
+                          ]
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "entity_type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "residue",
+                                    "ligand",
+                                    "metal",
+                                    "water",
+                                    "cofactor"
+                                  ]
+                                },
+                                "chain_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 32
+                                },
+                                "residue_number": {
+                                  "type": "integer",
+                                  "minimum": -999999,
+                                  "maximum": 999999
+                                },
+                                "atom_name": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9'\\\"*+\\-]{1,8}$"
+                                },
+                                "insertion_code": {
+                                  "type": "string",
+                                  "maxLength": 1
+                                },
+                                "component_id": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9]{1,8}$"
+                                },
+                                "altloc": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 1
+                                },
+                                "mapping_key": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                                }
+                              },
+                              "required": [
+                                "entity_type",
+                                "chain_id",
+                                "residue_number",
+                                "atom_name"
+                              ],
+                              "additionalProperties": false,
+                              "if": {
+                                "properties": {
+                                  "entity_type": {
+                                    "enum": [
+                                      "ligand",
+                                      "metal",
+                                      "water",
+                                      "cofactor"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "entity_type"
+                                ]
+                              },
+                              "then": {
+                                "required": [
+                                  "component_id"
+                                ]
+                              }
+                            },
+                            "minItems": 3
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        },
+                        "min": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 90
+                        },
+                        "max": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 90
+                        }
+                      },
+                      "required": [
+                        "check_id",
+                        "type",
+                        "rationale",
+                        "sources",
+                        "evidence_level",
+                        "groups",
+                        "min",
+                        "max"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "check_id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                        },
+                        "type": {
+                          "const": "coordination_number"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024
+                        },
+                        "rationale": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4096
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "minItems": 1,
+                          "maxItems": 20
+                        },
+                        "evidence_level": {
+                          "type": "string",
+                          "enum": [
+                            "direct_experimental",
+                            "mechanistic_review",
+                            "homolog_transfer",
+                            "user_defined"
+                          ]
+                        },
+                        "atoms": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "entity_type": {
+                                "type": "string",
+                                "enum": [
+                                  "residue",
+                                  "ligand",
+                                  "metal",
+                                  "water",
+                                  "cofactor"
+                                ]
+                              },
+                              "chain_id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 32
+                              },
+                              "residue_number": {
+                                "type": "integer",
+                                "minimum": -999999,
+                                "maximum": 999999
+                              },
+                              "atom_name": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9'\\\"*+\\-]{1,8}$"
+                              },
+                              "insertion_code": {
+                                "type": "string",
+                                "maxLength": 1
+                              },
+                              "component_id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9]{1,8}$"
+                              },
+                              "altloc": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1
+                              },
+                              "mapping_key": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                              }
+                            },
+                            "required": [
+                              "entity_type",
+                              "chain_id",
+                              "residue_number",
+                              "atom_name"
+                            ],
+                            "additionalProperties": false,
+                            "if": {
+                              "properties": {
+                                "entity_type": {
+                                  "enum": [
+                                    "ligand",
+                                    "metal",
+                                    "water",
+                                    "cofactor"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "entity_type"
+                              ]
+                            },
+                            "then": {
+                              "required": [
+                                "component_id"
+                              ]
+                            }
+                          },
+                          "minItems": 2
+                        },
+                        "cutoff": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "min": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "max": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "check_id",
+                        "type",
+                        "rationale",
+                        "sources",
+                        "evidence_level",
+                        "atoms",
+                        "cutoff",
+                        "min",
+                        "max"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "check_id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                        },
+                        "type": {
+                          "const": "centroid_distance"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024
+                        },
+                        "rationale": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4096
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "minItems": 1,
+                          "maxItems": 20
+                        },
+                        "evidence_level": {
+                          "type": "string",
+                          "enum": [
+                            "direct_experimental",
+                            "mechanistic_review",
+                            "homolog_transfer",
+                            "user_defined"
+                          ]
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "entity_type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "residue",
+                                    "ligand",
+                                    "metal",
+                                    "water",
+                                    "cofactor"
+                                  ]
+                                },
+                                "chain_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 32
+                                },
+                                "residue_number": {
+                                  "type": "integer",
+                                  "minimum": -999999,
+                                  "maximum": 999999
+                                },
+                                "atom_name": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9'\\\"*+\\-]{1,8}$"
+                                },
+                                "insertion_code": {
+                                  "type": "string",
+                                  "maxLength": 1
+                                },
+                                "component_id": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9]{1,8}$"
+                                },
+                                "altloc": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 1
+                                },
+                                "mapping_key": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                                }
+                              },
+                              "required": [
+                                "entity_type",
+                                "chain_id",
+                                "residue_number",
+                                "atom_name"
+                              ],
+                              "additionalProperties": false,
+                              "if": {
+                                "properties": {
+                                  "entity_type": {
+                                    "enum": [
+                                      "ligand",
+                                      "metal",
+                                      "water",
+                                      "cofactor"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "entity_type"
+                                ]
+                              },
+                              "then": {
+                                "required": [
+                                  "component_id"
+                                ]
+                              }
+                            },
+                            "minItems": 1
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        },
+                        "min": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "max": {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "check_id",
+                        "type",
+                        "rationale",
+                        "sources",
+                        "evidence_level",
+                        "groups",
+                        "min",
+                        "max"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "check_id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                        },
+                        "type": {
+                          "const": "ensemble_occupancy"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024
+                        },
+                        "rationale": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4096
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "minItems": 1,
+                          "maxItems": 20
+                        },
+                        "evidence_level": {
+                          "type": "string",
+                          "enum": [
+                            "direct_experimental",
+                            "mechanistic_review",
+                            "homolog_transfer",
+                            "user_defined"
+                          ]
+                        },
+                        "predicate": {
+                          "type": "object",
+                          "description": "Nested supported check excluding ensemble_occupancy; see runtime validation for type-specific fields."
+                        },
+                        "min": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        "max": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      },
+                      "required": [
+                        "check_id",
+                        "type",
+                        "rationale",
+                        "sources",
+                        "evidence_level",
+                        "predicate",
+                        "min",
+                        "max"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 1000
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              }
+            },
+            "required": [
+              "reaction_state",
+              "sources",
+              "checks"
+            ],
+            "additionalProperties": false
+          },
+          "content_checks": "catalytic_geometry",
+          "coverage": "partial"
+        },
+        "template_binding": {
+          "formats": [
+            "json"
+          ],
+          "content_format": "utf8_json_object",
+          "max_bytes": 1048576,
+          "notes": "Live FastAPI currently requires this path. JSON must contain exactly mapping_keys with 1-1000 role mappings; each role targets an upstream key or chain/residue location. Do not invent dummy mappings.",
+          "json_schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Catalytic Geometry uploaded template binding",
+            "description": "Live FastAPI currently requires a path to this file. Do not invent a binding when no real role mapping is needed.",
+            "type": "object",
+            "properties": {
+              "mapping_keys": {
+                "type": "object",
+                "minProperties": 1,
+                "maxProperties": 1000,
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                },
+                "additionalProperties": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "chain_id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 32
+                        },
+                        "residue_number": {
+                          "type": "integer",
+                          "minimum": -999999,
+                          "maximum": 999999
+                        },
+                        "insertion_code": {
+                          "type": "string",
+                          "maxLength": 1
+                        }
+                      },
+                      "required": [
+                        "chain_id",
+                        "residue_number"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            },
+            "required": [
+              "mapping_keys"
+            ],
+            "additionalProperties": false
+          },
+          "coverage": "partial"
+        },
+        "mapping_path": {
+          "formats": [
+            "json"
+          ],
+          "content_format": "candidate_residue_mapping",
+          "notes": "Optional. CSV required columns candidate_id,mapping_key,chain_id,residue_number; insertion_code optional. JSON keyed by candidate ID then mapping key to location. Candidate ID matches structure basename. Node route requires JSON; CSV was explicitly rejected in live testing.",
+          "json_schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Catalytic Geometry candidate mapping JSON",
+            "description": "Candidate IDs must match input structure filename stems. Runtime additionally checks duplicate keys, actual structure references and role resolution.",
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "minLength": 1
+            },
+            "additionalProperties": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "minLength": 1
+              },
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "chain_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "residue_number": {
+                    "type": "integer"
+                  },
+                  "insertion_code": {
+                    "type": "string",
+                    "maxLength": 1
+                  }
+                },
+                "required": [
+                  "chain_id",
+                  "residue_number"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "coverage": "partial"
+        }
+      }
+    },
+    "Mol_Probity": {
+      "source": "MolProbity/mol_probity_validation.py; live MolProbityUserInput",
+      "files": {
+        "input_path": {
+          "formats": [
+            "pdb",
+            "cif",
+            "mmcif",
+            "pdb.gz",
+            "cif.gz",
+            "mmcif.gz",
+            "zip"
+          ],
+          "content_format": "protein_structure_or_bundle",
+          "notes": "One structure or ZIP of structures.",
+          "coverage": "partial"
+        },
+        "quality_thresholds": {
+          "formats": [
+            "json"
+          ],
+          "content_format": "utf8_json_object",
+          "max_bytes": 1048576,
+          "notes": "Only in validation mode; nonempty object with supported threshold names. Inline object also accepted by live FastAPI.",
+          "json_schema": {
+            "type": "object",
+            "properties": {
+              "max_clashscore": {
+                "type": "number",
+                "description": "Validation threshold; omit if not selected.",
+                "x-input-kind": "value",
+                "minimum": 0
+              },
+              "max_ramachandran_outlier_percent": {
+                "type": "number",
+                "description": "Validation threshold; omit if not selected.",
+                "x-input-kind": "value",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "min_ramachandran_favored_percent": {
+                "type": "number",
+                "description": "Validation threshold; omit if not selected.",
+                "x-input-kind": "value",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "max_rotamer_outlier_percent": {
+                "type": "number",
+                "description": "Validation threshold; omit if not selected.",
+                "x-input-kind": "value",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "max_cbeta_outliers": {
+                "type": "integer",
+                "description": "Validation threshold; omit if not selected.",
+                "x-input-kind": "value",
+                "minimum": 0
+              },
+              "max_cablam_outlier_percent": {
+                "type": "number",
+                "description": "Validation threshold; omit if not selected.",
+                "x-input-kind": "value",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "max_cablam_disfavored_percent": {
+                "type": "number",
+                "description": "Validation threshold; omit if not selected.",
+                "x-input-kind": "value",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "max_bond_outliers": {
+                "type": "integer",
+                "description": "Validation threshold; omit if not selected.",
+                "x-input-kind": "value",
+                "minimum": 0
+              },
+              "max_angle_outliers": {
+                "type": "integer",
+                "description": "Validation threshold; omit if not selected.",
+                "x-input-kind": "value",
+                "minimum": 0
+              },
+              "max_cis_nonproline": {
+                "type": "integer",
+                "description": "Validation threshold; omit if not selected.",
+                "x-input-kind": "value",
+                "minimum": 0
+              },
+              "max_twisted_peptides": {
+                "type": "integer",
+                "description": "Validation threshold; omit if not selected.",
+                "x-input-kind": "value",
+                "minimum": 0
+              }
+            },
+            "minProperties": 1,
+            "additionalProperties": false
+          },
+          "coverage": "partial"
+        }
+      }
+    },
+    "Enzyme_RFD3": {
+      "source": "RFD3/rfd3_validation.py; live RFD3EnzymeUserInput",
+      "files": {
+        "input_path": {
+          "formats": [
+            "pdb",
+            "cif"
+          ],
+          "content_format": "enzyme_structure",
+          "notes": "Relative storage path. Selected motif residues and ligand component codes must occur in the input; atom labels are case-sensitive. ZIP not accepted by this input.",
+          "coverage": "partial"
         }
       }
     }

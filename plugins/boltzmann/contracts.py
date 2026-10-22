@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 import json
 import math
 import operator
+import re
 from pathlib import Path
 
 
@@ -31,6 +32,30 @@ _BOUNDS = {"minimum": operator.ge, "maximum": operator.le,
 
 
 def validate_schema(value, schema, report, path="payload"):
+    for keyword in ("allOf", "oneOf"):
+        if keyword in schema:
+            branches = []
+            for alternative in schema[keyword]:
+                candidate = ValidationReport()
+                validate_schema(value, alternative, candidate, path)
+                branches.append(candidate)
+            if keyword == "allOf":
+                for candidate in branches:
+                    report.errors.extend(candidate.errors)
+                    report.warnings.extend(candidate.warnings)
+            elif sum(not candidate.errors for candidate in branches) != 1:
+                report.errors.append(f"{path}: must match exactly one documented input mode.")
+    if "if" in schema:
+        condition = ValidationReport()
+        validate_schema(value, schema["if"], condition, path)
+        validate_schema(value, schema.get("then" if not condition.errors else "else", {}), report, path)
+    if "not" in schema:
+        forbidden = ValidationReport()
+        validate_schema(value, schema["not"], forbidden, path)
+        if not forbidden.errors:
+            report.errors.append(f"{path}: contains a combination forbidden in this input mode.")
+    if "const" in schema and (value != schema["const"] or type(value) is not type(schema["const"])):
+        report.errors.append(f"{path}: does not match the documented constant.")
     if "anyOf" in schema:
         branches = []
         for alternative in schema["anyOf"]:
@@ -47,6 +72,12 @@ def validate_schema(value, schema, report, path="payload"):
     if "enum" in schema and value not in schema["enum"]:
         report.errors.append(f"{path}: value is outside the documented choices.")
     if isinstance(value, dict):
+        for bound, compare in (("minProperties", operator.ge), ("maxProperties", operator.le)):
+            if bound in schema and not compare(len(value), schema[bound]):
+                report.errors.append(f"{path}: violates {bound} {schema[bound]}.")
+        for name in value:
+            if "propertyNames" in schema:
+                validate_schema(name, schema["propertyNames"], report, f"{path} key")
         for condition in schema.get("x-required-if", []):
             if all(name in value and value[name] == expected for name, expected in condition["when"].items()):
                 for name in condition["required"]:
@@ -72,6 +103,10 @@ def validate_schema(value, schema, report, path="payload"):
     if isinstance(value, list):
         if len(value) < schema.get("minItems", 0):
             report.errors.append(f"{path}: too few items.")
+        if "maxItems" in schema and len(value) > schema["maxItems"]:
+            report.errors.append(f"{path}: too many items.")
+        if schema.get("uniqueItems") and len({json.dumps(item, sort_keys=True) for item in value}) != len(value):
+            report.errors.append(f"{path}: duplicate items are not allowed.")
         if value and "items" not in schema and schema.get("type") == "array":
             report.warnings.append(f"{path}: item structure is not documented; confirm supplied values before submission.")
         for index, item in enumerate(value):
@@ -81,6 +116,12 @@ def validate_schema(value, schema, report, path="payload"):
         for bound, check in _BOUNDS.items():
             if bound in schema and not check(value, schema[bound]):
                 report.errors.append(f"{path}: violates documented {bound} {schema[bound]}.")
+    if isinstance(value, str):
+        for bound, compare in (("minLength", operator.ge), ("maxLength", operator.le)):
+            if bound in schema and not compare(len(value), schema[bound]):
+                report.errors.append(f"{path}: violates {bound} {schema[bound]}.")
+        if "pattern" in schema and re.search(schema["pattern"], value) is None:
+            report.errors.append(f"{path}: does not match the documented format.")
     if isinstance(value, str) and schema.get("x-numeric-string"):
         if value == "" and schema.get("x-allow-empty"):
             return
@@ -179,4 +220,7 @@ class ContractStore:
         for group in limits.get("combined_items", []):
             if sum(len(payload.get(key, [])) for key in group["fields"] if isinstance(payload.get(key), list)) > group["maximum"]:
                 report.errors.append("Combined item count exceeds the documented maximum.")
+        if not report.errors and tool.get("request_checks"):
+            from .enzyme_validation import validate_request
+            validate_request(tool["request_checks"], payload, report)
         return report

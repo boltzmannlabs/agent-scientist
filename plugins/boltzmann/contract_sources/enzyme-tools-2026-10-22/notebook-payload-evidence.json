@@ -1,0 +1,74 @@
+{
+  "scope": "Scientific payloads only from five reviewed notebook cells; no credentials or outputs. Historical examples, not validated canonical defaults.",
+  "notebook_sha256": "29d198045e257a1a0e7e6b6c831f8ff04ec24d2cd8a74a3e969369b984bbe027",
+  "notes": [
+    "Notebook RFD3 uses string True; the supplied reviewed runtime contract requires lowercase true/false. Canonical examples use lowercase; no claim of uppercase acceptance.",
+    "Seed/sample-count differences are example choices, not revised bounds or defaults.",
+    "Original account-scoped upload references were replaced with placeholders."
+  ],
+  "examples": [
+    {
+      "experimentData": {
+        "input_path": "REPLACE_WITH_UPLOADED_PATH/theozyme.pdb",
+        "motif_residues": [
+          "A108",
+          "A139",
+          "A152",
+          "A156"
+        ],
+        "ligand": "NAI,ACT",
+        "min_length": 180,
+        "max_length": 200,
+        "n_samples": 1,
+        "seed": 145,
+        "task_name": "rfd3",
+        "advanced_settings_enabled": "True"
+      },
+      "job_name": "Enzyme_RFD3",
+      "experimentName": "RFD3 enzyme scaffolding"
+    },
+    {
+      "experimentData": {
+        "input_path": "REPLACE_WITH_UPLOADED_PATH/candidates.zip",
+        "reaction_template": "REPLACE_WITH_UPLOADED_PATH/reaction_template.json",
+        "template_binding": "REPLACE_WITH_UPLOADED_PATH/template_binding.json",
+        "input_source": "rfd3",
+        "execution_mode": "validation"
+      },
+      "job_name": "Catalytic_Geometry",
+      "experimentName": "Catalytic geometry validation"
+    },
+    {
+      "experimentData": {
+        "input_path": "REPLACE_WITH_UPLOADED_PATH/enzyme.pdb",
+        "chain_id": "A"
+      },
+      "job_name": "deepallo",
+      "experimentName": "DeepAllo pocket analysis"
+    },
+    {
+      "experimentData": {
+        "pdb_path": "REPLACE_WITH_UPLOADED_PATH/enzyme.pdb",
+        "chain_id": "A",
+        "motif_residues": [
+          "105",
+          "187",
+          "224"
+        ],
+        "smiles": "CCCC(=O)Oc1ccc([N+](=O)[O-])cc1",
+        "n_samples": 1,
+        "seed": 123
+      },
+      "job_name": "enzycontrol",
+      "experimentName": "EnzyControl backbone generation"
+    },
+    {
+      "experimentData": {
+        "input_path": "REPLACE_WITH_UPLOADED_PATH/candidates.zip",
+        "execution_mode": "measurement_only"
+      },
+      "job_name": "Mol_Probity",
+      "experimentName": "MolProbity structure quality check"
+    }
+  ]
+}

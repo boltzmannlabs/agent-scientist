@@ -100,6 +100,9 @@ def preflight_submission(job, payload):
         storage = payload.get(field)
         if not storage:
             continue
+        if prop["x-input-kind"] == "file_or_value" and not isinstance(storage, str):
+            # Inline object/array modes were already validated by the request schema.
+            continue
         rule = store.files.get(job, {}).get("files", {}).get(field, {})
         if rule.get("execution_blocked"):
             report.errors.append(f"{field}: this input is explicitly blocked pending an approved validator.")

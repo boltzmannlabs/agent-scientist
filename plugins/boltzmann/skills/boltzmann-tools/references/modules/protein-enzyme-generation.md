@@ -179,3 +179,1025 @@ For mode-dependent fields, include the fields required by the selected schema br
 Accepted is not completed. Poll the returned job ID without resubmitting.
 Preserve every returned artifact link; download and inspect requested outputs before reporting success.
 Report actual service errors and incomplete outputs. Refresh status for expired links.
+
+## Enzyme DeepAllo
+
+Predict up to three allosteric pockets on a selected PDB chain.
+
+[Product description and result interpretation](../enzyme-tools-guide.md#enzyme-deepallo)
+
+Exact job name: `deepallo`.
+
+### Inputs
+
+Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
+
+| Field | Type | Required | Input kind | Description |
+|---|---|---|---|---|
+| `input_path` | string | yes | file | Relative storage path to one PDB file. |
+| `chain_id` | string | yes | value | Exactly one case-sensitive chain character. |
+
+Input kinds: `value` is inline data; `file` requires a platform file reference;
+`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
+Only local files require a new upload. Never infer input mode from a field name.
+
+### Exact request schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "input_path": {
+      "type": "string",
+      "description": "Relative storage path to one PDB file.",
+      "x-input-kind": "file"
+    },
+    "chain_id": {
+      "type": "string",
+      "description": "Exactly one case-sensitive chain character.",
+      "x-input-kind": "value",
+      "minLength": 1,
+      "maxLength": 1
+    }
+  },
+  "required": [
+    "input_path",
+    "chain_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Submission envelope
+
+Shape only: replace placeholders with the user's values. This is not a runnable sample.
+```json
+{
+  "job_name": "deepallo",
+  "experiment_name": "<confirmed experiment name>",
+  "experiment_data": {
+    "input_path": "<user value; see input_path schema>",
+    "chain_id": "<user value; see chain_id schema>"
+  }
+}
+```
+
+For mode-dependent fields, include the fields required by the selected schema branch.
+
+### File checks
+
+```json
+{
+  "input_path": {
+    "formats": [
+      "pdb"
+    ],
+    "content_format": "pdb",
+    "notes": "Exactly one model; requested case-sensitive chain must exist; >10 standard amino-acid residues with CA. No ambiguous alternate locations.",
+    "values_by_field": {
+      "chain_id": {},
+      "motif_residues": {}
+    },
+    "coverage": "partial"
+  }
+}
+```
+
+### Input limits
+
+```json
+{
+  "fields": {
+    "chain_id": {
+      "min_length": 1,
+      "max_length": 1
+    }
+  },
+  "structure": {
+    "minimum_standard_residues": 11,
+    "models": 1
+  }
+}
+```
+
+### Recorded payload example
+
+Reference only; use current user inputs and upload references.
+```json
+[
+  {
+    "job_name": "deepallo",
+    "experiment_name": "DeepAllo reference check",
+    "experiment_data": {
+      "input_path": "REPLACE_WITH_UPLOADED_PATH/enzyme.pdb",
+      "chain_id": "A"
+    }
+  }
+]
+```
+
+### Results
+
+Accepted is not completed. Poll the returned job ID without resubmitting.
+Preserve every returned artifact link; download and inspect requested outputs before reporting success.
+Report actual service errors and incomplete outputs. Refresh status for expired links.
+
+## EnzyControl
+
+Generate enzyme backbones from a chain, motif residue labels and substrate SMILES.
+
+[Product description and result interpretation](../enzyme-tools-guide.md#enzycontrol)
+
+Exact job name: `enzycontrol`.
+
+### Inputs
+
+Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
+
+| Field | Type | Required | Input kind | Description |
+|---|---|---|---|---|
+| `pdb_path` | string | yes | file | Relative storage path to one PDB file. |
+| `chain_id` | string | yes | value | Exactly one case-sensitive chain character. |
+| `motif_residues` | array | yes | value | Residue labels within the selected chain, e.g. 25 or 26A. |
+| `smiles` | string | yes | value | Nonempty substrate SMILES; maximum 128 atoms including hydrogens. |
+| `n_samples` | integer | no / mode-dependent | value | Optional; runtime defaults to 1. |
+| `seed` | integer | yes | value | Required by live FastAPI even though local runtime can generate one; 0-4294967295. |
+
+Input kinds: `value` is inline data; `file` requires a platform file reference;
+`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
+Only local files require a new upload. Never infer input mode from a field name.
+
+### Exact request schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pdb_path": {
+      "type": "string",
+      "description": "Relative storage path to one PDB file.",
+      "x-input-kind": "file"
+    },
+    "chain_id": {
+      "type": "string",
+      "description": "Exactly one case-sensitive chain character.",
+      "x-input-kind": "value",
+      "minLength": 1,
+      "maxLength": 1
+    },
+    "motif_residues": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^-?[0-9]+[A-Za-z]?$"
+      },
+      "description": "Residue labels within the selected chain, e.g. 25 or 26A.",
+      "x-input-kind": "value"
+    },
+    "smiles": {
+      "type": "string",
+      "description": "Nonempty substrate SMILES; maximum 128 atoms including hydrogens.",
+      "x-input-kind": "value",
+      "minLength": 1
+    },
+    "n_samples": {
+      "type": "integer",
+      "description": "Optional; runtime defaults to 1.",
+      "x-input-kind": "value",
+      "minimum": 1
+    },
+    "seed": {
+      "type": "integer",
+      "description": "Required by live FastAPI even though local runtime can generate one; 0-4294967295.",
+      "x-input-kind": "value",
+      "minimum": 0,
+      "maximum": 4294967295
+    }
+  },
+  "required": [
+    "pdb_path",
+    "chain_id",
+    "motif_residues",
+    "smiles",
+    "seed"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Submission envelope
+
+Shape only: replace placeholders with the user's values. This is not a runnable sample.
+```json
+{
+  "job_name": "enzycontrol",
+  "experiment_name": "<confirmed experiment name>",
+  "experiment_data": {
+    "pdb_path": "<user value; see pdb_path schema>",
+    "chain_id": "<user value; see chain_id schema>",
+    "motif_residues": "<user value; see motif_residues schema>",
+    "smiles": "<user value; see smiles schema>",
+    "seed": "<user value; see seed schema>"
+  }
+}
+```
+
+For mode-dependent fields, include the fields required by the selected schema branch.
+
+### File checks
+
+```json
+{
+  "pdb_path": {
+    "formats": [
+      "pdb"
+    ],
+    "content_format": "pdb",
+    "notes": "Exactly one model; selected chain 2-2000 standard residues, finite N/CA/C coordinates; motif labels present and at least one non-motif residue.",
+    "values_by_field": {
+      "chain_id": {},
+      "motif_residues": {}
+    },
+    "coverage": "partial"
+  }
+}
+```
+
+### Input limits
+
+```json
+{
+  "fields": {
+    "chain_id": {
+      "min_length": 1,
+      "max_length": 1
+    },
+    "motif_residues": {
+      "min_items": 1,
+      "unique": true,
+      "pattern": "^-?[0-9]+[A-Za-z]?$"
+    },
+    "n_samples": {
+      "minimum": 1
+    },
+    "seed": {
+      "minimum": 0,
+      "maximum": 4294967295
+    }
+  },
+  "structure": {
+    "minimum_standard_residues": 2,
+    "maximum_standard_residues": 2000,
+    "models": 1
+  },
+  "smiles": {
+    "maximum_atoms_including_hydrogens": 128
+  }
+}
+```
+
+### Execution notices
+
+- Live FastAPI requires seed; local runtime and older handoff call it optional. Do not omit until API reconciles.
+
+### Recorded payload example
+
+Reference only; use current user inputs and upload references.
+```json
+[
+  {
+    "job_name": "enzycontrol",
+    "experiment_name": "AgentScientist_EnzyControl_CALB_reference",
+    "experiment_data": {
+      "pdb_path": "REPLACE_WITH_UPLOADED_PATH/1TCA.pdb",
+      "chain_id": "A",
+      "motif_residues": [
+        "105",
+        "187",
+        "224"
+      ],
+      "smiles": "CCCC(=O)Oc1ccc([N+](=O)[O-])cc1",
+      "n_samples": 10,
+      "seed": 123
+    }
+  }
+]
+```
+
+### Results
+
+Accepted is not completed. Poll the returned job ID without resubmitting.
+Preserve every returned artifact link; download and inspect requested outputs before reporting success.
+Report actual service errors and incomplete outputs. Refresh status for expired links.
+
+## Enzyme RFD3
+
+Generate enzyme scaffolds; retain review-only quality rejects separately from passing designs.
+
+[Product description and result interpretation](../enzyme-tools-guide.md#enzyme-rfd3)
+
+Exact job name: `Enzyme_RFD3`.
+
+### Inputs
+
+Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
+
+| Field | Type | Required | Input kind | Description |
+|---|---|---|---|---|
+| `input_path` | string | yes | file | Uploaded .pdb or .cif structure path. |
+| `motif_residues` | array | yes | value | Motif labels such as A108. |
+| `ligand` | string | yes | value | One or more distinct uppercase component codes, comma-separated; not SMILES. |
+| `min_length` | integer | yes | value | Minimum scaffold length. |
+| `max_length` | integer | yes | value | Maximum scaffold length; >= min_length. |
+| `n_samples` | integer | no / mode-dependent | value | Optional; defaults to 1. |
+| `seed` | integer | no / mode-dependent | value | Optional; 0-4294967295; omit for random seed. |
+| `task_name` | string | no / mode-dependent | value | Optional explicit task name. |
+| `advanced_settings_enabled` | string | no / mode-dependent | value | Literal "true"/"false"; defaults to "false". |
+| `advanced_settings` | object | no / mode-dependent | value | Optional. Applied only when advanced_settings_enabled is true. Omit unused fields. |
+
+Input kinds: `value` is inline data; `file` requires a platform file reference;
+`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
+Only local files require a new upload. Never infer input mode from a field name.
+
+### Exact request schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "input_path": {
+      "type": "string",
+      "description": "Uploaded .pdb or .cif structure path.",
+      "x-input-kind": "file"
+    },
+    "motif_residues": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z][1-9][0-9]*$"
+      },
+      "description": "Motif labels such as A108.",
+      "x-input-kind": "value"
+    },
+    "ligand": {
+      "type": "string",
+      "description": "One or more distinct uppercase component codes, comma-separated; not SMILES.",
+      "x-input-kind": "value",
+      "pattern": "^[A-Z0-9]+(?:,[A-Z0-9]+)*$"
+    },
+    "min_length": {
+      "type": "integer",
+      "description": "Minimum scaffold length.",
+      "x-input-kind": "value",
+      "minimum": 1,
+      "maximum": 512
+    },
+    "max_length": {
+      "type": "integer",
+      "description": "Maximum scaffold length; >= min_length.",
+      "x-input-kind": "value",
+      "minimum": 1,
+      "maximum": 512
+    },
+    "n_samples": {
+      "type": "integer",
+      "description": "Optional; defaults to 1.",
+      "x-input-kind": "value",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "seed": {
+      "type": "integer",
+      "description": "Optional; 0-4294967295; omit for random seed.",
+      "x-input-kind": "value",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "task_name": {
+      "type": "string",
+      "description": "Optional explicit task name.",
+      "x-input-kind": "value",
+      "enum": [
+        "rfd3"
+      ]
+    },
+    "advanced_settings_enabled": {
+      "type": "string",
+      "description": "Literal \"true\"/\"false\"; defaults to \"false\".",
+      "x-input-kind": "value",
+      "enum": [
+        "true",
+        "false"
+      ]
+    },
+    "advanced_settings": {
+      "type": "object",
+      "properties": {
+        "contig": {
+          "type": "string",
+          "description": "Native RFD3 contig; indexed motif/range syntax; do not invent residue mapping.",
+          "x-input-kind": "value"
+        },
+        "select_fixed_atoms": {
+          "description": "Map motif/ligand IDs to ALL, TIP, BKBN or comma-separated atom names; \"true\" fixes ALL; \"false\" uses defaults.",
+          "x-input-kind": "value",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "select_unfixed_sequence": {
+          "description": "Residue selection string or map of selection keys to atom-name strings; omit empty selections.",
+          "x-input-kind": "value",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "select_buried": {
+          "description": "Residue selection string or map of selection keys to atom-name strings; omit empty selections.",
+          "x-input-kind": "value",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "select_partially_buried": {
+          "description": "Residue selection string or map of selection keys to atom-name strings; omit empty selections.",
+          "x-input-kind": "value",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "select_exposed": {
+          "description": "Residue selection string or map of selection keys to atom-name strings; omit empty selections.",
+          "x-input-kind": "value",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "select_hbond_donor": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Atom-selection map.",
+          "x-input-kind": "value"
+        },
+        "select_hbond_acceptor": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Atom-selection map.",
+          "x-input-kind": "value"
+        },
+        "select_hotspots": {
+          "description": "Residue selection string or map of selection keys to atom-name strings; omit empty selections.",
+          "x-input-kind": "value",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "redesign_motif_sidechains": {
+          "type": "string",
+          "description": "Literal \"true\" or \"false\"; not a JSON boolean.",
+          "x-input-kind": "value",
+          "enum": [
+            "true",
+            "false"
+          ]
+        },
+        "ori_token": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "description": "Explicit [x,y,z] origin; do not combine with infer_ori_strategy.",
+          "x-input-kind": "value"
+        },
+        "infer_ori_strategy": {
+          "type": "string",
+          "description": "Origin inference.",
+          "x-input-kind": "value",
+          "enum": [
+            "com",
+            "hotspots"
+          ]
+        },
+        "plddt_enhanced": {
+          "type": "string",
+          "description": "Literal \"true\" or \"false\"; not a JSON boolean.",
+          "x-input-kind": "value",
+          "enum": [
+            "true",
+            "false"
+          ]
+        },
+        "is_non_loopy": {
+          "type": "string",
+          "description": "Literal \"true\" or \"false\"; not a JSON boolean.",
+          "x-input-kind": "value",
+          "enum": [
+            "true",
+            "false"
+          ]
+        },
+        "partial_t": {
+          "type": "number",
+          "description": "Strictly positive partial-diffusion t; changes workflow/length semantics.",
+          "x-input-kind": "value",
+          "exclusiveMinimum": 0
+        },
+        "allow_ligand_on_existing_chain": {
+          "type": "string",
+          "description": "Literal \"true\" or \"false\"; not a JSON boolean.",
+          "x-input-kind": "value",
+          "enum": [
+            "true",
+            "false"
+          ]
+        },
+        "geometry_constraints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Distance or angle.",
+                "x-input-kind": "value",
+                "enum": [
+                  "distance",
+                  "angle"
+                ]
+              },
+              "atoms": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "residue": {
+                      "type": "string",
+                      "description": "Selected motif residue, e.g. A108.",
+                      "x-input-kind": "value"
+                    },
+                    "ligand": {
+                      "type": "string",
+                      "description": "Selected ligand component code.",
+                      "x-input-kind": "value"
+                    },
+                    "atom": {
+                      "type": "string",
+                      "description": "Case-sensitive atom name.",
+                      "x-input-kind": "value"
+                    }
+                  },
+                  "required": [
+                    "atom"
+                  ],
+                  "oneOf": [
+                    {
+                      "required": [
+                        "residue"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "ligand"
+                      ]
+                    }
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "2 atoms for distance; 3 for angle (middle is vertex).",
+                "x-input-kind": "value"
+              },
+              "min": {
+                "type": "number",
+                "description": "Minimum; nonnegative.",
+                "x-input-kind": "value",
+                "minimum": 0
+              },
+              "max": {
+                "type": "number",
+                "description": "Maximum; angle maximum at most 180.",
+                "x-input-kind": "value",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "type",
+              "atoms",
+              "min",
+              "max"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Output geometry constraints; only distance and angle.",
+          "x-input-kind": "value"
+        },
+        "diffusion_batch_size": {
+          "type": "integer",
+          "description": "1-2; with n_batches product must equal n_samples.",
+          "x-input-kind": "value",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "n_batches": {
+          "type": "integer",
+          "description": "Positive; with diffusion_batch_size product must equal n_samples.",
+          "x-input-kind": "value",
+          "minimum": 1
+        },
+        "inference_sampler": {
+          "type": "object",
+          "properties": {
+            "num_timesteps": {
+              "type": "integer",
+              "description": "2-500; default 200.",
+              "x-input-kind": "value",
+              "minimum": 2,
+              "maximum": 500
+            },
+            "n_recycle": {
+              "type": "integer",
+              "description": "1-5 if supplied; zero crashes native RFD3.",
+              "x-input-kind": "value",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "step_scale": {
+              "type": "number",
+              "description": "Strictly positive; native default 1.5.",
+              "x-input-kind": "value",
+              "exclusiveMinimum": 0
+            },
+            "noise_scale": {
+              "type": "number",
+              "description": "Strictly positive; native default 1.003.",
+              "x-input-kind": "value",
+              "exclusiveMinimum": 0
+            },
+            "p": {
+              "type": "number",
+              "description": "Strictly positive; native default 7.",
+              "x-input-kind": "value",
+              "exclusiveMinimum": 0
+            },
+            "kind": {
+              "type": "string",
+              "description": "Only default is supported in this release.",
+              "x-input-kind": "value",
+              "enum": [
+                "default"
+              ]
+            },
+            "use_classifier_free_guidance": {
+              "type": "string",
+              "description": "Literal \"true\" or \"false\"; not a JSON boolean.",
+              "x-input-kind": "value",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "cfg_t_max": {
+              "type": "number",
+              "description": "Nonnegative; optional.",
+              "x-input-kind": "value",
+              "minimum": 0
+            },
+            "cfg_scale": {
+              "type": "number",
+              "description": "Nonnegative; native default 1.5.",
+              "x-input-kind": "value",
+              "minimum": 0
+            },
+            "center_option": {
+              "type": "string",
+              "description": "Centering option.",
+              "x-input-kind": "value",
+              "enum": [
+                "all",
+                "motif",
+                "diffuse"
+              ]
+            },
+            "s_trans": {
+              "type": "number",
+              "description": "Nonnegative; native default 1.0.",
+              "x-input-kind": "value",
+              "minimum": 0
+            },
+            "allow_realignment": {
+              "type": "string",
+              "description": "Literal \"true\" or \"false\"; not a JSON boolean.",
+              "x-input-kind": "value",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "gamma_0": {
+              "type": "number",
+              "description": "Nonnegative; native default 0.6.",
+              "x-input-kind": "value",
+              "minimum": 0
+            },
+            "gamma_min": {
+              "type": "number",
+              "description": "Nonnegative; native default 1.0.",
+              "x-input-kind": "value",
+              "minimum": 0
+            },
+            "s_jitter_origin": {
+              "type": "number",
+              "description": "Nonnegative; native default 0.0.",
+              "x-input-kind": "value",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false,
+          "description": "Optional sampler overrides; omit unspecified fields.",
+          "x-input-kind": "value"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Optional. Applied only when advanced_settings_enabled is true. Omit unused fields.",
+      "x-input-kind": "value"
+    }
+  },
+  "required": [
+    "input_path",
+    "motif_residues",
+    "ligand",
+    "min_length",
+    "max_length"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Submission envelope
+
+Shape only: replace placeholders with the user's values. This is not a runnable sample.
+```json
+{
+  "job_name": "Enzyme_RFD3",
+  "experiment_name": "<confirmed experiment name>",
+  "experiment_data": {
+    "input_path": "<user value; see input_path schema>",
+    "motif_residues": "<user value; see motif_residues schema>",
+    "ligand": "<user value; see ligand schema>",
+    "min_length": "<user value; see min_length schema>",
+    "max_length": "<user value; see max_length schema>"
+  }
+}
+```
+
+For mode-dependent fields, include the fields required by the selected schema branch.
+
+### File checks
+
+```json
+{
+  "input_path": {
+    "formats": [
+      "pdb",
+      "cif"
+    ],
+    "content_format": "enzyme_structure",
+    "notes": "Relative storage path. Selected motif residues and ligand component codes must occur in the input; atom labels are case-sensitive. ZIP not accepted by this input.",
+    "coverage": "partial"
+  }
+}
+```
+
+### Input limits
+
+```json
+{
+  "fields": {
+    "min_length": {
+      "minimum": 1,
+      "maximum": 512
+    },
+    "max_length": {
+      "minimum": 1,
+      "maximum": 512
+    },
+    "n_samples": {
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "seed": {
+      "minimum": 0,
+      "maximum": 4294967295
+    }
+  },
+  "cross_field": [
+    "min_length <= max_length",
+    "max_length >= number of motif residues",
+    "diffusion_batch_size * n_batches == n_samples when both supplied",
+    "contig plus unindexed motifs <= 512 residues",
+    "partial_t and num_timesteps must leave at least two noise levels"
+  ],
+  "nested_fields": {
+    "diffusion_batch_size": {
+      "minimum": 1,
+      "maximum": 2
+    },
+    "n_batches": {
+      "minimum": 1
+    },
+    "num_timesteps": {
+      "minimum": 2,
+      "maximum": 500
+    },
+    "n_recycle": {
+      "minimum": 1,
+      "maximum": 5
+    },
+    "partial_t": {
+      "exclusive_minimum": 0
+    },
+    "angle_constraint_max": {
+      "maximum": 180
+    }
+  },
+  "relations": [
+    {
+      "left": "min_length",
+      "operator": "<=",
+      "right": "max_length"
+    }
+  ]
+}
+```
+
+### Execution notices
+
+- Use n_recycle >= 1 if set; zero caused native KeyError X_L.
+- A completed job may contain only review-only rejected/ structures and no passing designs/. Inspect manifest.json and rejections.json.
+- Runtime IDs/auth are injected by Node; do not put tokenid/user_id/experiment_id in experiment_data.
+- Advanced numeric nulls may be accepted by FastAPI, but omit unused fields; never send blank strings for numeric fields.
+- Live reference submission was accepted, then the worker reported job_name missing despite outer job_name=Enzyme_RFD3. Keep the exact routing name; do not inject guessed fields, claim readiness, or duplicate that job. New approved attempts remain allowed.
+
+### Recorded payload example
+
+Reference only; use current user inputs and upload references.
+```json
+[
+  {
+    "job_name": "Enzyme_RFD3",
+    "experiment_name": "AgentScientist_RFD3_1mg5_reference",
+    "experiment_data": {
+      "input_path": "REPLACE_WITH_UPLOADED_PATH/RFD3_M0255_1mg5.pdb",
+      "motif_residues": [
+        "A108",
+        "A139",
+        "A152",
+        "A156"
+      ],
+      "ligand": "NAI,ACT",
+      "min_length": 180,
+      "max_length": 200,
+      "n_samples": 1,
+      "seed": 124,
+      "task_name": "rfd3",
+      "advanced_settings_enabled": "true",
+      "advanced_settings": {
+        "contig": "40-45,A108,40-45,A139,40-45,A152,56-61,A156",
+        "select_fixed_atoms": {
+          "A108": "ND2,CG",
+          "A139": "OG,CB,CA",
+          "A152": "OH,CZ",
+          "A156": "NZ,CE,CD",
+          "NAI": "ALL",
+          "ACT": "ALL"
+        },
+        "select_unfixed_sequence": "false",
+        "redesign_motif_sidechains": "false",
+        "plddt_enhanced": "true",
+        "allow_ligand_on_existing_chain": "false",
+        "geometry_constraints": [
+          {
+            "type": "distance",
+            "atoms": [
+              {
+                "residue": "A139",
+                "atom": "OG"
+              },
+              {
+                "ligand": "ACT",
+                "atom": "C"
+              }
+            ],
+            "min": 3.45,
+            "max": 4.0
+          },
+          {
+            "type": "angle",
+            "atoms": [
+              {
+                "residue": "A139",
+                "atom": "OG"
+              },
+              {
+                "ligand": "ACT",
+                "atom": "C"
+              },
+              {
+                "ligand": "ACT",
+                "atom": "O"
+              }
+            ],
+            "min": 163.0,
+            "max": 180.0
+          }
+        ],
+        "diffusion_batch_size": 1,
+        "n_batches": 1,
+        "inference_sampler": {
+          "num_timesteps": 200,
+          "n_recycle": 1,
+          "step_scale": 1.5,
+          "noise_scale": 1.003,
+          "p": 7.0,
+          "kind": "default",
+          "use_classifier_free_guidance": "false",
+          "cfg_scale": 1.5,
+          "center_option": "all",
+          "s_trans": 1.0,
+          "allow_realignment": "false",
+          "gamma_0": 0.6,
+          "gamma_min": 1.0,
+          "s_jitter_origin": 0.0
+        }
+      }
+    }
+  }
+]
+```
+
+### Results
+
+Accepted is not completed. Poll the returned job ID without resubmitting.
+Preserve every returned artifact link; download and inspect requested outputs before reporting success.
+Report actual service errors and incomplete outputs. Refresh status for expired links.

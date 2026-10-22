@@ -1209,3 +1209,595 @@ For mode-dependent fields, include the fields required by the selected schema br
 Accepted is not completed. Poll the returned job ID without resubmitting.
 Preserve every returned artifact link; download and inspect requested outputs before reporting success.
 Report actual service errors and incomplete outputs. Refresh status for expired links.
+
+## Catalytic Geometry
+
+Measure or validate evidence-linked reaction-specific geometry.
+
+[Product description and result interpretation](../enzyme-tools-guide.md#catalytic-geometry)
+
+Exact job name: `Catalytic_Geometry`.
+
+### Inputs
+
+Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
+
+| Field | Type | Required | Input kind | Description |
+|---|---|---|---|---|
+| `input_path` | string | yes | file | Uploaded structure or ZIP of structures. |
+| `reaction_template` | string | yes | file | Uploaded UTF-8 .json reaction template path; not an inline object through live FastAPI. |
+| `template_binding` | string | yes | file | Uploaded UTF-8 .json role-binding path; live FastAPI requires it even though local runtime treats it as optional. |
+| `mapping_path` | string / null | no / mode-dependent | file | Optional uploaded JSON candidate mapping. The Node route rejected CSV on 2026-10-22; local worker CSV support is not Node acceptance. |
+| `input_source` | string | no / mode-dependent | value | Source adapter; default auto. |
+| `execution_mode` | string | no / mode-dependent | value | measurement_only (default) or validation. |
+
+Input kinds: `value` is inline data; `file` requires a platform file reference;
+`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
+Only local files require a new upload. Never infer input mode from a field name.
+
+### Exact request schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "input_path": {
+      "type": "string",
+      "description": "Uploaded structure or ZIP of structures.",
+      "x-input-kind": "file"
+    },
+    "reaction_template": {
+      "type": "string",
+      "description": "Uploaded UTF-8 .json reaction template path; not an inline object through live FastAPI.",
+      "x-input-kind": "file"
+    },
+    "template_binding": {
+      "type": "string",
+      "description": "Uploaded UTF-8 .json role-binding path; live FastAPI requires it even though local runtime treats it as optional.",
+      "x-input-kind": "file"
+    },
+    "mapping_path": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional uploaded JSON candidate mapping. The Node route rejected CSV on 2026-10-22; local worker CSV support is not Node acceptance.",
+      "x-input-kind": "file",
+      "pattern": "\\.json$"
+    },
+    "input_source": {
+      "type": "string",
+      "description": "Source adapter; default auto.",
+      "x-input-kind": "value",
+      "enum": [
+        "auto",
+        "canonical",
+        "rfd3",
+        "enzycontrol",
+        "frameflow",
+        "protein_frame_flow",
+        "genzyme",
+        "placer",
+        "ligandmpnn",
+        "solublempnn",
+        "zymctrl",
+        "mutagenesis",
+        "mlde",
+        "pepflow",
+        "generic"
+      ]
+    },
+    "execution_mode": {
+      "type": "string",
+      "description": "measurement_only (default) or validation.",
+      "x-input-kind": "value",
+      "enum": [
+        "measurement_only",
+        "validation"
+      ]
+    }
+  },
+  "required": [
+    "input_path",
+    "reaction_template",
+    "template_binding"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Submission envelope
+
+Shape only: replace placeholders with the user's values. This is not a runnable sample.
+```json
+{
+  "job_name": "Catalytic_Geometry",
+  "experiment_name": "<confirmed experiment name>",
+  "experiment_data": {
+    "input_path": "<user value; see input_path schema>",
+    "reaction_template": "<user value; see reaction_template schema>",
+    "template_binding": "<user value; see template_binding schema>"
+  }
+}
+```
+
+For mode-dependent fields, include the fields required by the selected schema branch.
+
+### File checks
+
+```json
+{
+  "input_path": {
+    "formats": [
+      "pdb",
+      "cif",
+      "mmcif",
+      "pdb.gz",
+      "cif.gz",
+      "mmcif.gz",
+      "zip"
+    ],
+    "content_format": "protein_structure_or_bundle",
+    "notes": "Prepared PDB/CIF/mmCIF or ZIP. Candidate labels, atom names, and structure numbering must match template/binding/mapping.",
+    "coverage": "partial"
+  },
+  "reaction_template": {
+    "formats": [
+      "json"
+    ],
+    "content_format": "utf8_json_object",
+    "max_bytes": 1048576,
+    "notes": "Live FastAPI accepts a relative .json storage path, not an inline object. Full template fields/check types are in modules/catalytic-geometry-template.md; no universal reaction geometry values.",
+    "content_checks": "catalytic_geometry",
+    "coverage": "partial"
+  },
+  "template_binding": {
+    "formats": [
+      "json"
+    ],
+    "content_format": "utf8_json_object",
+    "max_bytes": 1048576,
+    "notes": "Live FastAPI currently requires this path. JSON must contain exactly mapping_keys with 1-1000 role mappings; each role targets an upstream key or chain/residue location. Do not invent dummy mappings.",
+    "coverage": "partial"
+  },
+  "mapping_path": {
+    "formats": [
+      "json"
+    ],
+    "content_format": "candidate_residue_mapping",
+    "notes": "Optional. CSV required columns candidate_id,mapping_key,chain_id,residue_number; insertion_code optional. JSON keyed by candidate ID then mapping key to location. Candidate ID matches structure basename. Node route requires JSON; CSV was explicitly rejected in live testing.",
+    "coverage": "partial"
+  }
+}
+```
+
+Uploaded JSON content is validated against the full schema in
+`file-input-contracts.v1.json`; see the linked guide for field definitions.
+
+### Input limits
+
+```json
+{
+  "files": {
+    "reaction_template": {
+      "maximum_bytes": 1048576
+    },
+    "template_binding": {
+      "maximum_bytes": 1048576
+    }
+  },
+  "template": {
+    "sources": {
+      "min_items": 1,
+      "max_items": 100
+    },
+    "checks": {
+      "min_items": 1,
+      "max_items": 1000
+    },
+    "binding_roles": {
+      "min_items": 1,
+      "max_items": 1000
+    },
+    "check_sources": {
+      "min_items": 1,
+      "max_items": 20
+    }
+  },
+  "atom_reference": {
+    "residue_number": {
+      "minimum": -999999,
+      "maximum": 999999
+    },
+    "chain_id": {
+      "min_length": 1,
+      "max_length": 32
+    },
+    "atom_name": {
+      "min_length": 1,
+      "max_length": 8
+    },
+    "component_id": {
+      "min_length": 1,
+      "max_length": 8
+    },
+    "insertion_code": {
+      "max_length": 1
+    }
+  },
+  "check_bounds": {
+    "angle_degrees": {
+      "minimum": 0,
+      "maximum": 180
+    },
+    "plane_orientation_degrees": {
+      "minimum": 0,
+      "maximum": 90
+    },
+    "dihedral_degrees": {
+      "minimum": -180,
+      "maximum": 180
+    },
+    "ensemble_occupancy_fraction": {
+      "minimum": 0,
+      "maximum": 1
+    },
+    "metal_coordinators": {
+      "minimum": 1,
+      "maximum": 16
+    },
+    "hydrogen_bond_atoms": {
+      "minimum": 2,
+      "maximum": 3
+    }
+  },
+  "fields": {}
+}
+```
+
+### Execution notices
+
+- Live FastAPI requires template_binding:string; local runtime/docs treat it as optional. Supply a genuine binding file, not a fabricated dummy. Request API fix for binding-free templates.
+- Live FastAPI permits only a storage-path string for reaction_template and template_binding. Upload .json files before submit.
+- Use evidence-based template checks; computational geometry is not catalytic activity evidence.
+
+### Recorded payload example
+
+Reference only; use current user inputs and upload references.
+```json
+[
+  {
+    "job_name": "Catalytic_Geometry",
+    "experiment_name": "AgentScientist_CatalyticGeometry_RFD3_20_reference",
+    "experiment_data": {
+      "input_path": "REPLACE_WITH_UPLOADED_PATH/rfd3_20_results.zip",
+      "reaction_template": "REPLACE_WITH_UPLOADED_PATH/rfd3_reaction_template.json",
+      "template_binding": "REPLACE_WITH_UPLOADED_PATH/rfd3_template_binding.json",
+      "mapping_path": "REPLACE_WITH_UPLOADED_PATH/rfd3_mapping_path.json",
+      "input_source": "rfd3",
+      "execution_mode": "validation"
+    }
+  }
+]
+```
+
+### Results
+
+Accepted is not completed. Poll the returned job ID without resubmitting.
+Preserve every returned artifact link; download and inspect requested outputs before reporting success.
+Report actual service errors and incomplete outputs. Refresh status for expired links.
+
+## MolProbity
+
+Measure structural quality or apply explicitly supplied thresholds.
+
+[Product description and result interpretation](../enzyme-tools-guide.md#molprobity)
+
+Exact job name: `Mol_Probity`.
+
+### Inputs
+
+Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
+
+| Field | Type | Required | Input kind | Description |
+|---|---|---|---|---|
+| `input_path` | string | yes | file | Uploaded structure or ZIP of structures. |
+| `execution_mode` | string | no / mode-dependent | value | measurement_only (default) or validation. |
+| `quality_thresholds` | see schema | no / mode-dependent | file_or_value | Only in validation mode: nonempty threshold object or uploaded .json path. |
+
+Input kinds: `value` is inline data; `file` requires a platform file reference;
+`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
+Only local files require a new upload. Never infer input mode from a field name.
+
+### Exact request schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "input_path": {
+      "type": "string",
+      "description": "Uploaded structure or ZIP of structures.",
+      "x-input-kind": "file"
+    },
+    "execution_mode": {
+      "type": "string",
+      "description": "measurement_only (default) or validation.",
+      "x-input-kind": "value",
+      "enum": [
+        "measurement_only",
+        "validation"
+      ]
+    },
+    "quality_thresholds": {
+      "description": "Only in validation mode: nonempty threshold object or uploaded .json path.",
+      "x-input-kind": "file_or_value",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "max_clashscore": {
+              "type": "number",
+              "description": "Validation threshold; omit if not selected.",
+              "x-input-kind": "value",
+              "minimum": 0
+            },
+            "max_ramachandran_outlier_percent": {
+              "type": "number",
+              "description": "Validation threshold; omit if not selected.",
+              "x-input-kind": "value",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "min_ramachandran_favored_percent": {
+              "type": "number",
+              "description": "Validation threshold; omit if not selected.",
+              "x-input-kind": "value",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "max_rotamer_outlier_percent": {
+              "type": "number",
+              "description": "Validation threshold; omit if not selected.",
+              "x-input-kind": "value",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "max_cbeta_outliers": {
+              "type": "integer",
+              "description": "Validation threshold; omit if not selected.",
+              "x-input-kind": "value",
+              "minimum": 0
+            },
+            "max_cablam_outlier_percent": {
+              "type": "number",
+              "description": "Validation threshold; omit if not selected.",
+              "x-input-kind": "value",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "max_cablam_disfavored_percent": {
+              "type": "number",
+              "description": "Validation threshold; omit if not selected.",
+              "x-input-kind": "value",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "max_bond_outliers": {
+              "type": "integer",
+              "description": "Validation threshold; omit if not selected.",
+              "x-input-kind": "value",
+              "minimum": 0
+            },
+            "max_angle_outliers": {
+              "type": "integer",
+              "description": "Validation threshold; omit if not selected.",
+              "x-input-kind": "value",
+              "minimum": 0
+            },
+            "max_cis_nonproline": {
+              "type": "integer",
+              "description": "Validation threshold; omit if not selected.",
+              "x-input-kind": "value",
+              "minimum": 0
+            },
+            "max_twisted_peptides": {
+              "type": "integer",
+              "description": "Validation threshold; omit if not selected.",
+              "x-input-kind": "value",
+              "minimum": 0
+            }
+          },
+          "minProperties": 1,
+          "additionalProperties": false
+        },
+        {
+          "type": "string",
+          "pattern": "\\.json$"
+        }
+      ]
+    }
+  },
+  "required": [
+    "input_path"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "execution_mode": {
+            "const": "validation"
+          }
+        },
+        "required": [
+          "execution_mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "quality_thresholds"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "quality_thresholds"
+          ]
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}
+```
+
+### Submission envelope
+
+Shape only: replace placeholders with the user's values. This is not a runnable sample.
+```json
+{
+  "job_name": "Mol_Probity",
+  "experiment_name": "<confirmed experiment name>",
+  "experiment_data": {
+    "input_path": "<user value; see input_path schema>"
+  }
+}
+```
+
+For mode-dependent fields, include the fields required by the selected schema branch.
+
+### File checks
+
+```json
+{
+  "input_path": {
+    "formats": [
+      "pdb",
+      "cif",
+      "mmcif",
+      "pdb.gz",
+      "cif.gz",
+      "mmcif.gz",
+      "zip"
+    ],
+    "content_format": "protein_structure_or_bundle",
+    "notes": "One structure or ZIP of structures.",
+    "coverage": "partial"
+  },
+  "quality_thresholds": {
+    "formats": [
+      "json"
+    ],
+    "content_format": "utf8_json_object",
+    "max_bytes": 1048576,
+    "notes": "Only in validation mode; nonempty object with supported threshold names. Inline object also accepted by live FastAPI.",
+    "coverage": "partial"
+  }
+}
+```
+
+Uploaded JSON content is validated against the full schema in
+`file-input-contracts.v1.json`; see the linked guide for field definitions.
+
+### Input limits
+
+```json
+{
+  "fields": {},
+  "files": {
+    "quality_thresholds": {
+      "maximum_bytes": 1048576
+    }
+  },
+  "thresholds": {
+    "max_clashscore": {
+      "type": "number",
+      "minimum": 0
+    },
+    "max_ramachandran_outlier_percent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "min_ramachandran_favored_percent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "max_rotamer_outlier_percent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "max_cbeta_outliers": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "max_cablam_outlier_percent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "max_cablam_disfavored_percent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "max_bond_outliers": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "max_angle_outliers": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "max_cis_nonproline": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "max_twisted_peptides": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "nested_fields": {
+    "percentage_thresholds": {
+      "minimum": 0,
+      "maximum": 100
+    },
+    "count_thresholds": {
+      "minimum": 0
+    },
+    "max_clashscore": {
+      "minimum": 0
+    }
+  }
+}
+```
+
+### Execution notices
+
+- Do not send quality_thresholds in measurement_only mode. In validation, supply a nonempty object or uploaded JSON path.
+- The latest recorded reference submission was accepted but remained pending without artifacts. This is not completed validation; do not duplicate a pending job.
+
+### Recorded payload example
+
+Reference only; use current user inputs and upload references.
+```json
+[
+  {
+    "job_name": "Mol_Probity",
+    "experiment_name": "MolProbity reference check",
+    "experiment_data": {
+      "input_path": "REPLACE_WITH_UPLOADED_PATH/candidates.zip",
+      "execution_mode": "measurement_only"
+    }
+  }
+]
+```
+
+### Results
+
+Accepted is not completed. Poll the returned job ID without resubmitting.
+Preserve every returned artifact link; download and inspect requested outputs before reporting success.
+Report actual service errors and incomplete outputs. Refresh status for expired links.

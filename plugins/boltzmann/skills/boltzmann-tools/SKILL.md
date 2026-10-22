@@ -38,6 +38,12 @@ Binding Affinity Energy, Molecular Docking and FEP. Product navigation paths
 are not API endpoints, and documented product features without an established
 job/schema must not be presented as executable connector tools.
 
+For DeepAllo, EnzyControl, Enzyme RFD3, Catalytic Geometry and MolProbity,
+read `references/enzyme-tools-guide.md` and the matching generated module.
+The guide preserves API/runtime differences, full advanced/template references,
+and observed test outcomes. All five have callable contracts; recorded worker
+errors are disclosed uncertainties, not blanket missing-information blocks.
+
 Historical worker failures are not permanent prohibitions: disclose the recorded
 failure and possible charges, obtain approval, and allow an otherwise valid
 request. An unavailable entry is not a service ban: its executable
@@ -53,6 +59,14 @@ request, not just examples. Show unavailable entries separately; omit removed
 and ignored entries. This is not a live account-entitlement or readiness check.
 Do not substitute the five connector helpers for the scientific catalog.
 Listing does not upload, authenticate remotely, or submit anything.
+
+Historical inventories and dated verification CSVs are snapshots, not current
+allowlists. Their absence of a newer tool does not override a canonical request.
+Binding Affinity Energy is `global_binding_affinity` in QSPR Modelling; do not
+substitute the historical `graphdta` candidate, `global_ic50` or `Prodigy`.
+Separate a callable owner-documented contract from live service verification.
+If installed and repository catalogs differ, identify deployment drift instead
+of persisting a permanent tool limitation in a learned skill.
 
 ## Resolve and review the request
 

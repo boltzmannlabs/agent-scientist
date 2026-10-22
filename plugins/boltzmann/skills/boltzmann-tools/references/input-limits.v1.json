@@ -149,6 +149,250 @@
           "custom_models"
         ]
       ]
+    },
+    "deepallo": {
+      "fields": {
+        "chain_id": {
+          "min_length": 1,
+          "max_length": 1
+        }
+      },
+      "structure": {
+        "minimum_standard_residues": 11,
+        "models": 1
+      }
+    },
+    "enzycontrol": {
+      "fields": {
+        "chain_id": {
+          "min_length": 1,
+          "max_length": 1
+        },
+        "motif_residues": {
+          "min_items": 1,
+          "unique": true,
+          "pattern": "^-?[0-9]+[A-Za-z]?$"
+        },
+        "n_samples": {
+          "minimum": 1
+        },
+        "seed": {
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      },
+      "structure": {
+        "minimum_standard_residues": 2,
+        "maximum_standard_residues": 2000,
+        "models": 1
+      },
+      "smiles": {
+        "maximum_atoms_including_hydrogens": 128
+      }
+    },
+    "Catalytic_Geometry": {
+      "files": {
+        "reaction_template": {
+          "maximum_bytes": 1048576
+        },
+        "template_binding": {
+          "maximum_bytes": 1048576
+        }
+      },
+      "template": {
+        "sources": {
+          "min_items": 1,
+          "max_items": 100
+        },
+        "checks": {
+          "min_items": 1,
+          "max_items": 1000
+        },
+        "binding_roles": {
+          "min_items": 1,
+          "max_items": 1000
+        },
+        "check_sources": {
+          "min_items": 1,
+          "max_items": 20
+        }
+      },
+      "atom_reference": {
+        "residue_number": {
+          "minimum": -999999,
+          "maximum": 999999
+        },
+        "chain_id": {
+          "min_length": 1,
+          "max_length": 32
+        },
+        "atom_name": {
+          "min_length": 1,
+          "max_length": 8
+        },
+        "component_id": {
+          "min_length": 1,
+          "max_length": 8
+        },
+        "insertion_code": {
+          "max_length": 1
+        }
+      },
+      "check_bounds": {
+        "angle_degrees": {
+          "minimum": 0,
+          "maximum": 180
+        },
+        "plane_orientation_degrees": {
+          "minimum": 0,
+          "maximum": 90
+        },
+        "dihedral_degrees": {
+          "minimum": -180,
+          "maximum": 180
+        },
+        "ensemble_occupancy_fraction": {
+          "minimum": 0,
+          "maximum": 1
+        },
+        "metal_coordinators": {
+          "minimum": 1,
+          "maximum": 16
+        },
+        "hydrogen_bond_atoms": {
+          "minimum": 2,
+          "maximum": 3
+        }
+      },
+      "fields": {}
+    },
+    "Mol_Probity": {
+      "fields": {},
+      "files": {
+        "quality_thresholds": {
+          "maximum_bytes": 1048576
+        }
+      },
+      "thresholds": {
+        "max_clashscore": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_ramachandran_outlier_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "min_ramachandran_favored_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_rotamer_outlier_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_cbeta_outliers": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_cablam_outlier_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_cablam_disfavored_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_bond_outliers": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_angle_outliers": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_cis_nonproline": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_twisted_peptides": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "nested_fields": {
+        "percentage_thresholds": {
+          "minimum": 0,
+          "maximum": 100
+        },
+        "count_thresholds": {
+          "minimum": 0
+        },
+        "max_clashscore": {
+          "minimum": 0
+        }
+      }
+    },
+    "Enzyme_RFD3": {
+      "fields": {
+        "min_length": {
+          "minimum": 1,
+          "maximum": 512
+        },
+        "max_length": {
+          "minimum": 1,
+          "maximum": 512
+        },
+        "n_samples": {
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "seed": {
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      },
+      "cross_field": [
+        "min_length <= max_length",
+        "max_length >= number of motif residues",
+        "diffusion_batch_size * n_batches == n_samples when both supplied",
+        "contig plus unindexed motifs <= 512 residues",
+        "partial_t and num_timesteps must leave at least two noise levels"
+      ],
+      "nested_fields": {
+        "diffusion_batch_size": {
+          "minimum": 1,
+          "maximum": 2
+        },
+        "n_batches": {
+          "minimum": 1
+        },
+        "num_timesteps": {
+          "minimum": 2,
+          "maximum": 500
+        },
+        "n_recycle": {
+          "minimum": 1,
+          "maximum": 5
+        },
+        "partial_t": {
+          "exclusive_minimum": 0
+        },
+        "angle_constraint_max": {
+          "maximum": 180
+        }
+      },
+      "relations": [
+        {
+          "left": "min_length",
+          "operator": "<=",
+          "right": "max_length"
+        }
+      ]
     }
   }
 }

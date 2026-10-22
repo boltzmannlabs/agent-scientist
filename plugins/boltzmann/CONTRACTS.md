@@ -42,8 +42,13 @@ a blanket missing-contract refusal. The flag never overrides authorization,
 profile permissions, unsafe archives or unsupported serialized executable inputs.
 
 The validator implements only the schema vocabulary used and tested here:
-types, properties, required, enums, additionalProperties, items, minItems,
-numeric bounds and anyOf, plus documented `x-*` annotations. Do not add unsupported
+types, properties, required, enums/constants, additionalProperties/propertyNames,
+items, array length/uniqueness, string length/pattern, property count, numeric bounds,
+anyOf/oneOf/allOf, conditional if/then/else/not, plus documented `x-*` annotations.
+The five enzyme-tool addition also checks RFD3 cross-field relationships and
+uploaded JSON template/binding/mapping/threshold shapes. Structure chemistry,
+contig parsing and native diffusion scheduling still require explicit review.
+Do not add unsupported
 JSON Schema keywords and imply they are enforced. Threshold numeric strings and
 explicitly permitted empty bounds are separate cases, not silent conversions.
 

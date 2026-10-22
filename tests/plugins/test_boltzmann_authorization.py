@@ -420,6 +420,128 @@ def test_partial_file_preflight_upload_and_submit_with_real_profile_receipts(tmp
             manager.unload()
 
 
+def test_binding_affinity_uses_authorized_connector_for_direct_and_uploaded_inputs(tmp_path, monkeypatch, auth_server):
+    state, endpoint = auth_server
+    a, b = tmp_path / "a", tmp_path / "b"
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("SCI_HOME", str(a))
+    monkeypatch.delenv("SCI_BUNDLED_PLUGINS", raising=False)
+    monkeypatch.chdir(tmp_path)
+    job = "global_binding_affinity"
+    with profile(a):
+        manager, module = discover(monkeypatch, endpoint)
+        try:
+            assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
+            base = endpoint.removesuffix("/api/get-projects")
+            monkeypatch.setitem(module.tools.file_upload.__globals__, "_UPLOAD_URL", base + "/upload")
+            monkeypatch.setitem(module.tools.submit_request.__globals__, "_SUBMIT_URL", base + "/submit")
+            source = tmp_path / "pairs.csv"
+            source.write_text("SMILES,SEQUENCE\nfixture-smiles,fixture-sequence\n")
+            state["upload_path"] = "fixture/pairs.csv"
+            uploaded = json.loads(module.tools.handle_boltzmann_upload(
+                local_path=str(source), job_name=job, input_field="input_csv", allow_partial_validation=True))
+            assert uploaded["status"] == "uploaded", uploaded
+            assert source.read_bytes() in state["upload_bytes"]
+            payloads = ({"smiles": "fixture-smiles", "sequence": "fixture-sequence"},
+                        {"input_csv": uploaded["s3_path"]})
+            preflight = sys.modules[module.__name__ + ".preflight"]
+            original = preflight.preflight_submission(job, payloads[1]).as_dict()
+            with profile(b):
+                save_env_value("BOLTZMANN_API_KEY", "fixture-valid")
+                assert any("no current-profile validation receipt" in w
+                           for w in preflight.preflight_submission(job, payloads[1]).warnings)
+            assert preflight.preflight_submission(job, payloads[1]).as_dict() == original
+            for payload in payloads:
+                result = json.loads(module.tools.handle_boltzmann_submit(
+                    job_name=job, experiment_data=payload, experiment_name="fixture-affinity",
+                    allow_partial_validation=True))
+                assert result["status"] == "accepted", result
+                assert state["submission"] == {"job_name": job, "experimentData": payload,
+                                               "experimentName": "fixture-affinity"}
+            assert state["calls"].count("/submit") == len(payloads)
+        finally:
+            manager.unload()
+
+
+def test_five_enzyme_tools_use_existing_profile_scoped_wire_path(tmp_path, monkeypatch, auth_server):
+    import copy
+
+    state, endpoint = auth_server
+    a, b = tmp_path / "a", tmp_path / "b"
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("SCI_HOME", str(a))
+    monkeypatch.delenv("SCI_BUNDLED_PLUGINS", raising=False)
+    monkeypatch.chdir(tmp_path)
+    with profile(a):
+        manager, module = discover(monkeypatch, endpoint)
+        try:
+            message, cli = capture(manager, monkeypatch, "fixture-valid")
+            assert "SAVED" in message
+            base = endpoint.removesuffix("/api/get-projects")
+            for function, setting, route in ((module.tools.file_upload, "_UPLOAD_URL", "/upload"),
+                                              (module.tools.submit_request, "_SUBMIT_URL", "/submit"),
+                                              (module.tools.fetch_status, "_FETCH_URL", "/result")):
+                monkeypatch.setitem(function.__globals__, setting, base + route)
+            store = module.tools.ContractStore()
+            preflight = sys.modules[module.__name__ + ".preflight"]
+            for job in ("deepallo", "enzycontrol", "Enzyme_RFD3", "Catalytic_Geometry", "Mol_Probity"):
+                payload = copy.deepcopy(store.tool(job)["examples"][0]["experiment_data"])
+                # Synthetic shapes, never valid scientific jobs or production services.
+                payload["input_path" if job != "enzycontrol" else "pdb_path"] = "fixture/input.pdb"
+                for field, prop in store.file_fields(job).items():
+                    if field not in payload:
+                        continue
+                    if field in {"input_path", "pdb_path"}:
+                        data = b"ATOM      1  O   HOH A   1       0.000   0.000   0.000  1.00  0.00           O\nEND\n"
+                        filename = field + ".pdb"
+                    else:
+                        values = {
+                            "reaction_template": {"reaction_state": "fixture", "sources": ["fixture"], "checks": [{
+                                "check_id": "fixture", "type": "distance", "rationale": "test shape only", "sources": ["fixture"],
+                                "evidence_level": "user_defined", "atoms": [
+                                    {"entity_type": "residue", "chain_id": "A", "residue_number": n, "atom_name": "CA"}
+                                    for n in (1, 2)], "min": 1, "max": 2}]},
+                            "template_binding": {"mapping_keys": {"fixture": {"chain_id": "A", "residue_number": 1}}},
+                            "mapping_path": {"candidate": {"fixture": {"chain_id": "A", "residue_number": 1}}},
+                        }
+                        data = json.dumps(values[field]).encode()
+                        filename = field + ".json"
+                    local = tmp_path / filename
+                    local.write_bytes(data)
+                    state["upload_path"] = "fixture/" + filename
+                    uploaded = json.loads(module.tools.handle_boltzmann_upload(
+                        local_path=str(local), job_name=job, input_field=field,
+                        experiment_data=payload, allow_partial_validation=True))
+                    assert uploaded["status"] == "uploaded", uploaded
+                    assert data in state["upload_bytes"]
+                    payload[field] = uploaded["s3_path"]
+                # Exercise inline file_or_value objects through real preflight, not just schemas.
+                if job == "Mol_Probity":
+                    payload.update(execution_mode="validation", quality_thresholds={"max_clashscore": 0})
+                before = preflight.preflight_submission(job, payload).as_dict()
+                with profile(b):
+                    result = json.loads(module.tools.handle_boltzmann_submit(
+                        job_name=job, experiment_data=payload, experiment_name="fixture", allow_partial_validation=True))
+                    assert result["authorization_required"]
+                    assert any("no current-profile validation receipt" in warning
+                               for warning in preflight.preflight_submission(job, payload).warnings)
+                assert preflight.preflight_submission(job, payload).as_dict() == before
+                count = state["calls"].count("/submit")
+                result = json.loads(module.tools.handle_boltzmann_submit(
+                    job_name=job, experiment_data=payload, experiment_name="fixture", allow_partial_validation=True))
+                assert result["status"] == "accepted", result
+                assert state["submission"] == {"experimentData": payload, "job_name": job, "experimentName": "fixture"}
+                assert not {"user_id", "tokenid", "experiment_id", "job_name"} & payload.keys()
+                status = json.loads(module.tools.handle_boltzmann_status(job_name=job, doc_id="fixture-job"))
+                assert status["status"] == "success", status
+                assert state["calls"].count("/submit") == count + 1
+                assert cli.agent.system_prompt == "cached-prefix"
+                assert cli.agent.tools == [{"old": "tools"}]
+            assert not manager._plugin_skills  # No live prompt/skill injection.
+        finally:
+            manager.unload()
+
+
 def test_enzyme_upload_enforces_headers_and_profile_scoped_current_rules(tmp_path, monkeypatch, auth_server):
     state, endpoint = auth_server
     a, b = tmp_path / "a", tmp_path / "b"

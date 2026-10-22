@@ -1,0 +1,86 @@
+{
+  "source_sha256": {
+    "tool-contracts.v1.json": "8db5f8f7431ea99789061d842a796425534c3452324bf49802ab5d51811993d4",
+    "file-input-contracts.v1.json": "af9f7ef6d4ae19b0af8896b3e0c33118266e0652932663a92822fba4a1390672",
+    "input-limits.v1.json": "73a95595865ec106fb890bbef25cb7ea6fd81d1a3a9acfb452e2048e81a1ed05",
+    "agent_scientist_dev_reference_test_bundle.zip": "be727e4ae458b4ddba0c36a397af68331749c57ec6bcf05d4fe97fcd50f88d16"
+  },
+  "bundle_members": [
+    {
+      "name": "agent_scientist_dev_reference_test_bundle/enzycontrol/enzycontrol_call.json",
+      "bytes": 331,
+      "sha256": "2b8fe7b4f783493b5a6d1222784370c43625406c6f5fe003e5131ba6efe75d86"
+    },
+    {
+      "name": "agent_scientist_dev_reference_test_bundle/enzycontrol/local_reference_benchmark.json",
+      "bytes": 709,
+      "sha256": "fe0acb97b70ba9ee2052e51d4cf53f0d3a92b314afad9e3d31ce2e030347e325"
+    },
+    {
+      "name": "agent_scientist_dev_reference_test_bundle/enzycontrol/1TCA.pdb",
+      "bytes": 244863,
+      "sha256": "8950b5f7a08c6e8be8506de6af728ec7c28583aa28362cb7886726f757d70d56"
+    },
+    {
+      "name": "agent_scientist_dev_reference_test_bundle/enzycontrol/local_reference_results.zip",
+      "bytes": 212325,
+      "sha256": "a44995e63610bfdd7d1bd320235c5e171fbb46d85b8ec525c71fdcedbd984a01"
+    },
+    {
+      "name": "agent_scientist_dev_reference_test_bundle/catalytic_geometry/rfd3_20_results.zip",
+      "bytes": 817480,
+      "sha256": "8c92699b9e798a89204ef58aa6bb956496ed400a05155004a8b68e6a7da49f62"
+    },
+    {
+      "name": "agent_scientist_dev_reference_test_bundle/catalytic_geometry/catalytic_geometry_call.json",
+      "bytes": 507,
+      "sha256": "4e37880a3a94741d593e2572621cadd70be2999572ef3075cf1f3c1fc1045ade"
+    },
+    {
+      "name": "agent_scientist_dev_reference_test_bundle/catalytic_geometry/rfd3_catalytic_geometry_inputs.zip",
+      "bytes": 2005,
+      "sha256": "daeafb3da455478e2c6b1bbd147d5185e6fa7668c3b8ae20aae76719e6093e3f"
+    },
+    {
+      "name": "agent_scientist_dev_reference_test_bundle/catalytic_geometry/local_reference_manifest.json",
+      "bytes": 622,
+      "sha256": "88b4c91d88206d00545f926a53839fb85002f1a3f4f286670cbd1fbcbfce7bad"
+    },
+    {
+      "name": "agent_scientist_dev_reference_test_bundle/catalytic_geometry/local_reference_results.zip",
+      "bytes": 2435,
+      "sha256": "6fae7016d2aef7aad36946b1cc25f45822903ba4930d7810862c00a5f94b75f7"
+    },
+    {
+      "name": "agent_scientist_dev_reference_test_bundle/rfd3/rfd3_call.json",
+      "bytes": 1887,
+      "sha256": "3116e6b83553580e749d6a1e5a4b14929e6751aefa268bde221070e8747e5619"
+    },
+    {
+      "name": "agent_scientist_dev_reference_test_bundle/rfd3/RFD3_M0255_1mg5.pdb",
+      "bytes": 6802,
+      "sha256": "a51ea7c5ab00abd264e473560b0a14bd87af885179cbdbe821fab92760626337"
+    },
+    {
+      "name": "agent_scientist_dev_reference_test_bundle/rfd3/local_reference_results.zip",
+      "bytes": 42515,
+      "sha256": "106a9d59e643dfde2ad16979de3658974bd246d60198735ae427b05fef874a21"
+    },
+    {
+      "name": "agent_scientist_dev_reference_test_bundle/rfd3/local_reference_report.json",
+      "bytes": 5007,
+      "sha256": "f108091ccd84e0bb18cf80f096a4de69b056d7be79a7d9b0982fe8e0ce3cbbc7"
+    },
+    {
+      "name": "agent_scientist_dev_reference_test_bundle/README.md",
+      "bytes": 4625,
+      "sha256": "1855707cba9620cd66988c81b15855a1c2fedc15a1e936aa047d6f74891cfd2f"
+    }
+  ],
+  "corrections": [
+    "Node Catalytic_Geometry mapping_path accepts JSON; CSV rejected with HTTP400. Lossless conversion accepted.",
+    "EnzyControl seed and Catalytic Geometry template_binding required by supplied FastAPI snapshot; earlier prompt optionality refers to local runtime.",
+    "Enzyme_RFD3 routing name unchanged; worker missing job_name is unresolved, not an undocumented job."
+  ],
+  "scope": "No credentials, uploaded storage paths, live job IDs, signed result URLs or machine-specific notebook paths are distributed. Local reference artifacts are not production golden outputs."
+}

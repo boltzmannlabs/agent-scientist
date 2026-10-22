@@ -1,17 +1,40 @@
 """Bounded, non-executing file inspection. Unknown scientific checks stay explicit."""
 
 import csv
+import gzip
 import io
+import json
 import math
 from pathlib import Path, PurePosixPath
 import stat
 import zipfile
 
-from .contracts import ValidationReport
+from .contracts import ValidationReport, validate_schema
 
 MAX_FILE_BYTES = 256 * 1024 * 1024
 MAX_EXPANDED_BYTES = 512 * 1024 * 1024
 MAX_ARCHIVE_MEMBERS = 10000
+
+
+def _json(data, rule, report):
+    def pairs(items):
+        result = {}
+        for key, value in items:
+            if key in result:
+                raise ValueError("Duplicate JSON key")
+            result[key] = value
+        return result
+
+    def invalid_constant(value):
+        raise ValueError("Nonfinite JSON constant")
+
+    value = json.loads(data.decode("utf-8-sig"), object_pairs_hook=pairs, parse_constant=invalid_constant)
+    validate_schema(value, rule.get("json_schema", {}), report, "file")
+    if "json_schema" not in rule:
+        report.warnings.append("JSON syntax checked; tool-specific content shape needs review.")
+    if not report.errors and rule.get("content_checks"):
+        from .enzyme_validation import validate_template
+        validate_template(value, rule["json_schema"], report)
 
 
 def _finite(text):
@@ -198,7 +221,12 @@ def validate_file(path, rule, payload):
     if not 0 < size <= MAX_FILE_BYTES:
         report.errors.append("Input is empty or exceeds the connector's 256 MiB inspection budget (not a service limit).")
         return report
+    if size > rule.get("max_bytes", MAX_FILE_BYTES):
+        report.errors.append("Input exceeds this field's documented maximum byte size.")
+        return report
     extension = path.suffix.lower().lstrip(".")
+    if extension == "gz":
+        extension = "".join(path.suffixes[-2:]).lower().lstrip(".")
     formats = {f.lower().lstrip(".") for f in rule.get("formats", [])}
     if formats and extension not in formats:
         report.errors.append("File extension is not supported by this input field.")
@@ -207,7 +235,19 @@ def validate_file(path, rule, payload):
     if report.errors:
         return report
     data = path.read_bytes()
+    if extension.endswith(".gz"):
+        try:
+            with gzip.GzipFile(fileobj=io.BytesIO(data)) as compressed:
+                data = compressed.read(MAX_FILE_BYTES + 1)
+            if len(data) > MAX_FILE_BYTES:
+                report.errors.append("Gzip expansion exceeds the connector's inspection budget.")
+                return report
+        except (OSError, EOFError):
+            report.errors.append("Invalid gzip content.")
+            return report
+        extension = extension.removesuffix(".gz")
     parsers = {"csv": lambda: _csv(data, rule, payload, report),
+               "json": lambda: _json(data, rule, report),
                "zip": lambda: _zip(data, rule, report),
                "xyz": lambda: _xyz(data, report), "sdf": lambda: _sdf(data, report),
                "pdb": lambda: _pdb(data, report),
@@ -217,7 +257,7 @@ def validate_file(path, rule, payload):
             parsers[extension]()
         else:
             report.warnings.append(f"No content parser for .{extension}; only file existence, size and declared extension checked.")
-    except (UnicodeError, csv.Error, zipfile.BadZipFile, RuntimeError, NotImplementedError, OSError):
+    except (UnicodeError, ValueError, csv.Error, zipfile.BadZipFile, RuntimeError, NotImplementedError, OSError, RecursionError):
         report.errors.append("Input could not be decoded or its archive integrity check failed.")
     unsupported = {"alphabet", "chains_field", "chain_scalar", "required_chains", "residues_field", "content_format"} & rule.keys()
     if unsupported:
