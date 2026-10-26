@@ -20,6 +20,52 @@ memory, workspaces, and a scientific persona.
 /resume
 ```
 
+## Omics coordinator foundation
+
+`/activate omics` offers a one-time **Create Omics** confirmation if that name is
+unused. The bundled, versioned starter creates a private workspace and conversation
+through native profiles. `/activate` also offers this starter in its picker.
+Subsequent activation resumes the latest Omics conversation; `/activate main`
+returns to main. `/resume` selects a different saved conversation.
+
+This first stage is ready for conversation once model authentication is available,
+not scientific execution. It includes an Omics coordinator persona and 16 foundation
+instruction skills, with skill listing, loading and management enabled. Scientific
+executors, service connections and child specialists are not installed. Generic
+delegation remains disabled. Shared LLM authentication uses the normal SCI mechanisms; no service
+keys, private research, conversations or main's tools are copied. Use `/login` if model
+authentication needs attention. Normal session and configuration slash commands remain
+available.
+
+The runtime uses a separate profile context and workspace, not an OS sandbox. No
+scientific environment, container image or dependencies are installed at activation;
+those will be configured with the future scientific tools. The native opt-out marker
+prevents automatic scientific skill seeding (essential SCI operating instructions may
+still be synchronized).
+
+An existing unrelated `omics` profile opens unchanged, with an explanatory notice;
+it is never silently converted. Rename it explicitly before activating the bundled
+starter if that is what you intend. The starter definition is shipped with SCI, but
+existing Omics workspaces are not overwritten on activation or automatically upgraded.
+Older bundled Omics workspaces receive an **Add foundation skills** offer. This installs
+missing names only, preserving edited files, disabled choices, credentials and research.
+Only the byte-identical original starter persona is updated; custom personas are kept.
+After accepting, activate Omics and use `/new` to load the additions without rewriting
+an existing conversation's cached instructions. Cancellation installs nothing; an
+installation failure may retain earlier successfully installed skills and reports that.
+
+The foundation covers question interpretation, biological knowledge, data discovery,
+input validation, metadata, identifier mapping, study design, QC, statistics, workflow
+planning, code verification, cross-omics integration, literature synthesis, hypotheses,
+reporting and provenance/access review. Each skill includes source attribution and a
+shared JSON-schema reference for `StudyManifest`, `AnalysisPlan`, `ToolResult`,
+`RunRecord` and `EvidenceClaim`. These schemas check record shape, not scientific
+correctness, cross-record consistency or runtime authorization. Interface names in the
+skills are design contracts, not registered model functions. Linked sources are reference
+documentation, not installed adapters; retrieval and execution require separately
+configured tools. Loading a skill never installs software or runs an analysis.
+Nested orchestration, specialist creation and contribution publishing are future stages.
+
 ## Create and review
 
 The wizard asks for a name, scientific skills, tools, service credentials, optional

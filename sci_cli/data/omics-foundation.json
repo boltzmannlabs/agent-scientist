@@ -1,0 +1,182 @@
+{
+  "version": "1.0.1.0",
+  "source": "Omics Foundation: Shared Skills and Integration Sources, implementation handoff, 2026-10-23",
+  "skills": [
+    {
+      "name": "omics-research-question",
+      "title": "Research-question interpretation",
+      "description": "Turn research questions into explicit analysis plans.",
+      "when": "A new omics question or a changed comparison needs an analysis plan.",
+      "interface": "interpret_request(question, StudyManifest?) -> AnalysisPlan",
+      "procedure": "Identify the population, biological replicate unit, comparison, outcomes, assays, constraints and deliverables. Separate user-supplied facts from assumptions. Ask for missing design fields when they change validity; leave unresolved fields explicit rather than inventing them. Return an AnalysisPlan for review before execution.",
+      "pitfall": "A treatment label alone does not establish an estimable comparison or biological replication.",
+      "verification": "For a treatment comparison, identify both treatment labels and the biological replicate unit; missing design fields remain visible before analysis begins.",
+      "sources": ["https://isa-tools.org/index.html", "https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html"]
+    },
+    {
+      "name": "omics-biological-knowledge",
+      "title": "Omics and biological knowledge",
+      "description": "Retrieve biological definitions with evidence labels.",
+      "when": "An assay, biological entity, pathway or annotation needs a sourced explanation.",
+      "interface": "lookup_biology(term, context) -> EvidenceClaim[]",
+      "procedure": "Use an available authorized knowledge connector to retrieve definitions and annotations. Retain source identifiers, ontology or database version, species and evidence codes. Classify annotation evidence separately from experimental observations and literature claims. Without retrieval access, label background explanation as unverified and request the needed source.",
+      "pitfall": "Automated annotation is not experimental confirmation; a term match may be ambiguous.",
+      "verification": "Explain whether each annotation is experimentally supported, computationally inferred or otherwise qualified by its evidence code.",
+      "sources": ["https://www.ebi.ac.uk/ols4/api-docs", "https://geneontology.org/docs/go-annotations/", "https://geneontology.org/docs/guide-go-evidence-codes/"]
+    },
+    {
+      "name": "omics-data-discovery",
+      "title": "Data discovery and collection",
+      "description": "Find datasets and document permitted data imports.",
+      "when": "A researcher needs public study candidates or an approved dataset import.",
+      "interface": "search_datasets(query, filters) -> DatasetCandidate[]; import_dataset(accession_or_uri, policy) -> StudyManifest",
+      "procedure": "Search through configured repository connectors, keeping repository-specific access logic outside the coordinator. Inspect accession metadata, assay suitability, file availability and access terms before retrieving data. Record the source URI, accession, retrieval time and checksums calculated from actual downloaded bytes. Link imported files to samples in StudyManifest. If retrieval is unavailable, return candidates or a blocked import rather than a fabricated manifest of downloaded files.",
+      "pitfall": "A publicly visible accession does not authorize every linked file or downstream use.",
+      "verification": "Every imported file has a repository accession or user-upload origin and an actually measured checksum; unavailable files remain explicitly unavailable.",
+      "sources": ["https://www.ncbi.nlm.nih.gov/geo/info/geo_paccess.html", "https://www.ebi.ac.uk/pride/ws/archive/v3/webjars/swagger-ui/index.html", "https://www.ebi.ac.uk/training/online/courses/metabolights-quick-tour/getting-data-from-metabolights/"]
+    },
+    {
+      "name": "omics-data-validation",
+      "title": "Data ingestion and validation",
+      "description": "Review omics inputs and assay-specific validation.",
+      "when": "New files need inspection before an assay-specific analysis.",
+      "interface": "inspect_data(files) -> DataInspection; validate_data(files, assay) -> ValidationResult",
+      "procedure": "Inspect approved inputs with available file tools or an assay validator. Establish format, readability, integrity, matrix dimensions, identifiers, units, missing fields and raw-versus-processed status. Ask the assay adapter to perform format-specific checks. Record observed failures, unsupported formats and corrective actions. Do not claim a check ran without its tool result.",
+      "pitfall": "A file extension is not proof of format; unsupported data must not be silently coerced.",
+      "verification": "Malformed inputs produce specific errors and suggested corrections; a validator absent from the session produces a setup blocker, not a pass.",
+      "sources": ["https://anndata.readthedocs.io/en/latest/fileformat-prose.html", "https://isa-tools.org/index.html"]
+    },
+    {
+      "name": "omics-metadata",
+      "title": "Metadata management",
+      "description": "Keep study, donor, sample and assay links consistent.",
+      "when": "Metadata from files or repositories must be combined or normalized.",
+      "interface": "harmonize_metadata(records) -> StudyManifest",
+      "procedure": "Maintain stable study, donor, sample, assay and file identifiers. Retain original labels alongside normalized controlled terms, including mapping source and version. Track condition, time point and batch separately. Identify missing references, duplicate identifiers and contradictory relationships. Ask for a resolution rather than silently choosing one donor or condition assignment.",
+      "pitfall": "Similar names do not establish that samples or donors are identical.",
+      "verification": "Conflicting donor or condition assignments remain unresolved until a visible decision is recorded; original labels are recoverable.",
+      "sources": ["https://isa-tools.org/index.html", "https://www.ebi.ac.uk/ols4/api-docs"]
+    },
+    {
+      "name": "omics-identifier-mapping",
+      "title": "Identifier and ontology mapping",
+      "description": "Map biological identifiers without hiding ambiguity.",
+      "when": "Gene, protein, metabolite, genomic or ontology identifiers need mapping.",
+      "interface": "map_identifiers(ids, source_namespace, target_namespace, species?) -> MappingResult[]",
+      "procedure": "Establish source and target namespaces and species where relevant. Use a configured mapping connector, preserving each original identifier, mapping source and release. Return every one-to-many candidate and an explicit unmapped outcome. Record the reviewed rule for any downstream disambiguation instead of arbitrarily taking the first match.",
+      "pitfall": "Symbol reuse, species differences and release changes can create false equivalence.",
+      "verification": "Ambiguous mappings remain visible and no input identifier disappears from the result accounting.",
+      "sources": ["https://rest.ensembl.org/documentation/info/lookup", "https://www.ebi.ac.uk/ols4/api-docs", "https://www.ebi.ac.uk/chebi/tools"]
+    },
+    {
+      "name": "omics-study-design",
+      "title": "Study-design reasoning",
+      "description": "Review replication, contrasts and confounding.",
+      "when": "A proposed statistical comparison needs a design review before execution.",
+      "interface": "review_study_design(StudyManifest, question) -> DesignReview",
+      "procedure": "Identify independent biological replicates, repeated measurements, pairing, covariates, batch balance and intended contrasts. Check whether effects can be distinguished from nuisance variables. Return estimable comparisons, unresolved questions and a design decision before choosing a statistical model. Treat DESeq2 guidance as a count-data example, not a universal assay method.",
+      "pitfall": "Technical replicates and individual cells are not automatically independent biological replicates.",
+      "verification": "When treatment is completely confounded with batch, flag the contrast as non-identifiable instead of reporting a treatment effect.",
+      "sources": ["https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html"]
+    },
+    {
+      "name": "omics-quality-control",
+      "title": "Quality-control reasoning",
+      "description": "Interpret assay-specific QC with retention rationale.",
+      "when": "Available assay metrics need interpretation or proposed exclusions need review.",
+      "interface": "assess_quality(dataset, assay, context) -> QCReport",
+      "procedure": "Request metrics and distributions from the appropriate configured assay adapter. Relate outliers to tissue, assay, study design and processing context. Explain proposed thresholds, exclusions and sample retention, distinguishing proposals from actions already taken. Return pass, review or fail with linked measurements and limitations; absent metrics require review or a blocker.",
+      "pitfall": "Do not transfer an scRNA-seq mitochondrial threshold to proteomics or declare a universal threshold for all tissues.",
+      "verification": "Every QC decision has an assay-appropriate rationale and evidence; report before/after sample counts if filtering actually ran.",
+      "sources": ["https://bioconductor.org/packages/release/bioc/html/scater.html"]
+    },
+    {
+      "name": "omics-statistical-reasoning",
+      "title": "Statistical reasoning",
+      "description": "Match statistical plans to measurements and design.",
+      "when": "An approved design needs a statistical plan or computed results need review.",
+      "interface": "propose_model(DesignReview, assay) -> StatisticalPlan; review_statistics(ToolResult) -> StatisticalReview",
+      "procedure": "Match measurement scale, distribution, replicate unit, pairing and covariates to a supported method. Document the contrast, assumptions and diagnostic checks. Review computed effect sizes, uncertainty, multiplicity adjustment and diagnostic results. Distinguish statistical significance from biological relevance and exploratory from confirmatory analysis. Request an assay specialist when model suitability cannot be established.",
+      "pitfall": "DESeq2 and MSstats support specific experiment types; their availability does not justify arbitrary cross-assay use.",
+      "verification": "The report names the comparison, independent replicate unit, adjustment method, uncertainty measure and observed model limitations.",
+      "sources": ["https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html", "https://www.bioconductor.org/packages/release/bioc/html/MSstats.html"]
+    },
+    {
+      "name": "omics-workflow-execution",
+      "title": "Workflow planning and execution",
+      "description": "Plan approved jobs and track execution honestly.",
+      "when": "An approved AnalysisPlan must be handed to an available workflow executor.",
+      "interface": "submit_workflow(AnalysisPlan) -> Job; get_job_status(job_id) -> JobStatus; resume_workflow(job_id) -> Job",
+      "procedure": "Resolve the actual authorized executor and its documented inputs before submission. Keep planning distinct from execution. Record a job identifier, status, logs, outputs and RunRecord. Use documented checkpoint/resume behavior only after checking the existing job. After an ambiguous submission timeout, reconcile its status before any resubmission. Preserve partial artifacts and describe which steps failed.",
+      "pitfall": "A missing job ID does not prove that a submission was rejected; a retry may duplicate work or cost.",
+      "verification": "Failure identifies the known failing step, retained outputs and permitted recovery route; partial output is never described as a completed analysis.",
+      "sources": ["https://training.nextflow.io/latest/nextflow_run/03_manage_executions/"]
+    },
+    {
+      "name": "omics-code-verification",
+      "title": "Code generation and verification",
+      "description": "Tie analysis code and claims to verified execution.",
+      "when": "A user requests analysis code or review of a computational result.",
+      "interface": "generate_analysis_code(AnalysisPlan) -> CodeArtifact; execute_and_verify(CodeArtifact) -> ToolResult",
+      "procedure": "Generate code against inspected inputs and an explicit plan. When execution tools are available and approved, use the reviewed runtime, retain the exact code and logs, and check invariants such as identifiers, dimensions and output accounting. Record dependencies and versions. Without execution, label code as a draft and do not invent numerical results. Do not install packages or run generated code merely because the skill was loaded.",
+      "pitfall": "Syntactically plausible code or passing trivial tests does not establish a valid scientific analysis.",
+      "verification": "Every displayed computed result points to the successful run of the saved code and its meaningful checks; unexecuted code remains labeled draft.",
+      "sources": ["https://docs.pytest.org/en/stable/", "https://training.nextflow.io/latest/nextflow_run/03_manage_executions/"]
+    },
+    {
+      "name": "omics-evidence-integration",
+      "title": "Cross-omics evidence integration",
+      "description": "Align assays and review cross-omics evidence.",
+      "when": "Results from multiple assays or cohorts need comparison or integration.",
+      "interface": "align_assays(StudyManifest) -> AlignmentReport; integrate_results(ToolResult[]) -> IntegrationResult",
+      "procedure": "Establish donor and sample correspondence, feature mappings, missing modalities and processing differences. Separate paired measurements from comparisons between independent cohorts. Ask configured assay tools to perform reviewed alignment or integration methods and preserve their provenance. State where observations agree, disagree or cannot be compared. Stop paired integration when pairing cannot be established; a descriptive comparison must retain that limitation.",
+      "pitfall": "A shared condition label does not make measurements paired; integration software does not resolve uncertain sample identity.",
+      "verification": "The report accounts for unmatched samples and modalities and never implies donor-level pairing without evidence.",
+      "sources": ["https://mixomics.org/", "https://mixomics.org/getting-started/"]
+    },
+    {
+      "name": "omics-literature-synthesis",
+      "title": "Literature search and evidence synthesis",
+      "description": "Connect literature claims to supporting sources.",
+      "when": "A research question needs publication discovery or evidence synthesis.",
+      "interface": "search_literature(question, entities) -> Publication[]; synthesize_evidence(Publication[], ToolResult[]) -> EvidenceClaim[]",
+      "procedure": "Search through an available authorized literature connector. Record query scope, retrieval date, stable publication identifiers and metadata. Distinguish abstracts from reviewed full text. Link each claim to the passage or result that supports it and preserve conflicting findings. Keep literature claims separate from measurements produced in the current project. Without retrieval tools, ask for supplied publications or state that a verified search cannot yet run.",
+      "pitfall": "Do not invent citations, treat search snippets as reviewed full text, or call a limited search exhaustive.",
+      "verification": "Each cited assertion has directly supporting evidence; project observations and published findings remain distinguishable.",
+      "sources": ["https://www.ebi.ac.uk/training/online/courses/embl-ebi-programmatically/europe-pmc-programmatically/", "https://geneontology.org/docs/go-annotations/"]
+    },
+    {
+      "name": "omics-hypothesis-reasoning",
+      "title": "Scientific interpretation and hypothesis generation",
+      "description": "Frame testable hypotheses and alternative explanations.",
+      "when": "Observed findings need an interpretation or a testable explanatory hypothesis.",
+      "interface": "propose_hypotheses(EvidenceClaim[], context) -> Hypothesis[]",
+      "procedure": "Separate observations, annotations and literature evidence from proposed explanations. For each hypothesis, identify supporting evidence, unresolved assumptions, alternative explanations and a permitted analysis that could distinguish them. State an observable outcome that would weaken the hypothesis. Avoid causal claims from association alone and retain negative or conflicting evidence.",
+      "pitfall": "Plausibility and annotation enrichment do not establish mechanism or causation.",
+      "verification": "Each hypothesis is labeled as such and includes an alternative explanation and a potentially disconfirming observation.",
+      "sources": ["https://geneontology.org/docs/guide-go-evidence-codes/", "https://www.ebi.ac.uk/training/online/courses/embl-ebi-programmatically/europe-pmc-programmatically/"]
+    },
+    {
+      "name": "omics-reporting",
+      "title": "Visualization and reporting",
+      "description": "Build reports traceable to methods and artifacts.",
+      "when": "An analysis needs a scientific report, figure plan or artifact summary.",
+      "interface": "build_report(AnalysisPlan, ToolResult[], EvidenceClaim[]) -> ReportArtifact",
+      "procedure": "Organize the report around the question, study design, QC, methods, results, limitations and evidence. Use available approved tools to produce actual figures and tables, retaining source data and code references. Label illustrations or figure specifications that were not executed. Provide only artifact paths that actually exist and are accessible to the user. Distinguish draft narrative from a completed computational report.",
+      "pitfall": "A plausible chart description is not a generated figure; missing or failed outputs must remain visible.",
+      "verification": "A reader can trace each computed conclusion to a result table, method, run and input dataset.",
+      "sources": ["https://quarto.org/docs/faq/", "https://bioconductor.org/packages/release/bioc/html/scater.html"]
+    },
+    {
+      "name": "omics-provenance-access",
+      "title": "Provenance, reproducibility, and access control",
+      "description": "Track analysis provenance and dataset-use boundaries.",
+      "when": "Data retrieval, execution, sharing or result provenance needs review.",
+      "interface": "record_provenance(RunRecord) -> ProvenanceGraph; check_data_use(dataset, requested_action) -> AccessDecision",
+      "procedure": "Record input/output identifiers, measured checksums, parameters, software and reference-data versions, job status and artifact links. Link derivations without copying credentials or private records into reusable skills. Check dataset-use terms and runtime permissions for the specific action before retrieval, execution or sharing. Missing or conflicting permission is a blocker, not implied consent. Explain the provenance chain and what is missing for reproduction.",
+      "pitfall": "A schema or natural-language permission label does not enforce access control. DUO terms describe use restrictions; runtime authorization still must enforce them.",
+      "verification": "Every completed output has a traceable run; a use conflicting with dataset policy is refused and unknown access remains unresolved.",
+      "sources": ["https://www.w3.org/TR/prov-o/", "https://www.ga4gh.org/product/data-use-ontology-duo/"]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:boltzmann-labs:omics:foundation:1",
+  "title": "Omics foundation records",
+  "description": "SCI record shapes, not executable tools or proof of scientific correctness or authorization. Validate a record against its named $defs entry; preserve unknown values and unresolved questions.",
+  "$defs": {
+    "Id": {"type": "string", "minLength": 1},
+    "Ids": {"type": "array", "items": {"$ref": "#/$defs/Id"}},
+    "Status": {"enum": ["draft", "blocked", "pending", "running", "failed", "partial", "succeeded", "cancelled", "unknown"]},
+    "Checksum": {
+      "type": "object", "required": ["algorithm", "value"],
+      "properties": {"algorithm": {"$ref": "#/$defs/Id"}, "value": {"$ref": "#/$defs/Id"}}
+    },
+    "StudyManifest": {
+      "type": "object",
+      "required": ["study_id", "donors", "samples", "assays", "files", "source_accessions", "access_policy_ids", "unresolved_questions"],
+      "properties": {
+        "study_id": {"$ref": "#/$defs/Id"},
+        "donors": {"type": "array", "items": {"type": "object", "required": ["donor_id"], "properties": {"donor_id": {"$ref": "#/$defs/Id"}}}},
+        "samples": {"type": "array", "items": {
+          "type": "object", "required": ["sample_id", "donor_id", "condition", "time_point", "batch"],
+          "properties": {"sample_id": {"$ref": "#/$defs/Id"}, "donor_id": {"type": ["string", "null"]}, "condition": {"type": ["string", "null"]}, "time_point": {"type": ["string", "null"]}, "batch": {"type": ["string", "null"]}, "original_labels": {"type": "object"}}
+        }},
+        "assays": {"type": "array", "items": {"type": "object", "required": ["assay_id", "assay_type", "sample_ids", "file_ids"], "properties": {"assay_id": {"$ref": "#/$defs/Id"}, "assay_type": {"$ref": "#/$defs/Id"}, "sample_ids": {"$ref": "#/$defs/Ids"}, "file_ids": {"$ref": "#/$defs/Ids"}}}},
+        "files": {"type": "array", "items": {"type": "object", "required": ["file_id", "location", "origin", "checksum", "retrieved_at"], "properties": {"file_id": {"$ref": "#/$defs/Id"}, "location": {"$ref": "#/$defs/Id"}, "origin": {"$ref": "#/$defs/Id"}, "checksum": {"oneOf": [{"$ref": "#/$defs/Checksum"}, {"type": "null"}]}, "retrieved_at": {"type": ["string", "null"]}}}},
+        "source_accessions": {"$ref": "#/$defs/Ids"}, "access_policy_ids": {"$ref": "#/$defs/Ids"}, "unresolved_questions": {"$ref": "#/$defs/Ids"}
+      }
+    },
+    "AnalysisPlan": {
+      "type": "object", "required": ["question", "comparison", "required_inputs", "proposed_methods", "assumptions", "expected_outputs", "unresolved_questions"],
+      "properties": {"question": {"$ref": "#/$defs/Id"}, "comparison": {"type": ["string", "null"]}, "required_inputs": {"$ref": "#/$defs/Ids"}, "proposed_methods": {"$ref": "#/$defs/Ids"}, "assumptions": {"$ref": "#/$defs/Ids"}, "expected_outputs": {"$ref": "#/$defs/Ids"}, "unresolved_questions": {"$ref": "#/$defs/Ids"}, "replicate_unit": {"type": ["string", "null"]}}
+    },
+    "ToolResult": {
+      "type": "object", "required": ["status", "metrics", "artifacts", "warnings", "errors", "method_id"],
+      "properties": {"status": {"$ref": "#/$defs/Status"}, "metrics": {"type": "object"}, "artifacts": {"$ref": "#/$defs/Ids"}, "warnings": {"$ref": "#/$defs/Ids"}, "errors": {"$ref": "#/$defs/Ids"}, "method_id": {"$ref": "#/$defs/Id"}, "run_id": {"type": ["string", "null"]}}
+    },
+    "RunRecord": {
+      "type": "object", "required": ["run_id", "inputs", "software_versions", "reference_versions", "parameters", "status", "output_ids"],
+      "properties": {
+        "run_id": {"$ref": "#/$defs/Id"},
+        "inputs": {"type": "array", "items": {"type": "object", "required": ["input_id", "checksum"], "properties": {"input_id": {"$ref": "#/$defs/Id"}, "checksum": {"oneOf": [{"$ref": "#/$defs/Checksum"}, {"type": "null"}]}}}},
+        "software_versions": {"type": "object", "additionalProperties": {"type": ["string", "null"]}}, "reference_versions": {"type": "object", "additionalProperties": {"type": ["string", "null"]}}, "parameters": {"type": "object"}, "status": {"$ref": "#/$defs/Status"}, "output_ids": {"$ref": "#/$defs/Ids"}
+      }
+    },
+    "EvidenceClaim": {
+      "type": "object", "required": ["claim", "type", "support", "limitations", "confidence_rationale"],
+      "properties": {"claim": {"$ref": "#/$defs/Id"}, "type": {"enum": ["observation", "annotation", "literature", "hypothesis"]}, "support": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/Id"}}, "limitations": {"$ref": "#/$defs/Ids"}, "confidence_rationale": {"$ref": "#/$defs/Id"}}
+    }
+  }
+}

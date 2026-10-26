@@ -279,6 +279,17 @@ class CLITuiRuntimeMixin:
             pass
         self._console_print(f"[{_welcome_color}]{_welcome_text}[/]")
 
+        from sci_cli.omics_starter import startup_notice
+        from sci_cli.profile_distribution import DistributionError
+        from sci_constants import get_sci_home
+        try:
+            notice = startup_notice(get_sci_home())
+        except (OSError, ValueError, DistributionError) as exc:
+            notice = "Coordinator metadata could not be read; review this profile's distribution.yaml."
+            logger.warning("Coordinator startup notice unavailable: %s", type(exc).__name__)
+        if notice:
+            self._console_print(notice)
+
         self._tui_startup_prewarm_and_warnings(_welcome_skin)
         self._print_random_tip()
 

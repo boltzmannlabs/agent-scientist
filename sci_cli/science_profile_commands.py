@@ -18,11 +18,22 @@ def activate(cli, command, ui=None):
             for item in list_profile_names():
                 label = "main" if item == "default" else item
                 choices[label + (" — currently active" if label == profile_label() else "")] = item
+            if "omics" not in choices and "omics — currently active" not in choices:
+                choices["omics — set up coordinator"] = "omics"
             name = choices[ui.choose("Choose a profile", [*choices, "Cancel"])]
         elif len(args) == 1 and not args[0].startswith("--"):
             name = args[0]
         else:
             raise ValueError('Usage: /activate ["profile-name"] [profile]. New profiles need no --prepare.')
+        # Setup must not create state while a turn is running or outside the REPL.
+        if name.strip().lower() == "omics":
+            name = "omics"
+            if getattr(cli, "_agent_running", False) or getattr(cli, "_science_running_worker", None):
+                raise ValueError("Finish or cancel the current turn before switching profiles.")
+            if not getattr(getattr(cli, "_app", None), "is_running", False):
+                raise ValueError("Profile activation requires the interactive CLI.")
+            from sci_cli.omics_starter import ensure_omics
+            ensure_omics(ui)
         request_switch(cli, name, ui)
     except (Cancelled, KeyboardInterrupt, EOFError):
         ui.show("Activation cancelled. Current selection unchanged.")
