@@ -1079,6 +1079,25 @@
         }
       }
     },
+    "ligand_pharmacophore": {
+      "source": "contract_sources/legacy-v1/boltchem_tools.md: Tool 9 input table and execution step 1",
+      "files": {
+        "smiles_file": {
+          "formats": ["csv"],
+          "columns": ["SMILES"],
+          "header_case_sensitive": true,
+          "values": {"SMILES": "smiles"},
+          "notes": "Recorded training CSV layout. Exact SMILES header and nonempty cells are required; molecular semantics and extra-column acceptance remain unverified."
+        },
+        "validation_file": {
+          "formats": ["csv"],
+          "columns": ["SMILES"],
+          "header_case_sensitive": true,
+          "values": {"SMILES": "smiles"},
+          "notes": "Recorded execution procedure uses SMILES for both CSVs. Generic parsing does not verify validation-set suitability or independence."
+        }
+      }
+    },
     "Pharmacophore_Hypothesis": {
       "source": "modules/small-molecule-pharmacophore-generation.md",
       "files": {

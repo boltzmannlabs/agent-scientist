@@ -441,7 +441,8 @@ def file_upload(input_path, token: str | None = None):
         response = requests.post(_UPLOAD_URL, headers=headers, files=files, timeout=120, allow_redirects=False)
     auth_err = _is_auth_error(response)
     if auth_err:
-        return {"error": auth_err}
+        from .results import service_error
+        return {**service_error("upload", response, active_token), "error": auth_err}
     try:
         result = response.json()
     except ValueError:
@@ -500,7 +501,8 @@ def submit_request(experiment_data, job_name, experiment_name, token: str | None
         }
     auth_err = _is_auth_error(response)
     if auth_err:
-        return {"error": auth_err}
+        from .results import service_error
+        return {**service_error("submit", response, active_token), "error": auth_err}
     try:
         result = response.json()
     except ValueError:
@@ -587,9 +589,11 @@ def fetch_status(
 
     while True:
         if time.monotonic() >= deadline:
+            polling_message = "Polling window ended. The job may still be running; poll this same job, never resubmit."
             return {**last_result, "stage": "status", "job_name": collection_name, "doc_id": doc_id,
                     "timeout": True, "safe_to_retry": False,
-                    "message": "Polling window ended. The job may still be running; poll this same job, never resubmit."}
+                    "message": last_result.get("message") or polling_message,
+                    "polling_message": polling_message}
 
         try:
             response = requests.get(_FETCH_URL, headers=headers, json=payload,
@@ -599,10 +603,6 @@ def fetch_status(
                 return {"error": auth_err, "stage": "status", "status": "unknown",
                         "authorization_required": True, "job_name": collection_name,
                         "doc_id": doc_id, "safe_to_retry": False}
-            if not 200 <= response.status_code < 300:
-                from .results import service_error
-                return {**service_error("status", response, active_token),
-                        "job_name": collection_name, "doc_id": doc_id}
             consecutive_errors = 0
         except requests.exceptions.RequestException:
             consecutive_errors += 1
@@ -614,17 +614,30 @@ def fetch_status(
 
         try:
             result = response.json()
-        except Exception:
-            print(f"[fetch_status] JSON parse failed (HTTP {response.status_code})")
+        except ValueError:
             return {"error": "Status response was not valid JSON; job outcome is unknown.",
                     "stage": "status", "status": "unknown", "job_name": collection_name,
                     "doc_id": doc_id, "safe_to_retry": False}
+
+        # This result endpoint also returns real running/failed job bodies with
+        # HTTP 404. Do not confuse them with a missing route or an auth failure.
+        reported_status = result.get("status") if isinstance(result, dict) else None
+        job_state_on_404 = (response.status_code == 404 and isinstance(reported_status, str)
+                            and reported_status.lower().strip() in {"running", "failed"}
+                            and (isinstance(result.get("message"), str) and bool(result["message"].strip())
+                                 or isinstance(result.get("info"), dict) and bool(result["info"])))
+        if not 200 <= response.status_code < 300 and not job_state_on_404:
+            from .results import service_error
+            return {**service_error("status", response, active_token),
+                    "job_name": collection_name, "doc_id": doc_id}
 
         if not isinstance(result, dict) or "status" not in result:
             return {"error": "Status response omitted the job status; no completion is confirmed.",
                     "stage": "status", "status": "unknown", "job_name": collection_name,
                     "doc_id": doc_id, "safe_to_retry": False}
 
+        from .results import service_diagnostics
+        result = service_diagnostics(result, active_token)
         status = str(result["status"]).lower().strip()
         last_result = {**result, "job_name": collection_name, "doc_id": doc_id}
 
@@ -634,7 +647,7 @@ def fetch_status(
 
         if status in {"failed", "error", "cancelled", "canceled"}:
             from .results import safe_detail
-            result = {"status": status, "stage": "status", "job_name": collection_name, "doc_id": doc_id,
+            result = {**last_result, "status": status, "stage": "status",
                       "error": safe_detail(result, active_token) or "The service reported a terminal failure without a diagnostic.",
                       "safe_to_retry": False}
             _log_platform_terminal(collection_name, doc_id, "failed", conv_id, active_token)

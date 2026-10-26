@@ -5914,6 +5914,108 @@
         }
       ]
     },
+    "ligand_pharmacophore": {
+      "display_name": "Ligand-Based Pharmacophore Hypothesis",
+      "job_name": "ligand_pharmacophore",
+      "aliases": [
+        "ligand pharmacophore hypothesis",
+        "ligand-based pharmacophore hypothesis",
+        "Pharmacophore Hypothesis - Ligand based",
+        "Ligand Pharmacophore Gen",
+        "ligand_pharmacophore"
+      ],
+      "module_id": "small-molecule-pharmacophore-generation",
+      "status": "active",
+      "source": "modules/small-molecule-pharmacophore-generation.md",
+      "description": "Generate ligand-based pharmacophore hypotheses from separate training and validation ligand CSV files. This is distinct from receptor-based Pharmacophore_Hypothesis: no receptor PDB or ligand residue code is required. Inspect the returned hypothesis and archive artifacts before reporting completion; historical runs reported missing artifacts despite a Success status.",
+      "execution_blocked": false,
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "smiles_file": {
+            "type": "string",
+            "x-input-kind": "file",
+            "description": "Training ligand CSV with a case-sensitive SMILES column. Upload the reviewed local file and preserve its returned platform reference."
+          },
+          "validation_file": {
+            "type": "string",
+            "x-input-kind": "file",
+            "description": "Separate validation ligand CSV with a case-sensitive SMILES column, following the recorded input procedure. Use a newly validated upload or an explicitly approved accessible reference."
+          },
+          "min_features": {
+            "type": "number",
+            "x-input-kind": "value",
+            "description": "Minimum pharmacophore feature count. Historical examples are not backend-wide limits or defaults."
+          },
+          "max_features": {
+            "type": "number",
+            "x-input-kind": "value",
+            "description": "Maximum pharmacophore feature count; must not be less than min_features."
+          },
+          "percentage": {
+            "type": "number",
+            "x-input-kind": "value",
+            "description": "Minimum actives fraction in the recorded 0 to 1 representation, not a 0 to 100 percentage."
+          },
+          "n_conformers": {
+            "type": "number",
+            "x-input-kind": "value",
+            "description": "Requested conformer count as a JSON number. Current backend limits are not independently established."
+          },
+          "features": {
+            "type": "array",
+            "x-input-kind": "value",
+            "minItems": 1,
+            "description": "Selected exact feature labels. Historical submissions include hb donor, which is absent from the archived UI options; see execution notices.",
+            "items": {
+              "type": "string",
+              "enum": ["hb acceptor", "hb donor", "aromatic ring", "hydrophobicity", "positive charge", "negative charge"]
+            }
+          }
+        },
+        "required": ["smiles_file", "validation_file", "min_features", "max_features", "percentage", "n_conformers", "features"],
+        "additionalProperties": false
+      },
+      "review_notes": [
+        "Request fields come from archived public metadata and recorded accepted submissions. The public frontend still recognizes ligand_pharmacophore, but current worker acceptance and output recovery have not been retested. Obtain explicit approval for an attempt; do not substitute the receptor-based tool.",
+        "Historical records describe 25-credit charges and missing output objects despite Success. This is not a current price or proof of an ongoing outage. An attempt may consume credits without usable artifacts; report the actual outcome, inspect all returned artifacts and never resubmit automatically.",
+        "Recorded accepted submissions include hb donor; the archived UI option list omits it. That recorded choice is retained for an explicitly reviewed attempt, not claimed as a currently verified UI option.",
+        "CSV structure is checked, not molecular validity, ligand suitability or scientific independence of training and validation sets. Current row/count limits and extra-column acceptance are unverified. Do not invent sample data from historical private upload paths; obtain an accessible approved sample or review proposed local fixtures first."
+      ],
+      "examples": [
+        {
+          "description": "Historical numeric settings; file references are placeholders, not available samples or recommended defaults.",
+          "experiment_data": {
+            "smiles_file": "<uploaded training CSV reference>",
+            "validation_file": "<uploaded validation CSV reference>",
+            "min_features": 2,
+            "max_features": 5,
+            "percentage": 0.5,
+            "n_conformers": 20,
+            "features": ["hb acceptor", "hb donor", "aromatic ring", "hydrophobicity"]
+          }
+        }
+      ],
+      "submission": {
+        "wire_job_name": "ligand_pharmacophore",
+        "experiment_name_required": true,
+        "payload_field": "experimentData"
+      },
+      "diagnostics": [
+        {
+          "job_name": "ligand_pharmacophore",
+          "collection_name": "pharmacophorehypoligand",
+          "mapping_status": "source_documented",
+          "source_file": "contract_sources/legacy-v1/clarification-public-evidence.v1.json",
+          "notes": "Collection mapping also present in public frontend main.5b329b08.js, inspected 2026-10-26; not a live diagnostic lookup."
+        }
+      ],
+      "evidence": [
+        "contract_sources/legacy-v1/boltchem_tools.md: Tool 9",
+        "contract_sources/legacy-v1/clarification-public-evidence.v1.json: ligand_pharmacophore",
+        "contract_sources/ligand-pharmacophore-reconciliation.md"
+      ]
+    },
     "Pharmacophore_Hypothesis": {
       "display_name": "Pharmacophore Hypothesis (phcore_gen)",
       "job_name": "Pharmacophore_Hypothesis",

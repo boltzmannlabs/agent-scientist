@@ -6,6 +6,211 @@ Use the authorized connector. Collect the user's required values; upload local f
 and substitute the returned platform references. Submit once, retain the job ID, poll
 and inspect all returned artifacts. Never invent inputs or reuse another user's references.
 
+## Ligand-Based Pharmacophore Hypothesis
+
+Generate ligand-based pharmacophore hypotheses from separate training and validation ligand CSV files. This is distinct from receptor-based Pharmacophore_Hypothesis: no receptor PDB or ligand residue code is required. Inspect the returned hypothesis and archive artifacts before reporting completion; historical runs reported missing artifacts despite a Success status.
+
+Exact job name: `ligand_pharmacophore`.
+
+### Inputs
+
+Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
+
+| Field | Type | Required | Input kind | Description |
+|---|---|---|---|---|
+| `smiles_file` | string | yes | file | Training ligand CSV with a case-sensitive SMILES column. Upload the reviewed local file and preserve its returned platform reference. |
+| `validation_file` | string | yes | file | Separate validation ligand CSV with a case-sensitive SMILES column, following the recorded input procedure. Use a newly validated upload or an explicitly approved accessible reference. |
+| `min_features` | number | yes | value | Minimum pharmacophore feature count. Historical examples are not backend-wide limits or defaults. |
+| `max_features` | number | yes | value | Maximum pharmacophore feature count; must not be less than min_features. |
+| `percentage` | number | yes | value | Minimum actives fraction in the recorded 0 to 1 representation, not a 0 to 100 percentage. |
+| `n_conformers` | number | yes | value | Requested conformer count as a JSON number. Current backend limits are not independently established. |
+| `features` | array | yes | value | Selected exact feature labels. Historical submissions include hb donor, which is absent from the archived UI options; see execution notices. |
+
+Input kinds: `value` is inline data; `file` requires a platform file reference;
+`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
+Only local files require a new upload. Never infer input mode from a field name.
+
+### Exact request schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "smiles_file": {
+      "type": "string",
+      "x-input-kind": "file",
+      "description": "Training ligand CSV with a case-sensitive SMILES column. Upload the reviewed local file and preserve its returned platform reference."
+    },
+    "validation_file": {
+      "type": "string",
+      "x-input-kind": "file",
+      "description": "Separate validation ligand CSV with a case-sensitive SMILES column, following the recorded input procedure. Use a newly validated upload or an explicitly approved accessible reference."
+    },
+    "min_features": {
+      "type": "number",
+      "x-input-kind": "value",
+      "description": "Minimum pharmacophore feature count. Historical examples are not backend-wide limits or defaults."
+    },
+    "max_features": {
+      "type": "number",
+      "x-input-kind": "value",
+      "description": "Maximum pharmacophore feature count; must not be less than min_features."
+    },
+    "percentage": {
+      "type": "number",
+      "x-input-kind": "value",
+      "description": "Minimum actives fraction in the recorded 0 to 1 representation, not a 0 to 100 percentage."
+    },
+    "n_conformers": {
+      "type": "number",
+      "x-input-kind": "value",
+      "description": "Requested conformer count as a JSON number. Current backend limits are not independently established."
+    },
+    "features": {
+      "type": "array",
+      "x-input-kind": "value",
+      "minItems": 1,
+      "description": "Selected exact feature labels. Historical submissions include hb donor, which is absent from the archived UI options; see execution notices.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "hb acceptor",
+          "hb donor",
+          "aromatic ring",
+          "hydrophobicity",
+          "positive charge",
+          "negative charge"
+        ]
+      }
+    }
+  },
+  "required": [
+    "smiles_file",
+    "validation_file",
+    "min_features",
+    "max_features",
+    "percentage",
+    "n_conformers",
+    "features"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Submission envelope
+
+Shape only: replace placeholders with the user's values. This is not a runnable sample.
+```json
+{
+  "job_name": "ligand_pharmacophore",
+  "experiment_name": "<confirmed experiment name>",
+  "experiment_data": {
+    "smiles_file": "<user value; see smiles_file schema>",
+    "validation_file": "<user value; see validation_file schema>",
+    "min_features": "<user value; see min_features schema>",
+    "max_features": "<user value; see max_features schema>",
+    "percentage": "<user value; see percentage schema>",
+    "n_conformers": "<user value; see n_conformers schema>",
+    "features": "<user value; see features schema>"
+  }
+}
+```
+
+For mode-dependent fields, include the fields required by the selected schema branch.
+
+### File checks
+
+```json
+{
+  "smiles_file": {
+    "formats": [
+      "csv"
+    ],
+    "columns": [
+      "SMILES"
+    ],
+    "header_case_sensitive": true,
+    "values": {
+      "SMILES": "smiles"
+    },
+    "notes": "Recorded training CSV layout. Exact SMILES header and nonempty cells are required; molecular semantics and extra-column acceptance remain unverified."
+  },
+  "validation_file": {
+    "formats": [
+      "csv"
+    ],
+    "columns": [
+      "SMILES"
+    ],
+    "header_case_sensitive": true,
+    "values": {
+      "SMILES": "smiles"
+    },
+    "notes": "Recorded execution procedure uses SMILES for both CSVs. Generic parsing does not verify validation-set suitability or independence."
+  }
+}
+```
+
+### Input limits
+
+```json
+{
+  "source": "contract_sources/legacy-v1/boltchem_tools.md: Tool 9 Input Contract",
+  "fields": {
+    "percentage": {
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "relations": [
+    {
+      "left": "min_features",
+      "operator": "<=",
+      "right": "max_features"
+    }
+  ],
+  "notes": "Observed feature counts, conformer settings and suggested sample sizes are not established service limits; no maximum or minimum batch size is invented."
+}
+```
+
+### Execution notices
+
+- Request fields come from archived public metadata and recorded accepted submissions. The public frontend still recognizes ligand_pharmacophore, but current worker acceptance and output recovery have not been retested. Obtain explicit approval for an attempt; do not substitute the receptor-based tool.
+- Historical records describe 25-credit charges and missing output objects despite Success. This is not a current price or proof of an ongoing outage. An attempt may consume credits without usable artifacts; report the actual outcome, inspect all returned artifacts and never resubmit automatically.
+- Recorded accepted submissions include hb donor; the archived UI option list omits it. That recorded choice is retained for an explicitly reviewed attempt, not claimed as a currently verified UI option.
+- CSV structure is checked, not molecular validity, ligand suitability or scientific independence of training and validation sets. Current row/count limits and extra-column acceptance are unverified. Do not invent sample data from historical private upload paths; obtain an accessible approved sample or review proposed local fixtures first.
+
+### Recorded payload example
+
+Reference only; use current user inputs and upload references.
+```json
+[
+  {
+    "description": "Historical numeric settings; file references are placeholders, not available samples or recommended defaults.",
+    "experiment_data": {
+      "smiles_file": "<uploaded training CSV reference>",
+      "validation_file": "<uploaded validation CSV reference>",
+      "min_features": 2,
+      "max_features": 5,
+      "percentage": 0.5,
+      "n_conformers": 20,
+      "features": [
+        "hb acceptor",
+        "hb donor",
+        "aromatic ring",
+        "hydrophobicity"
+      ]
+    }
+  }
+]
+```
+
+### Results
+
+Accepted is not completed. Poll the returned job ID without resubmitting.
+Preserve every returned artifact link; download and inspect requested outputs before reporting success.
+Report actual service errors and incomplete outputs. Refresh status for expired links.
+
 ## Pharmacophore Hypothesis (phcore_gen)
 
 Pharmacophore Hypothesis (phcore_gen)

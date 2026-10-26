@@ -1,5 +1,17 @@
 # Boltzmann contract standardization — 2026-10-14
 
+## Ligand-based pharmacophore restoration — 2026-10-26
+
+`ligand_pharmacophore` now has a sourced executable request, both CSV upload
+fields, documented fraction/range checks, diagnostic collection mapping and a
+generated workflow sheet. It is separate from receptor-based
+`Pharmacophore_Hypothesis`. See
+`contract_sources/ligand-pharmacophore-reconciliation.md` for evidence and the
+feature-option discrepancy. Historical missing artifacts require an informed
+attempt, not a permanent local prohibition. Invalid files, absent authorization
+and profile restrictions remain enforced. Current worker acceptance, pricing
+and artifact recovery have not been live-tested by this change.
+
 ## Five enzyme integrations — 2026-10-22
 
 The historical counts below describe the October 14 snapshot, not today's catalog.

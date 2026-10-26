@@ -5,6 +5,14 @@ import re
 from agent.redact import redact_for_egress
 
 
+def _safe_text(value, token):
+    if token:
+        value = value.replace(token, "[credential redacted]")
+    value = re.sub(r"https?://[^\s\"'<>]+", "[service URL redacted]", value)
+    value = re.sub(r"[\x00-\x08\x0b-\x1f\x7f]", "", value)
+    return redact_for_egress(value)
+
+
 def safe_detail(value, token=""):
     if isinstance(value, dict):
         value = value.get("message") or value.get("msg") or value.get("error") or value.get("detail") or ""
@@ -12,11 +20,25 @@ def safe_detail(value, token=""):
         value = "; ".join(safe_detail(item, token) for item in value[:10])
     if not isinstance(value, str):
         return ""
-    if token:
-        value = value.replace(token, "[credential redacted]")
-    value = re.sub(r"https?://[^\s\"'<>]+", "[service URL redacted]", value)
-    value = re.sub(r"[\x00-\x08\x0b-\x1f\x7f]", "", value)
-    return redact_for_egress(value)[:2000]
+    return _safe_text(value, token)[:2000]
+
+
+def service_diagnostics(result, token=""):
+    """Keep nested worker diagnostics and tracebacks, not just their summary.
+
+    Artifact URLs outside diagnostic fields must remain usable for downloads.
+    """
+    def scrub(value):
+        if isinstance(value, str):
+            return _safe_text(value, token)
+        if isinstance(value, dict):
+            return {key: scrub(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [scrub(item) for item in value]
+        return value
+
+    return {key: scrub(value) if key in {"info", "message", "msg", "error", "detail"} else value
+            for key, value in result.items()}
 
 
 def service_error(stage, response, token=""):
@@ -25,8 +47,15 @@ def service_error(stage, response, token=""):
     except ValueError:
         body = {}
     detail = safe_detail(body, token)
-    return {"error": detail or f"Service returned HTTP {response.status_code} without a usable diagnostic.",
-            "stage": stage, "http_status": response.status_code,
-            "status": "unknown" if stage in {"submit", "status"} else "failed",
-            "authorization_required": response.status_code in {401, 403},
-            "safe_to_retry": False}
+    fallback = ("Service request failed without a usable diagnostic; job outcome is unknown."
+                if stage in {"submit", "status"} else "Service request failed without a usable diagnostic.")
+    diagnostics = service_diagnostics(body, token) if isinstance(body, dict) else {}
+    result = {key: diagnostics[key] for key in ("info", "message", "msg", "detail") if key in diagnostics}
+    result.update(error=detail or fallback, stage=stage,
+                  status="unknown" if stage in {"submit", "status"} else "failed",
+                  authorization_required=response.status_code in {401, 403}, safe_to_retry=False)
+    if isinstance(diagnostics.get("status"), str):
+        # A rejected request is not proof of a failed scientific job. Preserve
+        # the service's status separately from our submission-outcome certainty.
+        result["service_status"] = _safe_text(diagnostics["status"], token)
+    return result

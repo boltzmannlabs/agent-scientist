@@ -2,6 +2,16 @@
   "schema": "boltzmann-input-limits.v1",
   "policy": "Only source-backed hard limits are encoded. Defaults and recommendations are not hard limits.",
   "tools": {
+    "ligand_pharmacophore": {
+      "source": "contract_sources/legacy-v1/boltchem_tools.md: Tool 9 Input Contract",
+      "fields": {
+        "percentage": {"minimum": 0, "maximum": 1}
+      },
+      "relations": [
+        {"left": "min_features", "operator": "<=", "right": "max_features"}
+      ],
+      "notes": "Observed feature counts, conformer settings and suggested sample sizes are not established service limits; no maximum or minimum batch size is invented."
+    },
     "Random_Antibody_Generation": {
       "fields": {
         "n_samples": {
