@@ -82,6 +82,15 @@ of persisting a permanent tool limitation in a learned skill.
 
 ## Prepare file inputs
 
+Before preparing `ligand_pharmacophore` CSVs, read
+`references/ligand-pharmacophore-inputs.md` alongside the generated module.
+Training requires `SMILES`; validation requires `SMILES,LABELS`, with documented
+`active` / `inactive` classes. Historical instructions and the diagnosed local
+file rule omitted LABELS; public help also inconsistently says singular LABEL.
+Reconcile current evidence before upload rather than reproducing a known
+SMILES-only validation fixture. The guide traces the exact source/preflight gap
+and separates artificial smoke-test labels, input repair and runtime-contract repair.
+
 Call `boltzmann_upload` with the actual local file, exact `job_name`,
 `input_field`, and reviewed `experiment_data` for mode-dependent file rules.
 The connector inspects a private snapshot and uploads those same checked bytes.
