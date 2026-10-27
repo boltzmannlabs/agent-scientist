@@ -68,6 +68,8 @@ async def main(base_poller):
     async def drain():
         while adapter._background_tasks:
             await asyncio.gather(*list(adapter._background_tasks))
+            # Finished tasks may still have queued removal callbacks.
+            await asyncio.sleep(0)
 
     def snapshot():
         return {"turns": len(received), "queue_depth": runner._queue_depth(key, adapter=adapter),

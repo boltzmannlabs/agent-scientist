@@ -19,9 +19,12 @@ import pytest
 
 
 def _git(cwd, *args, check=True):
-    return subprocess.run(
-        ["git", *args], cwd=str(cwd), capture_output=True, text=True, check=check
+    result = subprocess.run(
+        ["git", *args], cwd=str(cwd), capture_output=True, text=True, check=False
     )
+    if check:
+        assert result.returncode == 0, f"git {args} failed: {result.stderr}"
+    return result
 
 
 @pytest.fixture

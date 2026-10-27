@@ -11,10 +11,19 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 import sci_cli.local_runtime.load_progress as lp
 
 
-def setup_function(_fn):
+@pytest.fixture(autouse=True)
+def synthetic_progress(monkeypatch):
+    # These tests feed events directly; the live watcher would clear their
+    # snapshot when no managed server exists and race with the assertions.
+    monkeypatch.setattr(lp, "_ensure_watcher", lambda: None)
+    with lp._lock:
+        lp._snapshot.clear()
+    yield
     with lp._lock:
         lp._snapshot.clear()
 
