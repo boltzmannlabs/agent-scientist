@@ -3,6 +3,175 @@
 import copy
 import gzip
 import json
+from types import SimpleNamespace
+
+import pytest
+
+
+@pytest.fixture
+def rfd3_submission(monkeypatch):
+    from plugins.boltzmann import nodeapi_helpers, tools
+
+    sent, checked = [], []
+    real_preflight = tools.preflight_submission
+
+    def preflight(job, payload):
+        checked.append(payload)
+        return real_preflight(job, payload)
+
+    def post(url, **kwargs):
+        assert url == nodeapi_helpers._SUBMIT_URL
+        sent.append(kwargs["json"])
+        return SimpleNamespace(status_code=200, json=lambda: {"success": True, "docId": "fixture-job"})
+
+    monkeypatch.setattr(nodeapi_helpers.requests, "post", post)
+    monkeypatch.setattr(tools, "preflight_submission", preflight)
+    monkeypatch.setattr(tools, "require_authorized", lambda: None)
+    monkeypatch.setattr(tools, "current_key", lambda: "fixture-key")
+    monkeypatch.setattr(tools, "time", SimpleNamespace(sleep=lambda _: None))
+
+    def submit(payload, *, job="Enzyme_RFD3", approved=True):
+        return json.loads(tools.handle_boltzmann_submit(
+            job_name=job, experiment_name="fixture-confirmed-name", experiment_data=payload,
+            allow_partial_validation=approved,
+        ))
+
+    return submit, sent, checked
+
+
+@pytest.mark.parametrize("extras,prepared", [
+    ({}, {}),
+    ({"job_name": "explicit-worker-name", "n_samples": 2},
+     {"job_name": "explicit-worker-name", "n_samples": 2}),
+    ({"advanced_settings_enabled": False}, {"advanced_settings_enabled": "false"}),
+    ({"advanced_settings_enabled": " TRUE ", "advanced_settings": None, "seed": None},
+     {"advanced_settings_enabled": "true"}),
+    ({"advanced_settings_enabled": True, "seed": "", "advanced_settings": {
+        "partial_t": "", "contig": "  ", "ori_token": None, "select_buried": None,
+        "inference_sampler": {"num_timesteps": None, "step_scale": "", "kind": " "}}},
+     {"advanced_settings_enabled": "true", "advanced_settings": {"inference_sampler": {}}}),
+    ({"advanced_settings_enabled": True, "seed": 0, "advanced_settings": {
+        "ori_token": [0, 0, 0], "infer_ori_strategy": "hotspots", "select_hotspots": "false",
+        "select_fixed_atoms": {"A108": "CA"}, "is_non_loopy": False,
+        "inference_sampler": {"cfg_scale": 0, "s_trans": 0, "gamma_0": 0, "gamma_min": 0,
+                              "s_jitter_origin": 0, "cfg_t_max": 0, "allow_realignment": False,
+                              "use_classifier_free_guidance": "false", "n_recycle": 1}}},
+     {"advanced_settings_enabled": "true", "seed": 0, "advanced_settings": {
+        "ori_token": [0, 0, 0], "infer_ori_strategy": "hotspots", "select_hotspots": "false",
+        "select_fixed_atoms": {"A108": "CA"}, "is_non_loopy": "false",
+        "inference_sampler": {"cfg_scale": 0, "s_trans": 0, "gamma_0": 0, "gamma_min": 0,
+                              "s_jitter_origin": 0, "cfg_t_max": 0, "allow_realignment": "false",
+                              "use_classifier_free_guidance": "false", "n_recycle": 1}}}),
+    ({"advanced_settings_enabled": " False ", "advanced_settings": {
+        "partial_t": "", "inference_sampler": {"n_recycle": 0}}},
+     {"advanced_settings_enabled": "false"}),
+    ({"advanced_settings_enabled": True, "advanced_settings": {"inference_sampler": None}},
+     {"advanced_settings_enabled": "true", "advanced_settings": {}}),
+])
+def test_rfd3_prepares_only_its_payload_before_real_preflight_and_wire_submission(rfd3_submission, extras, prepared):
+    submit, sent, checked = rfd3_submission
+    base = {"input_path": "fixture/authorized.pdb", "motif_residues": ["A108"],
+            "ligand": "NAI", "min_length": 180, "max_length": 200}
+    payload = dict(base, **copy.deepcopy(extras))
+    original = copy.deepcopy(payload)
+    expected = dict(base, job_name="fixture-confirmed-name", n_samples=1, task_name="rfd3",
+                    advanced_settings_enabled="false")
+    expected.update(prepared)
+
+    # A missing receipt still requires explicit partial-validation approval.
+    blocked = submit(payload, approved=False)
+    assert blocked["status"] == "approval_required"
+    assert not sent
+    result = submit(payload)
+    assert result["status"] == "accepted", result
+    assert sent == [{"experimentData": expected, "job_name": "Enzyme_RFD3",
+                     "experimentName": "fixture-confirmed-name"}]
+    assert checked[-1] is sent[-1]["experimentData"]
+    assert checked[-1] is not payload
+    assert payload == original
+
+    # The preparation branch must not affect another job's wire body.
+    other = {"input_path": "fixture/authorized.pdb", "chain_id": "A"}
+    result = submit(other, job="deepallo")
+    assert result["status"] == "accepted", result
+    assert sent[-1] == {"experimentData": other, "job_name": "deepallo",
+                        "experimentName": "fixture-confirmed-name"}
+
+
+@pytest.mark.parametrize("extras,valid", [
+    ({"advanced_settings": {"ori_token": [0, 0, 0], "infer_ori_strategy": "com"}}, True),
+    ({"advanced_settings": {"ori_token": [0, 0, 0], "infer_ori_strategy": "hotspots"}}, True),
+    ({"advanced_settings": {"infer_ori_strategy": "hotspots", "select_hotspots": "A108"}}, True),
+    ({"advanced_settings": {"infer_ori_strategy": "hotspots", "select_hotspots": "false"}}, False),
+    ({"advanced_settings": {"ori_token": None, "infer_ori_strategy": "hotspots"}}, False),
+    ({"advanced_settings": {"ori_token": [0, 0]}}, False),
+    ({"n_samples": 6, "advanced_settings": {"n_batches": 2}}, False),
+    ({"n_samples": 6, "advanced_settings": {"n_batches": 3}}, True),
+    ({"n_samples": 5, "advanced_settings": {"n_batches": 3}}, False),
+    ({"n_samples": 6, "advanced_settings": {"diffusion_batch_size": 3, "n_batches": 2}}, False),
+    ({"n_samples": 6, "advanced_settings": {"diffusion_batch_size": 2, "n_batches": 3}}, True),
+    ({"n_samples": 5, "advanced_settings": {"diffusion_batch_size": 2}}, False),
+    ({"n_samples": 6, "advanced_settings": {"diffusion_batch_size": 2}}, True),
+    ({"advanced_settings": {"inference_sampler": {"n_recycle": 0}}}, False),
+    ({"advanced_settings": {"partial_t": 0}}, False),
+    ({"advanced_settings": {"inference_sampler": {"noise_scale": 0}}}, False),
+    ({"advanced_settings": {"inference_sampler": {"invented": None}}}, False),
+    ({"advanced_settings_enabled": False, "advanced_settings": {"invented": None}}, False),
+    ({"advanced_settings_enabled": False, "advanced_settings": {"inference_sampler": {"invented": ""}}}, False),
+    ({"invented": None}, False),
+    ({"n_samples": None}, False),
+    ({"n_samples": 0}, False),
+    ({"n_samples": "1"}, False),
+    ({"task_name": ""}, False),
+    ({"job_name": " "}, False),
+    ({"advanced_settings_enabled": None}, False),
+    ({"advanced_settings_enabled": "yes"}, False),
+    ({"advanced_settings_enabled": 0}, False),
+])
+def test_rfd3_preparation_preserves_validation_rejections(rfd3_submission, extras, valid):
+    submit, sent, checked = rfd3_submission
+    payload = {"input_path": "fixture/authorized.pdb", "motif_residues": ["A108"],
+               "ligand": "NAI", "min_length": 180, "max_length": 200,
+               "advanced_settings_enabled": "true"}
+    payload.update(copy.deepcopy(extras))
+    original = copy.deepcopy(payload)
+    result = submit(payload)
+    assert payload == original
+    if valid:
+        assert result["status"] == "accepted", result
+        assert len(sent) == 1
+        assert sent[0]["experimentData"] is checked[0]
+    else:
+        assert result["status"] == "not_started", result
+        assert result["validation"]["errors"]
+        assert not sent
+
+
+def test_rfd3_explicit_worker_job_name_is_distinct_from_routing_name():
+    from plugins.boltzmann.contracts import ContractStore
+
+    store = ContractStore()
+    payload = copy.deepcopy(store.tool("Enzyme_RFD3")["examples"][0]["experiment_data"])
+    payload["job_name"] = "fixture-rfd3-worker-run"
+    original = copy.deepcopy(payload)
+    report = store.validate_payload("Enzyme_RFD3", payload)
+    assert not report.errors, report.errors
+    assert store.tool("Enzyme_RFD3")["job_name"] == "Enzyme_RFD3"
+    assert payload == original
+
+
+def test_rfd3_worker_job_name_rejects_empty_and_runtime_credentials():
+    from plugins.boltzmann.contracts import ContractStore
+
+    store = ContractStore()
+    base = copy.deepcopy(store.tool("Enzyme_RFD3")["examples"][0]["experiment_data"])
+    for value in ("", "   ", "\t\n", None, 123, True):
+        report = store.validate_payload("Enzyme_RFD3", dict(base, job_name=value))
+        assert report.errors, value
+    valid = dict(base, job_name="fixture-rfd3-worker-run")
+    for field in ("tokenid", "user_id", "experiment_id", "invented_field"):
+        assert store.validate_payload("Enzyme_RFD3", dict(valid, **{field: "offline-fixture"})).errors
+    assert not store.validate_payload("Enzyme_RFD3", base).errors
 
 
 def test_enzyme_payload_and_file_relationships_survive_distributed_contracts(tmp_path):
@@ -32,9 +201,8 @@ def test_enzyme_payload_and_file_relationships_survive_distributed_contracts(tmp
         rfd = copy.deepcopy(store.tool("Enzyme_RFD3")["examples"][0]["experiment_data"])
         invalid = [dict(rfd, advanced_settings_enabled=True), dict(rfd, advanced_settings_enabled="True"),
                    dict(rfd, min_length=rfd["max_length"]+1), dict(rfd, motif_residues=["A108", "A108"]),
-                   dict(rfd, ligand="NAI,NAI"), dict(rfd, job_name="Enzyme_RFD3")]
-        for change in ({"ori_token": [0, 0, 0], "infer_ori_strategy": "com"},
-                       {"n_batches": 2}, {"ori_token": [0, 0]},
+                   dict(rfd, ligand="NAI,NAI"), dict(rfd, job_name="")]
+        for change in ({"n_batches": 2}, {"ori_token": [0, 0]},
                        {"inference_sampler": {"n_recycle": 0}},
                        {"geometry_constraints": [{"type": "distance", "atoms": [{"residue": "A108", "atom": "CA"}], "min": 1, "max": 2}]}):
             altered = copy.deepcopy(rfd)

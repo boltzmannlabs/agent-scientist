@@ -1469,11 +1469,11 @@
             "x-input-kind": "value"
           },
           "sampling_type": {
-            "description": "Exact current UI values `Random` or `Min_Max`. Preserve case. It is still sent when `sampling` is `no`.",
+            "description": "Exact current UI values `Random` or `Min-Max`. Preserve case. It is still sent when `sampling` is `no`.",
             "type": "string",
             "enum": [
               "Random",
-              "Min_Max"
+              "Min-Max"
             ],
             "x-input-kind": "value"
           },
@@ -1539,7 +1539,7 @@
         "type": "object",
         "properties": {
           "input_path": {
-            "description": "Required CSV storage path returned by `file_upload`. Headers are case-insensitive, but the singular aliases `sequence` and `smile` are rejected; `seq_id` is not required. Sequence and SMILES values retain their case. CatPred automatically predicts kcat, Km, and Ki for every row and has no user-selectable mode or `prediction_type` field.",
+            "description": "Required CSV storage path returned by boltzmann_upload. The submission credit checker requires exact case-sensitive Seq_id, SMILES and either Sequence or Sequences headers. Lowercase seq_id,sequences,smiles is rejected. Preserve the original file and molecular values; offer a separate reviewed header-corrected copy. CatPred automatically predicts kcat, Km and Ki, with no prediction_type field. These header checks do not establish scientific validity or guarantee service acceptance.",
             "type": "string",
             "x-input-kind": "file"
           }
@@ -1883,7 +1883,7 @@
         "type": "object",
         "properties": {
           "input_path": {
-            "description": "S3 path to CSV (upload first)",
+            "description": "Uploaded CSV with exact case-sensitive Seq_id and Sequences headers, following the reported server error. Positive submission with corrected headers has not yet been verified.",
             "type": "string",
             "x-input-kind": "file"
           }
@@ -3789,8 +3789,8 @@
             ],
             "x-input-kind": "value"
           },
-          "no_of_clusters": {
-            "description": "Number of clusters. The current UI serializes the value as a numeric string under this plural wire key.",
+          "no_of_cluster": {
+            "description": "Number of clusters. The current UI serializes the value as a numeric string under this singular wire key.",
             "type": "string",
             "x-numeric-string": true,
             "x-input-kind": "value"
@@ -3800,7 +3800,7 @@
           "Path",
           "Features",
           "DimReduce",
-          "no_of_clusters"
+          "no_of_cluster"
         ],
         "additionalProperties": false
       },
@@ -3839,7 +3839,7 @@
         "type": "object",
         "properties": {
           "input_path": {
-            "description": "One header from each group is required; aliases are source-documented, not invented.",
+            "description": "Uploaded CSV with exact case-sensitive Sequences and Smiles headers, following the reported server error. Header aliases are not established by that diagnostic. Positive submission with corrected headers has not yet been verified.",
             "type": "string",
             "x-input-kind": "file"
           }
@@ -3884,7 +3884,7 @@
         "type": "object",
         "properties": {
           "input_path": {
-            "description": "Use the exact source field.",
+            "description": "Uploaded CSV with exact case-sensitive seq_id, Sequences and smiles headers, following the reported server error. Positive submission with corrected headers has not yet been verified.",
             "type": "string",
             "x-input-kind": "file"
           },
@@ -5940,7 +5940,7 @@
           "validation_file": {
             "type": "string",
             "x-input-kind": "file",
-            "description": "Separate validation ligand CSV with a case-sensitive SMILES column, following the recorded input procedure. Use a newly validated upload or an explicitly approved accessible reference."
+            "description": "Separate validation ligand CSV with exact case-sensitive SMILES and LABELS headers. Documented LABELS values are active or inactive; preserve the reviewed labels and molecular strings. Artificial labels are smoke-test fixtures, not measured activity. Upload the reviewed file and use its returned platform reference."
           },
           "min_features": {
             "type": "number",
@@ -5966,7 +5966,7 @@
             "type": "array",
             "x-input-kind": "value",
             "minItems": 1,
-            "description": "Selected exact feature labels. Historical submissions include hb donor, which is absent from the archived UI options; see execution notices.",
+            "description": "Selected exact feature labels from public frontend options and recorded requests, including hb donor. Selecting a category does not guarantee that every resulting hypothesis contains it.",
             "items": {
               "type": "string",
               "enum": ["hb acceptor", "hb donor", "aromatic ring", "hydrophobicity", "positive charge", "negative charge"]
@@ -5977,10 +5977,10 @@
         "additionalProperties": false
       },
       "review_notes": [
-        "Request fields come from archived public metadata and recorded accepted submissions. The public frontend still recognizes ligand_pharmacophore, but current worker acceptance and output recovery have not been retested. Obtain explicit approval for an attempt; do not substitute the receptor-based tool.",
+        "Corrected validation CSVs with SMILES,LABELS and active/inactive text classes have passed submission and reached service-reported Success. Artifact availability must be verified for each job: some attempts returned missing objects despite Success. Do not infer completed scientific delivery from status alone or substitute the receptor-based tool.",
         "Historical records describe 25-credit charges and missing output objects despite Success. This is not a current price or proof of an ongoing outage. An attempt may consume credits without usable artifacts; report the actual outcome, inspect all returned artifacts and never resubmit automatically.",
-        "Recorded accepted submissions include hb donor; the archived UI option list omits it. That recorded choice is retained for an explicitly reviewed attempt, not claimed as a currently verified UI option.",
-        "CSV structure is checked, not molecular validity, ligand suitability or scientific independence of training and validation sets. Current row/count limits and extra-column acceptance are unverified. Do not invent sample data from historical private upload paths; obtain an accessible approved sample or review proposed local fixtures first."
+        "The inspected public frontend feature options include hb donor, consistent with recorded submissions. Feature selection is not proof of the number or composition of generated hypotheses.",
+        "Local file checks require SMILES for training and SMILES,LABELS for validation, with exact active/inactive validation text classes. These checks do not establish molecular validity, biological activity or independent validation. Artificial labels require explicit smoke-test approval. Current row/count limits and extra-column acceptance remain unverified; never borrow historical private file references."
       ],
       "examples": [
         {
@@ -9884,7 +9884,7 @@
         "type": "object",
         "properties": {
           "dataPath": {
-            "description": "Uploaded CSV containing a `Sequences` column",
+            "description": "Uploaded CSV containing an exact case-sensitive Sequences column, matching the reported server error. Positive submission with this header has not yet been verified by these tests.",
             "type": "string",
             "x-input-kind": "file"
           },
@@ -10908,7 +10908,7 @@
           },
           "n_samples": {
             "type": "integer",
-            "description": "Optional; defaults to 1.",
+            "description": "Optional at the connector boundary; request preparation supplies integer 1 only when omitted, before validation and submission.",
             "x-input-kind": "value",
             "minimum": 1,
             "maximum": 1000
@@ -10920,9 +10920,16 @@
             "minimum": 0,
             "maximum": 4294967295
           },
+          "job_name": {
+            "type": "string",
+            "description": "Inner experiment display name. Request preparation copies the confirmed experiment_name here only when omitted; an explicit nonblank label is preserved. Outer routing job_name remains Enzyme_RFD3.",
+            "x-input-kind": "value",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
           "task_name": {
             "type": "string",
-            "description": "Optional explicit task name.",
+            "description": "Request preparation supplies rfd3 only when omitted; explicitly invalid values are rejected. This is not the routing job name.",
             "x-input-kind": "value",
             "enum": [
               "rfd3"
@@ -10930,7 +10937,7 @@
           },
           "advanced_settings_enabled": {
             "type": "string",
-            "description": "Literal \"true\"/\"false\"; defaults to \"false\".",
+            "description": "Wire value is the literal string \"true\"/\"false\". Preparation converts JSON booleans and trims/lowercases strings; supplies \"false\" only when omitted. Explicitly disabling removes documented stale advanced controls, never unsupported fields.",
             "x-input-kind": "value",
             "enum": [
               "true",
@@ -11071,12 +11078,12 @@
                 },
                 "minItems": 3,
                 "maxItems": 3,
-                "description": "Explicit [x,y,z] origin; do not combine with infer_ori_strategy.",
+                "description": "Explicit [x,y,z] origin; takes precedence over infer_ori_strategy when both are supplied.",
                 "x-input-kind": "value"
               },
               "infer_ori_strategy": {
                 "type": "string",
-                "description": "Origin inference.",
+                "description": "Origin inference when ori_token is absent. Only active hotspots inference requires a meaningful select_hotspots selection.",
                 "x-input-kind": "value",
                 "enum": [
                   "com",
@@ -11103,7 +11110,7 @@
               },
               "partial_t": {
                 "type": "number",
-                "description": "Strictly positive partial-diffusion t; changes workflow/length semantics.",
+                "description": "Strictly positive partial-diffusion t; changes workflow/length semantics. Omitted when null/blank during preparation; numeric zero remains invalid.",
                 "x-input-kind": "value",
                 "exclusiveMinimum": 0
               },
@@ -11204,7 +11211,7 @@
               },
               "n_batches": {
                 "type": "integer",
-                "description": "Positive; with diffusion_batch_size product must equal n_samples.",
+                "description": "Positive; with diffusion_batch_size product must equal n_samples. When only n_batches is supplied, n_samples / n_batches must be an integer from 1 to 2.",
                 "x-input-kind": "value",
                 "minimum": 1
               },
@@ -11317,12 +11324,12 @@
                   }
                 },
                 "additionalProperties": false,
-                "description": "Optional sampler overrides; omit unspecified fields.",
+                "description": "Optional sampler overrides; preparation omits documented null/blank optional fields and converts documented boolean flags to wire strings. Zero values are preserved and remain subject to numeric bounds; n_recycle must be at least 1.",
                 "x-input-kind": "value"
               }
             },
             "additionalProperties": false,
-            "description": "Optional. Applied only when advanced_settings_enabled is true. Omit unused fields.",
+            "description": "Applied only when advanced_settings_enabled is \"true\". Preparation omits documented null/blank optional fields and converts documented boolean flags to wire strings. Explicit \"false\" discards documented stale controls; a missing toggle with nonempty controls is rejected. Unknown fields are never discarded to bypass validation.",
             "x-input-kind": "value"
           }
         },
@@ -11339,8 +11346,10 @@
         "Use n_recycle >= 1 if set; zero caused native KeyError X_L.",
         "A completed job may contain only review-only rejected/ structures and no passing designs/. Inspect manifest.json and rejections.json.",
         "Runtime IDs/auth are injected by Node; do not put tokenid/user_id/experiment_id in experiment_data.",
-        "Advanced numeric nulls may be accepted by FastAPI, but omit unused fields; never send blank strings for numeric fields.",
-        "Live reference submission was accepted, then the worker reported job_name missing despite outer job_name=Enzyme_RFD3. Keep the exact routing name; do not inject guessed fields, claim readiness, or duplicate that job. New approved attempts remain allowed."
+        "The connector prepares a deep copy before preflight and sends that same validated payload. Missing n_samples, task_name and advanced_settings_enabled become 1, rfd3 and string false; missing inner job_name becomes the confirmed experiment_name. Explicitly invalid values are not replaced.",
+        "Documented optional seed/advanced/sampler null or blank placeholders are omitted, including partial_t. Meaningful zeros, string false and selections are preserved. Authorization, upload provenance and partial-validation approval are still required.",
+        "Earlier submissions without a worker-level job_name were accepted and then failed input validation. A reviewed direct-field test completed with an explicit nonempty experiment_data.job_name while outer job_name remained Enzyme_RFD3. Never copy runtime authentication or identity fields.",
+        "Reported NodeAPI HTTP 400 failures required task_name, advanced_settings_enabled and n_samples; blank partial_t caused FastAPI 422 wrapped as NodeAPI 500. Client preparation addresses these reported cases without assuming deployed frontend or backend fixes. Current backend alignment and all advanced configurations remain unverified; contig coverage and partial-diffusion noise-level compatibility still need worker validation."
       ],
       "examples": [
         {

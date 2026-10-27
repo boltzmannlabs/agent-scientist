@@ -111,24 +111,47 @@ All supplied advanced selectors, sampler settings, numeric bounds, string flags,
 geometry fields and cross-field constraints are retained. Ligands are selected
 CCD component codes present in the structure, not SMILES.
 
-Use literal strings `"true"`/`"false"` for the documented flag fields, not JSON
-booleans. The supplied updated API/runtime documentation permits distance **and
+Use literal strings `"true"`/`"false"` for the documented flag fields on the wire;
+the connector also normalizes JSON booleans for documented toggles. The supplied updated API/runtime documentation permits distance **and
 angle** constraints, superseding the older distance-only frontend snapshot.
 Only include advanced settings when enabled; omit unused numeric fields instead
-of blank strings. `task_name`, when present, is `rfd3`; it is not the routing name.
+of blank strings. Before preflight, a copied payload receives omitted
+`n_samples: 1`, `task_name: "rfd3"` and `advanced_settings_enabled: "false"`.
+These are connector defaults, not a claim about deployed backend defaults.
+Explicitly invalid values still fail. Optional null/blank seed, advanced and
+sampler fields are omitted; zeros and `"false"` are preserved and validated.
+Explicitly disabling removes documented stale advanced settings, but unknown
+fields cannot be hidden this way. Nonempty advanced controls with an omitted
+toggle require the caller to choose whether to enable them.
 
 The supplied local 1MG5-derived reference had one rejected round and one accepted
 design. Local file/status substitutes and stochastic outputs are not production
 golden results. The impossible-geometry control was rejected locally. Do not
 expect byte-identical outputs or identical per-candidate decisions in live runs.
 
-The October 22 Node submission **used `job_name: Enzyme_RFD3` and was accepted**.
-The worker later reported `RFD3 failed during input validation: job_name is
-required and must be a nonempty string`. The cause remains unverified. Preserve
-the exact routing name; do not insert a guessed inner `job_name`, bypass Node,
-or claim that the failure was repaired by catalog integration. This is a
-historical service failure, not a missing-contract block. Explain it before a
-new user-approved attempt, and reconcile any ambiguous submission before retrying.
+Earlier Node submissions **used outer `job_name: Enzyme_RFD3` and were accepted**,
+then failed with `RFD3 failed during input validation: job_name is required and
+must be a nonempty string`. The outer routing name alone did not satisfy the
+worker-level run-label requirement. The downstream API and supplied worker input
+document a separate nonempty `job_name`; the current request schema explicitly
+allows that field inside `experiment_data`. Preparation supplies the confirmed
+`experiment_name` as the worker label only if the inner `job_name` is missing,
+while keeping outer routing `job_name=Enzyme_RFD3`. An explicit label is preserved.
+Do not copy `tokenid`, `user_id` or `experiment_id` from a worker sample; the
+connector/platform continues to handle authenticated runtime identity.
+
+A reviewed direct-field sample completed and its downloadable archive contained
+one accepted scaffold plus review-only quality rejections. The same sample had
+failed when the inner label was absent. This verifies the explicit-label remedy
+for the tested connector path, not the unseen bridge implementation or every
+advanced configuration. Preparation keeps both names in the submitted body; re-upload after schema changes,
+and never replay an accepted/pending or ambiguously submitted job.
+
+Subsequent reported NodeAPI failures required the three fields now supplied by
+preparation (HTTP 400); blank `partial_t` reached FastAPI and caused HTTP 422
+wrapped as NodeAPI 500. This client fix does not assume frontend/NodeAPI fixes
+are deployed. Confirm current bridge forwarding and backend acceptance separately;
+local regressions do not establish complete schema alignment.
 
 A completed ZIP can contain only rejected designs. Inspect `manifest.json`,
 `rejections.json`, `designs/` and `rejected/round_N/`; report accepted and rejected

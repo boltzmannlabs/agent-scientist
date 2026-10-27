@@ -48,10 +48,10 @@ Inspect current contents before deciding whether the defect remains present.
    pointed to that historical input table and execution step.
 3. Generated tool description:
    `skills/boltzmann-tools/references/modules/small-molecule-pharmacophore-generation.md`
-   reproduces the incomplete validation rule. The reconciliation record,
-   `contract_sources/ligand-pharmacophore-reconciliation.md`, also describes both
-   CSVs as having SMILES headers. Repeating a historical omission in generated
-   documentation does not independently verify the backend format.
+   originally reproduced the incomplete validation rule. The corrected canonical
+   rule, regenerated module and updated reconciliation record now require
+   SMILES,LABELS for validation. Repeating an omission across derived documents
+   was not independent verification of the backend format.
 4. Local preflight: `file_validation.py`, function `_csv`, checks the columns
    declared by the file rule. With only SMILES declared, a SMILES-only file can
    pass column checks and be uploaded after partial-validation approval. This is
@@ -98,13 +98,16 @@ contract repair distinct; updating this guide does not patch JSON or Python.
    job ID leaves job creation and billing unresolved; reconcile the earlier
    attempt through supported records or the user's dashboard before approving
    one corrected submission. After acceptance poll only the returned job ID.
-7. When asked to repair the executable contract, make a targeted, source-backed
-   correction to the validation-file rule and label checks, add regression
-   coverage for missing LABELS and approved class values, and regenerate module
-   documentation with `contract_docs.py`. Do not weaken the generic validator or
-   edit only generated Markdown. Contract changes can invalidate upload receipts;
-   revalidate/re-upload affected files before a separately approved submission.
-   Do not claim such a repair merely because the input file or skill was edited.
+7. Verify the runtime rule requires both validation columns and defines
+   `values.LABELS` as a string schema with enum `["active","inactive"]`.
+   The CSV inspector reuses the existing scalar-schema validator for these cells;
+   it rejects missing, empty or undocumented classes before upload, even when
+   partial-validation approval is supplied. Keep missing-header/class regression
+   tests and native profile-scoped upload/submit tests. Regenerate module sheets
+   with `contract_docs.py`, not hand edits. After deploying Python changes,
+   start a fresh SCI session before using the validator. Contract changes can
+   invalidate receipts: revalidate/re-upload before a separately approved new
+   submission. Never replay an accepted job to test this repair.
 
 ## Verify outputs independently
 

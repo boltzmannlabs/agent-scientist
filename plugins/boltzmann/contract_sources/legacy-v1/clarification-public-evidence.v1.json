@@ -1124,12 +1124,12 @@
         {
           "name": "sampling_type",
           "label": "Sampling Type",
-          "description": "Sampling method: Random or Min_Max.",
+          "description": "Sampling method: Random or Min-Max.",
           "type": "string",
           "required": true,
           "options": [
             "Random",
-            "Min_Max"
+            "Min-Max"
           ]
         },
         {

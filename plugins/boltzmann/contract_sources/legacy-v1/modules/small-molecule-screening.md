@@ -33,13 +33,12 @@ All six fields are compulsory.
 | `Path` | platform path string | yes | Uploaded CSV containing `SMILES`. Capital `P` is required. |
 | `model` | string enum | yes | `Butina` or `Murcko-Butina`. |
 | `DimReduce` | string enum | yes | API schema values `PCA` or `TSNE`; the UI may display `tSNE`. Only `PCA` is live-proven in the current evidence. |
-| `sampling_type` | string enum | yes | `Random` or `Min_max`. It is still sent when `sampling` is `no`. |
+| `sampling_type` | string enum | yes | `Random` or `Min-Max`. It is still sent when `sampling` is `no`. |
 | `cutoff` | number | yes | Clustering cutoff. `0.4` is end-to-end verified; `-1` is newly submission-accepted as an automatic/default sentinel, but its terminal semantics are not yet verified. |
 | `sampling` | string enum | yes | Exact lowercase string `yes` or `no`, not a boolean. |
 
-The screenshot/test note spells one option `Min_Max`, while the authoritative
-frontend validation schema uses `Min_max`. Until a live submission proves the
-capital-`M` variant, use exact API value `Min_max`.
+Maintainer correction: use exact API value `Min-Max`. This spelling correction
+supersedes the earlier sampling-option notes; it is not a new live-test result.
 
 ```python
 uploaded_library_path = file_upload(local_smiles_csv)

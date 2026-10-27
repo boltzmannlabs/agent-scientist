@@ -117,7 +117,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_path` | string | yes | file | Required CSV storage path returned by `file_upload`. Headers are case-insensitive, but the singular aliases `sequence` and `smile` are rejected; `seq_id` is not required. Sequence and SMILES values retain their case. CatPred automatically predicts kcat, Km, and Ki for every row and has no user-selectable mode or `prediction_type` field. |
+| `input_path` | string | yes | file | Required CSV storage path returned by boltzmann_upload. The submission credit checker requires exact case-sensitive Seq_id, SMILES and either Sequence or Sequences headers. Lowercase seq_id,sequences,smiles is rejected. Preserve the original file and molecular values; offer a separate reviewed header-corrected copy. CatPred automatically predicts kcat, Km and Ki, with no prediction_type field. These header checks do not establish scientific validity or guarantee service acceptance. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -130,7 +130,7 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "input_path": {
-      "description": "Required CSV storage path returned by `file_upload`. Headers are case-insensitive, but the singular aliases `sequence` and `smile` are rejected; `seq_id` is not required. Sequence and SMILES values retain their case. CatPred automatically predicts kcat, Km, and Ki for every row and has no user-selectable mode or `prediction_type` field.",
+      "description": "Required CSV storage path returned by boltzmann_upload. The submission credit checker requires exact case-sensitive Seq_id, SMILES and either Sequence or Sequences headers. Lowercase seq_id,sequences,smiles is rejected. Preserve the original file and molecular values; offer a separate reviewed header-corrected copy. CatPred automatically predicts kcat, Km and Ki, with no prediction_type field. These header checks do not establish scientific validity or guarantee service acceptance.",
       "type": "string",
       "x-input-kind": "file"
     }
@@ -169,18 +169,23 @@ For mode-dependent fields, include the fields required by the selected schema br
     "csv_variants": [
       {
         "columns": [
-          "sequences",
-          "smiles"
+          "Seq_id",
+          "Sequences",
+          "SMILES"
         ],
-        "aliases": {},
+        "aliases": {
+          "Sequences": [
+            "Sequence"
+          ]
+        },
         "values": {
-          "sequences": "protein",
-          "smiles": "smiles"
+          "Sequences": "protein",
+          "SMILES": "smiles"
         }
       }
     ],
-    "header_case_sensitive": false,
-    "notes": "Required CSV storage path returned by `file_upload`. Headers are case-insensitive, but the singular aliases `sequence` and `smile` are rejected; `seq_id` is not required. Sequence and SMILES values retain their case. CatPred automatically predicts kcat, Km, and Ki for every row and has no user-selectable mode or `prediction_type` field."
+    "header_case_sensitive": true,
+    "notes": "The submission credit checker requires Seq_id, SMILES and one of Sequence or Sequences, with exact case. No automatic header or molecular-value rewriting. CSV shape checks do not verify protein/SMILES semantics; no backend rerun was performed to establish successful execution."
   }
 }
 ```
@@ -203,7 +208,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_path` | string | yes | file | S3 path to CSV (upload first) |
+| `input_path` | string | yes | file | Uploaded CSV with exact case-sensitive Seq_id and Sequences headers, following the reported server error. Positive submission with corrected headers has not yet been verified. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -216,7 +221,7 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "input_path": {
-      "description": "S3 path to CSV (upload first)",
+      "description": "Uploaded CSV with exact case-sensitive Seq_id and Sequences headers, following the reported server error. Positive submission with corrected headers has not yet been verified.",
       "type": "string",
       "x-input-kind": "file"
     }
@@ -254,7 +259,7 @@ For mode-dependent fields, include the fields required by the selected schema br
     "header_case_sensitive": true,
     "columns": [
       "Seq_id",
-      "sequences"
+      "Sequences"
     ],
     "notes": "S3 path to CSV (upload first)"
   }

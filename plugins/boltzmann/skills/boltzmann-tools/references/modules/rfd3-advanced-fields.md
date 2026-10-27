@@ -1,6 +1,8 @@
 # Enzyme RFD3: complete optional-field guide
 
-The five core required fields are `input_path`, `motif_residues`, `ligand`, `min_length` and `max_length`. See [enzyme-generation.md](protein-enzyme-generation.md) for top-level request fields. `advanced_settings_enabled` is the **string** `"true"` to apply `advanced_settings`; omitted/`"false"` disables it. All fields below are **optional**. Omit fields not selected by the user. FastAPI accepts many JSON `null` values, but empty strings are **not** valid numbers at its boundary. Do not send `cfg_features` or `symmetry` as user overrides in this release.
+The five core required fields are `input_path`, `motif_residues`, `ligand`, `min_length` and `max_length`. See [enzyme-generation.md](protein-enzyme-generation.md) for top-level request fields. Before validation, the connector copies the payload and supplies omitted `n_samples: 1`, `task_name: "rfd3"`, `advanced_settings_enabled: "false"` and an inner `job_name` from the confirmed experiment name. Outer routing remains `Enzyme_RFD3`. Explicit invalid values are not defaulted.
+
+`advanced_settings_enabled` is the **wire string** `"true"` to apply `advanced_settings`. Documented boolean flags are normalized to lowercase strings. Explicit `"false"` removes stale documented controls; an omitted toggle with nonempty controls is rejected rather than silently discarding them. Unknown fields still fail validation, including when settings are disabled. All fields below are **optional**. Preparation removes documented optional null/blank placeholders, including `partial_t`, without dropping zeros, `"false"` or valid selections. The same prepared payload is validated and sent. Do not send `cfg_features` or `symmetry` as user overrides in this release.
 
 ## `advanced_settings` fields
 
@@ -16,18 +18,18 @@ The five core required fields are `input_path`, `motif_residues`, `ligand`, `min
 | `select_hbond_acceptor` | no | Atom-selection map with string keys/values | No acceptor conditioning. |
 | `select_hotspots` | no | Residue selection string/map, e.g. `"A152"`; string `"true"` or `"false"` accepted | No hotspot condition; hotspot-origin strategy needs meaningful hotspots. |
 | `redesign_motif_sidechains` | no | Literal string `"true"` or `"false"` | Defaults false. |
-| `ori_token` | no | Exactly three finite numbers `[x,y,z]`; zeros valid | Native origin strategy/default if omitted. Do not combine with `infer_ori_strategy`. |
-| `infer_ori_strategy` | no | `"com"` or `"hotspots"` | Native centering if omitted; `"hotspots"` requires suitable hotspot selection. |
+| `ori_token` | no | Exactly three finite numbers `[x,y,z]`; zeros valid | Explicit coordinates take precedence over `infer_ori_strategy` when both are supplied. |
+| `infer_ori_strategy` | no | `"com"` or `"hotspots"` | Used only without `ori_token`; only active `"hotspots"` inference requires suitable hotspot selection. |
 | `plddt_enhanced` | no | Literal string `"true"` or `"false"` | Native default is enabled. |
 | `is_non_loopy` | no | Literal string `"true"` or `"false"` | Native default unset; explicit `"false"` has meaning. |
 | `partial_t` | no | Finite number >0 | Omitted means normal scaffolding; supplied means partial diffusion and preserves input protein length. Must leave >=2 noise levels with `num_timesteps`. |
 | `allow_ligand_on_existing_chain` | no | Literal string `"true"` or `"false"` | Defaults false. |
 | `geometry_constraints` | no | Array of `distance`/`angle` rule objects described below | No extra output geometry checks. |
 | `diffusion_batch_size` | no | Integer 1–2 | Derived/default; when both batch controls supplied, product must equal `n_samples`. |
-| `n_batches` | no | Positive integer | Derived/default; must divide `n_samples` when paired/derived. |
+| `n_batches` | no | Positive integer | Must divide `n_samples`; when supplied alone, the derived batch size `n_samples / n_batches` must be 1–2. |
 | `inference_sampler` | no | Object with fields below | Native sampler defaults. |
 
-Empty `{}` selections mean no selection. Optional blanks may be normalized by Yup, but callers should omit them. The native model validates structural selections and incompatible combinations; schema validity is not a promise that a design will pass quality checks.
+Empty `{}` selections mean no selection. Connector cleanup does not depend on frontend/Yup or backend fixes being deployed. Required values, unknown fields and numeric/geometry bounds are still validated; `n_recycle: 0` is rejected. The native model validates structural selections and incompatible combinations; schema validity is not a promise that a design will pass quality checks. Contig coverage and partial-diffusion noise-level compatibility still require worker validation. These changes have local regression coverage, not verification of complete live schema alignment.
 
 ## `advanced_settings.inference_sampler` fields
 

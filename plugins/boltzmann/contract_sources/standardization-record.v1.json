@@ -1404,11 +1404,11 @@
                 ]
               },
               "sampling_type": {
-                "description": "`Random` or `Min_max`. It is still sent when `sampling` is `no`.",
+                "description": "`Random` or `Min-Max`. It is still sent when `sampling` is `no`.",
                 "type": "string",
                 "enum": [
                   "Random",
-                  "Min_Max"
+                  "Min-Max"
                 ]
               },
               "cutoff": {
@@ -1450,7 +1450,7 @@
             "contract_sources/legacy-v1/tool-clarification-contracts.v1.json",
             "modules/small-molecule-screening.md"
           ],
-          "scientific_notes": "Cluster a SMILES library by whole-molecule or Murcko-scaffold fingerprints and\noptionally configure sampling and dimensionality reduction.\n\n### Inputs\n\nAll six fields are compulsory.\n\nThe screenshot/test note spells one option `Min_Max`, while the authoritative\nfrontend validation schema uses `Min_max`. Until a live submission proves the\ncapital-`M` variant, use exact API value `Min_max`.\n\nFor a diverse library, `0.4` can produce many singleton clusters; use a\ndifferent cutoff only when scientifically justified. Do not silently replace a\nuser-specified cutoff with the newly accepted `-1` sentinel.\n\n### Output instructions\n\nThe verified terminal result exposes a list-shaped\n`OutputData.outputFilePath`; download each link and identify `butina.csv`.\nThe live artifact contained 7,543 rows with exact columns:\n\nThis live artifact supersedes the older product-sheet claim\n`SMILES,Labels`. `ClusterID` values are zero-based integers and need not be\ncontiguous in input order. Preserve `ID` and `SMILES` for joining results back\nto the source library. Report molecule count, distinct cluster count, singleton\ncount, and largest-cluster size from the actual CSV.\n\n### Evidence\n\n- The all-experiments schema confirms the six compulsory fields and their\n  enum values.\n- An earlier canary reached terminal `Success`; `butina.csv` downloaded and\n  parsed as 7,543 rows with `ID,ClusterID,SMILES`.\n- The newest payload using `sampling=\"yes\"`, `sampling_type=\"Random\"`, and\n  `cutoff=-1` returned HTTP 200. Only submission is proven for that variant."
+          "scientific_notes": "Cluster a SMILES library by whole-molecule or Murcko-scaffold fingerprints and\noptionally configure sampling and dimensionality reduction.\n\n### Inputs\n\nAll six fields are compulsory.\n\nMaintainer correction: use exact API value `Min-Max`. This spelling correction\nsupersedes the earlier sampling-option notes; it is not a new live-test result.\n\nFor a diverse library, `0.4` can produce many singleton clusters; use a\ndifferent cutoff only when scientifically justified. Do not silently replace a\nuser-specified cutoff with the newly accepted `-1` sentinel.\n\n### Output instructions\n\nThe verified terminal result exposes a list-shaped\n`OutputData.outputFilePath`; download each link and identify `butina.csv`.\nThe live artifact contained 7,543 rows with exact columns:\n\nThis live artifact supersedes the older product-sheet claim\n`SMILES,Labels`. `ClusterID` values are zero-based integers and need not be\ncontiguous in input order. Preserve `ID` and `SMILES` for joining results back\nto the source library. Report molecule count, distinct cluster count, singleton\ncount, and largest-cluster size from the actual CSV.\n\n### Evidence\n\n- The all-experiments schema confirms the six compulsory fields and their\n  enum values.\n- An earlier canary reached terminal `Success`; `butina.csv` downloaded and\n  parsed as 7,543 rows with `ID,ClusterID,SMILES`.\n- The newest payload using `sampling=\"yes\"`, `sampling_type=\"Random\"`, and\n  `cutoff=-1` returned HTTP 200. Only submission is proven for that variant."
         },
         "Cat_Pred": {
           "display_name": "Cat_Pred (Catalyst Prediction)",

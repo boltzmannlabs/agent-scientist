@@ -868,10 +868,10 @@
           "name": "sampling_type",
           "type": "string",
           "required": true,
-          "notes": "`Random` or `Min_max`. It is still sent when `sampling` is `no`.",
+          "notes": "`Random` or `Min-Max`. It is still sent when `sampling` is `no`.",
           "options": [
             "Random",
-            "Min_Max"
+            "Min-Max"
           ]
         },
         {
