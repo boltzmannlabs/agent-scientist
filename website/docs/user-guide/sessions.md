@@ -196,6 +196,99 @@ sci sessions list --workspace my-project
 sci sessions list --workspace ~/code/sci-agent
 ```
 
+### Recovering an open chat
+
+Only one process may write a saved conversation at a time. An owner age such as
+“opened 1h21m ago” measures how long the chat has been open, not how long a model
+request has been running. Owner details distinguish a suspended process from a
+live process and include its terminal where available.
+
+In the classic interactive CLI, `/resume` and `sci --resume <id>` offer
+**Close previous window and resume here** when another local CLI owns the chat.
+The default is Cancel. Approving interrupts that CLI's local turn and asks it to
+save and close. A suspended CLI is continued only after termination has been
+requested. The new writer is admitted only after the old process exits and normal
+atomic ownership checks succeed. If the old process is slow, choose Wait longer
+or separately approve Force close; forced close may lose unsaved output and
+leave subprocesses running. Cancelling after requesting close cannot undo that
+request. This recovery never submits or repeats the previous scientific job.
+
+Dead-process leases are recovered automatically. A live owner is never reclaimed
+merely because it is old. Desktop/gateway owners and Windows owners must be closed
+in their original application; the CLI does not terminate shared services. No
+manual deletion of `runtime/active_sessions.json` is needed for normal recovery.
+
+### Background execution and reconnecting
+
+On Linux, macOS and WSL, normal interactive `sci` / `agent-sci` classic-CLI launches
+connect to a profile-local background service automatically. There is no separate
+mode to enable before starting a task. The terminal is a viewer; the persistent
+worker owns the conversation, prompt cache and task.
+
+```bash
+sci                             # open a chat normally
+sci --resume SESSION_ID         # reconnect, or restore a saved conversation
+sci -p PROFILE --resume SESSION_ID
+```
+
+While a task runs, press **Ctrl+C** with an empty composer:
+
+- **Cancel task** stops the task and keeps the chat open.
+- **Run in background** disconnects the terminal while the same task continues.
+- **Exit** stops the task and closes the chat's worker.
+- **Esc** dismisses the menu without changing the task.
+
+`/background`, `/detach`, **Ctrl+]**, `/exit` and terminal/SSH disconnection leave
+the worker running. A pending approval remains unanswered; existing approval
+timeouts still apply. Detaching never approves an action. `/exit --delete` retains
+its explicit history-deletion behavior instead of detaching.
+
+**Ctrl+Z suspends the terminal interface**, not the worker. The shell's `fg`
+reattaches it. You can also open SCI elsewhere and resume the same conversation.
+If another viewer is attached, SCI asks before moving it; only one viewer can
+send input. Reconnecting never resubmits the task. The old terminal does not
+silently take ownership back after `fg`.
+
+`/resume` and `/activate` can move the viewer to another conversation or profile
+at a safe turn boundary. The departing worker keeps its own conversation and
+cached prompt. `/new` starts a new conversation with the usual new-session
+configuration boundary. Profile credentials and state remain separate.
+
+For inspection or explicit termination:
+
+```bash
+sci background status                # actual workers and execution states
+sci background stop SESSION_ID       # stop this local worker
+sci background stop SESSION_ID --force # explicit forced stop if stuck
+sci background shutdown              # stop service after its workers stop
+```
+
+Use `sci -p PROFILE background ...` for another profile. The advanced `background
+start [SESSION_ID] [--detach]`, `attach ID [--takeover]`, and `status --json`
+commands remain available, but are not needed for the ordinary workflow.
+
+Detached workers with no active turn or local background work expire after
+30 minutes of idle time. Configure `session.background_idle_timeout` (seconds)
+before starting the service; `0` disables idle expiration. There is no separate
+background-worker count limit. An explicitly configured `max_concurrent_sessions`
+still applies through the normal session admission checks; its default is unlimited.
+Running tasks and chats waiting for input are not evicted to make room for new chats.
+The terminal replay holds its most recent 2 MiB and
+reports truncation; Ctrl+O/F8 opens retained history independently.
+
+Use `sci --no-daemon` for an explicitly foreground classic chat. Troubleshooting
+flags `--safe-mode` and `--ignore-user-config` also retain foreground execution. In that mode,
+Ctrl+C interrupts, a second quick press exits, and Ctrl+Z pauses the whole
+process until `fg`. A running foreground task cannot be migrated into a worker.
+Native Windows and the separate Ink TUI retain their existing foreground/runtime
+behavior; this persistent classic-CLI transport is POSIX-only.
+
+The service survives terminal disconnects, not machine reboot, service failure,
+or OS policies that terminate user processes at logout. After a crash, resume
+restores persisted messages, not the interrupted request. Remote scientific jobs
+may continue independently: check their IDs before resubmitting. After updating
+SCI, stop workers and the service, then launch SCI again to load the new code.
+
 ### Conversation restoration on resume
 
 Resume replays the retained conversation directly into normal terminal scrollback:

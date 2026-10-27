@@ -42,7 +42,7 @@ class CLITuiRuntimeMixin:
             except Exception as e:
                 if isinstance(e, OSError) and e.errno == errno.EIO:
                     self._mark_terminal_io_broken("process_loop")
-                    logger.warning("process_loop EIO — freezing UI paints (#81521): %s", e)
+                    logger.warning("process_loop EIO — terminal lost; closing CLI: %s", e)
                     continue
                 logger.warning("process_loop unhandled error (msg may be lost): %s", e)
 
@@ -216,6 +216,7 @@ class CLITuiRuntimeMixin:
         # Arm the exit backstop now that shutdown intent is unambiguous — covers wedges in the unwind below
         # that would otherwise leave the process alive with no watchdog (#65998 class).
         _arm_exit_watchdog_on_shutdown_signal()
+        self._should_exit = True
         if self._agent_running:
             _interrupt_agent_for_signal(self.agent, signum)
         # Prefer app.exit() over raising KeyboardInterrupt: a KBI from a signal handler
@@ -467,7 +468,8 @@ class CLITuiRuntimeMixin:
     def _tui_shutdown(self):
         """Teardown after the app exits: interrupt agent, stop voice/pet, persist + close session, cleanup, exit summary."""
         from cli import _DIM, _RST, _cprint, _invoke_interrupted_session_end, _run_cleanup, set_approval_callback, set_secret_capture_callback, set_sudo_password_callback
-        self._should_exit = True
+        from sci_cli.cli_shutdown import begin_interactive_shutdown
+        begin_interactive_shutdown(self)
         self._pet_stop_anim()
         # Without this line the terminal sits silent through the whole cleanup window.
         with suppress(Exception):

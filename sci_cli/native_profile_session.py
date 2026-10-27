@@ -62,6 +62,10 @@ def request_switch(cli, name, ui):
     ui.show(f"Switching to {'main' if name == 'default' else name}. Saving this conversation; "
             "the native CLI will resume that profile's latest conversation, or start a new one. "
             "Its retained transcript will appear in scrollback. Use /resume to choose another conversation.")
+    if getattr(cli, "_background_managed", False):
+        from sci_cli.background_chat_lifecycle import navigate
+        navigate(cli)
+        return
     cli._should_exit = True
     app.loop.call_soon_threadsafe(app.exit)
 
@@ -72,13 +76,15 @@ def relaunch_profile(cli):
     import subprocess
     import sys
     from tools.environments.local import served_profile_child_env
-    from sci_cli.relaunch import build_relaunch_argv
+    from sci_cli._launchers import runtime_command
     home = Path(cli._pending_profile_home)
     env = served_profile_child_env(target_home=home, inherit_credentials=True)
     # These are launch identity, not target configuration. -p establishes them.
     for key in ("SCI_PROFILE", "SCI_PROFILE_NAME", "TERMINAL_CWD"):
         env.pop(key, None)
-    argv = build_relaunch_argv(cli._pending_relaunch, preserve_inherited=False)
+    # A viewer may have entered via python -m or PM's isolated bootstrap.
+    # Resolving another `sci` on PATH can lose this install's dependencies.
+    argv = runtime_command(Path(__file__).resolve().parents[1], cli._pending_relaunch, home=home)
     from sci_cli.config import read_user_config_raw
     config = read_user_config_raw(home / "config.yaml")
     workspace = home / "workspace"
@@ -99,14 +105,38 @@ def request_resume(cli, session_id, ui):
     from sci_cli.profiles import get_active_profile_name
     from sci_cli.session_browser import flush_before_switch
     flush_before_switch(cli)
+    if session_id and session_id == cli.session_id:
+        ui.show("This conversation is already open here.")
+        return
     if session_id and not cli._session_db.get_session(session_id):
         raise ValueError("Conversation is not in this profile's store.")
+    from sci_cli.cli_session_recovery import prepare_resume
+    from sci_cli.background_chats import find_worker
+    worker = find_worker(session_id) if session_id else None
+    takeover = False
+    if worker and worker["attached"]:
+        ui.choose("Move this chat's viewer here? Its other terminal will detach; its agent keeps running.",
+                  ("Cancel", "Move viewer"))
+        takeover = True
+    if not worker and session_id and not prepare_resume(session_id, ui):
+        return
     app = cli._app
     cli._pending_profile_home = str(get_sci_home().resolve())
     cli._pending_relaunch = ["--cli", "-p", get_active_profile_name()]
-    if session_id:
+    if worker:
+        cli._pending_relaunch = ["-p", get_active_profile_name(), "background", "attach", worker["id"]]
+        if takeover:
+            cli._pending_relaunch.append("--takeover")
+    elif session_id:
         cli._pending_relaunch.extend(["--resume", session_id])
-    ui.show(f"Opening [{profile_label()}] conversation {session_id or '(new)'}. Current permissions will be re-read; "
-            "saved model context remains compressed; its retained transcript will appear in scrollback.")
+    if worker:
+        ui.show("Attaching to the same running agent. Its conversation, prompt and permissions remain unchanged.")
+    else:
+        ui.show(f"Opening [{profile_label()}] conversation {session_id or '(new)'}. Current permissions will be re-read; "
+                "saved model context remains compressed; its retained transcript will appear in scrollback.")
+    if getattr(cli, "_background_managed", False):
+        from sci_cli.background_chat_lifecycle import navigate
+        navigate(cli)
+        return
     cli._should_exit = True
     app.loop.call_soon_threadsafe(app.exit)

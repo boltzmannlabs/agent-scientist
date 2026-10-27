@@ -83,7 +83,9 @@ class TestBackgroundBusyPolicyContract:
             assert cmd.name == name
             assert cmd.busy_policy == "dispatch"
 
-    def test_background_name_is_retired(self):
+    def test_persistent_background_is_distinct_from_parallel_bg(self):
         from sci_cli.commands import resolve_command
 
-        assert resolve_command("background") is None
+        persistent = resolve_command("background")
+        assert persistent.cli_only and persistent.busy_policy == "dispatch"
+        assert persistent is not resolve_command("bg")

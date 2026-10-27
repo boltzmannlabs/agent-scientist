@@ -74,7 +74,7 @@ class CLITerminalMixin:
     """Terminal repaint/resize recovery, input-mode healing, and clipboard helpers for the interactive CLI"""
 
     def _mark_terminal_io_broken(self, reason: str = "") -> None:
-        """Stop UI paints after the PTY/stdout becomes unusable (#81521)."""
+        """Stop paints and close the CLI when its terminal is gone."""
         from cli import logger
         if getattr(self, "_terminal_io_broken", False):
             return
@@ -84,8 +84,18 @@ class CLITerminalMixin:
         except Exception:
             pass
         logger.warning(
-            "Terminal I/O broken%s — freezing UI paints to avoid redraw storm (#81521)",
+            "Terminal I/O broken%s — closing CLI instead of leaving a hidden writer",
             f" ({reason})" if reason else "")
+        from cli import _arm_exit_watchdog_on_shutdown_signal
+        from agent.interrupt_compat import request_hard_interrupt
+        _arm_exit_watchdog_on_shutdown_signal()
+        self._should_exit = True
+        agent = getattr(self, "agent", None)
+        if agent and getattr(self, "_agent_running", False):
+            request_hard_interrupt(agent)
+        app = getattr(self, "_app", None)
+        if app is not None and app.is_running and app.loop is not None:
+            app.loop.call_soon_threadsafe(app.exit)
 
     def _app_invalidate(self, app, where: str, *, swallow: bool) -> None:
         """``app.invalidate()``: EIO freezes paints, other OSErrors re-raise, and any

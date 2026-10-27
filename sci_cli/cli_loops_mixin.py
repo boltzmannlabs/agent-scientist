@@ -60,6 +60,10 @@ class CLILoopsMixin:
         elif _args:
             _cprint(f"  {_DIM}{t('cli.exit.unknown_argument', argument=_escape(_args))}{_RST}")
             return True
+        if not _args and getattr(self, "_background_managed", False):
+            from sci_cli.background_chats import detach_cli
+            detach_cli(self)
+            return True
         return False
 
     def _cmd_help(self, cmd_original: str):
