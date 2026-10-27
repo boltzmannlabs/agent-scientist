@@ -254,6 +254,9 @@ function Set-GitRedirect {
     insteadOf = $RepoUrlSsh
 "@ | Set-Content -LiteralPath $gitCfg -Encoding ASCII
     $env:GIT_CONFIG_GLOBAL = $gitCfg
+    # Name the approved source, as the POSIX driver does. Git redirects
+    # its transport to the fixture repository; no public clone is performed.
+    $env:SCI_REPO_URL = $RepoUrlHttps
 
     # check it worked
     $actualGitUrl = Invoke-Git @("-C", $RepoRoot, "remote", "get-url", "origin")
