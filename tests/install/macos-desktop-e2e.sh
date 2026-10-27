@@ -49,7 +49,7 @@ PHASE="all"
 UPDATE_METHOD=""
 INSTALL_REF=""
 UPDATE_REF=""
-DMG_URL="https://hermes-assets.nousresearch.com/Hermes-Setup.dmg"
+DMG_URL=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --phase)
@@ -197,6 +197,7 @@ phase_install() {
   ok "bootstrap script is unmodified scripts/install.sh from $OLD_REF ($OLD_SHA)"
 
   local dmg="$WORK_ROOT/Sci-Setup.dmg"
+  [ -f "$dmg" ] || [ -n "$DMG_URL" ] || fail "An approved SCI installer URL is required (--dmg-url); native installer coverage is blocked until supplied."
   [ -f "$dmg" ] || curl -fsSL -o "$dmg" "$DMG_URL"
   [ "$(stat -f%z "$dmg")" -gt 1000000 ] || fail "dmg download too small: $(stat -f%z "$dmg") bytes"
   # curl'd files carry no quarantine attr, but belt and braces on a runner.

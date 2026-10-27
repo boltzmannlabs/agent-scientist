@@ -5,14 +5,14 @@ from pathlib import Path
 
 
 def foundation():
-    return json.loads((Path(__file__).parent / "data/omics-foundation.json").read_text(encoding="utf-8"))
+    return json.loads((Path(__file__).parent / "data/omics-foundation.json").read_text(encoding="utf-8-sig"))
 
 
 def bundles():
     from tools.skills_hub_models import SkillBundle
     from sci_cli.skill_add_sources import validate_bundle
     pack = foundation()
-    contracts = (Path(__file__).parent / "data/omics-contracts.schema.json").read_text(encoding="utf-8")
+    contracts = (Path(__file__).parent / "data/omics-contracts.schema.json").read_text(encoding="utf-8-sig")
     for item in pack["skills"]:
         name = item["name"]
         content = f'''---
@@ -131,7 +131,7 @@ def offer_foundation(home, ui):
         if soul.is_file() and not soul.is_symlink():
             if hashlib.sha256(soul.read_bytes()).hexdigest() == starter["previous_persona_sha256"]:
                 atomic_write_text(soul, starter["persona"])
-            elif soul.read_text(encoding="utf-8") != starter["persona"]:
+            elif soul.read_text(encoding="utf-8-sig") != starter["persona"]:
                 ui.show("Custom Omics persona preserved. Review it if it still says foundation skills are unavailable.")
     except Exception:
         ui.show("Foundation update stopped. Some skill files may already be installed; "

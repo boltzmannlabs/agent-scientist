@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 def definition():
-    return json.loads((Path(__file__).parent / "data" / "omics-starter.json").read_text(encoding="utf-8"))
+    return json.loads((Path(__file__).parent / "data" / "omics-starter.json").read_text(encoding="utf-8-sig"))
 
 
 def is_starter(home):
