@@ -299,8 +299,17 @@ class PtySci:
                 # /exit deliberately detaches from the persistent service. Prove
                 # it released the viewer, then explicitly stop our fixture chats
                 # before applying the no-leaked-process assertion.
-                chats = request("status", home=self.sci_home)["chats"]
-                assert all(not c["attached"] and c["state"] == "idle" for c in chats if c["alive"]), chats
+                def detached_idle():
+                    status = request("status", home=self.sci_home)
+                    if all(not c["attached"] and c["state"] == "idle"
+                           for c in status["chats"] if c["alive"]):
+                        return status
+                    return None
+
+                # Worker state reports are asynchronous and rate-limited; the
+                # viewer exiting does not imply its idle report arrived first.
+                chats = poll(detached_idle, timeout=timeout,
+                             what="detached fixture workers to report idle")["chats"]
                 for chat in chats:
                     if chat["alive"]:
                         request("stop", home=self.sci_home, id=chat["id"])
