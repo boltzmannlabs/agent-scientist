@@ -29,6 +29,10 @@ OFFICIAL_HTTPS = "https://github.com/boltzmannlabs/Agent-Scientist.git"
 OFFICIAL_SSH = "git@github.com:boltzmannlabs/Agent-Scientist.git"
 TRACEBACK = "Traceback (most recent call last)"
 FAKE_KEY = "sk-fake-e2e-install-update"
+# Last published main before the background-chat rollout. Until this repository
+# has a stable release tag, exercise real upgrades from this prerelease snapshot;
+# do not manufacture a release tag or skip the N-1 scenarios.
+PRERELEASE_UPGRADE_BASE = "062351dd048c142840f78ea198f22417d983ccda"
 
 
 def real_uv() -> str | None:
@@ -50,15 +54,29 @@ def head_sha() -> str:
     return git("rev-parse", os.environ.get("SCI_E2E_INSTALL_REF") or "HEAD", cwd=H.WORKTREE)
 
 
-def previous_release_tag() -> str:
-    """Nearest released SCI ancestor; ignore prereleases and inherited CalVer tags."""
+def previous_upgrade_ref() -> str:
+    """Explicit base, nearest stable tag, or the documented prerelease baseline."""
     from sci_cli.update_channel import STABLE_TAG_RE
 
-    tags = git("tag", "--list", "--merged", "HEAD~1", cwd=H.WORKTREE).splitlines()
-    matches = [arg for tag in tags if STABLE_TAG_RE.fullmatch(tag) for arg in ("--match", tag)]
-    if not matches:
-        raise AssertionError("No released SCI ancestor is available for an upgrade test")
-    return git("describe", "--tags", "--abbrev=0", *matches, "HEAD~1", cwd=H.WORKTREE)
+    ref = os.environ.get("SCI_E2E_UPGRADE_BASE")
+    kind = "explicit baseline"
+    if not ref:
+        tags = git("tag", "--list", "--merged", "HEAD~1", cwd=H.WORKTREE).splitlines()
+        # The first public SCI release used an unprefixed tag. Upgrade coverage
+        # must include it without changing the promoted-channel tag contract.
+        matches = [arg for tag in tags
+                   if STABLE_TAG_RE.fullmatch(tag if tag.startswith("v") else f"v{tag}")
+                   for arg in ("--match", tag)]
+        ref = (git("describe", "--tags", "--abbrev=0", *matches, "HEAD~1", cwd=H.WORKTREE)
+               if matches else PRERELEASE_UPGRADE_BASE)
+        kind = "stable release" if matches else "prerelease snapshot (no stable ancestor tag)"
+    base = git("rev-parse", "--verify", f"{ref}^{{commit}}", cwd=H.WORKTREE)
+    head = git("rev-parse", "HEAD", cwd=H.WORKTREE)
+    assert base != head and git("merge-base", base, head, cwd=H.WORKTREE) == base, (
+        f"Upgrade baseline {ref} must be a strict ancestor of HEAD; fetch full history or set SCI_E2E_UPGRADE_BASE")
+    git("cat-file", "-e", f"{base}:scripts/install.sh", cwd=H.WORKTREE)
+    print(f"Upgrade baseline: {ref} ({kind})")
+    return ref
 
 
 def make_origin(root: Path, ref: str) -> Path:

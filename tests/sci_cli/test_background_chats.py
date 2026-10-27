@@ -92,6 +92,38 @@ asyncio.run(ChatService(home, worker_factory={"None" if real_cli else "spawn"}).
 
 
 @pytest.mark.platforms("posix")
+def test_service_reconnects_across_long_and_changed_tmpdirs_without_profile_crossover(tmp_path, monkeypatch):
+    import tempfile
+
+    long_temp = tmp_path / ("long-temp-" * 14)
+    long_temp.mkdir()
+    monkeypatch.setenv("TMPDIR", str(long_temp))
+    monkeypatch.setattr(tempfile, "tempdir", str(long_temp))
+    homes = [tmp_path / "a", tmp_path / "b"]
+    daemons = []
+    endpoints = []
+    try:
+        for home in homes:
+            daemons.append(service(home))
+            endpoints.append(locations(home)[2])
+        assert endpoints[0] != endpoints[1]
+        assert all(len(os.fsencode(path)) <= 100 for path in endpoints)
+        changed_temp = tmp_path / "other-temp"
+        changed_temp.mkdir()
+        monkeypatch.setenv("TMPDIR", str(changed_temp))
+        monkeypatch.setattr(tempfile, "tempdir", str(changed_temp))
+        for index in (0, 1, 0):
+            result = request("status", home=homes[index])
+            assert result["profile_home"] == str(homes[index].resolve())
+            assert result["pid"] == daemons[index].pid
+    finally:
+        for daemon in daemons:
+            daemon.terminate()
+            daemon.wait(timeout=15)
+    assert not any(path.exists() for path in endpoints)
+
+
+@pytest.mark.platforms("posix")
 def test_start_is_not_capped_by_retained_workers_and_keeps_profile_owners(tmp_path):
     homes = [tmp_path / "a", tmp_path / "b"]
     source = "import time; print('READY', flush=True); time.sleep(300)"
@@ -492,6 +524,22 @@ def test_normal_launch_lifecycle_has_no_special_background_start(tmp_path, actio
                         break
             assert needle in output, output[-3000:]
 
+        def while_reading(predicate, timeout=30):
+            # A PTY needs a reading terminal even while the test waits for a
+            # lifecycle transition. Otherwise repaint output can fill its queue
+            # and block the viewer before it reads Ctrl+] or Ctrl+Z (macOS CI).
+            deadline = time.monotonic() + timeout
+            while time.monotonic() < deadline:
+                if select.select([master], [], [], 0.05)[0]:
+                    try:
+                        output.extend(os.read(master, 65536))
+                    except OSError:
+                        pass  # PTY EOF may precede process exit notification.
+                value = predicate()
+                if value:
+                    return value
+            raise AssertionError(f"Timed out waiting for lifecycle transition: {output[-3000:]!r}")
+
         try:
             client = subprocess.Popen([sys.executable, "-m", "sci_cli.main", "--cli"], env=env,
                 cwd=tmp_path, stdin=slave, stdout=slave, stderr=slave, start_new_session=True)
@@ -502,8 +550,8 @@ def test_normal_launch_lifecycle_has_no_special_background_start(tmp_path, actio
             until(b"hello lifecycle fixture")
             time.sleep(0.5)
             os.write(master, b"\r")
-            wait_for(lambda: model.main_requests())
-            worker = wait_for(lambda: next((c for c in request("status", home=home)["chats"] if c["session_id"]), None))
+            while_reading(lambda: model.main_requests())
+            worker = while_reading(lambda: next((c for c in request("status", home=home)["chats"] if c["session_id"]), None))
             key, session = worker["id"], worker["session_id"]
             if action in ("background", "cancel_task", "exit"):
                 os.write(master, b"\x03")
@@ -511,7 +559,7 @@ def test_normal_launch_lifecycle_has_no_special_background_start(tmp_path, actio
                 os.write(master, {"cancel_task": b"1", "background": b"2", "exit": b"3"}[action])
             elif action == "suspend":
                 os.write(master, b"\x1a")
-                wait_for(lambda: psutil.Process(client.pid).status() == psutil.STATUS_STOPPED)
+                while_reading(lambda: psutil.Process(client.pid).status() == psutil.STATUS_STOPPED)
                 assert psutil.Process(worker["pid"]).status() != psutil.STATUS_STOPPED
             else:
                 os.close(master)
@@ -519,13 +567,15 @@ def test_normal_launch_lifecycle_has_no_special_background_start(tmp_path, actio
                 client.wait(timeout=15)
 
             if action == "cancel_task":
-                wait_for(lambda: find_worker(key, home)["state"] == "idle")
+                while_reading(lambda: find_worker(key, home)["state"] == "idle")
                 assert client.poll() is None and find_worker(key, home)["attached"]
                 assert len(model.main_requests()) == 1
                 os.write(master, b"\x1d")
-                client.wait(timeout=15)
+                while_reading(lambda: client.poll() is not None, timeout=15)
+                assert client.returncode == 0
             elif action == "exit":
-                client.wait(timeout=20)
+                while_reading(lambda: client.poll() is not None, timeout=20)
+                assert client.returncode == 0
                 wait_for(lambda: find_worker(key, home) is None)
                 from sci_cli.active_sessions import active_session_registry_snapshot
                 assert not active_session_registry_snapshot(home)

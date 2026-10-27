@@ -26,7 +26,6 @@ import pytest
 
 import tools.bot_mode_dm as bot_mode_dm
 import tools.bot_relay as bot_relay
-import pytest
 
 
 ENV = {"id": "d" * 32, "target_handle": "researcher", "target_connection": "ssh-vps"}
@@ -51,6 +50,8 @@ def test_local_delivery_resolves_sibling_sci(tmp_path, monkeypatch):
     sibling.touch()
     sibling.chmod(0o755)
     monkeypatch.setattr("sys.executable", str(bin_dir / "python"))
+    # Exercise the sibling fallback without the checkout's PM launcher winning.
+    monkeypatch.setattr(bot_relay, "__file__", str(tmp_path / "tools" / "bot_relay.py"))
 
     argv = bot_relay.local_delivery_command("ops", "query.json")
     assert argv[0] == str(sibling)

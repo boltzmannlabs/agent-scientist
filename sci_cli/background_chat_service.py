@@ -335,7 +335,7 @@ class ChatService:
         server = await asyncio.start_unix_server(self.handle, path=str(self.endpoint), limit=FRAME_LIMIT)
         os.chmod(self.endpoint, 0o600)
         atomic_json_write(self.root / "server.json", {"pid": os.getpid(), "started": psutil.Process().create_time(),
-                          "token": self.token}, mode=0o600)
+                          "token": self.token, "endpoint": str(self.endpoint)}, mode=0o600)
         loop = asyncio.get_running_loop()
         for sig in (signal.SIGTERM, signal.SIGINT):
             loop.add_signal_handler(sig, self.stopping.set)  # windows-footgun: ok — constructor requires POSIX

@@ -34,7 +34,13 @@ def locations(home=None):
     home = Path(home or get_sci_home()).resolve()
     root = home / "runtime" / "background-chats"
     digest = hashlib.sha256(str(home).encode()).hexdigest()[:24]
-    endpoint = Path(tempfile.gettempdir()) / f"sci-chat-{os.getuid()}-{digest}.sock" if os.name == "posix" else None  # windows-footgun: ok — conditional POSIX branch
+    endpoint = None
+    if os.name == "posix":
+        name = f"sci-chat-{os.getuid()}-{digest}.sock"  # windows-footgun: ok — POSIX transport
+        endpoint = Path(tempfile.gettempdir()) / name
+        if len(os.fsencode(endpoint)) > 100:
+            # no-tmp: ok — AF_UNIX needs a short fallback independent of a long TMPDIR.
+            endpoint = Path("/tmp") / name
     return home, root, endpoint
 
 
@@ -55,6 +61,8 @@ def connect(home=None):
     record = read_server(home)
     if not record or endpoint is None:
         raise RuntimeError("No background chat service is running in this profile.")
+    # A reconnecting shell may have a different TMPDIR from the service owner.
+    endpoint = record.get("endpoint", str(endpoint))
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.settimeout(5)
     try:

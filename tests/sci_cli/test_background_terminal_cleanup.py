@@ -83,7 +83,13 @@ def test_viewer_cleans_display_and_restores_tty_before_returning_control(tmp_pat
         assert drawn >= 0 and erased > drawn and homed > drawn
         assert b"\x1b[3J" not in output  # Retain shell scrollback.
         assert b"LATE_DRAW" not in output
-        assert termios.tcgetattr(master) == original
+        restored = termios.tcgetattr(master)
+        expected = original.copy()
+        # BSD sets PENDIN while restoring canonical mode: it is pending-input
+        # state, not a changed terminal setting (xnu bsd/sys/termios.h).
+        restored[3] &= ~getattr(termios, "PENDIN", 0)
+        expected[3] &= ~getattr(termios, "PENDIN", 0)
+        assert restored == expected
 
     try:
         until(b"VIEW_READY")

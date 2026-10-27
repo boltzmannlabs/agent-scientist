@@ -54,15 +54,15 @@ def reported_success(cp: subprocess.CompletedProcess) -> bool:
     return cp.returncode == 0 or SUCCESS in output(cp)
 
 
-def n1_tag() -> str:
-    """N-1: the newest release tag strictly before HEAD."""
-    return I.previous_release_tag()
+def n1_ref() -> str:
+    """N-1: a stable release or the verified prerelease upgrade baseline."""
+    return I.previous_upgrade_ref()
 
 
 def n1_base() -> str:
-    """The commit an N-1 install sits on: N-1's tag, or ``SCI_E2E_N1_REF`` (a patched commit
+    """The commit an N-1 install sits on: N-1's baseline, or ``SCI_E2E_N1_REF`` (a patched commit
     object, used to prove red a cell whose bug lives in N-1's own updater code)."""
-    return commit_of(os.environ.get("SCI_E2E_N1_REF") or n1_tag())
+    return commit_of(os.environ.get("SCI_E2E_N1_REF") or n1_ref())
 
 
 def commit_of(ref: str) -> str:

@@ -105,6 +105,7 @@ class PtySci:
     def __init__(self, root: Path, argv_tail: list[str], llm: FakeLLMServer, *, rows: int, cols: int,
                  extra_config: str = "") -> None:
         self.root = root
+        self.classic_cli = "--cli" in argv_tail
         self.home = root / "home"
         self.sci_home = self.home / ".sci"
         operator = (_operator_home() / ".sci").resolve()
@@ -122,6 +123,9 @@ class PtySci:
             HOME=str(self.home), SCI_HOME=str(self.sci_home), PYTHONPATH=str(REPO_ROOT),
             TMPDIR=str(root / "tmp"), TERM="xterm-256color", COLORTERM="truecolor",
             PYTHONUNBUFFERED="1", SCI_STATE_DB_GUARD_BYPASS="1",
+            # Transcript tests use the prepared test interpreter, never the
+            # operator checkout's automatic dependency-repair/install path.
+            SCI_DISABLE_LAZY_INSTALLS="1",
         )
         master, slave = os.openpty()
         self._set_winsize(master, rows, cols)
@@ -228,6 +232,10 @@ class PtySci:
     def wait_ready(self, timeout: float = 120.0) -> None:
         """The UI owns the terminal (raw mode) and its first frame has settled."""
         deadline = time.monotonic() + timeout
+        if self.classic_cli:
+            # The relay becomes raw before its worker finishes booting. Typing
+            # then can feed the worker's terminal probes instead of the composer.
+            self.wait_for_text("❯ ", timeout=timeout)
         while True:
             remaining = max(1.0, deadline - time.monotonic())
             poll(lambda: self._dead() or self._raw_mode(), timeout=remaining,
@@ -282,6 +290,19 @@ class PtySci:
 
     def leftover_processes(self, timeout: float = 15.0) -> list[str]:
         """Processes still alive in the child's session, or seen as its descendants, after exit."""
+        if self.classic_cli:
+            from sci_cli.background_chats import read_server, request
+
+            if read_server(self.sci_home):
+                # /exit deliberately detaches from the persistent service. Prove
+                # it released the viewer, then explicitly stop our fixture chats
+                # before applying the no-leaked-process assertion.
+                chats = request("status", home=self.sci_home)["chats"]
+                assert all(not c["attached"] and c["state"] == "idle" for c in chats if c["alive"]), chats
+                for chat in chats:
+                    if chat["alive"]:
+                        request("stop", home=self.sci_home, id=chat["id"])
+                request("shutdown", home=self.sci_home)
         def alive() -> list[int]:
             pids = set(session_members(self.sid))
             # Same pid AND same start time: a recycled pid is not our leftover.
@@ -295,6 +316,22 @@ class PtySci:
 
     def close(self) -> None:
         """Hard cleanup of exactly the tree this harness spawned (by session id, never by pattern)."""
+        if self.classic_cli:
+            import psutil
+            from sci_cli.background_chats import read_server
+
+            # A daemon is reparented after its launcher exits. Its private-home
+            # record verifies pid + start time before we terminate it on failure.
+            record = read_server(self.sci_home)
+            if record:
+                try:
+                    service = psutil.Process(record["pid"])
+                    service.terminate()
+                    service.wait(timeout=15)
+                except psutil.NoSuchProcess:
+                    pass
+                except psutil.TimeoutExpired:
+                    service.kill()
         try:
             os.killpg(self.sid, signal.SIGKILL)
         except (ProcessLookupError, PermissionError):

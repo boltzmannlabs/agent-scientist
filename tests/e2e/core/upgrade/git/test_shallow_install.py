@@ -34,7 +34,7 @@ ORPHAN = "orphan divergence"
 
 
 def _depth1(root) -> dict:
-    cm, w = G.start_world(root / "depth1", base=G.n1_base(), installer_ref=G.n1_tag(),
+    cm, w = G.start_world(root / "depth1", base=G.n1_base(), installer_ref=G.n1_ref(),
                           preclone=["--depth", "1", "--single-branch"])
     run = {"cm": cm, "w": w, "shape0": w.install_shape}
     w.set_main(I.head_sha())
@@ -49,7 +49,7 @@ def _depth1(root) -> dict:
 
 
 def _checked(root) -> dict:
-    cm, w = G.start_world(root / "checked", base=G.n1_base(), installer_ref=G.n1_tag(),
+    cm, w = G.start_world(root / "checked", base=G.n1_base(), installer_ref=G.n1_ref(),
                           preclone=["--depth", "1", "--single-branch"])
     run = {"cm": cm, "w": w, "shape0": w.install_shape, "checks": []}
     between = I.git("rev-list", "--first-parent", f"{G.n1_base()}..{I.head_sha()}", cwd=I.H.WORKTREE).split()
