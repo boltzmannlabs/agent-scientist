@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Callable
 
 from tests.e2e.core.terminal._vt import Screen
+from tests.e2e.core._pm_dependencies import select_test_dependencies
 from tests.fakes.fake_llm_provider import FakeLLMServer, write_sci_home
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -112,6 +113,7 @@ class PtySci:
         assert operator not in (self.sci_home.resolve(), *self.sci_home.resolve().parents), (
             f"sandbox {self.sci_home} sits inside the operator's Sci home")
         write_sci_home(self.sci_home, llm.base_url, extra_config=extra_config)
+        select_test_dependencies(self.sci_home, REPO_ROOT)
         self.llm = llm
         self.screen = Screen(rows, cols)
         self.raw = bytearray()

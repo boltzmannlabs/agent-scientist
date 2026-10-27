@@ -91,6 +91,25 @@ def test_published_head_spends_its_version():
     assert derive_next_version(published="0.21.5", bump="patch") == "0.21.6"
 
 
+@pytest.mark.parametrize("tag", ["0.1.0", "v0.1.0"])
+def test_public_source_release_uses_its_actual_tag_and_advances_version(tag):
+    from scripts.releases.versioning import published_release_identity
+
+    def run(argv):
+        if argv[:4] == ["gh", "api", "--paginate", "--slurp"]:
+            return json.dumps([[{"tag_name": tag, "draft": False, "prerelease": False},
+                                {"tag_name": "0.9.0", "draft": True, "prerelease": False},
+                                {"tag_name": "0.8.0", "draft": False, "prerelease": True},
+                                {"tag_name": "2026.10.27", "draft": False, "prerelease": False}]])
+        assert argv == ["gh", "api", f"repos/example/sci-agent/commits/{tag}", "--jq", ".sha"]
+        return "a" * 40
+
+    version, commit = published_release_identity("example/sci-agent", run=run)
+    assert version == tag.removeprefix("v") and commit == "a" * 40
+    assert derive_next_version(published=version, bump="patch") == "0.1.1"
+    assert version_from_tag("0.1.0") is None  # Receipt grammar is unchanged.
+
+
 def test_canary_base_comes_from_the_validated_protected_stable_head():
     from scripts.releases.versioning import published_stable_version
 
