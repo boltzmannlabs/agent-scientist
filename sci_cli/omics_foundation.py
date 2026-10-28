@@ -131,7 +131,7 @@ def offer_foundation(home, ui):
         if soul.is_file() and not soul.is_symlink():
             if hashlib.sha256(soul.read_bytes()).hexdigest() == starter["previous_persona_sha256"]:
                 atomic_write_text(soul, starter["persona"])
-    elif soul.read_text(encoding="utf-8-sig") != starter["persona"]:
+            elif soul.read_text(encoding="utf-8-sig") != starter["persona"]:
                 ui.show("Custom Omics persona preserved. Review it if it still says foundation skills are unavailable.")
     except Exception:
         ui.show("Foundation update stopped. Some skill files may already be installed; "

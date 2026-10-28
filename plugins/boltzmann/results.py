@@ -51,7 +51,15 @@ def service_error(stage, response, token=""):
                 if stage in {"submit", "status"} else "Service request failed without a usable diagnostic.")
     diagnostics = service_diagnostics(body, token) if isinstance(body, dict) else {}
     result = {key: diagnostics[key] for key in ("info", "message", "msg", "detail") if key in diagnostics}
-    result.update(error=detail or fallback, stage=stage,
+    # Summary and cause are separate service fields, not alternatives. Keep the
+    # cause intact (including structured/long errors); auth wrappers may replace
+    # the top-level error but must not destroy the original service diagnostic.
+    cause = diagnostics.get("error")
+    if cause:
+        result["service_error"] = cause
+    if isinstance(diagnostics.get("success"), bool):
+        result["success"] = diagnostics["success"]
+    result.update(error=cause or detail or fallback, stage=stage,
                   status="unknown" if stage in {"submit", "status"} else "failed",
                   authorization_required=response.status_code in {401, 403}, safe_to_retry=False)
     if isinstance(diagnostics.get("status"), str):

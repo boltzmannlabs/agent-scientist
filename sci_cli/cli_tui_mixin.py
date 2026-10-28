@@ -442,6 +442,8 @@ class CLITuiMixin:
 
     def _tui_spinner_loop(self):
         while not self._should_exit:
+            from sci_cli.background_chats import publish_cli_state
+            publish_cli_state(self)
             if not self._app:
                 time.sleep(0.1)
                 continue
@@ -928,6 +930,9 @@ class CLITuiMixin:
             self._attached_images.clear()
             event.app.invalidate()
         else:
+            from sci_cli.background_chats import detach_cli
+            if getattr(self, "_background_managed", False) and detach_cli(self):
+                return
             self._should_exit = True
             event.app.exit()
 
@@ -950,6 +955,9 @@ class CLITuiMixin:
         if overlay_cleared and not (self._agent_running and self.agent):
             return
         if self._agent_running and self.agent:
+            from sci_cli.background_chat_lifecycle import show_running_exit_choices
+            if not overlay_cleared and not event.app.current_buffer.text and show_running_exit_choices(self):
+                return
             if now - self._last_ctrl_c_time < 2.0:
                 print("\n" + t("cli.tui.force_exiting"))
                 self._should_exit = True
@@ -1112,6 +1120,9 @@ class CLITuiMixin:
     def _tui_handle_ctrl_z(self, event):
         """Ctrl+Z suspends the process (Unix only)."""
         from cli import _DIM, _RST, _cprint
+        from sci_cli.background_chats import detach_cli
+        if detach_cli(self):
+            return
         if sys.platform == 'win32':
             _cprint(f"\n{_DIM}{t('cli.tui.suspend_unsupported')}{_RST}")
             event.app.invalidate()
@@ -1120,7 +1131,9 @@ class CLITuiMixin:
         from prompt_toolkit.application import run_in_terminal
         from sci_cli.skin_engine import get_active_skin
         agent_name = get_active_skin().get_branding("agent_name", "Sci Agent")
-        msg = "\n" + t("cli.tui.suspended", agent_name=agent_name)
+        msg = ("\n" + t("cli.tui.suspended", agent_name=agent_name) +
+               "\nSCI is paused, not closed. This chat stays owned by this terminal. "
+               "Use fg to return, then /exit to close; or resume elsewhere and approve moving it.\n")
 
         def _suspend():
             os.write(1, msg.encode())
@@ -1134,6 +1147,13 @@ class CLITuiMixin:
         if buf.text:
             buf.delete()
         elif not self._attached_images:
+            from sci_cli.background_chat_lifecycle import show_running_exit_choices
+            from sci_cli.background_chats import detach_cli
+            if getattr(self, "_background_managed", False):
+                if self._agent_running and show_running_exit_choices(self):
+                    return
+                if detach_cli(self):
+                    return
             self._should_exit = True
             event.app.exit()
 
@@ -1463,7 +1483,7 @@ class CLITuiMixin:
         buf.reset(append_to_history=True)
 
     def _tui_enter_inline_command(self, event, text: str, has_images: bool) -> bool:
-        """Run /model, /steer, /bg, /btw directly on the UI thread; True when handled.
+        """Dispatch inline model/steering/side-task commands and busy chat transport controls.
 
         /model needs the prompt_toolkit terminal-handoff helpers of the interactive pickers.
         /steer, /bg and /btw while the agent runs must not queue through _pending_input: the
@@ -1476,7 +1496,10 @@ class CLITuiMixin:
         and never invalidates the app, so the just-cleared input area would keep showing the
         submitted text (looking unsent, inviting a re-submit) until some unrelated redraw.
         """
-        if self._should_handle_model_command_inline(text, has_images=has_images):
+        from sci_cli.background_chat_commands import dispatch_while_busy
+        if dispatch_while_busy(self, text, has_images=has_images):
+            pass
+        elif self._should_handle_model_command_inline(text, has_images=has_images):
             if not self.process_command(text):
                 self._should_exit = True
                 if event.app.is_running:

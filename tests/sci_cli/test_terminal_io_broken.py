@@ -34,6 +34,8 @@ class TestTerminalIoBrokenFreeze:
 
         assert cli._terminal_io_broken is True
         assert cli._app.invalidate.call_count == 1
+        assert cli._should_exit is True
+        cli._app.loop.call_soon_threadsafe.assert_called_once_with(cli._app.exit)
 
         cli._invalidate(min_interval=0.0)
         # Frozen — no further paints.

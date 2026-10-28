@@ -77,7 +77,7 @@
       }
     },
     "Cat_Pred": {
-      "source": "operator-confirmed 2026-10-13; modules/protein-toolbox.md",
+      "source": "Owner-supplied CatPred submission error, 2026-10-26: Missing required column(s): Seq_id, Sequence / Sequences, SMILES in catpred.csv. Supersedes the 2026-10-13 case-insensitive upload assumption for the submission credit checker.",
       "files": {
         "input_path": {
           "formats": [
@@ -87,18 +87,19 @@
           "csv_variants": [
             {
               "columns": [
-                "sequences",
-                "smiles"
+                "Seq_id",
+                "Sequences",
+                "SMILES"
               ],
-              "aliases": {},
+              "aliases": {"Sequences": ["Sequence"]},
               "values": {
-                "sequences": "protein",
-                "smiles": "smiles"
+                "Sequences": "protein",
+                "SMILES": "smiles"
               }
             }
           ],
-          "header_case_sensitive": false,
-          "notes": "Required CSV storage path returned by `file_upload`. Headers are case-insensitive, but the singular aliases `sequence` and `smile` are rejected; `seq_id` is not required. Sequence and SMILES values retain their case. CatPred automatically predicts kcat, Km, and Ki for every row and has no user-selectable mode or `prediction_type` field."
+          "header_case_sensitive": true,
+          "notes": "The submission credit checker requires Seq_id, SMILES and one of Sequence or Sequences, with exact case. No automatic header or molecular-value rewriting. CSV shape checks do not verify protein/SMILES semantics; no backend rerun was performed to establish successful execution."
         }
       }
     },
@@ -803,7 +804,7 @@
           "header_case_sensitive": true,
           "columns": [
             "Seq_id",
-            "sequences"
+            "Sequences"
           ],
           "notes": "S3 path to CSV (upload first)"
         }
@@ -946,7 +947,11 @@
             "csv"
           ],
           "header_case_sensitive": true,
-          "notes": "One header from each group is required; aliases are source-documented, not invented. Column-group semantics require review."
+          "columns": [
+            "Sequences",
+            "Smiles"
+          ],
+          "notes": "Exact Sequences and Smiles headers are required by the reported server diagnostic. Positive submission with corrected headers has not yet been verified."
         }
       }
     },
@@ -960,7 +965,7 @@
           "header_case_sensitive": true,
           "columns": [
             "seq_id",
-            "sequence",
+            "Sequences",
             "smiles"
           ],
           "notes": "Use the exact source field."
@@ -1080,7 +1085,7 @@
       }
     },
     "ligand_pharmacophore": {
-      "source": "contract_sources/legacy-v1/boltchem_tools.md: Tool 9 input table and execution step 1",
+      "source": "contract_sources/ligand-pharmacophore-reconciliation.md: validation CSV correction; public frontend required-field registry and active/inactive help text, explicit backend missing-LABELS diagnostic, and corrected submission acceptance. Supersedes the incomplete historical SMILES-only validation procedure.",
       "files": {
         "smiles_file": {
           "formats": ["csv"],
@@ -1091,10 +1096,13 @@
         },
         "validation_file": {
           "formats": ["csv"],
-          "columns": ["SMILES"],
+          "columns": ["SMILES", "LABELS"],
           "header_case_sensitive": true,
-          "values": {"SMILES": "smiles"},
-          "notes": "Recorded execution procedure uses SMILES for both CSVs. Generic parsing does not verify validation-set suitability or independence."
+          "values": {
+            "SMILES": "smiles",
+            "LABELS": {"type": "string", "enum": ["active", "inactive"]}
+          },
+          "notes": "Validation requires exact SMILES and LABELS headers. Public input help documents active/inactive text labels; its singular LABEL spelling conflicts with the required-field registry and explicit backend missing-LABELS diagnostic. Preserve labels and source SMILES; artificial labels require explicit smoke-test approval. Generic parsing does not establish biological activity, class balance or validation-set independence."
         }
       }
     },

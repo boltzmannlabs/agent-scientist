@@ -35,6 +35,20 @@ def setup_route(raft=False):
 async def drain(adapter):
     while adapter._background_tasks:
         await asyncio.gather(*list(adapter._background_tasks))
+        # gather() can return synchronously for finished tasks on Python 3.14;
+        # let their queued discard callbacks run before checking the set again.
+        await asyncio.sleep(0)
+
+
+@pytest.mark.asyncio
+async def test_drain_allows_completed_task_removal_callbacks():
+    _, adapter, _, _ = setup_route()
+    finished = asyncio.get_running_loop().create_future()
+    finished.set_result(None)
+    adapter._background_tasks.add(finished)
+    finished.add_done_callback(adapter._background_tasks.discard)
+    await drain(adapter)
+    assert not adapter._background_tasks
 
 
 @pytest.mark.asyncio

@@ -1,8 +1,66 @@
-"""Cross-field checks from the supplied enzyme contracts, not scientific scoring."""
+"""RFD3 request preparation and enzyme contract checks, not scientific scoring."""
 
+from copy import deepcopy
 import json
 
-from .contracts import validate_schema
+from .contracts import ContractStore, validate_schema
+
+
+def _wire_toggle(value):
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return value.strip().lower() if isinstance(value, str) else value
+
+
+def _prepare_optional_controls(controls, schema):
+    # Only documented optional fields are placeholders. Unknown keys and required
+    # geometry/selection contents must reach validation unchanged.
+    for name, prop in schema.get("properties", {}).items():
+        if name not in controls:
+            continue
+        value = controls[name]
+        if name not in schema.get("required", []) and (
+            value is None or isinstance(value, str) and not value.strip()
+        ):
+            del controls[name]
+        elif any(branch.get("enum") == ["true", "false"]
+                 for branch in [prop, *prop.get("oneOf", [])]):
+            controls[name] = _wire_toggle(value)
+        elif isinstance(value, dict) and "properties" in prop:
+            _prepare_optional_controls(value, prop)
+
+
+def _has_unsupported_fields(value, schema):
+    if isinstance(value, dict):
+        props = schema.get("properties", {})
+        if schema.get("additionalProperties") is False and value.keys() - props.keys():
+            return True
+        return any(_has_unsupported_fields(item, props[name])
+                   for name, item in value.items() if name in props)
+    if isinstance(value, list):
+        return any(_has_unsupported_fields(item, schema.get("items", {})) for item in value)
+    return False
+
+
+def prepare_rfd3_payload(payload, experiment_name):
+    """Prepare one private copy for both validation and submission; never repair invalid values."""
+    prepared = deepcopy(payload)
+    explicitly_disabled = ("advanced_settings_enabled" in prepared
+                           and _wire_toggle(prepared["advanced_settings_enabled"]) == "false")
+    for name, value in (("job_name", experiment_name), ("n_samples", 1),
+                        ("task_name", "rfd3"), ("advanced_settings_enabled", "false")):
+        prepared.setdefault(name, value)
+    prepared["advanced_settings_enabled"] = _wire_toggle(prepared["advanced_settings_enabled"])
+    props = ContractStore().tool("Enzyme_RFD3")["request_schema"]["properties"]
+    _prepare_optional_controls(prepared, {"properties": {
+        name: props[name] for name in ("seed", "advanced_settings")}})
+    advanced = prepared.get("advanced_settings")
+    if explicitly_disabled and isinstance(advanced, dict):
+        # Disabled controls may be stale, but never hide unsupported keys from
+        # the strict contract (including nested sampler/geometry keys).
+        if not _has_unsupported_fields(advanced, props["advanced_settings"]):
+            del prepared["advanced_settings"]
+    return prepared
 
 
 def _ordered(check, report, path):
@@ -48,9 +106,8 @@ def validate_request(check, payload, report):
     advanced = payload.get("advanced_settings", {})
     if advanced and payload.get("advanced_settings_enabled", "false") != "true":
         report.errors.append('advanced_settings requires advanced_settings_enabled="true"; do not silently ignore supplied controls.')
-    if "ori_token" in advanced and "infer_ori_strategy" in advanced:
-        report.errors.append("ori_token and infer_ori_strategy are mutually exclusive.")
-    if advanced.get("infer_ori_strategy") == "hotspots" and advanced.get("select_hotspots") in (None, "", "false", {}):
+    if ("ori_token" not in advanced and advanced.get("infer_ori_strategy") == "hotspots"
+            and advanced.get("select_hotspots") in (None, "", "false", {})):
         report.errors.append("hotspots origin strategy requires a meaningful select_hotspots selection.")
     samples = payload.get("n_samples", 1)
     batch, count = advanced.get("diffusion_batch_size"), advanced.get("n_batches")
@@ -58,6 +115,8 @@ def validate_request(check, payload, report):
         report.errors.append("diffusion_batch_size * n_batches must equal n_samples.")
     elif (batch and samples % batch) or (count and samples % count):
         report.errors.append("Supplied batch controls must divide n_samples.")
+    elif batch is None and count is not None and samples // count > 2:
+        report.errors.append("Derived diffusion_batch_size (n_samples / n_batches) must not exceed 2.")
     for rule in advanced.get("geometry_constraints", []):
         _ordered(rule, report, "geometry constraint")
         expected = {"distance": 2, "angle": 3}[rule["type"]]

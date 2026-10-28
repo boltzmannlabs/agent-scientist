@@ -81,7 +81,7 @@ def _csv(data, rule, payload, report):
     checks = {"number": _finite, "binary": lambda s: s in {"0", "1"},
               "integer": lambda s: _finite(s) and float(s).is_integer()}
     for column, kind in values.items():
-        if kind not in checks:
+        if not isinstance(kind, dict) and kind not in checks:
             report.warnings.append(f"{column}: {kind} semantics are not verified by the generic CSV parser.")
     count = 0
     for row in reader:
@@ -93,9 +93,14 @@ def _csv(data, rule, payload, report):
             value = row[index]
             if not value.strip():
                 report.errors.append(f"CSV row {count + 1}: required column {column} is empty.")
-            check = checks.get(values.get(column))
-            if check and not check(value):
-                report.errors.append(f"CSV row {count + 1}: {column} violates its documented value type.")
+            kind = values.get(column)
+            if isinstance(kind, dict):
+                # Reuse canonical scalar-schema checks; never coerce or rewrite cells.
+                validate_schema(value, kind, report, f"CSV row {count + 1}: {column}")
+            else:
+                check = checks.get(kind) if isinstance(kind, str) else None
+                if check and not check(value):
+                    report.errors.append(f"CSV row {count + 1}: {column} violates its documented value type.")
         if report.errors:
             break
     if not count:

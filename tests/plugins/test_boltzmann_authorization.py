@@ -515,6 +515,9 @@ def test_five_enzyme_tools_use_existing_profile_scoped_wire_path(tmp_path, monke
                     assert uploaded["status"] == "uploaded", uploaded
                     assert data in state["upload_bytes"]
                     payload[field] = uploaded["s3_path"]
+                # Preserve a worker run label separately from the outer RFD3 routing name.
+                if job == "Enzyme_RFD3":
+                    payload["job_name"] = "fixture-rfd3-worker-run"
                 # Exercise inline file_or_value objects through real preflight, not just schemas.
                 if job == "Mol_Probity":
                     payload.update(execution_mode="validation", quality_thresholds={"max_clashscore": 0})
@@ -531,7 +534,12 @@ def test_five_enzyme_tools_use_existing_profile_scoped_wire_path(tmp_path, monke
                     job_name=job, experiment_data=payload, experiment_name="fixture", allow_partial_validation=True))
                 assert result["status"] == "accepted", result
                 assert state["submission"] == {"experimentData": payload, "job_name": job, "experimentName": "fixture"}
-                assert not {"user_id", "tokenid", "experiment_id", "job_name"} & payload.keys()
+                assert not {"user_id", "tokenid", "experiment_id"} & payload.keys()
+                if job == "Enzyme_RFD3":
+                    assert state["submission"]["job_name"] == "Enzyme_RFD3"
+                    assert state["submission"]["experimentData"]["job_name"] == "fixture-rfd3-worker-run"
+                else:
+                    assert "job_name" not in payload
                 status = json.loads(module.tools.handle_boltzmann_status(job_name=job, doc_id="fixture-job"))
                 assert status["status"] == "success", status
                 assert state["calls"].count("/submit") == count + 1
@@ -566,6 +574,8 @@ def test_ligand_pharmacophore_upload_submit_and_receipts_are_profile_scoped(tmp_
                 monkeypatch.setattr(helpers, setting, base + suffix)
             source = tmp_path / "ligands.csv"
             source.write_text("SMILES\nCCO\n")
+            validation = tmp_path / "validation.csv"
+            validation.write_text("SMILES,LABELS\nCCO,active\nCCN,inactive\n")
             args = {"local_path": str(source), "job_name": job, "input_field": "smiles_file"}
             unauthorized = json.loads(module.tools.handle_boltzmann_upload(**args))
             assert unauthorized["authorization_required"]
@@ -579,13 +589,14 @@ def test_ligand_pharmacophore_upload_submit_and_receipts_are_profile_scoped(tmp_
                         assert any("no current-profile validation receipt" in w for w in before.warnings)
                         for field in ("smiles_file", "validation_file"):
                             state["upload_path"] = payload[field]
-                            upload = dict(args, input_field=field)
+                            input_file = source if field == "smiles_file" else validation
+                            upload = dict(args, input_field=field, local_path=str(input_file))
                             blocked = json.loads(module.tools.handle_boltzmann_upload(**upload))
                             assert blocked.get("approval_required"), blocked
                             approved = json.loads(module.tools.handle_boltzmann_upload(
                                 **upload, allow_partial_validation=True))
                             assert approved["status"] == "uploaded", approved
-                            assert source.read_bytes() in state["upload_bytes"]
+                            assert input_file.read_bytes() in state["upload_bytes"]
                     after = preflight.preflight_submission(job, payload)
                     assert not after.errors
                     assert not any("no current-profile validation receipt" in w for w in after.warnings)
@@ -596,6 +607,10 @@ def test_ligand_pharmacophore_upload_submit_and_receipts_are_profile_scoped(tmp_
             invalid = json.loads(module.tools.handle_boltzmann_upload(
                 **dict(args, local_path=str(bad)), allow_partial_validation=True))
             assert invalid["status"] == "not_started"
+            missing_labels = json.loads(module.tools.handle_boltzmann_upload(
+                **dict(args, input_field="validation_file"), allow_partial_validation=True))
+            assert missing_labels["status"] == "not_started", missing_labels
+            assert any("LABELS" in error for error in missing_labels["validation"]["errors"])
             assert state["calls"].count("/upload") == 4
             submit = {"job_name": job, "experiment_data": payload, "experiment_name": "Local fixture only"}
             blocked = json.loads(module.tools.handle_boltzmann_submit(**submit))
@@ -607,6 +622,7 @@ def test_ligand_pharmacophore_upload_submit_and_receipts_are_profile_scoped(tmp_
             module.tools.handle_boltzmann_status(job_name=job, doc_id="fixture-job")
             assert state["calls"].count("/submit") == 1
             assert source.read_text() == "SMILES\nCCO\n"
+            assert validation.read_text() == "SMILES,LABELS\nCCO,active\nCCN,inactive\n"
         finally:
             manager.unload()
 
@@ -728,8 +744,10 @@ def test_submit_preserves_service_diagnostics_without_claiming_a_job_outcome(tmp
                                 endpoint.removesuffix("/api/get-projects") + "/submit")
             traceback = ("Traceback (most recent call last):\n" + "  credit calculator frame\n" * 120
                          + "ValueError: fixture credit calculation failure")
+            backend_error = "Missing required column(s): Seq_id, Sequence / Sequences, SMILES in catpred.csv"
             for count, http in enumerate((500, 422, 401), start=1):
-                state.update(submit_http=http, submit_response={"status": "failed",
+                state.update(submit_http=http, submit_response={"status": "failed", "success": False,
+                             "error": backend_error,
                              "message": "Failed to calculate credits", "info": {
                                  "info": "fixture input could not be priced", "message": traceback,
                                  "diagnostics": ["fixture-valid https://example.invalid/?token=private"]}})
@@ -737,6 +755,10 @@ def test_submit_preserves_service_diagnostics_without_claiming_a_job_outcome(tmp
                     job_name="Cat_Pred", experiment_data={"input_path": "fixture/pairs.csv"},
                     experiment_name="fixture-negative", allow_partial_validation=True))
                 assert result.get("message") == "Failed to calculate credits", result
+                assert result["service_error"] == backend_error
+                assert result["success"] is False
+                if http != 401:
+                    assert result["error"] == backend_error
                 assert result["info"]["info"] == "fixture input could not be priced"
                 assert result["info"]["message"] == traceback
                 assert result["status"] == "unknown" and result["service_status"] == "failed"

@@ -124,6 +124,26 @@ def _shutdown_agent_memory_provider(agent) -> None:
         agent.shutdown_memory_provider()
 
 
+def begin_interactive_shutdown(cli) -> None:
+    """Bound exit before persistence/hooks, and stop the writer before handoff."""
+    from cli import _arm_exit_watchdog_on_shutdown_signal
+    from agent.interrupt_compat import request_hard_interrupt
+
+    _arm_exit_watchdog_on_shutdown_signal()
+    cli._should_exit = True
+    agent = getattr(cli, "agent", None)
+    if agent and getattr(cli, "_agent_running", False):
+        request_hard_interrupt(agent)
+    worker = getattr(cli, "_tui_process_thread", None)
+    if worker is not None and worker is not threading.current_thread():
+        worker.join(timeout=5)
+        if worker.is_alive():
+            # exec would discard a still-running writer mid-flush. Exit instead;
+            # the user can reopen after the bounded process shutdown completes.
+            cli._pending_relaunch = None
+            logger.warning("CLI worker is still stopping; relaunch cancelled, retaining session ownership")
+
+
 def _stop_cli_wake_word() -> None:
     from tools.wake_word import stop_listening
     if _cli()._cli_wake_owner is not None:

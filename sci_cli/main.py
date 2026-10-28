@@ -1867,10 +1867,10 @@ def cmd_chat(args):
         os.environ["SCI_SESSION_SOURCE_EXPLICIT"] = "1"
 
     _pin_kanban_board_env()
-    _confirm_startup_expensive_model_override(args)
 
     passthrough = {k: getattr(args, k, d) for k, d in _CHAT_PASSTHROUGH}
     if use_tui:
+        _confirm_startup_expensive_model_override(args)
         _launch_tui(
             passthrough.pop("resume"),
             tui_dev=getattr(args, "tui_dev", False),
@@ -1880,7 +1880,11 @@ def cmd_chat(args):
             **passthrough,
         )
 
+    from sci_cli.background_chat_launch import launch_interactive
+    if launch_interactive(args, use_tui=use_tui):
+        return
     _read_query_file(args)
+    _confirm_startup_expensive_model_override(args)
 
     safe_mode = getattr(args, "safe_mode", False)
     kwargs = {
@@ -2886,7 +2890,7 @@ def cmd_console(args):
 _BUILTIN_SUBCOMMANDS = frozenset(
     {
         "acp", "approvals", "auth", "backup", "bundles", "checkpoints", "claw", "codex-runtime", "completion",
-        "computer-use",
+        "computer-use", "background",
         "config", "console", "cron", "curator", "dashboard", "serve", "debug", "doctor",
         "dump", "egress", "fallback", "gateway", "hooks", "import", "import-agent", "insights",
         "gui", "desktop", "kanban", "login", "logout", "logs", "lsp", "mcp", "memory", "migrate", "moa",
@@ -3012,6 +3016,11 @@ def _prepare_agent_startup(args) -> None:
     _guard_noninteractive_user_config(args)
 
     if not (args.command in _AGENT_COMMANDS or _agent_subcommand_selected(args)):
+        return
+    from sci_cli.background_chat_launch import service_eligible
+    if service_eligible(args, use_tui=_is_tui_chat_launch(args)):
+        # The persistent worker owns plugin/MCP discovery and hook consent.
+        # The viewer must not spawn a second set of external services.
         return
 
     _accept_hooks = bool(getattr(args, "accept_hooks", False))
@@ -3448,6 +3457,9 @@ def _build_cli_parser():
 
     parser, subparsers, chat_parser = build_top_level_parser()
     chat_parser.set_defaults(func=cmd_chat)
+
+    from sci_cli.background_chat_commands import build_parser as build_background_parser
+    build_background_parser(subparsers)
 
     build_model_parser(subparsers, cmd_model=cmd_model)
     build_moa_parser(subparsers)

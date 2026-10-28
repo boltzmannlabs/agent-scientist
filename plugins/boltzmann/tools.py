@@ -134,6 +134,10 @@ def _handle_boltzmann_submit_inner(**kwargs):
             "job_name": job_name,
         })
 
+    if job_name == "Enzyme_RFD3" and isinstance(experiment_data, dict):
+        from .enzyme_validation import prepare_rfd3_payload
+        experiment_data = prepare_rfd3_payload(experiment_data, experiment_name)
+
     report = preflight_submission(job_name, experiment_data)
     blocked = decision(report, kwargs.get("allow_partial_validation"))
     if blocked:

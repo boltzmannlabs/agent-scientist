@@ -28,7 +28,7 @@ SHAPES = {
 
 
 def _scenario(root, shape: str) -> dict:
-    cm, w = G.start_world(root / shape, base=G.n1_base(), installer_ref=G.n1_tag(), preclone=SHAPES[shape])
+    cm, w = G.start_world(root / shape, base=G.n1_base(), installer_ref=G.n1_ref(), preclone=SHAPES[shape])
     run = {"cm": cm, "w": w, "shape0": w.install_shape}
     w.set_main(I.head_sha())
     run["cp1"], run["head1"], run["shape1"] = w.update(), w.head(), w.shape()

@@ -917,12 +917,13 @@ class SciCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CLI
         self._init_runtime_state(resume)
 
 
-    def _claim_active_session(self, surface: str = "cli", *, stderr: bool = False) -> bool:
+    def _claim_active_session(self, surface: str = "cli", *, stderr: bool = False,
+                              interactive_recovery: bool = False) -> bool:
         """Claim a global active-session slot for this CLI process."""
         if self._active_session_lease is not None:
             return True
         try:
-            from sci_cli.active_sessions import format_refusal_stderr, try_acquire_active_session
+            from sci_cli.active_sessions import SESSION_NOT_OWNED, format_refusal_stderr, try_acquire_active_session
 
             lease, message = try_acquire_active_session(
                 session_id=self.session_id,
@@ -932,9 +933,21 @@ class SciCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CLI
                 # See #94595.
                 metadata={"live_session_id": str(self.session_id)},
             )
+            if interactive_recovery and not stderr and getattr(message, "reason", None) == SESSION_NOT_OWNED:
+                from sci_cli.cli_session_recovery import offer_startup_recovery
+                if offer_startup_recovery(self.session_id):
+                    lease, message = try_acquire_active_session(
+                        session_id=self.session_id, surface=surface, config=self.config,
+                        metadata={"live_session_id": str(self.session_id)},
+                    )
         except Exception as exc:
             logger.warning("Failed to claim active session slot: %s", exc)
-            return True
+            failure = "Could not verify chat ownership. Resume stopped to protect the saved conversation."
+            if stderr:
+                print("sci-refusal-reason: SESSION_COORDINATION_UNAVAILABLE\n" + failure, file=sys.stderr)
+            else:
+                self._console_print(failure)
+            return False
         if message:
             print(format_refusal_stderr(message), file=sys.stderr) if stderr else self._console_print(f"[bold red]{message}[/]")
             return False
@@ -944,6 +957,12 @@ class SciCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CLI
         return True
 
     def _release_active_session(self) -> None:
+        worker = getattr(self, "_tui_process_thread", None)
+        if worker is not None and worker.is_alive():
+            # A shutdown timeout must not admit another writer while this one
+            # can still flush. The registry recovers this lease after process exit.
+            logger.warning("Retaining chat ownership until the CLI worker/process exits")
+            return
         lease = getattr(self, "_active_session_lease", None)
         if lease is None:
             return
@@ -953,6 +972,10 @@ class SciCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CLI
             logger.debug("Failed to release active session slot", exc_info=True)
         finally:
             self._active_session_lease = None
+
+    def _handle_background_chat_command(self, command):
+        from sci_cli.background_chat_commands import slash
+        slash(self, command)
 
     _PET_FRAME_INTERVAL = 0.16
     _PET_CFG_INTERVAL = 2.5
@@ -1174,6 +1197,7 @@ class SciCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CLI
         "reload-mcp": ("_confirm_and_reload_mcp", True), "reload-skills": ("_cmd_reload_skills", True),
         "plugins": ("_cmd_plugins", True), "stop": ("_handle_stop_command", False),
         "agents": ("_handle_agents_command", False), "bg": ("_handle_background_command", True),
+        "background": ("_handle_background_chat_command", True), "detach": ("_handle_background_chat_command", True),
         "queue": ("_cmd_queue", True), "steer": ("_cmd_steer", True), "moa": ("_cmd_moa", True),
     }
 
@@ -1415,7 +1439,10 @@ class SciCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CLI
 
     def run(self):
         """Run the interactive CLI loop with persistent input at bottom."""
-        if not self._claim_active_session("cli"):
+        from sci_cli.background_chat_commands import attach_on_resume
+        if attach_on_resume(self):
+            return
+        if not self._claim_active_session("cli", interactive_recovery=True):
             return
 
         self._tui_print_startup()
@@ -1460,7 +1487,8 @@ class SciCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CLI
         self._install_resize_recovery(app)
 
         threading.Thread(target=self._tui_spinner_loop, daemon=True).start()
-        threading.Thread(target=self._tui_process_loop, daemon=True).start()
+        self._tui_process_thread = threading.Thread(target=self._tui_process_loop, daemon=True)
+        self._tui_process_thread.start()
         # Wake word listener off-thread so a first-run engine install never blocks the prompt.
         threading.Thread(target=self._tui_wake_startup, daemon=True, name="wake-startup").start()
 

@@ -153,7 +153,8 @@ def session_owner_details(session_id: str, entry: dict[str, Any]) -> str:
     surface = str(entry.get("surface") or "another surface")
     started = _optional_float(entry.get("started_at"))
     age = f" {format_age(time.time() - started)} ago" if started else ""
-    return f"Details: session {session_id} opened by {surface}{age}."
+    from sci_cli.cli_session_recovery import describe_owner
+    return f"Details: session {session_id} opened by {surface}{age}.\n{describe_owner(entry)}"
 
 
 def session_already_owned_message(session_id: str, entry: dict[str, Any]) -> str:

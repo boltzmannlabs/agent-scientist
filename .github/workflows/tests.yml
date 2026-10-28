@@ -224,7 +224,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          # N-1 = `git describe --tags --abbrev=0 HEAD~1`.
+          # N-1 = nearest stable SCI tag; before the first tag, the verified
+          # prerelease snapshot in tests/e2e/core/upgrade/_install_helpers.py.
           fetch-depth: 0
           fetch-tags: true
 

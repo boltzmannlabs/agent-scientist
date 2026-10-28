@@ -511,11 +511,12 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 | `ligand` | string | yes | value | One or more distinct uppercase component codes, comma-separated; not SMILES. |
 | `min_length` | integer | yes | value | Minimum scaffold length. |
 | `max_length` | integer | yes | value | Maximum scaffold length; >= min_length. |
-| `n_samples` | integer | no / mode-dependent | value | Optional; defaults to 1. |
+| `n_samples` | integer | no / mode-dependent | value | Optional at the connector boundary; request preparation supplies integer 1 only when omitted, before validation and submission. |
 | `seed` | integer | no / mode-dependent | value | Optional; 0-4294967295; omit for random seed. |
-| `task_name` | string | no / mode-dependent | value | Optional explicit task name. |
-| `advanced_settings_enabled` | string | no / mode-dependent | value | Literal "true"/"false"; defaults to "false". |
-| `advanced_settings` | object | no / mode-dependent | value | Optional. Applied only when advanced_settings_enabled is true. Omit unused fields. |
+| `job_name` | string | no / mode-dependent | value | Inner experiment display name. Request preparation copies the confirmed experiment_name here only when omitted; an explicit nonblank label is preserved. Outer routing job_name remains Enzyme_RFD3. |
+| `task_name` | string | no / mode-dependent | value | Request preparation supplies rfd3 only when omitted; explicitly invalid values are rejected. This is not the routing job name. |
+| `advanced_settings_enabled` | string | no / mode-dependent | value | Wire value is the literal string "true"/"false". Preparation converts JSON booleans and trims/lowercases strings; supplies "false" only when omitted. Explicitly disabling removes documented stale advanced controls, never unsupported fields. |
+| `advanced_settings` | object | no / mode-dependent | value | Applied only when advanced_settings_enabled is "true". Preparation omits documented null/blank optional fields and converts documented boolean flags to wire strings. Explicit "false" discards documented stale controls; a missing toggle with nonempty controls is rejected. Unknown fields are never discarded to bypass validation. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -565,7 +566,7 @@ Only local files require a new upload. Never infer input mode from a field name.
     },
     "n_samples": {
       "type": "integer",
-      "description": "Optional; defaults to 1.",
+      "description": "Optional at the connector boundary; request preparation supplies integer 1 only when omitted, before validation and submission.",
       "x-input-kind": "value",
       "minimum": 1,
       "maximum": 1000
@@ -577,9 +578,16 @@ Only local files require a new upload. Never infer input mode from a field name.
       "minimum": 0,
       "maximum": 4294967295
     },
+    "job_name": {
+      "type": "string",
+      "description": "Inner experiment display name. Request preparation copies the confirmed experiment_name here only when omitted; an explicit nonblank label is preserved. Outer routing job_name remains Enzyme_RFD3.",
+      "x-input-kind": "value",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
     "task_name": {
       "type": "string",
-      "description": "Optional explicit task name.",
+      "description": "Request preparation supplies rfd3 only when omitted; explicitly invalid values are rejected. This is not the routing job name.",
       "x-input-kind": "value",
       "enum": [
         "rfd3"
@@ -587,7 +595,7 @@ Only local files require a new upload. Never infer input mode from a field name.
     },
     "advanced_settings_enabled": {
       "type": "string",
-      "description": "Literal \"true\"/\"false\"; defaults to \"false\".",
+      "description": "Wire value is the literal string \"true\"/\"false\". Preparation converts JSON booleans and trims/lowercases strings; supplies \"false\" only when omitted. Explicitly disabling removes documented stale advanced controls, never unsupported fields.",
       "x-input-kind": "value",
       "enum": [
         "true",
@@ -728,12 +736,12 @@ Only local files require a new upload. Never infer input mode from a field name.
           },
           "minItems": 3,
           "maxItems": 3,
-          "description": "Explicit [x,y,z] origin; do not combine with infer_ori_strategy.",
+          "description": "Explicit [x,y,z] origin; takes precedence over infer_ori_strategy when both are supplied.",
           "x-input-kind": "value"
         },
         "infer_ori_strategy": {
           "type": "string",
-          "description": "Origin inference.",
+          "description": "Origin inference when ori_token is absent. Only active hotspots inference requires a meaningful select_hotspots selection.",
           "x-input-kind": "value",
           "enum": [
             "com",
@@ -760,7 +768,7 @@ Only local files require a new upload. Never infer input mode from a field name.
         },
         "partial_t": {
           "type": "number",
-          "description": "Strictly positive partial-diffusion t; changes workflow/length semantics.",
+          "description": "Strictly positive partial-diffusion t; changes workflow/length semantics. Omitted when null/blank during preparation; numeric zero remains invalid.",
           "x-input-kind": "value",
           "exclusiveMinimum": 0
         },
@@ -861,7 +869,7 @@ Only local files require a new upload. Never infer input mode from a field name.
         },
         "n_batches": {
           "type": "integer",
-          "description": "Positive; with diffusion_batch_size product must equal n_samples.",
+          "description": "Positive; with diffusion_batch_size product must equal n_samples. When only n_batches is supplied, n_samples / n_batches must be an integer from 1 to 2.",
           "x-input-kind": "value",
           "minimum": 1
         },
@@ -974,12 +982,12 @@ Only local files require a new upload. Never infer input mode from a field name.
             }
           },
           "additionalProperties": false,
-          "description": "Optional sampler overrides; omit unspecified fields.",
+          "description": "Optional sampler overrides; preparation omits documented null/blank optional fields and converts documented boolean flags to wire strings. Zero values are preserved and remain subject to numeric bounds; n_recycle must be at least 1.",
           "x-input-kind": "value"
         }
       },
       "additionalProperties": false,
-      "description": "Optional. Applied only when advanced_settings_enabled is true. Omit unused fields.",
+      "description": "Applied only when advanced_settings_enabled is \"true\". Preparation omits documented null/blank optional fields and converts documented boolean flags to wire strings. Explicit \"false\" discards documented stale controls; a missing toggle with nonempty controls is rejected. Unknown fields are never discarded to bypass validation.",
       "x-input-kind": "value"
     }
   },
@@ -1096,8 +1104,10 @@ For mode-dependent fields, include the fields required by the selected schema br
 - Use n_recycle >= 1 if set; zero caused native KeyError X_L.
 - A completed job may contain only review-only rejected/ structures and no passing designs/. Inspect manifest.json and rejections.json.
 - Runtime IDs/auth are injected by Node; do not put tokenid/user_id/experiment_id in experiment_data.
-- Advanced numeric nulls may be accepted by FastAPI, but omit unused fields; never send blank strings for numeric fields.
-- Live reference submission was accepted, then the worker reported job_name missing despite outer job_name=Enzyme_RFD3. Keep the exact routing name; do not inject guessed fields, claim readiness, or duplicate that job. New approved attempts remain allowed.
+- The connector prepares a deep copy before preflight and sends that same validated payload. Missing n_samples, task_name and advanced_settings_enabled become 1, rfd3 and string false; missing inner job_name becomes the confirmed experiment_name. Explicitly invalid values are not replaced.
+- Documented optional seed/advanced/sampler null or blank placeholders are omitted, including partial_t. Meaningful zeros, string false and selections are preserved. Authorization, upload provenance and partial-validation approval are still required.
+- Earlier submissions without a worker-level job_name were accepted and then failed input validation. A reviewed direct-field test completed with an explicit nonempty experiment_data.job_name while outer job_name remained Enzyme_RFD3. Never copy runtime authentication or identity fields.
+- Reported NodeAPI HTTP 400 failures required task_name, advanced_settings_enabled and n_samples; blank partial_t caused FastAPI 422 wrapped as NodeAPI 500. Client preparation addresses these reported cases without assuming deployed frontend or backend fixes. Current backend alignment and all advanced configurations remain unverified; contig coverage and partial-diffusion noise-level compatibility still need worker validation.
 
 ### Recorded payload example
 

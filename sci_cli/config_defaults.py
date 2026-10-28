@@ -62,6 +62,9 @@ DEFAULT_CONFIG = {
         # $SCI_HOME/terminal-sessions/<terminal-id>, so bare -c/--continue resumes THIS
         # terminal's session (tmux/kitty/wezterm pane, tty). false = resume globally most-recent.
         "terminal_continue": True,
+        # Classic CLI background workers: expire only detached, freshly
+        # reported idle chats with no local work. 0 keeps them until explicit stop.
+        "background_idle_timeout": 1800,
     },
     # Where the TUI/desktop gateway stages session file attachments (uploads, pasted
     # text). "sci-home" (default) keeps <profile home>/attachments — the dir

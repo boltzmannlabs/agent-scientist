@@ -307,9 +307,18 @@ class CopilotACPClient:
         try:
             proc.terminate()
             proc.wait(timeout=2)
-        except Exception:
-            with contextlib.suppress(Exception):
-                proc.kill()
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=2)
+        except ProcessLookupError:
+            pass
+        finally:
+            # A rejected/closed ACP pipe may still hold buffered request bytes.
+            # Close explicitly so TextIOWrapper's finalizer cannot raise an
+            # unraisable BrokenPipeError into the interactive terminal later.
+            if proc.stdin is not None:
+                with contextlib.suppress(OSError):
+                    proc.stdin.close()
 
     def _release_process(self, proc: subprocess.Popen[str]) -> None:
         """Reap one session's own child. ``is_closed`` flips only when the last live
@@ -394,8 +403,10 @@ class CopilotACPClient:
                 return {"raw": line.rstrip("\n")}
 
         def _pump(stream, sink) -> None:
-            for line in stream or ():
-                sink(line)
+            if stream is not None:
+                with stream:
+                    for line in stream:
+                        sink(line)
 
         threading.Thread(target=_pump, args=(proc.stdout, lambda line: inbox.put(_decode(line))), daemon=True).start()
         stderr_pump = threading.Thread(

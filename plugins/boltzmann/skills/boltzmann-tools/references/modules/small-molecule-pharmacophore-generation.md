@@ -19,12 +19,12 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
 | `smiles_file` | string | yes | file | Training ligand CSV with a case-sensitive SMILES column. Upload the reviewed local file and preserve its returned platform reference. |
-| `validation_file` | string | yes | file | Separate validation ligand CSV with a case-sensitive SMILES column, following the recorded input procedure. Use a newly validated upload or an explicitly approved accessible reference. |
+| `validation_file` | string | yes | file | Separate validation ligand CSV with exact case-sensitive SMILES and LABELS headers. Documented LABELS values are active or inactive; preserve the reviewed labels and molecular strings. Artificial labels are smoke-test fixtures, not measured activity. Upload the reviewed file and use its returned platform reference. |
 | `min_features` | number | yes | value | Minimum pharmacophore feature count. Historical examples are not backend-wide limits or defaults. |
 | `max_features` | number | yes | value | Maximum pharmacophore feature count; must not be less than min_features. |
 | `percentage` | number | yes | value | Minimum actives fraction in the recorded 0 to 1 representation, not a 0 to 100 percentage. |
 | `n_conformers` | number | yes | value | Requested conformer count as a JSON number. Current backend limits are not independently established. |
-| `features` | array | yes | value | Selected exact feature labels. Historical submissions include hb donor, which is absent from the archived UI options; see execution notices. |
+| `features` | array | yes | value | Selected exact feature labels from public frontend options and recorded requests, including hb donor. Selecting a category does not guarantee that every resulting hypothesis contains it. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -44,7 +44,7 @@ Only local files require a new upload. Never infer input mode from a field name.
     "validation_file": {
       "type": "string",
       "x-input-kind": "file",
-      "description": "Separate validation ligand CSV with a case-sensitive SMILES column, following the recorded input procedure. Use a newly validated upload or an explicitly approved accessible reference."
+      "description": "Separate validation ligand CSV with exact case-sensitive SMILES and LABELS headers. Documented LABELS values are active or inactive; preserve the reviewed labels and molecular strings. Artificial labels are smoke-test fixtures, not measured activity. Upload the reviewed file and use its returned platform reference."
     },
     "min_features": {
       "type": "number",
@@ -70,7 +70,7 @@ Only local files require a new upload. Never infer input mode from a field name.
       "type": "array",
       "x-input-kind": "value",
       "minItems": 1,
-      "description": "Selected exact feature labels. Historical submissions include hb donor, which is absent from the archived UI options; see execution notices.",
+      "description": "Selected exact feature labels from public frontend options and recorded requests, including hb donor. Selecting a category does not guarantee that every resulting hypothesis contains it.",
       "items": {
         "type": "string",
         "enum": [
@@ -140,13 +140,21 @@ For mode-dependent fields, include the fields required by the selected schema br
       "csv"
     ],
     "columns": [
-      "SMILES"
+      "SMILES",
+      "LABELS"
     ],
     "header_case_sensitive": true,
     "values": {
-      "SMILES": "smiles"
+      "SMILES": "smiles",
+      "LABELS": {
+        "type": "string",
+        "enum": [
+          "active",
+          "inactive"
+        ]
+      }
     },
-    "notes": "Recorded execution procedure uses SMILES for both CSVs. Generic parsing does not verify validation-set suitability or independence."
+    "notes": "Validation requires exact SMILES and LABELS headers. Public input help documents active/inactive text labels; its singular LABEL spelling conflicts with the required-field registry and explicit backend missing-LABELS diagnostic. Preserve labels and source SMILES; artificial labels require explicit smoke-test approval. Generic parsing does not establish biological activity, class balance or validation-set independence."
   }
 }
 ```
@@ -175,10 +183,10 @@ For mode-dependent fields, include the fields required by the selected schema br
 
 ### Execution notices
 
-- Request fields come from archived public metadata and recorded accepted submissions. The public frontend still recognizes ligand_pharmacophore, but current worker acceptance and output recovery have not been retested. Obtain explicit approval for an attempt; do not substitute the receptor-based tool.
+- Corrected validation CSVs with SMILES,LABELS and active/inactive text classes have passed submission and reached service-reported Success. Artifact availability must be verified for each job: some attempts returned missing objects despite Success. Do not infer completed scientific delivery from status alone or substitute the receptor-based tool.
 - Historical records describe 25-credit charges and missing output objects despite Success. This is not a current price or proof of an ongoing outage. An attempt may consume credits without usable artifacts; report the actual outcome, inspect all returned artifacts and never resubmit automatically.
-- Recorded accepted submissions include hb donor; the archived UI option list omits it. That recorded choice is retained for an explicitly reviewed attempt, not claimed as a currently verified UI option.
-- CSV structure is checked, not molecular validity, ligand suitability or scientific independence of training and validation sets. Current row/count limits and extra-column acceptance are unverified. Do not invent sample data from historical private upload paths; obtain an accessible approved sample or review proposed local fixtures first.
+- The inspected public frontend feature options include hb donor, consistent with recorded submissions. Feature selection is not proof of the number or composition of generated hypotheses.
+- Local file checks require SMILES for training and SMILES,LABELS for validation, with exact active/inactive validation text classes. These checks do not establish molecular validity, biological activity or independent validation. Artificial labels require explicit smoke-test approval. Current row/count limits and extra-column acceptance remain unverified; never borrow historical private file references.
 
 ### Recorded payload example
 

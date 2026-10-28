@@ -22,7 +22,7 @@ def test_installer_source_is_explicit_and_clone_stays_local(tmp_path):
 
 
 @pytest.mark.platforms("posix")
-def test_previous_release_uses_sci_tags_not_calver_or_prereleases(tmp_path, monkeypatch):
+def test_previous_upgrade_uses_sci_tags_not_calver_or_prereleases(tmp_path, monkeypatch):
     from tests.e2e.core.upgrade import _install_helpers as install
 
     def git(*args):
@@ -32,9 +32,12 @@ def test_previous_release_uses_sci_tags_not_calver_or_prereleases(tmp_path, monk
         )
 
     git("init", "-q")
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts/install.sh").write_text("#!/bin/sh\n# fixture installer\n", encoding="utf-8")
+    git("add", "scripts/install.sh")
     for tag in ("v1.0.0.0", "v1.1.0.0", "v2026.10.1", "v1.2.0.0-rc1"):
         git("commit", "--allow-empty", "-qm", tag)
         git("tag", tag)
     git("commit", "--allow-empty", "-qm", "unreleased")
     monkeypatch.setattr(install.H, "WORKTREE", tmp_path)
-    assert install.previous_release_tag() == "v1.1.0.0"
+    assert install.previous_upgrade_ref() == "v1.1.0.0"

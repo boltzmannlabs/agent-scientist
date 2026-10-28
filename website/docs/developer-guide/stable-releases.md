@@ -13,11 +13,18 @@ files on `main`.
 
 1. Refresh `origin/main` and the remote attempt and marker refs (`rc.*` and
    `abandoned-rc.*`). Derive the next SemVer from the published release family
-   seeded at `0.21.4` alone: the newer of the protected R2 stable head and the
+   seeded at `0.1.0` alone: the newer of the protected R2 stable head and the
    newest published non-prerelease GitHub release with a `vX.Y.Z` tag. A
    release that skipped bundles moves only the second. Attempts do not move the
    version line. A cut whose next version already has a final `vX.Y.Z` tag is
    refused until that publication finishes.
+
+   The initial public source release used the unprefixed tag `0.1.0`.
+   Version discovery resolves published source tags with or without `v` by
+   their actual ref, so the next patch is `0.1.1`. New pipeline receipt tags
+   retain the `v` prefix. Recognizing a source release does not create a signed
+   package, a custody receipt, or a promoted update feed. Source installations
+   use `sci update --channel main` until the release publisher is configured.
 2. Push an annotated `rc.<N>-vX.Y.Z` attempt ref atomically, create one
    non-prerelease GitHub draft on it, and dispatch `Stable Release` on that exact
    ref. The attempt number comes from the existing attempt refs of that version.

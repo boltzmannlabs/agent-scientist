@@ -225,7 +225,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_path` | string | yes | file | One header from each group is required; aliases are source-documented, not invented. |
+| `input_path` | string | yes | file | Uploaded CSV with exact case-sensitive Sequences and Smiles headers, following the reported server error. Header aliases are not established by that diagnostic. Positive submission with corrected headers has not yet been verified. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -238,7 +238,7 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "input_path": {
-      "description": "One header from each group is required; aliases are source-documented, not invented.",
+      "description": "Uploaded CSV with exact case-sensitive Sequences and Smiles headers, following the reported server error. Header aliases are not established by that diagnostic. Positive submission with corrected headers has not yet been verified.",
       "type": "string",
       "x-input-kind": "file"
     }
@@ -274,7 +274,11 @@ For mode-dependent fields, include the fields required by the selected schema br
       "csv"
     ],
     "header_case_sensitive": true,
-    "notes": "One header from each group is required; aliases are source-documented, not invented. Column-group semantics require review."
+    "columns": [
+      "Sequences",
+      "Smiles"
+    ],
+    "notes": "Exact Sequences and Smiles headers are required by the reported server diagnostic. Positive submission with corrected headers has not yet been verified."
   }
 }
 ```
@@ -297,7 +301,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_path` | string | yes | file | Use the exact source field. |
+| `input_path` | string | yes | file | Uploaded CSV with exact case-sensitive seq_id, Sequences and smiles headers, following the reported server error. Positive submission with corrected headers has not yet been verified. |
 | `prediction_type` | string | yes | value | values: `kcat, km` |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
@@ -311,7 +315,7 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "input_path": {
-      "description": "Use the exact source field.",
+      "description": "Uploaded CSV with exact case-sensitive seq_id, Sequences and smiles headers, following the reported server error. Positive submission with corrected headers has not yet been verified.",
       "type": "string",
       "x-input-kind": "file"
     },
@@ -360,7 +364,7 @@ For mode-dependent fields, include the fields required by the selected schema br
     "header_case_sensitive": true,
     "columns": [
       "seq_id",
-      "sequence",
+      "Sequences",
       "smiles"
     ],
     "notes": "Use the exact source field."
@@ -620,7 +624,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `dataPath` | string | yes | file | Uploaded CSV containing a `Sequences` column |
+| `dataPath` | string | yes | file | Uploaded CSV containing an exact case-sensitive Sequences column, matching the reported server error. Positive submission with this header has not yet been verified by these tests. |
 | `property_name` | array | yes | value | Any of `Allergenicity`, `Antigenicity`, `Toxicity`, `Epitope` |
 | `toxicity_reference` | integer | no / mode-dependent | value | Accepted by the API; product source says backend currently ignores it |
 | `allergenicity_reference` | integer | no / mode-dependent | value | Accepted by the API; product source says backend currently ignores it |
@@ -637,7 +641,7 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "dataPath": {
-      "description": "Uploaded CSV containing a `Sequences` column",
+      "description": "Uploaded CSV containing an exact case-sensitive Sequences column, matching the reported server error. Positive submission with this header has not yet been verified by these tests.",
       "type": "string",
       "x-input-kind": "file"
     },

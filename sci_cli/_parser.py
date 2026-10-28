@@ -207,6 +207,8 @@ def _add_top_level_flags(parser: argparse.ArgumentParser) -> None:
               help="Launch the modern TUI instead of the classic REPL")
     inherited(parser, "--native", "--tui-native", dest="tui_native", action="store_true", default=False,
               help="With --tui: use native terminal scrollback and disable mouse tracking")
+    inherited(parser, "--no-daemon", action="store_true", default=False,
+              help="Run the classic CLI in the foreground without the shared background service")
     inherited(parser, "--cli", action="store_true", default=False,
               help="Force the classic prompt_toolkit REPL (overrides display.interface=tui)")
     inherited(parser, "--dev", dest="tui_dev", action="store_true", default=False,
@@ -312,6 +314,8 @@ def _build_chat_parser(subparsers) -> argparse.ArgumentParser:
               help="Launch the modern TUI instead of the classic REPL")
     inherited(chat_parser, "--native", "--tui-native", dest="tui_native", action="store_true", default=SUPPRESS,
               help="Use native terminal scrollback and disable mouse tracking")
+    inherited(chat_parser, "--no-daemon", action="store_true", default=SUPPRESS,
+              help="Run without the shared background service")
     inherited(chat_parser, "--cli", action="store_true", default=SUPPRESS,
               help="Force the classic prompt_toolkit REPL (overrides display.interface=tui)")
     inherited(chat_parser, "--dev", dest="tui_dev", action="store_true", default=SUPPRESS,

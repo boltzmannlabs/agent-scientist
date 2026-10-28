@@ -363,6 +363,7 @@ jobs:
       matrix: ${{ fromJSON(needs.generate-matrix.outputs.windows) }}
     uses: ./.github/workflows/install-e2e-windows-run.yml
     with:
+      setup-exe-url: ${{ vars.SCI_SETUP_EXE_URL }}
       install-method: ${{ matrix.install_method }}
       update-method: ${{ matrix.update_method }}
       install-ref: ${{ matrix.install_ref }}
@@ -381,6 +382,7 @@ jobs:
     # and the published-dmg GUI driver; the run workflow routes.
     uses: ./.github/workflows/install-e2e-macos-run.yml
     with:
+      dmg-url: ${{ vars.SCI_SETUP_DMG_URL }}
       install-method: ${{ matrix.install_method }}
       update-method: ${{ matrix.update_method }}
       install-ref: ${{ matrix.install_ref }}

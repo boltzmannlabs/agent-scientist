@@ -1,9 +1,10 @@
-"""Upgrade-path E2E: a real release N-1 git install updated to HEAD by the real `sci update`.
+"""Upgrade-path E2E: a real older git install updated to HEAD by the real `sci update`.
 
 Class C6 (bricked installs, stale code, lost state after `sci update`). Each leg:
 
 1. stages a local bare ``origin`` (``--shared`` onto this repository, so no network and no
-   object copy) with ``main`` parked at release N-1 (``git describe --tags --abbrev=0 HEAD~1``);
+   object copy) with ``main`` parked at N-1 (the nearest stable release, or the explicit
+   prerelease baseline in ``_install_helpers`` until a stable release is available);
 2. clones it as a git-mode install with its own venv (``uv sync --locked --extra all`` from N-1's
    own uv.lock and the warm uv cache: the installer's tier 0 and its editable layout; the installer
    script itself is covered by ``.github/workflows/install-e2e*.yml``);
@@ -105,23 +106,18 @@ class _Refs(NamedTuple):
 def _refs() -> _Refs:
     """HEAD and release N-1, resolved on first use: collection (every CI shard) runs no git.
 
-    N-1 is the nearest SCI release tag before HEAD; SCI_E2E_UPGRADE_BASE=<ref> starts from any
-    older ref instead (e.g. the pre-handoff v2026.9.14, or a patched base when proving a leg red
-    against the N-1 side).
+    N-1 is the nearest stable SCI release or the documented prerelease snapshot;
+    SCI_E2E_UPGRADE_BASE=<ref> explicitly selects an older ancestor instead.
     """
     head = _git("rev-parse", "HEAD", cwd=H.WORKTREE)
-    try:
-        from tests.e2e.core.upgrade._install_helpers import previous_release_tag
-        tag = os.environ.get("SCI_E2E_UPGRADE_BASE") or previous_release_tag()
-        return _Refs(head, tag, _git("rev-parse", f"{tag}^{{commit}}", cwd=H.WORKTREE))
-    except AssertionError:  # shallow CI checkout without tags
-        return _Refs(head, "", "")
+    from tests.e2e.core.upgrade._install_helpers import previous_upgrade_ref
+    ref = previous_upgrade_ref()
+    return _Refs(head, ref, _git("rev-parse", f"{ref}^{{commit}}", cwd=H.WORKTREE))
 
 
 @pytest.fixture(scope="module", autouse=True)
 def _upgrade_prerequisites() -> None:
-    if not _refs().base_tag:
-        pytest.skip("no release tag reachable before HEAD (fetch tags)")
+    _refs()  # Missing/invalid history must fail, not silently skip upgrade coverage.
     if _real_uv() is None:
         pytest.skip("uv required to build the N-1 venv")
 

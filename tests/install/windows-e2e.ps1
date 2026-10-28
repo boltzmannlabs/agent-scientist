@@ -109,7 +109,7 @@ param(
 
     [string]$WorkRoot = $(if ($env:SCI_E2E_WORKROOT) { $env:SCI_E2E_WORKROOT } else { Join-Path $env:TEMP "sci-desktop-gui-e2e" }),
 
-    [string]$SetupExeUrl = "https://hermes-assets.nousresearch.com/Hermes-Setup.exe",
+    [string]$SetupExeUrl = "",
 
     # Driver dependencies come from the current checkout lockfile.
     [string]$DriverNode = $env:SCI_E2E_NODE
@@ -254,6 +254,9 @@ function Set-GitRedirect {
     insteadOf = $RepoUrlSsh
 "@ | Set-Content -LiteralPath $gitCfg -Encoding ASCII
     $env:GIT_CONFIG_GLOBAL = $gitCfg
+    # Name the approved source, as the POSIX driver does. Git redirects
+    # its transport to the fixture repository; no public clone is performed.
+    $env:SCI_REPO_URL = $RepoUrlHttps
 
     # check it worked
     $actualGitUrl = Invoke-Git @("-C", $RepoRoot, "remote", "get-url", "origin")
@@ -986,6 +989,7 @@ function Invoke-PhaseInstallGui {
 
     $setupExe = Join-Path $WorkRoot "Sci-Setup.exe"
     if (-not (Test-Path -LiteralPath $setupExe)) {
+        Assert-True (-not [string]::IsNullOrWhiteSpace($SetupExeUrl)) "An approved SCI installer URL is required (setup-exe-url); native installer coverage is blocked until supplied."
         Write-Host "  downloading $SetupExeUrl"
         Invoke-WebRequest -Uri $SetupExeUrl -OutFile $setupExe
     }

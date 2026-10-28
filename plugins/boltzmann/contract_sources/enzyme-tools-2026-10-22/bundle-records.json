@@ -300,7 +300,8 @@
       "claim": "Computational scaffold designs; catalytic activity is not established"
     },
     "success": true,
-    "archive": "/tmp/rfd3-bybxx0fz/results.zip",
+    "archive": "results.zip",
+    "archive_location_note": "Historical output filename; the source machine's temporary directory is omitted. This is not a bundled artifact or a current download location.",
     "impossible_geometry_control": {
       "rejected": true,
       "message": "specification_enzyme_0_model_0: geometry rule 1 measured 3.729 angstroms; expected 0.1–0.2. No output will be uploaded"

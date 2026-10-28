@@ -588,3 +588,42 @@ def test_cli_death_is_reported_as_a_crash_not_a_timeout(tmp_path):
         assert "exited early: fatal: agent segfaulted" in str(exc)
     else:
         raise AssertionError("session on a dead CLI must raise")
+
+
+def test_closed_acp_pipe_is_closed_explicitly_without_finalizer_errors(tmp_path, monkeypatch):
+    import gc
+    import subprocess
+    import pytest
+    import agent.copilot_acp_client as module
+    monkeypatch.setattr(module, "_acp_supported", lambda *args: True)
+    client = CopilotACPClient(command=sys.executable, args=["-c", "pass"], acp_cwd=str(tmp_path))
+    real_spawn = client._spawn
+    children = []
+    unraisable = []
+    monkeypatch.setattr(sys, "unraisablehook", unraisable.append)
+
+    def exited_spawn():
+        proc = real_spawn()
+        proc.wait(timeout=10)  # Reproduce the server rejecting stdin before initialization.
+        children.append(proc)
+        return proc
+
+    monkeypatch.setattr(client, "_spawn", exited_spawn)
+    try:
+        with pytest.raises((BrokenPipeError, RuntimeError)):
+            client.list_models(timeout_seconds=5)
+        assert children[0].stdin.closed
+        assert children[0].poll() is not None
+        children.clear()
+        gc.collect()
+        assert unraisable == []
+    finally:
+        for proc in children:
+            for stream in (proc.stdin, proc.stdout, proc.stderr):
+                try:
+                    stream.close()
+                except OSError:
+                    pass
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait(timeout=5)

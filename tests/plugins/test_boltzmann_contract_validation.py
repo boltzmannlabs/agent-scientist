@@ -194,11 +194,11 @@ def test_current_small_molecule_ui_wire_contracts_reject_stale_payloads():
         },
         "Butina_Clustering": {
             "Path": "fixture/library.csv", "model": "Butina", "DimReduce": "tSNE",
-            "sampling_type": "Min_Max", "cutoff": 0.4, "sampling": "yes",
+            "sampling_type": "Min-Max", "cutoff": 0.4, "sampling": "yes",
         },
         "K_Means_Clustering": {
             "Path": "fixture/library.csv", "Features": "descriptors", "DimReduce": "tSNE",
-            "no_of_clusters": "4",
+            "no_of_cluster": "4",
         },
         "Binding_Site_Prediction": {"pdb_path": "8AZY"},
         "dataset_creation": {"scrap_id": "EGFR", "data_type": "IC50", "assay_type": "Cell free"},
@@ -222,11 +222,12 @@ def test_current_small_molecule_ui_wire_contracts_reject_stale_payloads():
         ("Custom_Property_Model_Automl", dict(current["Custom_Property_Model_Automl"], modelName=["AutoML"])),
         ("Custom_Property_Model_Automl", dict(current["Custom_Property_Model_Automl"], transformation="no")),
         ("Butina_Clustering", dict(current["Butina_Clustering"], DimReduce="TSNE", sampling_type="Min_max")),
+        ("Butina_Clustering", dict(current["Butina_Clustering"], sampling_type="Min_Max")),
         ("K_Means_Clustering", {
             "Path": "fixture/library.csv", "Features": "descriptors", "DimReduce": "tSNE",
-            "no_of_cluster": 4,
+            "no_of_clusters": "4",
         }),
-        ("K_Means_Clustering", dict(current["K_Means_Clustering"], no_of_clusters=4)),
+        ("K_Means_Clustering", dict(current["K_Means_Clustering"], no_of_cluster=4)),
         *[("Lead_Generation_Reinvent", dict(current["Lead_Generation_Reinvent"], **{field: "fixture"}))
           for field in ("name", "reward", "tar_seq", "off_tar_seqs")],
         *[("Vina_Score_only_docking", dict(current["Vina_Score_only_docking"], **{field: "fixture"}))
@@ -237,8 +238,8 @@ def test_current_small_molecule_ui_wire_contracts_reject_stale_payloads():
 
     assert store.file_fields("Binding_Site_Prediction")["pdb_path"]["x-input-kind"] == "file_or_value"
     assert set(store.file_fields("Vina_Score_only_docking")) == {"processed_pdb", "sdf_file"}
-    assert _tool_timeout("K_Means_Clustering", {"num_smiles": 1_000, "no_of_clusters": "auto"}) \
-        > _tool_timeout("K_Means_Clustering", {"num_smiles": 1_000, "no_of_clusters": "4"})
+    assert _tool_timeout("K_Means_Clustering", {"num_smiles": 1_000, "no_of_cluster": "auto"}) \
+        > _tool_timeout("K_Means_Clustering", {"num_smiles": 1_000, "no_of_cluster": "4"})
 
 
 def test_unreconciled_entries_are_visible_without_granting_execution():

@@ -15,7 +15,7 @@ from typing import Any
 from sci_cli.update_channel import STABLE_TAG_RE
 from scripts.releases.semver import compare
 
-SEED = "1.0.0.0"
+SEED = "0.1.0"
 BUMPS = ("major", "milestone", "minor", "patch")
 
 
@@ -54,16 +54,25 @@ def published_release_identity(repository: str, run=None) -> tuple[str, str] | N
     run = run or _gh
     pages = json.loads(run(["gh", "api", "--paginate", "--slurp",
                             f"repos/{repository}/releases?per_page=100"]))
-    versions = [version for page in pages for row in page
-                if isinstance(row, dict) and row.get("draft") is False
-                and row.get("prerelease") is False
-                and (version := version_from_tag(row.get("tag_name")))]
+    versions = []
+    for page in pages:
+        for row in page:
+            if not isinstance(row, dict) or row.get("draft") is not False or row.get("prerelease") is not False:
+                continue
+            tag = row.get("tag_name")
+            if not isinstance(tag, str):
+                continue
+            # SCI's initial public source release was tagged 0.1.0. Read such
+            # releases by their actual ref; new receipt tags still require v.
+            version = version_from_tag(tag if tag.startswith("v") else "v" + tag)
+            if version is not None:
+                versions.append((version, tag))
     if not versions:
         return None
-    newest = max(versions, key=cmp_to_key(compare))
-    commit = run(["gh", "api", f"repos/{repository}/commits/v{newest}", "--jq", ".sha"]).strip()
+    newest, tag = max(versions, key=cmp_to_key(lambda a, b: compare(a[0], b[0])))
+    commit = run(["gh", "api", f"repos/{repository}/commits/{tag}", "--jq", ".sha"]).strip()
     if not re.fullmatch(r"[a-f0-9]{40}", commit):
-        raise ValueError(f"v{newest} has no valid release commit")
+        raise ValueError(f"{tag} has no valid release commit")
     return newest, commit
 
 

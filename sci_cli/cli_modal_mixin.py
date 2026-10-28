@@ -390,9 +390,12 @@ class CLIModalMixin:
         state = self._slash_confirm_state
         if not state:
             return
-        state["response_queue"].put(value)
         self._slash_confirm_state = None
         self._slash_confirm_deadline = 0
+        if "on_choice" in state:
+            state["on_choice"](value)
+        else:
+            state["response_queue"].put(value)
         self._invalidate()
 
     def _normalize_slash_confirm_choice(

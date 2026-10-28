@@ -1,5 +1,22 @@
 # Boltzmann contract standardization — 2026-10-14
 
+## Submission diagnostic preservation and CatPred headers — 2026-10-26
+
+Submission errors now retain the service's separate `message` and detailed
+`error`, including a `service_error` copy that survives an authentication wrapper.
+Non-sensitive diagnostic wording is unchanged; credentials, service URLs and
+unsafe control characters remain redacted. Generic credit-calculation text must
+not hide the actual missing-column error. No successful job or credit outcome is
+inferred from a rejected submission.
+
+The owner supplied the CatPred HTTP 500 detail: `Missing required column(s):
+Seq_id, Sequence / Sequences, SMILES in catpred.csv`. The canonical upload rule
+now checks those case-sensitive headers and a required identifier. It accepts
+one of `Sequence` or `Sequences`, not an ambiguous pair. This supersedes the older
+case-insensitive/no-identifier assumption for the submission credit checker;
+it does not claim the downstream scientific worker has the same parser.
+No research input was rewritten or production job resubmitted for this fix.
+
 ## Ligand-based pharmacophore restoration — 2026-10-26
 
 `ligand_pharmacophore` now has a sourced executable request, both CSV upload
@@ -97,8 +114,8 @@ scientific correctness.
   selectors; DL uses scalar `modelName="DL"`, while ML preserves the lowercase
   `automl` identifier in its model-name array. The unobserved historical
   `transformation` field is no longer accepted by these strict contracts.
-- Butina preserves the current case-sensitive `tSNE` and `Min_Max` values.
-- K-Means uses the plural wire key `no_of_clusters` and a numeric string value.
+- Butina preserves the current case-sensitive `tSNE` and `Min-Max` values.
+- K-Means uses the singular wire key `no_of_cluster` and a numeric string value.
 - Binding Site Prediction accepts a documented PDB ID, AlphaFold UniProt ID, or
   uploaded PDB platform path through the same `pdb_path` field.
 - Create Dataset maps the UI's Gene/Protein Name to `scrap_id` and records the

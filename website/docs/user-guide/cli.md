@@ -246,6 +246,8 @@ Common examples:
 | `/tools` | List currently available tools |
 | `/skills browse` | Browse the skills hub and official optional skills |
 | `/bg <prompt>` | Run a prompt in a separate background session |
+| `/background [status\|attach ID\|stop ID]` | Opt into or manage persistent classic CLI chats |
+| `/detach` | Disconnect the viewer of a persistent chat; keep its worker running |
 | `/btw <question>` | Ask a side question about the current conversation without interrupting it |
 | `/skin` | Show or switch the active CLI skin |
 | `/voice on` | Enable CLI voice mode (press `Ctrl+B` to record) |
@@ -431,15 +433,18 @@ You can also change it inside the CLI:
 The first time you press Enter while Sci is working, Sci prints a one-line reminder explaining the `/busy` knob. It only fires once per install; `onboarding.seen.busy_input_prompt` in `config.yaml` records that it was shown. Delete that key to see the tip again.
 :::
 
-### Suspending to Background
+### Background tasks and terminal suspension
 
-On Unix systems, press **`Ctrl+Z`** to suspend Sci to the background — just like any terminal process. The shell prints a confirmation:
+The classic CLI on Linux/macOS/WSL starts its background service automatically.
+Press **Ctrl+C** during a task with an empty composer and choose **Cancel task**,
+**Run in background**, or **Exit**. Reconnect with `sci --resume SESSION_ID` or the
+normal `/resume` picker. `/background`, `/detach`, `/exit`, and closing the terminal
+leave the task running. Use `sci background status` to inspect actual task states.
 
-```
-Sci Agent has been suspended. Run `fg` to bring Sci Agent back.
-```
-
-Type `fg` in your shell to resume the session exactly where you left off. This is not supported on Windows.
+**Ctrl+Z** suspends the terminal viewer; `fg` returns to it. The worker continues
+independently. With explicit `sci --no-daemon`, Ctrl+Z instead suspends the entire
+foreground process. See [background execution and reconnecting](./sessions.md#background-execution-and-reconnecting)
+for stopping, idle cleanup, profile scope and platform limitations.
 
 ## Tool Progress Display
 
@@ -557,6 +562,14 @@ Each `/bg` prompt spawns a **completely separate agent session** in a daemon thr
 - **Same configuration** — the background agent inherits your model, provider, toolsets, reasoning settings, and fallback model from the current session.
 - **Non-blocking** — your foreground session stays fully interactive. You can chat, run commands, or even start more background tasks.
 - **Multiple tasks** — you can run several background tasks simultaneously. Each gets a numbered ID.
+
+`/bg` runs inside the conversation's worker process. In the default persistent
+classic CLI, disconnecting the terminal leaves that worker and its `/bg` tasks
+running; `/agents` shows the tasks. With explicit `--no-daemon` foreground mode,
+keep the CLI open until they finish. See [background execution and reconnecting](./sessions.md#background-execution-and-reconnecting).
+Remote scientific jobs already submitted to a service may
+continue independently: retain their job IDs and check status before submitting
+another job.
 
 ### Results
 
