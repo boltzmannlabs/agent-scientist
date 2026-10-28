@@ -50,7 +50,7 @@ def _read_json_input(value: str, label: str):
             raise ValueError(f"{label} must be inline JSON or a readable JSON file")
         if path.stat().st_size > MAX_INPUT_BYTES:
             raise ValueError(f"{label} is too large")
-        raw = path.read_text(encoding="utf-8")
+        raw = path.read_text(encoding="utf-8-sig")
     if len(raw.encode("utf-8")) > MAX_INPUT_BYTES:
         raise ValueError(f"{label} is too large")
     try:
@@ -68,7 +68,7 @@ def _runtime_config(home: Path) -> dict:
     if runtime_path.stat().st_size > 16_384:
         raise ValueError("Retrosynthesis runtime configuration is too large")
     try:
-        runtime = json.loads(runtime_path.read_text(encoding="utf-8"))
+        runtime = json.loads(runtime_path.read_text(encoding="utf-8-sig"))
     except json.JSONDecodeError as exc:
         raise ValueError("Retrosynthesis runtime configuration is invalid JSON") from exc
     if not isinstance(runtime, dict):

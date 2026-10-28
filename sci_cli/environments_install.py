@@ -22,7 +22,8 @@ _SHA = re.compile(r"[0-9a-f]{40}\Z")
 
 
 def _run(command: list[str], *, timeout: int = 1800, env: dict[str, str] | None = None) -> str:
-    result = subprocess.run(command, check=True, capture_output=True, text=True,
+    result = subprocess.run(command, check=True, capture_output=True, text=True, encoding="utf-8",
+                            errors="replace",
                             timeout=timeout, env=env)
     return result.stdout.strip()
 
@@ -112,7 +113,7 @@ def _write_runtime(path: Path, package: Path, chemistry_python: Path) -> None:
                 "SRG_BACKEND_TIMEOUT_SECONDS": "300"}
     fd, temp = tempfile.mkstemp(prefix=".runtime-", dir=path.parent)
     try:
-        with os.fdopen(fd, "w") as stream:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
             json.dump(settings, stream, indent=2)
             stream.write("\n")
         os.chmod(temp, 0o600)
@@ -128,7 +129,7 @@ def _check_legacy_plugin(home: Path) -> None:
         return
     from sci_yaml import safe_load
 
-    parsed = safe_load(config.read_text()) or {}
+    parsed = safe_load(config.read_text(encoding="utf-8-sig")) or {}
     plugins = parsed.get("plugins", {}) if isinstance(parsed, dict) else {}
     enabled = plugins.get("enabled", []) if isinstance(plugins, dict) else []
     if isinstance(enabled, list) and "synthesis-route-gym" in enabled:
@@ -167,7 +168,8 @@ def install_retrosynthesis(*, model_location: str | None = None,
         if model_location:
             with tempfile.TemporaryDirectory(prefix=".sci-default-", dir=home) as wrapper_dir:
                 wrapper = Path(wrapper_dir) / "sci-default"
-                wrapper.write_text(f"#!/bin/sh\nexec {shlex.quote(sci)} -p default \"$@\"\n")
+                wrapper.write_text(f"#!/bin/sh\nexec {shlex.quote(sci)} -p default \"$@\"\n",
+                                   encoding="utf-8")
                 wrapper.chmod(0o700)
                 command = [sys.executable, str(package / "scripts/setup_retrosynthesis.py"), "install",
                            "--sci-home", str(home), "--chemistry-python", str(chemistry),
