@@ -18,21 +18,21 @@ def test_catpred_headers_are_checked_before_upload_without_rewriting_input(tmp_p
     for contents, valid in (
         ("seq_id,sequences,smiles\nfixture,MKT,CCO\n", False),
         ("Sequences,SMILES\nMKT,CCO\n", False),
-        ("Seq_id,Sequence,SMILES\nfixture,MKT,CCO\n", True),
+        ("Seq_id,Sequence,SMILES\nfixture,MKT,CCO\n", False),
         ("Seq_id,Sequences,SMILES\nfixture,MKT,CCO\n", True),
         ("Seq_id,sequence,SMILES\nfixture,MKT,CCO\n", False),
         ("Seq_id,Sequences,smiles\nfixture,MKT,CCO\n", False),
         ("Seq_id,Sequence,Sequences,SMILES\nfixture,MKT,MKT,CCO\n", False),
         ("Seq_id,Sequences,SMILES\nfixture,,CCO\n", False),
     ):
-        source.write_text(contents)
+        source.write_text(contents, encoding="utf-8")
         before = len(sent)
         result = preflight.validated_upload(str(source), "Cat_Pred", "input_path", {}, True, upload)
-        assert source.read_text() == contents
+        assert source.read_text(encoding="utf-8-sig") == contents
         if valid:
             assert result["status"] == "uploaded", result
             assert sent[-1] == contents.encode()
-            assert result["validation"]["warnings"]  # No claim of molecular validation.
+            assert not result["validation"]["warnings"]  # Audited alphabet and SMILES checks now run locally.
         else:
             assert result["status"] == "not_started", result
             assert result["validation"]["errors"]

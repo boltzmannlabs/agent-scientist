@@ -280,7 +280,7 @@ def test_command_is_required_and_activation_is_deferred_and_profile_local(tmp_pa
             assert fresh._plugins["boltzmann"].tools_registered
             skill = fresh._plugin_skills["boltzmann:tools"]["path"]
             assert skill.is_relative_to(Path(__file__).resolve().parents[2] / "plugins" / "boltzmann")
-            catalog = json.loads((skill.parent / "references/tool-contracts.v1.json").read_text())
+            catalog = json.loads((skill.parent / "references/tool-contracts.v1.json").read_text(encoding="utf-8-sig"))
             for entry in catalog["modules"]:
                 assert (skill.parent / "references" / entry["path"]).is_file()
             assert {d["function"]["name"] for d in registry.get_definitions(names, quiet=True)} == names
@@ -359,7 +359,7 @@ def test_fresh_authorized_connector_executes_fixture_job_without_local_plugin(tm
             result = json.loads(module.tools.handle_boltzmann_download(
                 download_url=status["OutputData"]["fixture"]["download_link"],
                 output_folder=str(tmp_path / "outputs")))
-            assert Path(result["output_paths"][0]).read_text().splitlines() == [
+            assert Path(result["output_paths"][0]).read_text(encoding="utf-8-sig").splitlines() == [
                 "id,value", "fixture-1,1", "fixture-2,2"]
             assert state["calls"].count("/submit") == 1
             assert set(state["calls"]) <= {"/api/get-projects", "/submit", "/result", "/artifact.csv"}
@@ -387,7 +387,7 @@ def test_partial_file_preflight_upload_and_submit_with_real_profile_receipts(tmp
             monkeypatch.setitem(module.tools.file_upload.__globals__, "_UPLOAD_URL", base + "/upload")
             monkeypatch.setitem(module.tools.submit_request.__globals__, "_SUBMIT_URL", base + "/submit")
             water = tmp_path / "water.xyz"
-            water.write_text("3\nwater\nO 0 0 0\nH 0 0 1\nH 0 1 0\n")
+            water.write_text("3\nwater\nO 0 0 0\nH 0 0 1\nH 0 1 0\n", encoding="utf-8")
             args = {"local_path": str(water), "job_name": "Single_Point_Energy", "input_field": "molecule_path"}
             first = json.loads(module.tools.handle_boltzmann_upload(**args))
             assert first["approval_required"] and not first["validation"]["errors"]
@@ -436,7 +436,7 @@ def test_binding_affinity_uses_authorized_connector_for_direct_and_uploaded_inpu
             monkeypatch.setitem(module.tools.file_upload.__globals__, "_UPLOAD_URL", base + "/upload")
             monkeypatch.setitem(module.tools.submit_request.__globals__, "_SUBMIT_URL", base + "/submit")
             source = tmp_path / "pairs.csv"
-            source.write_text("SMILES,SEQUENCE\nfixture-smiles,fixture-sequence\n")
+            source.write_text("SMILES,SEQUENCE\nfixture-smiles,fixture-sequence\n", encoding="utf-8")
             state["upload_path"] = "fixture/pairs.csv"
             uploaded = json.loads(module.tools.handle_boltzmann_upload(
                 local_path=str(source), job_name=job, input_field="input_csv", allow_partial_validation=True))
@@ -486,13 +486,25 @@ def test_five_enzyme_tools_use_existing_profile_scoped_wire_path(tmp_path, monke
             preflight = sys.modules[module.__name__ + ".preflight"]
             for job in ("deepallo", "enzycontrol", "Enzyme_RFD3", "Catalytic_Geometry", "Mol_Probity"):
                 payload = copy.deepcopy(store.tool(job)["examples"][0]["experiment_data"])
-                # Synthetic shapes, never valid scientific jobs or production services.
+                # Structurally valid software fixtures, not scientific jobs.
+                if job == "enzycontrol":
+                    payload.update(motif_residues=["1"], smiles="CCO")
+                if job == "Enzyme_RFD3":
+                    payload.update(motif_residues=["A1"], ligand="ACT", min_length=10,
+                                   max_length=20, advanced_settings_enabled="false")
+                    payload.pop("advanced_settings", None)
                 payload["input_path" if job != "enzycontrol" else "pdb_path"] = "fixture/input.pdb"
                 for field, prop in store.file_fields(job).items():
                     if field not in payload:
                         continue
                     if field in {"input_path", "pdb_path"}:
-                        data = b"ATOM      1  O   HOH A   1       0.000   0.000   0.000  1.00  0.00           O\nEND\n"
+                        lines = []
+                        for number in range(1, 13):
+                            for index, (name, offset) in enumerate((("N", (0, 0, 0)), ("CA", (1, 1, 0)), ("C", (2, 0, 0)), ("O", (2, -1, 0)))):
+                                x, y, z = 3 * number + offset[0], offset[1], offset[2]
+                                lines.append(f"ATOM  {4 * number + index:5d} {name:>4s} ALA A{number:4d}    {x:8.3f}{y:8.3f}{z:8.3f}  1.00 20.00           {name[0]:>2s}")
+                        lines.append("HETATM   99   C1 ACT B 500       1.000   2.000   3.000  1.00 20.00           C")
+                        data = ("\n".join(lines) + "\nEND\n").encode()
                         filename = field + ".pdb"
                     else:
                         values = {
@@ -573,9 +585,9 @@ def test_ligand_pharmacophore_upload_submit_and_receipts_are_profile_scoped(tmp_
                                     ("_FETCH_URL", "/result")):
                 monkeypatch.setattr(helpers, setting, base + suffix)
             source = tmp_path / "ligands.csv"
-            source.write_text("SMILES\nCCO\n")
+            source.write_text("SMILES\nCCO\n", encoding="utf-8")
             validation = tmp_path / "validation.csv"
-            validation.write_text("SMILES,LABELS\nCCO,active\nCCN,inactive\n")
+            validation.write_text("SMILES,LABELS\nCCO,active\nCCN,inactive\n", encoding="utf-8")
             args = {"local_path": str(source), "job_name": job, "input_field": "smiles_file"}
             unauthorized = json.loads(module.tools.handle_boltzmann_upload(**args))
             assert unauthorized["authorization_required"]
@@ -603,7 +615,7 @@ def test_ligand_pharmacophore_upload_submit_and_receipts_are_profile_scoped(tmp_
                     assert preflight.decision(after, False)["approval_required"]
                     assert preflight.decision(after, True) is None
             bad = tmp_path / "wrong.csv"
-            bad.write_text("wrong_column\nCCO\n")
+            bad.write_text("wrong_column\nCCO\n", encoding="utf-8")
             invalid = json.loads(module.tools.handle_boltzmann_upload(
                 **dict(args, local_path=str(bad)), allow_partial_validation=True))
             assert invalid["status"] == "not_started"
@@ -621,8 +633,8 @@ def test_ligand_pharmacophore_upload_submit_and_receipts_are_profile_scoped(tmp_
             assert state["submission"]["experimentData"] == payload
             module.tools.handle_boltzmann_status(job_name=job, doc_id="fixture-job")
             assert state["calls"].count("/submit") == 1
-            assert source.read_text() == "SMILES\nCCO\n"
-            assert validation.read_text() == "SMILES,LABELS\nCCO,active\nCCN,inactive\n"
+            assert source.read_text(encoding="utf-8-sig") == "SMILES\nCCO\n"
+            assert validation.read_text(encoding="utf-8-sig") == "SMILES,LABELS\nCCO,active\nCCN,inactive\n"
         finally:
             manager.unload()
 
@@ -845,7 +857,7 @@ def test_flexible_docking_uploads_csv_and_rejects_inline_smiles(tmp_path, monkey
             assert rejected["status"] == "not_started" and "/submit" not in state["calls"]
             assert any("smiles" in e for e in rejected["validation"]["errors"])
             csv = tmp_path / "ligands.csv"
-            csv.write_text("fixture_column\nCCO\n")
+            csv.write_text("fixture_column\nCCO\n", encoding="utf-8")
             original = csv.read_bytes()
             state["upload_path"] = "fixture/ligands.csv"
             uploaded = json.loads(module.tools.handle_boltzmann_upload(
@@ -983,7 +995,7 @@ def test_file_upload_discovery_and_fresh_multi_artifact_results(tmp_path, monkey
             # Registration formerly failed before file inspection. A generic short
             # format fixture is sufficient; it is not a valid experiment sample.
             source = tmp_path / "format-only.fasta"
-            source.write_text(">format-fixture\nACGU\n")
+            source.write_text(">format-fixture\nACGU\n", encoding="utf-8")
             state["upload_path"] = "fixture/format-only.fasta"
             upload_args = dict(local_path=str(source), job_name="rna_siRNA_gen", input_field="input_fasta")
             before = json.loads(module.tools.handle_boltzmann_upload(**upload_args))
@@ -1011,7 +1023,7 @@ def test_file_upload_discovery_and_fresh_multi_artifact_results(tmp_path, monkey
                     paths.extend(downloaded["output_paths"])
             assert state["calls"].count("/result") == 2  # terminal URLs are refreshed
             assert len(set(paths)) == len(paths)  # identical basenames never overwrite
-            assert all(Path(path).read_text().startswith("id,value") for path in paths)
+            assert all(Path(path).read_text(encoding="utf-8-sig").startswith("id,value") for path in paths)
             assert state["calls"].count("/submit") == 1  # polling/downloads never resubmit
             rejected = json.loads(module.tools.handle_boltzmann_upload(
                 **dict(upload_args, input_field="undeclared_field"), allow_partial_validation=True))
@@ -1092,15 +1104,15 @@ def test_execution_policy_is_authorized_profile_local_and_frozen(tmp_path, monke
                 if function["name"] in {schema["name"] for schema in module.SCHEMAS}:
                     assert function["parameters"]["properties"]  # Discoverable helpers must be callable.
             skill = manager._plugin_skills["boltzmann:tools"]["path"]
-            instructions = skill.read_text()
+            instructions = skill.read_text(encoding="utf-8-sig")
             assert "## Listing Scientific Tools" in instructions
             assert "`module_id`" in instructions and "`display_name`" in instructions
             assert "account-entitlement" in instructions
-            registry = json.loads((skill.parent / "references/tool-contracts.v1.json").read_text())
+            registry = json.loads((skill.parent / "references/tool-contracts.v1.json").read_text(encoding="utf-8-sig"))
             antibody = next(entry for entry in registry["modules"]
                             if entry["path"] == "modules/protein-antibody-generation.md")
             assert (skill.parent / "references" / antibody["path"]).is_file()
-            assert "Random_Antibody_Generation" in (skill.parent / "references" / antibody["path"]).read_text()
+            assert "Random_Antibody_Generation" in (skill.parent / "references" / antibody["path"]).read_text(encoding="utf-8-sig")
             fresh_prompt = fresh._cached_system_prompt.encode()
             with profile(b):
                 save_env_value("BOLTZMANN_API_KEY", "fixture-valid")

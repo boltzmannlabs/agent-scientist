@@ -161,7 +161,8 @@ Only local files require a new upload. Never infer input mode from a field name.
         ],
         "type": "string"
       },
-      "x-input-kind": "value"
+      "x-input-kind": "value",
+      "minItems": 1
     }
   },
   "required": [
@@ -202,7 +203,36 @@ For mode-dependent fields, include the fields required by the selected schema br
     ],
     "header_case_sensitive": true,
     "notes": "Use exact Seq_id and Sequences headers, matching the ENZ_PROP frontend credit checker. Sequence_ID is not an accepted alias. For an existing differently named column, offer a reviewed copy; never silently rewrite the original. Structural validation does not establish scientific correctness or guarantee credit calculation.",
-    "evidence": "https://app.boltzmann.co/static/js/main.5b329b08.js (ENZ_PROP requiredfields; inspected 2026-10-19)"
+    "evidence": "https://app.boltzmann.co/static/js/main.5b329b08.js (ENZ_PROP requiredfields; inspected 2026-10-19)",
+    "semantic_values": {
+      "Sequences": {
+        "alphabet": "ACDEFGHIKLMNPQRSTVWYBXZUO",
+        "whitespace": "preserve",
+        "case_sensitive": true
+      }
+    },
+    "semantic_values_by_field": {
+      "property_name": {
+        "substrate_pred": {
+          "SMILES": {
+            "smiles": true
+          }
+        }
+      }
+    },
+    "validation_context": [
+      "property_name"
+    ],
+    "aliases": {
+      "SMILES": [
+        "smiles",
+        "Smiles"
+      ]
+    },
+    "forbidden_columns": [
+      "sequence",
+      "smile"
+    ]
   }
 }
 ```
@@ -278,7 +308,21 @@ For mode-dependent fields, include the fields required by the selected schema br
       "Sequences",
       "Smiles"
     ],
-    "notes": "Exact Sequences and Smiles headers are required by the reported server diagnostic. Positive submission with corrected headers has not yet been verified."
+    "notes": "Exact Sequences and Smiles headers are required by the reported server diagnostic. Positive submission with corrected headers has not yet been verified.",
+    "semantic_values": {
+      "Sequences": {
+        "alphabet": "ACDEFGHIKLMNPQRSTVWYBXZUO",
+        "whitespace": "remove",
+        "case_sensitive": true
+      },
+      "Smiles": {
+        "smiles": true
+      }
+    },
+    "forbidden_columns": [
+      "sequence",
+      "smile"
+    ]
   }
 }
 ```
@@ -301,7 +345,8 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_path` | string | yes | file | Uploaded CSV with exact case-sensitive seq_id, Sequences and smiles headers, following the reported server error. Positive submission with corrected headers has not yet been verified. |
+| `input_path` | string | yes | file | Uploaded CSV with exact case-sensitive seq_id, Sequences and smiles headers. The 2026-10-29 request was accepted but worker validation failed on a missing run label, not a reported CSV-header error. |
+| `job_name` | string | no / mode-dependent | value | Worker run label, not the routing name kcat_km. Omit to use the confirmed experiment_name automatically. Explicit values must be 1-100 characters; invalid values are not replaced. |
 | `prediction_type` | string | yes | value | values: `kcat, km` |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
@@ -315,9 +360,16 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "input_path": {
-      "description": "Uploaded CSV with exact case-sensitive seq_id, Sequences and smiles headers, following the reported server error. Positive submission with corrected headers has not yet been verified.",
+      "description": "Uploaded CSV with exact case-sensitive seq_id, Sequences and smiles headers. The 2026-10-29 request was accepted but worker validation failed on a missing run label, not a reported CSV-header error.",
       "type": "string",
       "x-input-kind": "file"
+    },
+    "job_name": {
+      "description": "Worker run label, not the routing name kcat_km. Omit to use the confirmed experiment_name automatically. Explicit values must be 1-100 characters; invalid values are not replaced.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "x-input-kind": "value"
     },
     "prediction_type": {
       "description": "values: `kcat, km`",
@@ -367,7 +419,21 @@ For mode-dependent fields, include the fields required by the selected schema br
       "Sequences",
       "smiles"
     ],
-    "notes": "Use the exact source field."
+    "notes": "Use the exact source field.",
+    "semantic_values": {
+      "Sequences": {
+        "alphabet": "ACDEFGHIKLMNPQRSTVWYBXZJUO",
+        "whitespace": "remove",
+        "case_sensitive": false
+      },
+      "smiles": {
+        "smiles": true
+      }
+    },
+    "forbidden_columns": [
+      "sequence",
+      "smile"
+    ]
   }
 }
 ```
@@ -657,7 +723,8 @@ Only local files require a new upload. Never infer input mode from a field name.
         ],
         "type": "string"
       },
-      "x-input-kind": "value"
+      "x-input-kind": "value",
+      "minItems": 1
     },
     "toxicity_reference": {
       "description": "Accepted by the API; product source says backend currently ignores it",
@@ -711,7 +778,10 @@ For mode-dependent fields, include the fields required by the selected schema br
     "columns": [
       "Sequences"
     ],
-    "notes": "Uploaded CSV containing a `Sequences` column"
+    "notes": "Uploaded CSV containing a `Sequences` column Property-specific alphabets differ (including Epitope lowercase handling); only the documented header/shape is enforced here, and sequence semantics remain explicitly unchecked. Property-specific alphabets differ (including Epitope lowercase handling); only the documented header/shape is enforced here, and sequence semantics remain explicitly unchecked.",
+    "values": {
+      "Sequences": "protein"
+    }
   }
 }
 ```

@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2] / "plugins/boltzmann/skills/boltzmann-tools/references"
-CATALOG = json.loads((ROOT / "tool-contracts.v1.json").read_text())
+CATALOG = json.loads((ROOT / "tool-contracts.v1.json").read_text(encoding="utf-8-sig"))
 
 
 def shape_fixture(schema):
@@ -67,7 +67,7 @@ def test_binding_affinity_modes_and_paired_csv_contract(tmp_path):
     for contents, valid in (("SMILES,SEQUENCE\nfixture-smiles,fixture-sequence\n", True),
                             ("SMILES,SEQUENCES\nfixture-smiles,fixture-sequence\n", False),
                             ("SMILES,SEQUENCE\nfixture-smiles,\n", False)):
-        source.write_text(contents)
+        source.write_text(contents, encoding="utf-8")
         report = validate_file(source, rule, {})
         assert bool(report.errors) is not valid
         if valid:
@@ -91,6 +91,25 @@ def test_every_job_has_one_input_definition_and_accepts_its_documented_shape(job
     examples = [example["experiment_data"] for example in tool.get("examples", [])
                 if isinstance(example, dict) and "experiment_data" in example]
     fixture = json.loads(json.dumps(examples[0])) if examples else shape_fixture(schema)
+    # Generic shape strings are not sequences, molecules or residue selections.
+    # Concrete software fixtures exercise the newly implemented semantic checks.
+    fixture.update({
+        "Genzyme_Generation": {"input_substrate": "CCO", "input_product": "CC=O", "complex_generation": "false"},
+        "Random_Controlled_Mutagenesis": {"seq": "ACD", "indices": [], "mutaions_per_epoch": 1},
+        "act_seek": {"active_sites": "1_A"},
+        "Placer": {"suffix": "B-ACT-500", "predict_ligand": "B-ACT-500"},
+        "Motiff_Scaffolding": {"min_lengths": 1, "max_lengths": 2},
+    }.get(job, {}))
+    for field in store.file_fields(job):
+        rule = store.files.get(job, {}).get("files", {}).get(field, {})
+        if rule.get("execution_blocked") and field not in schema.get("required", []) and not examples:
+            fixture.pop(field, None)
+            continue
+        formats = rule.get("formats", [])
+        if (formats and (rule.get("structure_profile") or rule.get("semantic_values") or rule.get("sequence_validation"))
+                and isinstance(fixture.get(field), str)
+                and not any(fixture[field].lower().endswith("." + suffix) for suffix in formats)):
+            fixture[field] = "fixture/input." + formats[0]
     for name, bound in store.limits.get(job, {}).get("fields", {}).items():
         assert name in props
         assert "required" not in bound and "type" not in bound
@@ -163,12 +182,12 @@ def test_file_modes_nested_models_and_known_invalid_values(tmp_path):
     payload["global_models"] = ["Solubility"]
     assert store.validate_payload(job, payload).errors
     fasta = tmp_path / "fixture.fasta"
-    fasta.write_text(">fixture\nACGU\n")
+    fasta.write_text(">fixture\nACGU\n", encoding="utf-8")
     assert not validate_file(fasta, {"formats": ["fasta"]}, {}).errors
-    fasta.write_text("ACGU\n")
+    fasta.write_text("ACGU\n", encoding="utf-8")
     assert validate_file(fasta, {"formats": ["fasta"]}, {}).errors
     pdb = tmp_path / "fixture.pdb"
-    pdb.write_text("ATOM      1  O   HOH A   1       0.000   0.000   0.000  1.00  0.00           O\nEND\n")
+    pdb.write_text("ATOM      1  O   HOH A   1       0.000   0.000   0.000  1.00  0.00           O\nEND\n", encoding="utf-8")
     assert not validate_file(pdb, {"formats": ["pdb"]}, {}).errors
-    pdb.write_text("not a coordinate file\n")
+    pdb.write_text("not a coordinate file\n", encoding="utf-8")
     assert validate_file(pdb, {"formats": ["pdb"]}, {}).errors
