@@ -866,8 +866,12 @@ def _cprint(text: str):
 
 
 def _capture_side_parent_output(text):
-    from prompt_toolkit.application import get_app_or_none
-    app = get_app_or_none()
+    try:
+        from prompt_toolkit.application import get_app_or_none
+        app = get_app_or_none()
+    except Exception:
+        # Keep the plain-print fallback usable when the terminal app is unavailable.
+        return False
     view = getattr(app, "_sci_side_view", None) if app is not None else None
     return view.capture_parent(text) if view is not None else False
 

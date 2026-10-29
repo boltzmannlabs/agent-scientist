@@ -106,7 +106,7 @@ def select_science_items(ui, title, options, *, selected=None, filtered_controls
         controls.append("Cancel")
         choice = ui.choose(f"{title}: {len(selected)} selected; page {page + 1}/{pages}. " +
                            ("Selection controls apply to the search results." if filtered_controls and query else
-                            "Select all/Clear selection apply to this section."), controls)
+                            "Select all/Clear selection apply to the entire section, including hidden search results."), controls)
         if choice == "Done":
             return selected
         if choice == select_label:
