@@ -2,7 +2,7 @@
 
 ``tools/terminal_tool.py`` no longer bridges a profile's ``terminal.*`` into ``os.environ`` under a
 home override, so every secondary-profile entrypoint must bind the owning terminal scope itself:
-side workers (``prompt.background`` / ``prompt.btw`` / ``preview.restart``) and agent builds
+side workers (``prompt.background`` / ``preview.restart``) and agent builds
 (eager resume, ``session.branch``) used to bind only the home (+ secrets) and ran a
 ``terminal.backend: docker`` secondary on the launch process's ``local`` backend.
 

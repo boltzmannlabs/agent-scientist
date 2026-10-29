@@ -3861,7 +3861,6 @@ export const en: Translations = {
       '/stop': 'Stop the active turn and background processes',
       '/pause': "Pause new work globally (emergency stop); '/pause off' resumes",
       '/bg': 'Run a prompt in a separate background session',
-      '/btw': 'Ask a side question about this conversation without interrupting it',
       '/agents': 'Show active agents and running tasks',
       '/journey': 'Open the memory graph — skills + memories over time',
       '/queue': 'Queue a prompt for the next turn, or list/edit/rm/move/clear queued prompts',

@@ -112,13 +112,6 @@ gateway:
     final_output: "{header}\n\nAschur deiridh:\n```\n{output}\n```"
     still_running: "⏳ Tasc cúlra fós ag rith"
     recent_output: "{header}\n\nAschur le déanaí:\n```\n{output}\n```"
-  btw:
-    usage: "Úsáid: /btw <ceist>\nSampla: /btw cén comhad ina raibh an earráid sin?\n\nFreagraíonn ceist thaobhach ghasta faoin gcomhrá seo gan cur isteach air. Le haghaidh tasc cúlra neamhspleách, úsáid /bg <leid>."
-    no_history: "Níl aon chomhrá ann fós — seol do cheist mar ghnáth-theachtaireacht ina ionad."
-    no_provider: "❌ Ní féidir an cheist a fhreagairt: níl dintiúir sholáthraí cumraithe."
-    started: "💬 Ceist thaobhach: \"{preview}\"\nÁ freagairt ó léargas ar an gcomhrá seo — leanann an obair reatha ar aghaidh."
-    answer: "💬 /btw: \"{preview}\"\n\n{answer}"
-    failed: "❌ Theip ar /btw: \"{preview}\"\n{error}"
   branch:
     db_unavailable: "Níl bunachar sonraí na seisiún ar fáil."
     no_conversation: "Níl aon chomhrá le brainseáil — seol teachtaireacht ar dtús."
@@ -1138,10 +1131,6 @@ platform:
       bg:
         arg_prompt: "An leid le rith sa chúlra"
         followup: "Tasc cúlra tosaithe~"
-      btw:
-        description: "Cuir ceist thaobhach faoin gcomhrá reatha"
-        arg_question: "An cheist thaobhach le freagairt gan bhriseadh isteach"
-        followup: "Ceist thaobhach seolta~"
       skill:
         description: "Rith scil Sci"
         arg_name: "Cén scil atá le rith"
@@ -1533,8 +1522,6 @@ slash:
     description: "Cuir obair nua ar sos go domhanda (stop éigeandála); atosaíonn '/pause off' í"
   deny:
     description: "Diúltaigh ordú contúirteach atá ag fanacht (le cúis más mian leat)"
-  btw:
-    description: "Cuir ceist thaobhach faoin gcomhrá reatha gan cur isteach air"
   agents:
     description: "Taispeáin gníomhairí gníomhacha agus tascanna atá ag rith"
   journey:
@@ -2915,7 +2902,7 @@ cli:
       updating: "⚡ Ag nuashonrú AGENTS.md ó scanadh tionscadail..."
       generating: "⚡ Ag giniúint AGENTS.md ó scanadh tionscadail..."
     background:
-      usage: "Úsáid: /bg <prompt>\nSampla: /bg Déan achoimre ar phríomhscéalta HN inniu\n(Le haghaidh ceist thaobhach faoin gcomhrá seo, úsáid /btw <question>.)\nRitheann an tasc i seisiún ar leith agus taispeántar na torthaí anseo nuair a bheidh sé críochnaithe."
+      usage: "Úsáid: /bg <prompt>\nSampla: /bg Déan achoimre ar phríomhscéalta HN inniu\nRitheann an tasc i seisiún ar leith agus taispeántar na torthaí anseo nuair a bheidh sé críochnaithe."
       no_credentials: "(>_<) Ní féidir tasc cúlra a thosú: níl dintiúir bhailí ann."
       started: "🔄 Tasc cúlra #{number} tosaithe: \"{preview}\""
       task_id: "ID an taisc: {task_id}"
@@ -2932,12 +2919,6 @@ cli:
       label: "Síniú isteach"
       title_suffix: "(síniú isteach)"
       no_result: "(Gan toradh)"
-    btw:
-      usage: "Úsáid: /btw <question>\nSampla: /btw cén comhad ina raibh an earráid sin?\nFreagraíonn sé ceist ghasta faoin gcomhrá seo gan cur isteach air.\n(Le haghaidh tasc cúlra neamhspleách, úsáid /bg <prompt>.)"
-      no_credentials: "(>_<) Ní féidir an cheist thaobhach a fhreagairt: níl dintiúir bhailí ann."
-      header: "💬 /btw: \"{preview}\""
-      title_suffix: "(btw)"
-      no_answer: "(Níor gineadh aon fhreagra)"
     bundles:
       unavailable: "Níl fochóras na mbeart ar fáil: {error}"
       none_installed: "Níl aon bheart scileanna suiteáilte."
@@ -3474,7 +3455,7 @@ explainer:
     and_more: "  • … agus {count} eile"
     the_model: "An tsamhail"
 tips:
-  t001: "Ritheann /bg <leid> tasc i seisiún ar leith fad a fhanann do sheisiún reatha saor; freagraíonn /btw <ceist> ceist thaobhach faoin gcomhrá seo gan cur isteach air."
+  t001: "Ritheann /bg <leid> tasc i seisiún ar leith fad a fhanann do sheisiún reatha saor; freagraíonn /side <ceist> ceist thaobhach faoin gcomhrá seo gan cur isteach air."
   t002: "Déanann /branch forc den seisiún reatha ionas gur féidir leat treo eile a fhiosrú gan dul chun cinn a chailleadh."
   t003: "Dlúthaíonn /compress comhthéacs an chomhrá de láimh nuair a éiríonn rudaí fada."
   t004: "Liostaíonn /rollback seicphointí an chórais comhad — aischuir comhaid a d'athraigh an gníomhaire go staid ar bith roimhe seo."

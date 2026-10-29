@@ -55,10 +55,16 @@ def _attach_once(chat_id, *, home=None, takeover=False):
                 previous[sig] = signal.signal(sig, disconnected)
             previous[signal.SIGWINCH] = signal.signal(signal.SIGWINCH, resized)
             previous[signal.SIGTSTP] = signal.signal(signal.SIGTSTP, suspended)
-            # Do not flush keys typed during attachment. Announce readiness only
-            # after the input mode is installed, so an immediate detach is honored.
+            # Do not flush keys typed during attachment. Install input mode before
+            # replaying the chat, so an immediate detach is honored.
             tty.setraw(sys.stdin.fileno(), when=termios.TCSANOW)
-            print("Attached. Ctrl+] detaches; /exit disconnects. Ctrl+C during a task offers stop/background/exit.\r", flush=True)
+            # Each accepted attachment owns the visible transcript. Clear before
+            # replay, including terminal scrollback, so previous chats cannot
+            # accumulate above this one. Persisted histories remain untouched.
+            # Clear the viewport first: some terminals push it into scrollback.
+            from sci_cli.cli_terminal_input import _TERMINAL_INPUT_MODE_RESET_SEQ
+            sys.stdout.write(_TERMINAL_INPUT_MODE_RESET_SEQ + "\x1b[r\x1b[H\x1b[2J\x1b[3J")
+            sys.stdout.flush()
             if reply.get("truncated"):
                 print("Live terminal replay is limited to its recent tail. Ctrl+O opens the saved transcript.\r", flush=True)
             pending = bytearray(tail)
@@ -126,6 +132,17 @@ def _attach_once(chat_id, *, home=None, takeover=False):
 
 def attach(chat_id, *, home=None, takeover=False):
     from sci_cli.background_chats import find_worker
+    from sci_cli.cli_runtime_refresh import refresh_attached_worker
+    from sci_cli.skill_add import Cancelled
+    worker = find_worker(chat_id, home=home)
+    if worker:
+        try:
+            refreshed = refresh_attached_worker(worker, home=home)
+        except Cancelled:
+            print('Attachment cancelled. No replacement conversation was opened.')
+            return
+        if refreshed['id'] != worker['id']:
+            chat_id, takeover = refreshed['id'], False
     while True:
         outcome = _attach_once(chat_id, home=home, takeover=takeover)
         worker = find_worker(chat_id, home=home)

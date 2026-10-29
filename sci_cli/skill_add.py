@@ -20,8 +20,9 @@ class ReturnToPrompt(Exception):
 class WizardUI:
     """Use the existing clarify modal; stdin and conversation history stay untouched."""
 
-    def __init__(self, cli):
+    def __init__(self, cli, *, numbered_choices=True):
         self.cli = cli
+        self.numbered_choices = numbered_choices
 
     def show(self, text):
         from cli import _cprint
@@ -35,7 +36,8 @@ class WizardUI:
             raise ValueError("Use this wizard in the interactive terminal CLI.")
         result = self.cli._clarify_callback([
             {"qid": "skill_add", "question": question, "choices": list(choices),
-             "multi_select": False, "allow_other": allow_other}])
+             "multi_select": False, "allow_other": allow_other,
+             "numbered_choices": self.numbered_choices}])
         if result.get("outcome") == "timed_out":
             raise WizardInputTimeout("Waiting for user input timed out. No approval was given for the pending step; restart the wizard or explicitly retry retained details.")
         value = result.get("answers", {}).get("skill_add")

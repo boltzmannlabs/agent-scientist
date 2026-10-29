@@ -112,13 +112,6 @@ gateway:
     final_output: "{header}\n\nSalida final:\n```\n{output}\n```"
     still_running: "⏳ La tarea en segundo plano sigue en ejecución"
     recent_output: "{header}\n\nSalida reciente:\n```\n{output}\n```"
-  btw:
-    usage: "Uso: /btw <pregunta>\nEjemplo: /btw ¿en qué archivo estaba ese error?\n\nResponde una pregunta rápida sobre esta conversación sin interrumpirla. Para una tarea independiente en segundo plano, usa /bg <prompt>."
-    no_history: "Aún no hay conversación — envía tu pregunta como un mensaje normal."
-    no_provider: "❌ No se puede responder la pregunta: no hay credenciales de proveedor configuradas."
-    started: "💬 Pregunta aparte: \"{preview}\"\nRespondiendo desde una instantánea de esta conversación — el trabajo actual continúa."
-    answer: "💬 /btw: \"{preview}\"\n\n{answer}"
-    failed: "❌ /btw falló: \"{preview}\"\n{error}"
   branch:
     db_unavailable: "Base de datos de sesiones no disponible."
     no_conversation: "No hay conversación para ramificar — envía un mensaje primero."
@@ -1138,10 +1131,6 @@ platform:
       bg:
         arg_prompt: "El prompt que se ejecutará en segundo plano"
         followup: "Tarea en segundo plano iniciada~"
-      btw:
-        description: "Hacer una pregunta aparte sobre la conversación actual"
-        arg_question: "La pregunta aparte que se responderá sin interrumpir"
-        followup: "Pregunta aparte enviada~"
       skill:
         description: "Ejecutar una skill de Sci"
         arg_name: "Qué skill ejecutar"
@@ -1533,8 +1522,6 @@ slash:
     description: "Pausar todo el trabajo nuevo globalmente (parada de emergencia); '/pause off' reanuda"
   deny:
     description: "Denegar un comando peligroso pendiente (opcionalmente con un motivo)"
-  btw:
-    description: "Hacer una pregunta aparte sobre la conversación actual sin interrumpirla"
   agents:
     description: "Mostrar los agentes activos y las tareas en ejecución"
   journey:
@@ -2915,7 +2902,7 @@ cli:
       updating: "⚡ Actualizando AGENTS.md a partir de un análisis del proyecto..."
       generating: "⚡ Generando AGENTS.md a partir de un análisis del proyecto..."
     background:
-      usage: "Uso: /bg <prompt>\nEjemplo: /bg Resume las principales historias de HN de hoy\n(Para una pregunta rápida sobre esta conversación, usa /btw <pregunta>.)\nLa tarea se ejecuta en una sesión separada y los resultados aparecerán aquí cuando termine."
+      usage: "Uso: /bg <prompt>\nEjemplo: /bg Resume las principales historias de HN de hoy\nLa tarea se ejecuta en una sesión separada y los resultados aparecerán aquí cuando termine."
       no_credentials: "(>_<) No se puede iniciar la tarea en segundo plano: no hay credenciales válidas."
       started: "🔄 Tarea en segundo plano #{number} iniciada: \"{preview}\""
       task_id: "ID de la tarea: {task_id}"
@@ -2932,12 +2919,6 @@ cli:
       label: "Inicio de sesión"
       title_suffix: "(inicio de sesión)"
       no_result: "(Sin resultado)"
-    btw:
-      usage: "Uso: /btw <pregunta>\nEjemplo: /btw ¿en qué archivo estaba ese error?\nResponde una pregunta rápida sobre esta conversación sin interrumpirla.\n(Para una tarea independiente en segundo plano, usa /bg <prompt>.)"
-      no_credentials: "(>_<) No se puede responder la pregunta rápida: no hay credenciales válidas."
-      header: "💬 /btw: \"{preview}\""
-      title_suffix: "(btw)"
-      no_answer: "(No se generó respuesta)"
     bundles:
       unavailable: "Subsistema de paquetes no disponible: {error}"
       none_installed: "No hay paquetes de skills instalados."
@@ -3474,7 +3455,7 @@ explainer:
     and_more: "  • … y {count} más"
     the_model: "El modelo"
 tips:
-  t001: "/bg <prompt> ejecuta una tarea en una sesión separada mientras la actual queda libre; /btw <question> responde una pregunta al margen sobre esta conversación sin interrumpirla."
+  t001: "/bg <prompt> ejecuta una tarea en una sesión separada mientras la actual queda libre; /side <question> responde una pregunta al margen sobre esta conversación sin interrumpirla."
   t002: "/branch bifurca la sesión actual para que explores otra dirección sin perder el progreso."
   t003: "/compress comprime manualmente el contexto de la conversación cuando se alarga demasiado."
   t004: "/rollback lista los puntos de control del sistema de archivos: restaura los archivos que modificó el agente a cualquier estado anterior."

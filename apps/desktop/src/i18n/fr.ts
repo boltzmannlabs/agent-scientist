@@ -4257,7 +4257,6 @@ export const frOverrides = {
       '/stop': 'Arrêter le tour actif et les processus en arrière-plan',
       '/pause': "Suspendre globalement tout nouveau travail (arrêt d’urgence) ; '/pause off' reprend",
       '/bg': 'Exécuter un prompt dans une session d’arrière-plan distincte',
-      '/btw': 'Poser une question annexe sur cette conversation sans l’interrompre',
       '/agents': 'Afficher les agents actifs et les tâches en cours',
       '/journey': 'Ouvrir le graphe de mémoire — skills et souvenirs au fil du temps',
       '/queue':

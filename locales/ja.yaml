@@ -112,13 +112,6 @@ gateway:
     final_output: "{header}\n\n最終出力:\n```\n{output}\n```"
     still_running: "⏳ バックグラウンドタスクはまだ実行中です"
     recent_output: "{header}\n\n最近の出力:\n```\n{output}\n```"
-  btw:
-    usage: "使い方: /btw <質問>\n例: /btw あのエラーはどのファイルだった？\n\nこの会話について、作業を中断せずにちょっとした質問に答えます。独立したバックグラウンドタスクには /bg <プロンプト> を使ってください。"
-    no_history: "まだ会話がありません — 質問は通常のメッセージとして送ってください。"
-    no_provider: "❌ 質問に回答できません: プロバイダーの認証情報が設定されていません。"
-    started: "💬 サイド質問: 「{preview}」\nこの会話のスナップショットから回答します — 現在の作業は継続します。"
-    answer: "💬 /btw: 「{preview}」\n\n{answer}"
-    failed: "❌ /btw が失敗しました: 「{preview}」\n{error}"
   branch:
     db_unavailable: "セッションデータベースは利用できません。"
     no_conversation: "分岐する会話がありません — まずメッセージを送信してください。"
@@ -1138,10 +1131,6 @@ platform:
       bg:
         arg_prompt: "バックグラウンドで実行するプロンプト"
         followup: "バックグラウンドタスクを開始しました~"
-      btw:
-        description: "現在の会話についてちょっとした質問をします"
-        arg_question: "中断せずに答えてもらう質問"
-        followup: "質問を送信しました~"
       skill:
         description: "Sci のスキルを実行します"
         arg_name: "実行するスキル"
@@ -1533,8 +1522,6 @@ slash:
     description: "新しい作業を全体的に一時停止（緊急停止）。'/pause off' で再開"
   deny:
     description: "保留中の危険なコマンドを拒否（理由の指定も可）"
-  btw:
-    description: "現在の会話を中断せずにサイド質問をする"
   agents:
     description: "アクティブなエージェントと実行中のタスクを表示"
   journey:
@@ -2915,7 +2902,7 @@ cli:
       updating: "⚡ プロジェクトのスキャン結果から AGENTS.md を更新しています..."
       generating: "⚡ プロジェクトのスキャン結果から AGENTS.md を生成しています..."
     background:
-      usage: "使い方: /bg <prompt>\n例: /bg 今日の HN 上位記事を要約して\n(この会話についてのちょっとした質問には /btw <question> を使ってください。)\nタスクは別のセッションで実行され、完了したら結果がここに表示されます。"
+      usage: "使い方: /bg <prompt>\n例: /bg 今日の HN 上位記事を要約して\nタスクは別のセッションで実行され、完了したら結果がここに表示されます。"
       no_credentials: "(>_<) バックグラウンドタスクを開始できません: 有効な認証情報がありません。"
       started: "🔄 バックグラウンドタスク #{number} を開始しました: \"{preview}\""
       task_id: "タスク ID: {task_id}"
@@ -2932,12 +2919,6 @@ cli:
       label: "サインイン"
       title_suffix: "(サインイン)"
       no_result: "(結果なし)"
-    btw:
-      usage: "使い方: /btw <question>\n例: /btw あのエラーはどのファイルにあった？\nこの会話を中断せずに、会話についてのちょっとした質問に答えます。\n(独立したバックグラウンドタスクには /bg <prompt> を使ってください。)"
-      no_credentials: "(>_<) サイド質問に回答できません: 有効な認証情報がありません。"
-      header: "💬 /btw: \"{preview}\""
-      title_suffix: "(btw)"
-      no_answer: "(回答は生成されませんでした)"
     bundles:
       unavailable: "バンドルサブシステムを利用できません: {error}"
       none_installed: "スキルバンドルはインストールされていません。"
@@ -3474,7 +3455,7 @@ explainer:
     and_more: "  • … 他 {count} 件"
     the_model: "モデル"
 tips:
-  t001: "/bg <prompt> は現在のセッションを空けたまま別セッションでタスクを実行します。/btw <question> は会話を中断せずに、この会話に関する補足の質問に答えます。"
+  t001: "/bg <prompt> は現在のセッションを空けたまま別セッションでタスクを実行します。/side <question> は会話を中断せずに、この会話に関する補足の質問に答えます。"
   t002: "/branch は現在のセッションを分岐させ、進捗を失わずに別の方向を試せるようにします。"
   t003: "/compress は会話が長くなったときに、コンテキストを手動で圧縮します。"
   t004: "/rollback はファイルシステムのチェックポイント一覧を表示します。エージェントが変更したファイルを以前の任意の状態に復元できます。"

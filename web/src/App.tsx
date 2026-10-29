@@ -617,9 +617,9 @@ export default function App() {
                 <PluginSlot name="header-left" />
 
                 <Typography className="font-bold text-[1.125rem] leading-[0.95] tracking-[0.0525rem] text-midground uppercase">
-                  Sci
-                  <br />
                   Agent
+                  <br />
+                  Scientist
                 </Typography>
               </div>
 

@@ -456,7 +456,7 @@ sci slack manifest --slashes-only  # just the features.slash_commands array
 ```
 
 Generates a Slack app manifest that registers every gateway command in
-`COMMAND_REGISTRY` (`/btw`, `/stop`, `/model`, …) as a first-class
+`COMMAND_REGISTRY` (`/stop`, `/model`, …) as a first-class
 Slack slash command — matching Discord and Telegram parity. Paste the
 output into your Slack app config at
 [https://api.slack.com/apps](https://api.slack.com/apps) → your app →

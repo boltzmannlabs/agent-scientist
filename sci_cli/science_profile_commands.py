@@ -8,7 +8,7 @@ from sci_cli.skill_add import WizardUI, Cancelled
 def activate(cli, command, ui=None):
     from sci_cli.profiles import list_profile_names
     from sci_cli.native_profile_session import request_switch, profile_label
-    ui = ui or WizardUI(cli)
+    ui = ui or WizardUI(cli, numbered_choices=False)
     try:
         args = shlex.split(command)[1:]
         if len(args) == 2 and args[1].lower() == "profile":

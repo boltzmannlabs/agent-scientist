@@ -121,6 +121,14 @@ class CLILoopsMixin:
         _cprint(_fresh_start())
         self._print_random_tip()
 
+    def _handle_rename_command(self, cmd_original: str):
+        from sci_cli.rename_command import rename
+        rename(self, cmd_original)
+
+    def _handle_side_command(self, cmd_original: str):
+        from sci_cli.side_commands import handle_side
+        handle_side(self, cmd_original)
+
     def _cmd_title(self, cmd_original: str):
         from cli import _cprint
         from sci_state import format_session_db_unavailable
@@ -183,10 +191,14 @@ class CLILoopsMixin:
         if self._confirm_destructive_slash(
             "new",
             "This starts a fresh session.\n"
-            "The current conversation history will be discarded.",
+            "The current conversation will remain saved.",
             cmd_original=cmd_original,
         ) is None:
             return True  # confirmation cancelled — command handled, keep REPL alive
+        if getattr(getattr(self, '_app', None), 'is_running', False):
+            from sci_cli.cli_runtime_refresh import fresh_conversation
+            fresh_conversation(self, title)
+            return True
         self.new_session(title=title)
 
     def _record_model_friction(self, signal: str, turns: int = 1) -> None:

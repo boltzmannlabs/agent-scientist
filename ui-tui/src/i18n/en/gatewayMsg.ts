@@ -2,7 +2,7 @@
 // gateway events. Owned namespace: `gatewayMsg`.
 // Function leaves take positional args; packs use `{0}`, `{1}` (argument order documented per leaf).
 //
-// Not keyed on purpose: `[bg <id>]` / `[btw "…"]` transcript tags (locale-neutral
+// Not keyed on purpose: `[bg <id>]` transcript tags (locale-neutral
 // chips), the `${n} subagents` spawn-tree label (persisted to the backend), the
 // startup image question (sent to the model), `error: ` machine prefixes, and
 // state values other code compares against ('ready').

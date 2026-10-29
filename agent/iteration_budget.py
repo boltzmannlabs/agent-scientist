@@ -24,10 +24,14 @@ def normalize_budget_warning_ratio(value) -> float | None:
 
 class IterationBudget:
     """Thread-safe iteration counter; ``execute_code`` (programmatic tool calling)
-    iterations are refunded via :meth:`refund` so they don't eat into the budget."""
+    iterations are refunded via :meth:`refund` so they don't eat into the budget.
+    Saved specialist descendants can also charge a parent pool; local caps still apply.
+    Locks are acquired from descendant to ancestor, never in the reverse order.
+    """
 
-    def __init__(self, max_total: int):
+    def __init__(self, max_total: int, *, parent: IterationBudget | None = None):
         self.max_total = max_total
+        self.parent = parent
         self._used = 0
         self._lock = threading.Lock()
 
@@ -35,6 +39,8 @@ class IterationBudget:
         """Try to consume one iteration.  Returns True if allowed."""
         with self._lock:
             if self._used >= self.max_total:
+                return False
+            if self.parent is not None and not self.parent.consume():
                 return False
             self._used += 1
             return True
@@ -44,6 +50,8 @@ class IterationBudget:
         with self._lock:
             if self._used > 0:
                 self._used -= 1
+                if self.parent is not None:
+                    self.parent.refund()
 
     @property
     def used(self) -> int:
@@ -53,7 +61,8 @@ class IterationBudget:
     @property
     def remaining(self) -> int:
         with self._lock:
-            return max(0, self.max_total - self._used)
+            local = max(0, self.max_total - self._used)
+            return min(local, self.parent.remaining) if self.parent is not None else local
 
 
 __all__ = ["IterationBudget"]

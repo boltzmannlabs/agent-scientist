@@ -1,7 +1,7 @@
 """Display-only replay of a saved transcript. Never stages a message or executes a tool."""
 
 from rich.text import Text
-from rich.panel import Panel
+from rich.console import Group
 
 import json
 
@@ -28,31 +28,31 @@ def tool_summary(body):
 
 def render_transcript(cli, entries):
     from cli import _record_output_history_entry, _suspend_output_history
-    from sci_cli.cli_render import _render_final_assistant_content
-    from sci_cli.cli_agent_setup_mixin import _resume_panel_colors
-    text_color, user_color, border_color, assistant_color = _resume_panel_colors()
-    # The chat surface shows conversation only. Detailed activity remains in the
-    # read-only viewer; filtering here must never change the saved transcript.
+    from sci_cli.cli_render import assistant_message_panel
+    from sci_cli.cli_status_bar_mixin import CLIStatusBarMixin
+    from cli import _accent_hex
+    # Keep detailed activity in the read-only viewer, never rerun it during replay.
     entries = [(role, body) for role, body in entries if role in ("user", "assistant")]
-    labels = {"user": ("● You: ", user_color), "assistant": ("◆ Sci: ", assistant_color)}
+
+    def render(role, body):
+        if role == "assistant":
+            return assistant_message_panel(
+                body, mode=getattr(cli, "final_response_markdown", "render"),
+                width=CLIStatusBarMixin._scrollback_box_width())
+        message = Text(style="bold")
+        message.append("● ", style=_accent_hex())
+        message.append(body)
+        return Group(Text("─" * 40, style=_accent_hex()), message)
+
     if not entries:
         cli._console_print(Text("No retained conversation text is available for this session."))
         return
     for role, body in entries:
-        label, color = labels[role]
-        if role == "assistant":
-            rendered = Panel(_render_final_assistant_content(
-                body, mode=getattr(cli, "final_response_markdown", "render")),
-                title=Text(label.strip(), style=assistant_color),
-                             title_align="left", border_style=border_color)
-        else:
-            rendered = Text(label, style="bold " + color)
-            rendered.append(body, style=text_color)
-            rendered.append("\n")
         # One resize-aware entry per message, not one bounded/giant recap. Terminal
         # scrollback contains every emitted message even when the repaint cache rolls over.
-        _record_output_history_entry(lambda entry=rendered: cli._render_resume_history_panel_lines(entry))
+        _record_output_history_entry(
+            lambda role=role, body=body: cli._render_resume_history_panel_lines(render(role, body)))
         with _suspend_output_history():
-            cli._console_print(rendered)
+            cli._console_print(render(role, body))
     cli._console_print(Text("Conversation restored. Ctrl+O / F8: browse transcript and expand tool details. "
                             "Scroll up to review; continue below. Nothing was rerun.", style="dim"))

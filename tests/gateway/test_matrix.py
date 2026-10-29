@@ -471,8 +471,8 @@ class TestMatrixBangCommandAlias:
             == "/queue continue the plan"
         )
         assert (
-            _normalize_matrix_bang_command("!btw research this")
-            == "/btw research this"
+            _normalize_matrix_bang_command("!bg research this")
+            == "/bg research this"
         )
         assert _normalize_matrix_bang_command("!tasks") == "/tasks"
 

@@ -18,7 +18,6 @@ const NATIVE_MUTATING_COMMANDS = new Set(['browser', 'busy', 'fast', 'reload-mcp
 
 const MUTATING_COMMANDS = [
   'bg',
-  'btw',
   'branch',
   'browser',
   'busy',

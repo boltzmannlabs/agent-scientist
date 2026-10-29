@@ -136,7 +136,7 @@ export type GatewayEventPayload = {
   // clarify.request
   request_id?: string
   question?: string
-  // btw.complete / background.complete — id of the side/background task
+  // background.complete — id of the side/background task
   task_id?: string
   questions?: unknown
   answers?: Record<string, unknown>

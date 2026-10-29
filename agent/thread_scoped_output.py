@@ -1,4 +1,4 @@
-"""Thread-scoped stdout/stderr silencing for background worker threads.
+"""Context-scoped stdout/stderr routing and thread-scoped worker silencing.
 
 ``contextlib.redirect_stdout`` reassigns the *process-global* stream, so a daemon worker
 silencing itself also silences every other thread (gateway event loop included). This
@@ -13,9 +13,14 @@ import contextlib
 import os
 import sys
 import threading
+from contextvars import ContextVar
 from typing import Iterator, TextIO
 
-__all__ = ["thread_scoped_silence"]
+__all__ = ["thread_scoped_silence", "context_scoped_output"]
+
+# Tool executors already propagate ContextVars; ownership survives a UI switch
+# and remains attached to late workers after the originating scope exits.
+_capture_streams: ContextVar[tuple[TextIO, TextIO] | None] = ContextVar("captured_output_streams", default=None)
 
 _install_lock = threading.Lock()
 # Proxy installed per attribute ("stdout"/"stderr"): never double-wrap.
@@ -39,12 +44,16 @@ class _ThreadRoutingStream:
     """``sys.stdout``/``sys.stderr`` stand-in routing writes per calling thread;
     unknown attributes delegate to the current thread's target."""
 
-    def __init__(self, passthrough: TextIO, state: _RoutingState) -> None:
+    def __init__(self, passthrough: TextIO, state: _RoutingState, attr: str) -> None:
         self._passthrough = passthrough
         self._state = state
+        self._index = 0 if attr == "stdout" else 1
 
     def _target(self) -> TextIO:
-        return self._state.sink if self._state.silenced.get(threading.get_ident(), 0) > 0 else self._passthrough
+        if self._state.silenced.get(threading.get_ident(), 0) > 0:
+            return self._state.sink
+        capture = _capture_streams.get()
+        return capture[self._index] if capture is not None else self._passthrough
 
     def silence(self, ident: int) -> None:
         with self._state.lock:
@@ -109,9 +118,28 @@ def _ensure_installed(attr: str, passthrough: TextIO) -> "_ThreadRoutingStream":
         state = _routing_states.get(attr)
         if state is None or state.sink is not sink:
             state = _routing_states[attr] = _RoutingState(sink)
-        proxy = _installed[attr] = _ThreadRoutingStream(passthrough, state)
+        proxy = _installed[attr] = _ThreadRoutingStream(passthrough, state, attr)
         setattr(sys, attr, proxy)
         return proxy
+
+
+@contextlib.contextmanager
+def context_scoped_output(stdout: TextIO, stderr: TextIO | None = None) -> Iterator[None]:
+    """Route this context and its tool workers without redirecting unrelated threads.
+
+    Keep the targets open on exit: workers that outlive the caller still own their
+    output. The receiving conversation decides whether to retain or discard it.
+    """
+    _ensure_installed("stdout", sys.__stdout__ or sys.stdout)
+    _ensure_installed("stderr", sys.__stderr__ or sys.stderr)
+    token = _capture_streams.set((stdout, stderr if stderr is not None else stdout))
+    try:
+        yield
+    finally:
+        _capture_streams.reset(token)
+        stdout.flush()
+        if stderr is not None and stderr is not stdout:
+            stderr.flush()
 
 
 @contextlib.contextmanager

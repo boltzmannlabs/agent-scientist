@@ -1032,6 +1032,9 @@ class CLIStatusBarMixin:
         from sci_cli.native_profile_session import profile_label
         label = self._trim_status_bar_text(profile_label(), max(4, min(20, width // 5)))
         segs.append([(_STRONG if styled else "", f"[{label}]")])
+        from sci_cli.side_commands import label as side_label
+        if side_status := side_label(self):
+            segs.append([(_STRONG if styled else "", side_status)])
 
         def add(name, style, text):
             if _ok(name):

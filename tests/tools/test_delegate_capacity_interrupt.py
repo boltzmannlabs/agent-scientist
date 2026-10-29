@@ -114,6 +114,9 @@ def registry_state(tmp_path, monkeypatch):
         encoding="utf-8",
     )
     async_delegation._reset_for_tests()
+    # Exercise the real ledger, but do not charge first-open DDL/fsyncs to
+    # cancellation event deadlines. Persistence still runs on every dispatch.
+    async_delegation._connect().close()
     completion_queue = queue.Queue()
     monkeypatch.setattr(process_registry, "completion_queue", completion_queue)
     yield completion_queue

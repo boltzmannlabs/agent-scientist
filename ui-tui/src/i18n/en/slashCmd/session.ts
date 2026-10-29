@@ -12,10 +12,6 @@ export const slashCmdSessionEn = {
     branch: {
       branched: (title: string) => `branched → ${title}`
     },
-    btw: {
-      answering: (taskId: string) => `btw ${taskId} — answering from a conversation snapshot`,
-      usage: '/btw <question>'
-    },
     busy: {
       mode: (mode: string) => `busy input mode: ${mode}`,
       usage: 'usage: /busy [queue|steer|interrupt|status]'

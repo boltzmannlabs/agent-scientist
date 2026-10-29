@@ -7,6 +7,7 @@ def run(cli, raw_args):
     from sci_constants import get_sci_home
     from sci_cli.plugins import PluginContext, PluginManifest, get_plugin_manager
     from sci_cli.science_profiles import MANIFEST, config_digest
+    from sci_cli.science_profile_approval import approval_record, require_approval
     from sci_cli.config import read_user_config_raw
     from plugins.boltzmann.onboarding import add_boltzmann, enable_toolset
 
@@ -25,7 +26,8 @@ def run(cli, raw_args):
             spec = validate_runtime(home)
             original = read_user_config_raw(home / "config.yaml")
             reviewed = manifest.read_bytes()
-            if config_digest(original) != spec.config_digest or json.loads(reviewed).get("config_digest") != spec.config_digest:
+            require_approval(home, spec, original)
+            if json.loads(reviewed).get("config_digest") != spec.config_digest:
                 raise ValueError("Profile configuration changed during review; retry")
         except (OSError, ValueError) as exc:
             return f"[add_boltzmann] Profile policy check failed: {exc}. Nothing was authorized."
@@ -46,7 +48,8 @@ def run(cli, raw_args):
                 if manifest.read_bytes() != reviewed:
                     raise ValueError("Profile permissions changed while saving; execution remains blocked.")
                 payload = json.loads(reviewed)
-                payload.update(boltzmann_enabled=True, config_digest=config_digest(updated))
+                payload.update(boltzmann_enabled=True, config_digest=config_digest(updated),
+                               config_review=approval_record(updated))
                 atomic_json_write(manifest, payload)
 
             enable_toolset(expected_config=original, after_save=record)

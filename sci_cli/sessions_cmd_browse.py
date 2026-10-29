@@ -172,11 +172,8 @@ class _CursesBrowser:
             if self.filtered:
                 self.result = self.filtered[self.cursor]["id"]
             return True
-        elif key == 27 and not self.search:  # Esc: first clears the search, second exits
-            return True
         elif key == 27:
-            self.search = ""
-            self._refilter()
+            return True
         elif key in {c.KEY_BACKSPACE, 127, 8}:
             if self.search:
                 self.search = self.search[:-1]
@@ -220,7 +217,8 @@ class _CursesBrowser:
 
 def _fallback_picker(sessions: list) -> Optional[str]:
     """Numbered list (Windows without curses, etc.). Same columns, no delete."""
-    print("\n  Browse sessions  (enter number to resume, q to cancel)\n")
+    from sci_cli.curses_ui import _read_numbered_input, _NumberedNavigation
+    print("\n  Browse sessions  (enter number to resume, Esc/q to cancel)\n")
     for i, s in enumerate(sessions):
         print(
             f"  {i + 1:>3}. {_clip(_label(s), 50):<50}  {_session_status_tag(s.get('_status')):<5}  "
@@ -228,7 +226,10 @@ def _fallback_picker(sessions: list) -> Optional[str]:
         )
     while True:
         try:
-            val = input(f"\n  Select [1-{len(sessions)}]: ").strip()
+            answer = _read_numbered_input(f"\n  Select [1-{len(sessions)}]: ")
+            if isinstance(answer, _NumberedNavigation):
+                return None
+            val = answer.strip()
             if not val or val.lower() in {"q", "quit", "exit"}:
                 return None
             idx = int(val) - 1

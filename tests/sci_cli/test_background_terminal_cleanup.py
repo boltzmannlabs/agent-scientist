@@ -15,7 +15,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 VIEWER = r'''
 import base64, json, socket, sys, threading
-from sci_cli import background_chat_terminal as terminal, background_chats
+from sci_cli import background_chat_terminal as terminal, background_chats, cli_runtime_refresh
 
 def connect(home):
     client, server = socket.socketpair()
@@ -41,7 +41,11 @@ def connect(home):
     return client
 
 terminal.connect = connect
-background_chats.find_worker = lambda *args, **kwargs: {'session_id': 'saved-chat', 'state': 'running'}
+background_chats.find_worker = lambda *args, **kwargs: {'id': 'fixture', 'session_id': 'saved-chat', 'state': 'running'}
+# Runtime replacement has its own real-process tests; this fixture owns only
+# terminal handoff and deliberately has no persistent worker process to inspect.
+cli_runtime_refresh.refresh_attached_worker = lambda worker, **kwargs: worker
+print('PREVIOUS_CHAT\r\n' * 35, flush=True)
 terminal.attach('fixture')
 print('SHELL_PROMPT> ', end='', flush=True)
 '''
@@ -81,7 +85,9 @@ def test_viewer_cleans_display_and_restores_tty_before_returning_control(tmp_pat
         erased = before.rfind(b"\x1b[2J")
         homed = before.rfind(b"\x1b[H")
         assert drawn >= 0 and erased > drawn and homed > drawn
-        assert b"\x1b[3J" not in output  # Retain shell scrollback.
+        # Only attaching replaces the previous chat's scrollback. Detaching
+        # retains the selected chat's scrollback when returning to the shell.
+        assert b"\x1b[3J" not in before[drawn:]
         assert b"LATE_DRAW" not in output
         restored = termios.tcgetattr(master)
         expected = original.copy()
@@ -93,6 +99,12 @@ def test_viewer_cleans_display_and_restores_tty_before_returning_control(tmp_pat
 
     try:
         until(b"VIEW_READY")
+        from tests.e2e.core.terminal._vt import Screen
+        screen = Screen(24, 100)
+        screen.feed(bytes(output[:output.index(b'VIEW_READY') + len(b'VIEW_READY')]))
+        transcript = '\n'.join(screen.transcript())
+        assert 'VIEW_READY' in transcript
+        assert 'PREVIOUS_CHAT' not in transcript
         if action == "suspend":
             os.write(master, b"\x1a")
             until(b"Terminal interface suspended")

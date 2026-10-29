@@ -582,7 +582,7 @@
       }
     },
     "Vina_Flexible_Docking": {
-      "source": "modules/small-molecule-toolbox.md: supplied Flexible Docking schema",
+      "source": "Node /api/submit-job validation response: smiles must be a .csv file; receptor rule retained from supplied Flexible Docking schema",
       "files": {
         "processed_pdb": {
           "formats": [
@@ -590,6 +590,12 @@
           ],
           "header_case_sensitive": true,
           "notes": "Upload the processed receptor PDB and use the returned platform storage path."
+        },
+        "smiles": {
+          "formats": [
+            "csv"
+          ],
+          "notes": "Required uploaded ligand CSV. Pass its returned platform path as smiles; never a literal SMILES string. Exact required headers remain unconfirmed for flexible docking; do not infer them from basic docking. CSV syntax checks alone need explicit partial-validation approval."
         }
       }
     },
@@ -1420,7 +1426,8 @@
         "substructures_path": {
           "formats": [
             "csv"
-          ]
+          ],
+          "notes": "Only used when task=\"substructure\": upload the required CSV. For task=\"toxic\", send substructures_path=\"\" and do not request or upload this file. The library CSV remains required in both modes."
         }
       }
     },

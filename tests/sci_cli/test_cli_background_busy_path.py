@@ -1,4 +1,4 @@
-"""Regression tests for classic-CLI mid-run /bg and /btw dispatch.
+"""Regression tests for classic-CLI mid-run /bg and /side dispatch.
 
 Background
 ----------
@@ -35,7 +35,7 @@ class TestBackgroundInlineDetector:
         cli = _make_cli()
         cli._agent_running = True
         assert cli._should_handle_background_command_inline("/bg do work") is True
-        assert cli._should_handle_background_command_inline("/btw do work") is True
+        assert cli._should_handle_background_command_inline("/side do work") is True
 
 
     def test_ignores_background_when_agent_idle(self):
@@ -74,10 +74,10 @@ class TestBackgroundInlineDetector:
 class TestBackgroundBusyPolicyContract:
     """The registry already declares the intent this detector implements."""
 
-    def test_bg_and_btw_declare_dispatch_while_busy(self):
+    def test_bg_and_side_declare_dispatch_while_busy(self):
         from sci_cli.commands import resolve_command
 
-        for name in ("bg", "btw"):
+        for name in ("bg", "side"):
             cmd = resolve_command(name)
             assert cmd is not None
             assert cmd.name == name

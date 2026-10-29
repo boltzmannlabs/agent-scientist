@@ -95,6 +95,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("undo", "Back up N user turns and re-prompt (default 1)", "Session",
                args_hint="[N]"),
     CommandDef("title", "Set a title for the current session", "Session", args_hint="[name]"),
+    CommandDef("rename", "Rename the current conversation", "Session", args_hint="[name]",
+               cli_only=True, busy_policy="dispatch", desktop="terminal"),
     CommandDef("handoff", "Hand off this session to a messaging platform (Telegram, Discord, etc.)", "Session",
                args_hint="<platform>", cli_only=True, argument_mode="options"),
     CommandDef("branch", "Branch the current session (new thread on Discord/Telegram/Slack/Matrix; --here stays here)",
@@ -128,8 +130,9 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("background", "Disconnect, inspect, attach, or stop persistent chats", "Session",
                cli_only=True, args_hint="[status|attach <id>|stop <id>]", busy_policy="dispatch"),
     CommandDef("detach", "Disconnect from a persistent chat; keep its worker running", "Session", cli_only=True, busy_policy="dispatch"),
-    CommandDef("btw", "Ask a side question about the current conversation without interrupting it", "Session",
-               args_hint="<question>", busy_policy="dispatch"),
+    CommandDef("side", "Open a temporary side conversation while the parent continues", "Session",
+               args_hint="[question]",
+               cli_only=True, busy_policy="dispatch", desktop="terminal"),
     CommandDef("agents", "Show active agents and running tasks", "Session",
                aliases=("tasks",), busy_policy="dispatch"),
     CommandDef("journey", "Open the learning journey timeline",
@@ -237,6 +240,16 @@ COMMAND_REGISTRY: list[CommandDef] = [
                busy_policy="dispatch", desktop="terminal"),
 
     # Tools & Skills
+    CommandDef("create_subagent", "Create a reusable specialist in main or the active profile", "Tools & Skills",
+               aliases=("Create_subagent",), args_hint="[name]", cli_only=True, desktop="terminal"),
+    CommandDef("update_subagent", "Review and edit a saved specialist", "Tools & Skills",
+               aliases=("Update_subagent",), args_hint="[name]", cli_only=True, desktop="terminal"),
+    CommandDef("subagents", "Browse saved specialists, running tasks and run history", "Tools & Skills",
+               args_hint="[search text]", cli_only=True, desktop="terminal"),
+    CommandDef("subagent", "Run, copy and manage saved specialists", "Tools & Skills", busy_policy="dispatch",
+               args_hint="[run|show|edit|copy|duplicate|export|import|enable|disable|delete|status|history|stop|steer]",
+               subcommands=("run", "show", "edit", "copy", "duplicate", "export", "import", "enable", "disable", "delete", "status", "history", "stop", "steer"),
+               cli_only=True, desktop="terminal"),
     CommandDef("capabilities", "Browse profile tools, skills, MCPs and plugins without probes", "Tools & Skills",
                args_hint="[search text|setup]", cli_only=True, desktop="terminal"),
     CommandDef("boltzmann_tools", "Browse Boltzmann scientific tools by module", "Tools & Skills",
@@ -464,7 +477,7 @@ for _cmd in COMMAND_REGISTRY:
 HELP_SESSION_SUBGROUPS: dict[str, tuple[str, ...]] = {
     "Context": ("compress", "compact", "context", "ctx", "status"),
     "Background & Automation": (
-        "bg", "btw", "agents", "tasks", "queue", "q", "steer", "s", "goal", "subgoal", "heartbeat", "hb",
+        "bg", "side", "agents", "tasks", "queue", "q", "steer", "s", "goal", "subgoal", "heartbeat", "hb",
         "refine", "loop", "proactive", "moa", "journey", "learning", "memory-graph")}
 
 # All names + aliases the gateway dispatches. Config-gated commands are

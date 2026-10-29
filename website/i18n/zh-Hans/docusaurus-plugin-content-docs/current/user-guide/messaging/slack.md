@@ -25,7 +25,7 @@ description: "使用 Socket Mode 将 Sci Agent 设置为 Slack 机器人"
 
 ## 第一步：创建 Slack 应用
 
-最快的方式是粘贴 Sci 为你生成的 manifest（清单文件）。它会一次性声明所有内置斜杠命令（`/btw`、`/stop`、`/model`……）、所有必需的 OAuth 权限范围、所有事件订阅，并启用 Socket Mode。
+最快的方式是粘贴 Sci 为你生成的 manifest（清单文件）。它会一次性声明所有内置斜杠命令（`/stop`、`/model`……）、所有必需的 OAuth 权限范围、所有事件订阅，并启用 Socket Mode。
 
 ### 方式 A：使用 Sci 生成的 manifest（推荐）
 
@@ -214,7 +214,7 @@ sudo sci gateway install --system   # 仅 Linux：开机启动系统服务
 
 ## 斜杠命令
 
-每个 Sci 命令（`/btw`、`/stop`、`/new`、`/model`、`/help`……）都是原生 Slack 斜杠命令——与它们在 Telegram 和 Discord 上的工作方式完全相同。在 Slack 中输入 `/`，自动补全选择器会列出每个 Sci 命令及其描述。
+每个 Sci 命令（`/stop`、`/new`、`/model`、`/help`……）都是原生 Slack 斜杠命令——与它们在 Telegram 和 Discord 上的工作方式完全相同。在 Slack 中输入 `/`，自动补全选择器会列出每个 Sci 命令及其描述。
 
 底层实现：Sci 附带一个生成的 Slack 应用 manifest（见第一步，方式 A），它将本仓库 `sci_cli/commands.py` 的 `COMMAND_REGISTRY` 中每个命令声明为斜杠命令。在 Socket Mode 下，无论 manifest 的 `url` 字段如何，Slack 都会通过 WebSocket 路由命令事件。
 

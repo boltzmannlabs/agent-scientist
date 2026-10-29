@@ -163,6 +163,10 @@ class CLITerminalMixin:
         app = getattr(self, "_app", None)
         if not app:
             return
+        if getattr(getattr(self, "_side_view", None), "visible", False):
+            app.renderer.erase(leave_alternate_screen=False)
+            app.invalidate()
+            return
         fit = self._clear_prompt_toolkit_screen(app, rebuild_scrollback=self._redraw_rebuilds_scrollback())
         if getattr(self, "_terminal_io_broken", False):
             return
@@ -397,6 +401,12 @@ class CLITerminalMixin:
         a debounced timer so the bar returns during idle; next-submit stays a fast path.
         """
         try:
+            if getattr(getattr(self, "_side_view", None), "visible", False):
+                self._last_resize_width = app.output.get_size().columns
+                self._resize_narrowest = None
+                self._status_bar_suppressed_after_resize = False
+                original_on_resize()
+                return
             # A debounced composer resize can arrive after the alternate screen opens.
             # Its erase/replay belongs to the suspended composer, not the monitor.
             if getattr(getattr(self, '_subagent_monitor', None), 'opening', False):
@@ -626,6 +636,14 @@ class CLITerminalMixin:
             _write_terminal_sequence(app, _TERMINAL_INPUT_MODE_RESET_SEQ)
         except Exception:
             return
+
+        if getattr(getattr(app, "_sci_side_view", None), "visible", False):
+            # The reset disables mouse reporting and leaves the alternate screen.
+            # Clear the renderer's cached modes so it restores both on repaint.
+            def restore_side_modes():
+                app.renderer.reset()
+                app.invalidate()
+            _run_on_app_loop(app, restore_side_modes)
 
         # The reset pops kitty keyboard mode and resets modifyOtherKeys too — re-request
         # extended keys so Shift+Enter isn't silently dead for the rest of the session.

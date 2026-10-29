@@ -21,25 +21,7 @@ def test_scorer_ranks_prefix_and_boundary_matches_higher():
     assert _fuzzy_score("gpt-4o", "zzz") is None
 
 
-def test_esc_clears_query_and_signals_changed():
-    # Esc during active search clears the filter (restores full list) and
-    # signals `changed` so the driver resets scroll/cursor.
+def test_esc_reaches_shared_cancel_instead_of_only_clearing_search():
     search = _SearchState(active=True, query="gpt")
-    handled, confirm, changed = _handle_active_search_key(_FakeCurses, 27, search)
-    assert (handled, confirm, changed) == (True, False, True)
-    assert search.active is False
-    assert search.query == ""
-
-    # Esc with no query: still stops search, but nothing changed.
-    search2 = _SearchState(active=True, query="")
-    assert _handle_active_search_key(_FakeCurses, 27, search2) == (True, False, False)
-
-
-
-
-
-
-
-
-
-
+    assert _handle_active_search_key(_FakeCurses, 27, search) == (False, False, False)
+    assert search.query == "gpt"

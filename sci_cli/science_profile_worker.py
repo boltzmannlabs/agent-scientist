@@ -78,6 +78,9 @@ def main():
                 raise ValueError("Malformed profile request.")
             with contextlib.redirect_stdout(sys.stderr):
                 routing_spec(home)
+                if legacy:
+                    from sci_cli.science_profile_cli_policy import prepare
+                    prepare(instance)
                 try:
                     result = agent.run_conversation(request["text"], conversation_history=instance.conversation_history,
                                                     task_id=instance.session_id)

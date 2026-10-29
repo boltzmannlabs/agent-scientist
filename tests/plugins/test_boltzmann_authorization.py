@@ -784,6 +784,119 @@ def test_submit_preserves_service_diagnostics_without_claiming_a_job_outcome(tmp
             manager.unload()
 
 
+def test_schema_rejection_preserves_field_errors_without_echoing_secrets(tmp_path, monkeypatch, auth_server):
+    state, endpoint = auth_server
+    home = tmp_path / "schema-errors"
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("SCI_HOME", str(home))
+    monkeypatch.delenv("SCI_BUNDLED_PLUGINS", raising=False)
+    monkeypatch.chdir(tmp_path)
+    with profile(home):
+        manager, module = discover(monkeypatch, endpoint)
+        try:
+            assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
+            helpers = sys.modules[module.__name__ + ".nodeapi_helpers"]
+            monkeypatch.setattr(helpers, "_SUBMIT_URL", endpoint.removesuffix("/api/get-projects") + "/submit")
+            state.update(submit_http=400, submit_response={
+                "message": "Schema validation failed", "status": "failed",
+                "errors": [{"path": "flexible_residues", "message": "fixture field rejected",
+                            "value": {"private": "reflected-input-secret"}}],
+                "details": {"message": "fixture-valid https://example.invalid/?signature=private",
+                            "tokenid": "another-secret"},
+                "validation_errors": [{"loc": ["body", "example"], "msg": "fixture invalid",
+                                       "input": "reflected-input-secret"}],
+            })
+            result = helpers.submit_request({"fixture": True}, "fixture", "diagnostic-check", token="fixture-valid")
+            assert result["message"] == "Schema validation failed"
+            assert result["errors"][0]["path"] == "flexible_residues"
+            assert result["errors"][0]["message"] == "fixture field rejected"
+            assert result["validation_errors"][0]["loc"] == ["body", "example"]
+            assert "details" in result
+            for secret in ("fixture-valid", "signature=private", "another-secret", "reflected-input-secret"):
+                assert secret not in json.dumps(result)
+            assert result["status"] == "unknown" and result["service_status"] == "failed"
+            assert result["safe_to_retry"] is False and "doc_id" not in result
+            assert state["calls"].count("/submit") == 1
+        finally:
+            manager.unload()
+
+
+def test_flexible_docking_uploads_csv_and_rejects_inline_smiles(tmp_path, monkeypatch, auth_server):
+    state, endpoint = auth_server
+    home = tmp_path / "flexible-docking"
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("SCI_HOME", str(home))
+    monkeypatch.delenv("SCI_BUNDLED_PLUGINS", raising=False)
+    monkeypatch.chdir(tmp_path)
+    with profile(home):
+        manager, module = discover(monkeypatch, endpoint)
+        try:
+            assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
+            base = endpoint.removesuffix("/api/get-projects")
+            monkeypatch.setitem(module.tools.submit_request.__globals__, "_SUBMIT_URL", base + "/submit")
+            monkeypatch.setitem(module.tools.file_upload.__globals__, "_UPLOAD_URL", base + "/upload")
+            payload = {"target_name": "fixture", "processed_pdb": "fixture/receptor.pdb",
+                       "center_x": "0", "center_y": "0", "center_z": "0",
+                       "max_radius_size": "10", "exhaustivness": "8", "upload_sdf": "True",
+                       "flexible_residues": ["ALA1"], "smiles": "CCO"}
+            rejected = json.loads(module.tools.handle_boltzmann_submit(
+                job_name="Vina_Flexible_Docking", experiment_data=payload,
+                experiment_name="fixture", allow_partial_validation=True))
+            assert rejected["status"] == "not_started" and "/submit" not in state["calls"]
+            assert any("smiles" in e for e in rejected["validation"]["errors"])
+            csv = tmp_path / "ligands.csv"
+            csv.write_text("fixture_column\nCCO\n")
+            original = csv.read_bytes()
+            state["upload_path"] = "fixture/ligands.csv"
+            uploaded = json.loads(module.tools.handle_boltzmann_upload(
+                local_path=str(csv), job_name="Vina_Flexible_Docking", input_field="smiles",
+                experiment_data=payload, allow_partial_validation=True))
+            assert uploaded["status"] == "uploaded"
+            assert any("columns are not documented" in w for w in uploaded["validation"]["warnings"])
+            payload["smiles"] = uploaded["s3_path"]
+            accepted = json.loads(module.tools.handle_boltzmann_submit(
+                job_name="Vina_Flexible_Docking", experiment_data=payload,
+                experiment_name="fixture", allow_partial_validation=True))
+            assert accepted["status"] == "accepted"
+            assert state["submission"]["experimentData"] == payload
+            assert state["calls"].count("/upload") == state["calls"].count("/submit") == 1
+            assert csv.read_bytes() == original
+        finally:
+            manager.unload()
+
+
+def test_graph_ga_preserves_selected_global_property_in_http_request(tmp_path, monkeypatch, auth_server):
+    """Non-default properties must reach the Node envelope without substitution."""
+    state, endpoint = auth_server
+    home = tmp_path / "global-property-forwarding"
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("SCI_HOME", str(home))
+    monkeypatch.delenv("SCI_BUNDLED_PLUGINS", raising=False)
+    monkeypatch.chdir(tmp_path)
+    with profile(home):
+        manager, module = discover(monkeypatch, endpoint)
+        try:
+            assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
+            monkeypatch.setitem(module.tools.submit_request.__globals__, "_SUBMIT_URL",
+                                endpoint.removesuffix("/api/get-projects") + "/submit")
+            for count, name in enumerate(("Solubility", "Lipophilicity"), start=1):
+                payload = {"smiles": "CCO", "n_mols": 1, "n_steps": 1,
+                           "global_models": [{"name": name, "min_threshold": -4, "max_threshold": 0.4}],
+                           "custom_models": []}
+                before = json.loads(json.dumps(payload))
+                result = json.loads(module.tools.handle_boltzmann_submit(
+                    job_name="Lead_Generation_Graph_GA", experiment_data=payload,
+                    experiment_name="fixture-property-routing"))
+                assert result["status"] == "accepted", result
+                assert state["submission"] == {"experimentData": before,
+                                               "job_name": "Lead_Generation_Graph_GA",
+                                               "experimentName": "fixture-property-routing"}
+                assert payload == before
+                assert state["calls"].count("/submit") == count
+        finally:
+            manager.unload()
+
+
 def test_status_preserves_nested_worker_diagnostics_and_running_messages(tmp_path, monkeypatch, auth_server):
     state, endpoint = auth_server
     home = tmp_path / "a"

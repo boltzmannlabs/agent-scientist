@@ -439,7 +439,7 @@ event("billing.step_up.verification", BillingStepUpVerificationPayload,
 
 
 class SideAgentCompletePayload(Payload):
-    """``methods_prompt._spawn_side_agent``: ``{task_id, **extra, text}``; btw adds ``question``."""
+    """``methods_prompt._spawn_side_agent``: ``{task_id, **extra, text}``."""
 
     task_id: str
     text: str
@@ -447,7 +447,6 @@ class SideAgentCompletePayload(Payload):
 
 
 event("background.complete", SideAgentCompletePayload, doc="A /background side agent finished.")
-event("btw.complete", SideAgentCompletePayload, doc="A /btw side question was answered.")
 event("preview.restart.complete", SideAgentCompletePayload, doc="The hidden preview-restart agent finished.")
 
 

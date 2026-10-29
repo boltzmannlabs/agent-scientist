@@ -115,13 +115,6 @@ gateway:
     final_output: "{header}\n\nVégső kimenet:\n```\n{output}\n```"
     still_running: "⏳ A háttérfeladat még fut"
     recent_output: "{header}\n\nLegutóbbi kimenet:\n```\n{output}\n```"
-  btw:
-    usage: "Használat: /btw <kérdés>\nPélda: /btw melyik fájlban volt az a hiba?\n\nGyors mellékkérdésre válaszol erről a beszélgetésről anélkül, hogy megszakítaná. Független háttérfeladathoz használd a /bg <prompt> parancsot."
-    no_history: "Még nincs beszélgetés — küldd el a kérdésed normál üzenetként."
-    no_provider: "❌ A mellékkérdés nem válaszolható meg: nincs szolgáltatói hitelesítő adat beállítva."
-    started: "💬 Mellékkérdés: \"{preview}\"\nA beszélgetés pillanatképéből válaszolunk — a jelenlegi munka folytatódik."
-    answer: "💬 /btw: \"{preview}\"\n\n{answer}"
-    failed: "❌ A /btw sikertelen: \"{preview}\"\n{error}"
   branch:
     db_unavailable: "A munkamenet-adatbázis nem érhető el."
     no_conversation: "Nincs elágaztatható beszélgetés — küldj előbb egy üzenetet."
@@ -1155,10 +1148,6 @@ platform:
       bg:
         arg_prompt: "A háttérben futtatandó prompt"
         followup: "Háttérfeladat elindítva~"
-      btw:
-        description: "Mellékkérdés a jelenlegi beszélgetésről"
-        arg_question: "A megszakítás nélkül megválaszolandó mellékkérdés"
-        followup: "Mellékkérdés elküldve~"
       skill:
         description: "Sci-skill futtatása"
         arg_name: "Melyik skill fusson"
@@ -1550,8 +1539,6 @@ slash:
     description: "Új munka globális szüneteltetése (vészleállítás); a '/pause off' folytatja"
   deny:
     description: "Függőben lévő veszélyes parancs elutasítása (opcionálisan indoklással)"
-  btw:
-    description: "Mellékes kérdés az aktuális beszélgetésről, megszakítás nélkül"
   agents:
     description: "Aktív ügynökök és futó feladatok megjelenítése"
   journey:
@@ -2932,7 +2919,7 @@ cli:
       updating: "⚡ AGENTS.md frissítése a projekt átvizsgálása alapján..."
       generating: "⚡ AGENTS.md létrehozása a projekt átvizsgálása alapján..."
     background:
-      usage: "Használat: /bg <prompt>\nPélda: /bg Foglald össze a mai legjobb HN sztorikat\n(A beszélgetést érintő mellékkérdéshez használd a /btw <kérdés> parancsot.)\nA feladat külön munkamenetben fut, az eredmény itt jelenik meg, amint elkészül."
+      usage: "Használat: /bg <prompt>\nPélda: /bg Foglald össze a mai legjobb HN sztorikat\nA feladat külön munkamenetben fut, az eredmény itt jelenik meg, amint elkészül."
       no_credentials: "(>_<) A háttérfeladat nem indítható: nincs érvényes hitelesítő adat."
       started: "🔄 #{number} háttérfeladat elindítva: \"{preview}\""
       task_id: "Feladatazonosító: {task_id}"
@@ -2949,12 +2936,6 @@ cli:
       label: "Bejelentkezés"
       title_suffix: "(bejelentkezés)"
       no_result: "(Nincs eredmény)"
-    btw:
-      usage: "Használat: /btw <kérdés>\nPélda: /btw melyik fájlban volt az a hiba?\nGyors kérdésre válaszol erről a beszélgetésről anélkül, hogy megszakítaná.\n(Független háttérfeladathoz használd a /bg <prompt> parancsot.)"
-      no_credentials: "(>_<) A mellékkérdés nem válaszolható meg: nincs érvényes hitelesítő adat."
-      header: "💬 /btw: \"{preview}\""
-      title_suffix: "(btw)"
-      no_answer: "(Nem érkezett válasz)"
     bundles:
       unavailable: "A bundle alrendszer nem érhető el: {error}"
       none_installed: "Nincs telepített skill bundle."
@@ -3491,7 +3472,7 @@ explainer:
     and_more: "  • … és még {count}"
     the_model: "A modell"
 tips:
-  t001: "A /bg <prompt> külön munkamenetben futtat egy feladatot, miközben a jelenlegi szabad marad; a /btw <question> mellékes kérdésre válaszol erről a beszélgetésről, anélkül hogy megszakítaná."
+  t001: "A /bg <prompt> külön munkamenetben futtat egy feladatot, miközben a jelenlegi szabad marad; a /side <question> mellékes kérdésre válaszol erről a beszélgetésről, anélkül hogy megszakítaná."
   t002: "A /branch elágaztatja a jelenlegi munkamenetet, így más irányt is kipróbálhatsz a haladás elvesztése nélkül."
   t003: "A /compress kézzel tömöríti a beszélgetés kontextusát, ha már túl hosszúra nyúlt."
   t004: "A /rollback kilistázza a fájlrendszer-ellenőrzőpontokat — az ügynök által módosított fájlokat bármely korábbi állapotra visszaállíthatod."

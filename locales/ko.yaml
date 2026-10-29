@@ -112,13 +112,6 @@ gateway:
     final_output: "{header}\n\n최종 출력:\n```\n{output}\n```"
     still_running: "⏳ 백그라운드 작업이 아직 실행 중이에요"
     recent_output: "{header}\n\n최근 출력:\n```\n{output}\n```"
-  btw:
-    usage: "사용법: /btw <질문>\n예시: /btw 그 오류가 어느 파일에 있었지?\n\n현재 작업을 중단하지 않고 이 대화에 대한 간단한 질문에 답합니다. 독립적인 백그라운드 작업은 /bg <prompt>를 사용하세요."
-    no_history: "아직 대화가 없습니다 — 질문을 일반 메시지로 보내주세요."
-    no_provider: "❌ 질문에 답할 수 없습니다: 공급자 자격 증명이 설정되지 않았습니다."
-    started: "💬 사이드 질문: \"{preview}\"\n이 대화의 스냅샷을 바탕으로 답변합니다 — 현재 작업은 계속됩니다."
-    answer: "💬 /btw: \"{preview}\"\n\n{answer}"
-    failed: "❌ /btw 실패: \"{preview}\"\n{error}"
   branch:
     db_unavailable: "세션 데이터베이스를 사용할 수 없습니다."
     no_conversation: "분기할 대화가 없습니다 — 먼저 메시지를 보내주세요."
@@ -1138,10 +1131,6 @@ platform:
       bg:
         arg_prompt: "백그라운드에서 실행할 프롬프트"
         followup: "백그라운드 작업을 시작했어요~"
-      btw:
-        description: "현재 대화에 대한 부수적인 질문하기"
-        arg_question: "중단 없이 답변받을 부수적인 질문"
-        followup: "부수 질문을 보냈어요~"
       skill:
         description: "Sci 스킬 실행"
         arg_name: "실행할 스킬"
@@ -1533,8 +1522,6 @@ slash:
     description: "새 작업을 전체 일시 중지 (긴급 정지); '/pause off'로 재개"
   deny:
     description: "대기 중인 위험 명령 거부 (사유 입력 가능)"
-  btw:
-    description: "현재 대화를 중단하지 않고 곁가지 질문하기"
   agents:
     description: "활성 에이전트와 실행 중인 작업 표시"
   journey:
@@ -2915,7 +2902,7 @@ cli:
       updating: "⚡ 프로젝트 스캔 결과로 AGENTS.md를 업데이트하는 중..."
       generating: "⚡ 프로젝트 스캔 결과로 AGENTS.md를 생성하는 중..."
     background:
-      usage: "사용법: /bg <프롬프트>\n예시: /bg 오늘 HN 인기 글 요약해 줘\n(이 대화에 관한 곁가지 질문은 /btw <질문>을 사용하세요.)\n작업은 별도 세션에서 실행되고, 끝나면 결과가 여기에 표시돼요."
+      usage: "사용법: /bg <프롬프트>\n예시: /bg 오늘 HN 인기 글 요약해 줘\n작업은 별도 세션에서 실행되고, 끝나면 결과가 여기에 표시돼요."
       no_credentials: "(>_<) 백그라운드 작업을 시작할 수 없어요: 유효한 자격 증명이 없어요."
       started: "🔄 백그라운드 작업 #{number} 시작됨: \"{preview}\""
       task_id: "작업 ID: {task_id}"
@@ -2932,12 +2919,6 @@ cli:
       label: "로그인"
       title_suffix: "(로그인)"
       no_result: "(결과 없음)"
-    btw:
-      usage: "사용법: /btw <question>\n예시: /btw 그 오류가 어느 파일에 있었어?\n대화를 중단하지 않고 이 대화에 관한 간단한 질문에 답해요.\n(독립적인 백그라운드 작업은 /bg <prompt>을 사용하세요.)"
-      no_credentials: "(>_<) 사이드 질문에 답할 수 없어요: 유효한 자격 증명이 없어요."
-      header: "💬 /btw: \"{preview}\""
-      title_suffix: "(btw)"
-      no_answer: "(생성된 답변 없음)"
     bundles:
       unavailable: "번들 하위 시스템을 사용할 수 없어요: {error}"
       none_installed: "설치된 스킬 번들이 없어요."
@@ -3474,7 +3455,7 @@ explainer:
     and_more: "  • … 외 {count}개 더"
     the_model: "모델"
 tips:
-  t001: "/bg <prompt>는 현재 세션을 그대로 두고 별도 세션에서 작업을 실행해요. /btw <question>은 대화를 끊지 않고 이 대화에 관한 부수적인 질문에 답해요."
+  t001: "/bg <prompt>는 현재 세션을 그대로 두고 별도 세션에서 작업을 실행해요. /side <question>은 대화를 끊지 않고 이 대화에 관한 부수적인 질문에 답해요."
   t002: "/branch는 현재 세션을 분기해서 진행 상황을 잃지 않고 다른 방향을 탐색할 수 있게 해요."
   t003: "/compress는 대화가 길어졌을 때 컨텍스트를 수동으로 압축해요."
   t004: "/rollback은 파일 시스템 체크포인트 목록을 보여줘요 — 에이전트가 수정한 파일을 이전 상태로 되돌릴 수 있어요."

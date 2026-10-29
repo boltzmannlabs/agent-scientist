@@ -127,8 +127,9 @@ class TestCursesBrowse:
 
     def test_escape_cancels(self):
         sessions = _make_sessions(3)
-        result = self._run_with_keys(sessions, [27])  # Esc
-        assert result is None
+        for keys in ([27, 10], [ord("S"), 27, 10]):
+            result = self._run_with_keys(sessions, keys)
+            assert result is None
 
 
     def test_type_to_filter_then_enter(self):

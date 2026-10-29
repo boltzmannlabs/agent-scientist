@@ -99,7 +99,7 @@ def relaunch_profile(cli):
     os.execvpe(argv[0], argv, env)
 
 
-def request_resume(cli, session_id, ui):
+def request_resume(cli, session_id, ui, *, foreground=False):
     """A fresh runtime re-reads current permissions, while the target keeps its cached prompt."""
     from sci_constants import get_sci_home
     from sci_cli.profiles import get_active_profile_name
@@ -123,6 +123,8 @@ def request_resume(cli, session_id, ui):
     app = cli._app
     cli._pending_profile_home = str(get_sci_home().resolve())
     cli._pending_relaunch = ["--cli", "-p", get_active_profile_name()]
+    if foreground:
+        cli._pending_relaunch.append("--no-daemon")
     if worker:
         cli._pending_relaunch = ["-p", get_active_profile_name(), "background", "attach", worker["id"]]
         if takeover:

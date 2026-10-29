@@ -787,7 +787,6 @@
     "composer.commandDescs./blueprint",
     "composer.commandDescs./branch",
     "composer.commandDescs./browser",
-    "composer.commandDescs./btw",
     "composer.commandDescs./bundles",
     "composer.commandDescs./clear",
     "composer.commandDescs./codex-runtime",

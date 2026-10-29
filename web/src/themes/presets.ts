@@ -67,14 +67,14 @@ export function webPresetFromShared(
 
 export const defaultTheme: DashboardTheme = {
   name: "default",
-  label: "Sci Teal",
-  description: "Classic dark teal — the canonical Sci look",
+  label: "Scientist Black",
+  description: "Pure black — the Agent Scientist dashboard",
   palette: {
-    background: { hex: "#041c1c", alpha: 1 },
+    background: { hex: "#000000", alpha: 1 },
     midground: { hex: "#ffe6cb", alpha: 1 },
     foreground: { hex: "#ffffff", alpha: 0 },
     warmGlow: "rgba(255, 189, 56, 0.35)",
-    noiseOpacity: 1,
+    noiseOpacity: 0,
   },
   typography: DEFAULT_TYPOGRAPHY,
   layout: DEFAULT_LAYOUT,

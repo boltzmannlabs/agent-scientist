@@ -4,28 +4,24 @@ Applies on top of the root `AGENTS.md`. Backend routers: `sci_cli/web_routers/*.
 dashboard surface, mounted by `sci_cli/web_server.py` (+ `web_server_*.py` siblings). Frontend:
 `web/src/`. Shared JSON-RPC/WS client: `apps/shared` (`@sci/shared`), also used by the desktop.
 
-## The dashboard embeds the REAL `sci --tui` — not a rewrite
+## Native browser chat
 
-`sci_cli/pty_bridge.py` + the `@app.websocket("/api/pty")` endpoint in `web_server.py`:
+The dashboard `/chat` uses a native React conversation interface, as requested by the
+product owner. `web/src/pages/ChatPage.tsx` composes the conversation history,
+transcript, composer, and interactive requests in `web/src/components/chat/`.
 
-- `web/src/pages/ChatPage.tsx` mounts xterm.js `Terminal` with the WebGL renderer, `@xterm/addon-fit`
-  (container-driven resize) and `@xterm/addon-unicode11` (wide-character widths).
-- `/api/pty?token=…` upgrades to a WebSocket; auth uses the same ephemeral `_SESSION_TOKEN` as REST,
-  passed as a query param because browsers cannot set `Authorization` on a WS upgrade.
-- The server spawns exactly what `sci --tui` would spawn, through `ptyprocess` (POSIX PTY — WSL
-  works, native Windows does not).
-- Frames are raw PTY bytes each way; resize travels as `\x1b[RESIZE:<cols>;<rows>]`, intercepted
-  on the server and applied with `TIOCSWINSZ`.
-
-**Do not re-implement the primary chat experience in React.** Transcript, composer/input flow
-(including slash-command behaviour), and the PTY-backed terminal belong to the embedded TUI; anything
-added to Ink shows up here automatically. If you are rebuilding the transcript or composer for the
-dashboard, stop and extend Ink (`tui_gateway/AGENTS.md`).
-
-**Structured React UI around the TUI is fine when it is not a second chat surface.** Sidebar
-widgets, inspectors, summaries, status panels (`ChatSidebar`, `ModelPickerDialog`, `ToolCall`)
-complement the embedded TUI. Keep their state independent of the PTY child's session and surface
-their failures non-destructively so the terminal pane keeps working.
+- Reuse `GatewayClient` and authenticated `/api/ws` JSON-RPC. The existing
+  `tui_gateway` owns agent behavior, sessions, models, tools, and slash commands.
+- `session.create` / `session.resume` bind the owning profile; `prompt.submit`
+  streams structured events. Never turn terminal output into browser messages.
+- Keep the conversation mounted across dashboard navigation. Reconnect resumes
+  authoritative session state and never resends a prompt automatically.
+- Approval, clarification, and secret requests use the existing server-request
+  protocol. Secrets stay out of transcript and browser persistence.
+- Keep prompt and tool state owned by the backend; cosmetic changes never rebuild
+  an active agent. Image uploads use the existing scoped gateway attachment RPC.
+- `/api/pty` and the standalone Ink TUI remain available to their existing consumers;
+  the browser chat no longer spawns a PTY or requires Node on the execution host.
 
 ## `dashboard` vs `serve`
 

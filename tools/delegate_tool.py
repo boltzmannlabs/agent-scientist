@@ -189,6 +189,10 @@ def _build_child_agent(
     child_depth = getattr(parent_agent, "_delegate_depth", 0) + 1
     max_spawn = _get_max_spawn_depth()
     effective_role = "orchestrator" if _get_orchestrator_enabled() and child_depth < max_spawn else "leaf"
+    from agent.specialist_policy import current_policy
+    policy = current_policy()
+    if policy is not None and not policy.children:
+        effective_role = "leaf"
 
     # One subagent_id shared by the progress callback, spawn_requested event and
     # the live registry; parent_id is set when THIS parent is itself a subagent.
@@ -379,6 +383,11 @@ def _build_children(
         "override_acp_args": creds.get("args"),
         "routing_cfg": routing_cfg,
     }
+    from agent.specialist_runtime import build_child, resolve
+    try:
+        plans = [resolve(parent_agent, task) for task in task_list]
+    except (ValueError, OSError) as exc:
+        return [], str(exc)
     children = []
     for i, t in enumerate(task_list):
         _task_schema = task_schemas[i] if i < len(task_schemas) else None
@@ -386,13 +395,15 @@ def _build_children(
         if _task_schema is not None:
             _child_context = append_output_contract(_child_context, _task_schema)
         try:
-            child = _build_child_preserving_parent_tools(
+            child = build_child(_build_child_preserving_parent_tools, plan=plans[i],
                 task_index=i, goal=t["goal"], context=_child_context,
                 toolsets=None,  # always inherit the parent's toolsets
                 model=creds["model"], max_iterations=max_iterations, task_count=len(task_list),
                 parent_agent=parent_agent, role=_normalize_role(t.get("role") or top_role), **overrides,
             )
-        except ValueError as exc:
+        except (ValueError, OSError) as exc:
+            from agent.specialist_runtime import discard_unstarted
+            discard_unstarted(children, parent_agent, str(exc))
             return [], str(exc)
         if _task_schema is not None:
             with _quiet("Could not attach output schema to child %d", i):
@@ -414,6 +425,13 @@ def _build_children(
             if isinstance(_ident_ref, dict):
                 _ident_ref["delegation_id"] = live_deleg_id
         children.append((i, t, child))
+        from agent.specialist_runs import record
+        try:
+            record(child, t["goal"])
+        except (OSError, ValueError) as exc:
+            from agent.specialist_runtime import discard_unstarted
+            discard_unstarted(children, parent_agent, str(exc))
+            return [], f"Could not save specialist run receipt: {exc}. No task started."
     return children, None
 
 
@@ -443,6 +461,7 @@ def delegate_task(
     output_schema: Optional[Dict[str, Any]] = None, images: Optional[List[str]] = None, action: Optional[str] = None,
     subagent_id: Optional[str] = None, message: Optional[str] = None, parent_agent=None,
     credentials_cfg: Optional[Dict[str, Any]] = None,
+    query: str = "", page: int = 1,
 ) -> str:
     """Spawn child agents (single ``goal`` or ``tasks=[...]`` batch) or control running ones. ``action``
     list/steer/stop run synchronously and bypass the pause gate, depth limit and async dispatch. ``role`` is legacy
@@ -452,6 +471,13 @@ def delegate_task(
         return tool_error("delegate_task requires a parent agent context.")
 
     normalized_action = (action or "").strip().lower()
+    if normalized_action == "catalog":
+        import json
+        from agent.specialist_runtime import catalog
+        try:
+            return json.dumps(catalog(parent_agent, query, page), ensure_ascii=False)
+        except ValueError as exc:
+            return tool_error(str(exc))
     if normalized_action in _CONTROL_ACTIONS:
         return _handle_control_action(normalized_action, subagent_id, message, parent_agent)
     if normalized_action and normalized_action != "spawn":
@@ -743,7 +769,7 @@ registry.register(
         max_iterations=args.get("max_iterations"), role=args.get("role"),
         background=_model_background_value(args, kw.get("parent_agent")), output_schema=args.get("output_schema"),
         images=args.get("images"), action=args.get("action"), subagent_id=args.get("subagent_id"), message=args.get("message"),
-        parent_agent=kw.get("parent_agent"),
+        parent_agent=kw.get("parent_agent"), query=args.get("query", ""), page=args.get("page", 1),
     ),
     check_fn=check_delegate_requirements,
     emoji="🔀",

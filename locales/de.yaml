@@ -112,13 +112,6 @@ gateway:
     final_output: "{header}\n\nEndgültige Ausgabe:\n```\n{output}\n```"
     still_running: "⏳ Hintergrund-Aufgabe läuft noch"
     recent_output: "{header}\n\nLetzte Ausgabe:\n```\n{output}\n```"
-  btw:
-    usage: "Verwendung: /btw <Frage>\nBeispiel: /btw in welcher Datei war dieser Fehler?\n\nBeantwortet eine kurze Nebenfrage zu dieser Konversation, ohne sie zu unterbrechen. Für eine unabhängige Hintergrundaufgabe /bg <prompt> verwenden."
-    no_history: "Noch keine Konversation — senden Sie Ihre Frage stattdessen als normale Nachricht."
-    no_provider: "❌ Nebenfrage kann nicht beantwortet werden: keine Anbieter-Zugangsdaten konfiguriert."
-    started: "💬 Nebenfrage: \"{preview}\"\nAntwort aus einem Schnappschuss dieser Konversation — die aktuelle Arbeit läuft weiter."
-    answer: "💬 /btw: \"{preview}\"\n\n{answer}"
-    failed: "❌ /btw fehlgeschlagen: \"{preview}\"\n{error}"
   branch:
     db_unavailable: "Sitzungsdatenbank nicht verfügbar."
     no_conversation: "Keine Konversation zum Verzweigen — senden Sie zuerst eine Nachricht."
@@ -1138,10 +1131,6 @@ platform:
       bg:
         arg_prompt: "Der im Hintergrund auszuführende Prompt"
         followup: "Hintergrund-Aufgabe gestartet~"
-      btw:
-        description: "Eine Nebenfrage zur aktuellen Konversation stellen"
-        arg_question: "Die Nebenfrage, die ohne Unterbrechung beantwortet werden soll"
-        followup: "Nebenfrage abgeschickt~"
       skill:
         description: "Einen Sci-Skill ausführen"
         arg_name: "Welcher Skill ausgeführt werden soll"
@@ -1533,8 +1522,6 @@ slash:
     description: "Neue Arbeit global pausieren (Notstopp); '/pause off' setzt fort"
   deny:
     description: "Einen ausstehenden gefährlichen Befehl ablehnen (optional mit Begründung)"
-  btw:
-    description: "Eine Nebenfrage zur aktuellen Konversation stellen, ohne sie zu unterbrechen"
   agents:
     description: "Aktive Agenten und laufende Aufgaben anzeigen"
   journey:
@@ -2915,7 +2902,7 @@ cli:
       updating: "⚡ Aktualisiere AGENTS.md anhand eines Projekt-Scans..."
       generating: "⚡ Erzeuge AGENTS.md anhand eines Projekt-Scans..."
     background:
-      usage: "Verwendung: /bg <prompt>\nBeispiel: /bg Fasse die Top-HN-Storys von heute zusammen\n(Für eine Nebenfrage zu dieser Konversation verwenden Sie /btw <question>.)\nDie Aufgabe läuft in einer separaten Sitzung; die Ergebnisse erscheinen hier, sobald sie fertig ist."
+      usage: "Verwendung: /bg <prompt>\nBeispiel: /bg Fasse die Top-HN-Storys von heute zusammen\nDie Aufgabe läuft in einer separaten Sitzung; die Ergebnisse erscheinen hier, sobald sie fertig ist."
       no_credentials: "(>_<) Hintergrund-Aufgabe kann nicht gestartet werden: keine gültigen Zugangsdaten."
       started: "🔄 Hintergrund-Aufgabe #{number} gestartet: \"{preview}\""
       task_id: "Aufgaben-ID: {task_id}"
@@ -2932,12 +2919,6 @@ cli:
       label: "Anmeldung"
       title_suffix: "(Anmeldung)"
       no_result: "(Kein Ergebnis)"
-    btw:
-      usage: "Verwendung: /btw <question>\nBeispiel: /btw in welcher Datei war dieser Fehler?\nBeantwortet eine kurze Frage zu dieser Konversation, ohne sie zu unterbrechen.\n(Für eine unabhängige Hintergrund-Aufgabe verwenden Sie /bg <prompt>.)"
-      no_credentials: "(>_<) Nebenfrage kann nicht beantwortet werden: keine gültigen Zugangsdaten."
-      header: "💬 /btw: \"{preview}\""
-      title_suffix: "(btw)"
-      no_answer: "(Keine Antwort erzeugt)"
     bundles:
       unavailable: "Bundle-Subsystem nicht verfügbar: {error}"
       none_installed: "Keine Skill-Bundles installiert."
@@ -3474,7 +3455,7 @@ explainer:
     and_more: "  • … und {count} weitere"
     the_model: "Das Modell"
 tips:
-  t001: "/bg <prompt> führt eine Aufgabe in einer separaten Sitzung aus, während Ihre aktuelle frei bleibt; /btw <question> beantwortet eine Nebenfrage zu dieser Konversation, ohne sie zu unterbrechen."
+  t001: "/bg <prompt> führt eine Aufgabe in einer separaten Sitzung aus, während Ihre aktuelle frei bleibt; /side <question> beantwortet eine Nebenfrage zu dieser Konversation, ohne sie zu unterbrechen."
   t002: "/branch verzweigt die aktuelle Sitzung, damit Sie eine andere Richtung erkunden können, ohne Fortschritt zu verlieren."
   t003: "/compress komprimiert den Konversationskontext manuell, wenn es lang wird."
   t004: "/rollback listet Dateisystem-Checkpoints auf — stellen Sie vom Agenten geänderte Dateien auf jeden früheren Stand zurück."

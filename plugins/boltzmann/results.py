@@ -5,6 +5,14 @@ import re
 from agent.redact import redact_for_egress
 
 
+_DIAGNOSTIC_FIELDS = ("info", "message", "msg", "error", "detail",
+                      "errors", "details", "validation_errors")
+_PRIVATE_DIAGNOSTIC_KEYS = frozenset({
+    "input", "value", "authorization", "apikey", "token", "tokenid",
+    "accesstoken", "refreshtoken", "password", "secret", "cookie", "headers",
+})
+
+
 def _safe_text(value, token):
     if token:
         value = value.replace(token, "[credential redacted]")
@@ -32,12 +40,13 @@ def service_diagnostics(result, token=""):
         if isinstance(value, str):
             return _safe_text(value, token)
         if isinstance(value, dict):
-            return {key: scrub(item) for key, item in value.items()}
+            return {key: "[redacted]" if re.sub(r"[^a-z]", "", key.lower()) in _PRIVATE_DIAGNOSTIC_KEYS
+                    else scrub(item) for key, item in value.items()}
         if isinstance(value, list):
             return [scrub(item) for item in value]
         return value
 
-    return {key: scrub(value) if key in {"info", "message", "msg", "error", "detail"} else value
+    return {key: scrub(value) if key in _DIAGNOSTIC_FIELDS else value
             for key, value in result.items()}
 
 
@@ -50,7 +59,8 @@ def service_error(stage, response, token=""):
     fallback = ("Service request failed without a usable diagnostic; job outcome is unknown."
                 if stage in {"submit", "status"} else "Service request failed without a usable diagnostic.")
     diagnostics = service_diagnostics(body, token) if isinstance(body, dict) else {}
-    result = {key: diagnostics[key] for key in ("info", "message", "msg", "detail") if key in diagnostics}
+    result = {key: diagnostics[key] for key in _DIAGNOSTIC_FIELDS
+              if key != "error" and key in diagnostics}
     # Summary and cause are separate service fields, not alternatives. Keep the
     # cause intact (including structured/long errors); auth wrappers may replace
     # the top-level error but must not destroy the original service diagnostic.

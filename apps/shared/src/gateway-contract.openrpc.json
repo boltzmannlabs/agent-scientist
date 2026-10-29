@@ -2851,24 +2851,6 @@
       }
     },
     {
-      "name": "prompt.btw",
-      "summary": "Side question over a snapshot of the live conversation; the answer arrives as btw.complete.",
-      "params": [
-        {
-          "name": "params",
-          "schema": {
-            "$ref": "#/components/schemas/SideAgentParams"
-          }
-        }
-      ],
-      "result": {
-        "name": "result",
-        "schema": {
-          "$ref": "#/components/schemas/TaskIdResult"
-        }
-      }
-    },
-    {
       "name": "prompt.submit",
       "summary": "Send a user turn to a live session; busy sessions queue / steer / redirect instead of refusing.",
       "params": [
@@ -32923,7 +32905,7 @@
       },
       "SideAgentCompletePayload": {
         "additionalProperties": false,
-        "description": "``methods_prompt._spawn_side_agent``: ``{task_id, **extra, text}``; btw adds ``question``.",
+        "description": "``methods_prompt._spawn_side_agent``: ``{task_id, **extra, text}``.",
         "properties": {
           "task_id": {
             "title": "Task Id",
@@ -39332,18 +39314,6 @@
           "name": "payload",
           "schema": {
             "$ref": "#/components/schemas/BrowserProgressPayload"
-          }
-        }
-      ]
-    },
-    {
-      "name": "btw.complete",
-      "summary": "A /btw side question was answered.",
-      "params": [
-        {
-          "name": "payload",
-          "schema": {
-            "$ref": "#/components/schemas/SideAgentCompletePayload"
           }
         }
       ]

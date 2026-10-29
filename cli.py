@@ -31,6 +31,7 @@ os.environ["SCI_QUIET"] = "1"  # suppress our modules' startup chatter
 
 from sci_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 from sci_cli.cli_commands_mixin import CLICommandsMixin
+from sci_cli.specialist_commands import CLISpecialistMixin
 from sci_cli.cli_billing_mixin import CLIBillingMixin
 from sci_cli.cli_loops_mixin import CLILoopsMixin
 from sci_cli.cli_info_mixin import CLIInfoMixin
@@ -884,7 +885,7 @@ from sci_cli.cli_chat_turn_mixin import CLIChatTurnMixin
 _PASTE_REF_RE = re.compile(r'\[Pasted text #\d+: \d+ lines \u2192 (.+?)\]')
 
 
-class SciCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin, CLITuiMixin, CLIStatusBarMixin, CLIVoiceMixin, CLIModelSwitchMixin, CLISessionMixin, CLIStreamMixin, CLIModalMixin, CLITerminalMixin, CLIInfoMixin, CLILoopsMixin, CLIChatTurnMixin):
+class SciCLI(CLISpecialistMixin, CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin, CLITuiMixin, CLIStatusBarMixin, CLIVoiceMixin, CLIModelSwitchMixin, CLISessionMixin, CLIStreamMixin, CLIModalMixin, CLITerminalMixin, CLIInfoMixin, CLILoopsMixin, CLIChatTurnMixin):
     """Interactive REPL for the Sci Agent."""
 
     # Seeded -q first message (see _should_seed_interactive); run() re-creates
@@ -1180,11 +1181,15 @@ class SciCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CLI
     # ``_handle_<name>_command(cmd)``. Looked up via getattr at dispatch time so
     # monkeypatching works. A handler returning False exits the REPL.
     _SLASH_DISPATCH: dict[str, tuple[str, bool]] = {
+        "create_subagent": ("_handle_subagent_command", True),
+        "update_subagent": ("_handle_subagent_command", True),
+        "subagents": ("_handle_subagent_command", True),
         "exit": ("_cmd_exit", True), "quit": ("_cmd_exit", True), "help": ("_cmd_help", True),
         "palette": ("_open_command_palette", False), "whoami": ("_handle_whoami_command", False),
         "profile": ("_handle_profile_command", False), "toolsets": ("show_toolsets", False),
         "config": ("show_config", False), "redraw": ("_cmd_redraw", True), "clear": ("_cmd_clear", True),
         "title": ("_cmd_title", True), "new": ("_cmd_new", True),
+        "rename": ("_handle_rename_command", True), "side": ("_handle_side_command", True),
         "model": ("_handle_model_switch", True), "codex-runtime": ("_handle_codex_runtime", True),
         "retry": ("_cmd_retry", True), "prompt": ("_handle_prompt_compose_command", True),
         "undo": ("_cmd_undo", True), "save": ("save_conversation", True), "skills": ("_cmd_skills", True),

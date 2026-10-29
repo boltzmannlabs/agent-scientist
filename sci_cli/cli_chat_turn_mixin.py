@@ -664,21 +664,9 @@ class CLIChatTurnMixin:
     def _chat_print_response_panel(self, turn, response):
         """Response box (close TTS-drawn box / post-stream transform / Rich Panel), then billing CTA."""
         from cli import (
-            ChatConsole, _ACCENT, _RST, _cprint, _maybe_remap_for_light_mode, _post_stream_transform_output,
-            _render_final_assistant_content,
+            ChatConsole, _ACCENT, _RST, _cprint, _post_stream_transform_output,
         )
         if response and not (turn.result and turn.result.get("response_previewed", False)):
-            try:
-                from sci_cli.skin_engine import get_active_skin
-                _skin = get_active_skin()
-                label = _skin.get_branding("response_label", "☤ Sci")
-                _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#B93586"))
-                _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFE3ED"))
-            except Exception:
-                label = "☤ Sci"
-                _resp_color = _maybe_remap_for_light_mode("#B93586")
-                _resp_text = _maybe_remap_for_light_mode("#FFE3ED")
-
             is_error_response = turn.result and (turn.result.get("failed") or turn.result.get("partial"))
             # An interrupted reply that streamed before a tool-call boundary reset the segment
             # state is already on screen (#65666). Only suppress when the response IS that text:
@@ -700,12 +688,9 @@ class CLIChatTurnMixin:
                 if _post_stream_text.strip():
                     _cprint(_post_stream_text)
             else:
-                ChatConsole().print(Panel(
-                    _render_final_assistant_content(response, mode=self.final_response_markdown),
-                    title=f"[{_resp_color} bold]{label}[/]", title_align="left", border_style=_resp_color,
-                    style=_resp_text, box=rich_box.HORIZONTALS, padding=(1, 0),
-                    width=self._scrollback_box_width(),
-                ))
+                from sci_cli.cli_render import assistant_message_panel
+                ChatConsole().print(assistant_message_panel(
+                    response, mode=self.final_response_markdown, width=self._scrollback_box_width()))
 
             # Billing CTA pins the single action (Nous → /topup, others → billing page) so it
             # stays visible instead of scrolling away inside the response prose.

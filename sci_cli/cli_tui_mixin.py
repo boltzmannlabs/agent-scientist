@@ -15,6 +15,7 @@ import threading
 import time
 
 from agent.i18n import t
+from sci_cli.side_commands import active as side_input_active
 from agent.interrupt_compat import request_hard_interrupt
 from sci_cli.commands_completion import SlashCommandAutoSuggest, SlashCommandCompleter
 from pathlib import Path
@@ -450,7 +451,8 @@ class CLITuiMixin:
             monitor = getattr(self, "_subagent_monitor", None)
             if monitor is not None:
                 monitor.tick()
-            if self._command_running:
+            side = getattr(self, "_side_controller", None)
+            if self._command_running or (side and side.active and side.running):
                 self._invalidate(min_interval=0.1)
                 time.sleep(0.1)
             else:
@@ -499,12 +501,13 @@ class CLITuiMixin:
                     cursor = "❯" if i == selected and not freetext else " "
                     cb = ("[x] " if i in selected_indices else "[ ] ") if multi_select else ""
                     style = 'class:clarify-selected' if i == selected and not freetext else 'class:clarify-choice'
-                    label = f"  {cursor} {cb}{_num_prefix(i)}. {choice}"
+                    prefix = f"{_num_prefix(i)}. " if entry.get("numbered_choices", True) else ""
+                    label = f"  {cursor} {cb}{prefix}{choice}"
                     for wrapped in _wrap_panel_text(label, width, subsequent_indent="      "):
                         rows.append((style, wrapped))
                 if choices and state.get("allow_other", True):
                     other_idx = len(choices)
-                    mid = _num_prefix(other_idx)
+                    mid = f"{_num_prefix(other_idx)}. " if entry.get("numbered_choices", True) else ""
                     if multi_select:
                         mid = f"{'[x]' if other_idx in selected_indices else '[ ]'} {mid}"
                     # An earlier typed answer stays visible next to Other; Enter on it edits
@@ -512,13 +515,13 @@ class CLITuiMixin:
                     other_text = (answer_meta.get(entry["qid"]) or {}).get("other_text") or ""
                     other_suffix = t("cli.tui.clarify_other_answer", text=other_text) if other_text else None
                     if freetext:
-                        other_label = f"  ❯ {mid}. " + (other_suffix or t("cli.tui.clarify_other_type_below"))
+                        other_label = f"  ❯ {mid}" + (other_suffix or t("cli.tui.clarify_other_type_below"))
                         other_style = 'class:clarify-active-other'
                     elif selected == other_idx:
-                        other_label = f"  ❯ {mid}. " + (other_suffix or t("cli.tui.clarify_other_type_answer"))
+                        other_label = f"  ❯ {mid}" + (other_suffix or t("cli.tui.clarify_other_type_answer"))
                         other_style = 'class:clarify-selected'
                     else:
-                        other_label = f"    {mid}. " + (other_suffix or t("cli.tui.clarify_other_type_answer"))
+                        other_label = f"    {mid}" + (other_suffix or t("cli.tui.clarify_other_type_answer"))
                         other_style = 'class:clarify-choice'
                     for wrapped in _wrap_panel_text(other_label, width, subsequent_indent="      "):
                         rows.append((other_style, wrapped))
@@ -531,11 +534,16 @@ class CLITuiMixin:
         preview_rows = _status_rows(60)
         box_width = _panel_box_width(title, [header] + [text for _, text in preview_rows])
         rows = _status_rows(max(8, box_width - 2))
+        from sci_cli.picker_viewport import visible_panel_rows
+        selected_row = next((i for i, (_, text) in enumerate(rows) if text.lstrip().startswith('❯')),
+                            next((i for i, (_, text) in enumerate(rows) if text.startswith('▸')), 0))
+        rows = visible_panel_rows(state, rows, selected_row)
 
         panel = _Panel('class:clarify-border', box_width, title, 'class:clarify-title')
         panel.row('class:clarify-question', header)
         for style, text in rows:
             panel.row(style, text)
+        panel.row('class:hint', 'Esc cancel')
         return panel.close()
 
     def _render_scroll_list_panel(self, state, title, hint, labels, *, min_width, max_width, indent):
@@ -543,9 +551,10 @@ class CLITuiMixin:
 
         The panel renders into a Window with no max height, so the visible slice is limited to
         the terminal rows or the bottom border and trailing items get clipped on long lists
-        (e.g. Ollama Cloud's 36+ models). ``state["_scroll_offset"]`` is updated in place.
+        (e.g. Ollama Cloud's 36+ models). ``state["_row_scroll_offset"]`` tracks rendered rows, including wrapped labels.
         """
-        from cli import SciCLI, _panel_box_width, _wrap_panel_text
+        from cli import _panel_box_width, _wrap_panel_text
+        from sci_cli.picker_viewport import visible_panel_rows
         box_width = _panel_box_width(title, [hint] + labels, min_width=min_width, max_width=max_width)
         # ``_Panel.row`` pads every row to ``box_width - 2``, so that is the real
         # body width. Keep the wrap budget in sync with it and reserve the
@@ -554,21 +563,15 @@ class CLITuiMixin:
         inner_text_width = max(8, box_width - 2)
         label_width = max(8, inner_text_width - max(2, len(indent)))
         selected = state.get("selected", 0)
-        try:
-            from prompt_toolkit.application import get_app
-            term_rows = get_app().output.get_size().rows
-        except Exception:
-            term_rows = _term_rows()
-        scroll_offset, visible = SciCLI._compute_model_picker_viewport(
-            selected, state.get("_scroll_offset", 0), len(labels), term_rows)
-        state["_scroll_offset"] = scroll_offset
-
         panel = _Panel('class:clarify-border', box_width, title, 'class:clarify-title')
         panel.blank()
         panel.row('class:clarify-hint', hint)
         panel.blank()
-        for idx in range(scroll_offset, min(scroll_offset + visible, len(labels))):
+        rows, selected_row = [], 0
+        for idx in range(len(labels)):
             style = 'class:clarify-selected' if idx == selected else 'class:clarify-choice'
+            if idx == selected:
+                selected_row = len(rows)
             # The cursor cell is always two columns wide, so unselected rows get two spaces
             # regardless of ``indent`` (the palette's continuation indent is four) — otherwise
             # the selected label starts two columns left of its neighbours.
@@ -576,7 +579,9 @@ class CLITuiMixin:
             for wrapped in _prefix_wrapped_rows(
                 _wrap_panel_text, labels[idx], label_width, lead, indent
             ):
-                panel.row(style, wrapped)
+                rows.append((style, wrapped))
+        for style, wrapped in visible_panel_rows(state, rows, selected_row, panel_chrome=6):
+            panel.row(style, wrapped)
         panel.blank()
         return panel.close()
 
@@ -940,6 +945,9 @@ class CLITuiMixin:
         """Ctrl+C priority: cancel voice recording → cancel foreground UI/overlay prompt →
         interrupt the running agent (first press) → force exit (second press within 2s) → when
         idle clear the draft or exit."""
+        from sci_cli.side_commands import cancel_from_keyboard
+        if cancel_from_keyboard(self, event):
+            return
         from sci_cli.science_profile_runtime import cancel_running
         if cancel_running(self):
             return
@@ -971,6 +979,9 @@ class CLITuiMixin:
 
     def _tui_handle_ctrl_q(self, event):
         """Ctrl+Q: like Ctrl+C minus the double-press force exit (and it leaves the palette)."""
+        from sci_cli.side_commands import cancel_from_keyboard
+        if cancel_from_keyboard(self, event):
+            return
         from sci_cli.science_profile_runtime import cancel_running
         if cancel_running(self):
             return
@@ -1099,8 +1110,18 @@ class CLITuiMixin:
         return None
 
     def _tui_handle_escape_modal(self, event):
-        """ESC cancels active secret/sudo/connection/slash-confirm prompts."""
-        if self._connection_state:
+        """Cancel the active prompt without submitting or interrupting the agent."""
+        if self._clarify_state:
+            self._clarify_state["response_queue"].put(None)
+            self._clarify_teardown()
+            event.app.current_buffer.reset()
+            event.app.invalidate()
+        elif self._approval_state:
+            self._approval_state["response_queue"].put("deny")
+            self._approval_state = None
+            event.app.current_buffer.reset()
+            event.app.invalidate()
+        elif self._connection_state:
             self._connection_cancel()
             event.app.current_buffer.reset()
             event.app.invalidate()
@@ -1143,6 +1164,9 @@ class CLITuiMixin:
     def _tui_handle_ctrl_d(self, event):
         """Ctrl+D deletes under the cursor (readline); exits only on empty input, like bash/zsh.
         Pending attached images count as input so the user doesn't lose them silently."""
+        from sci_cli.side_commands import cancel_from_keyboard
+        if not event.app.current_buffer.text and cancel_from_keyboard(self, event):
+            return
         buf = event.app.current_buffer
         if buf.text:
             buf.delete()
@@ -1269,18 +1293,8 @@ class CLITuiMixin:
         st["_scroll_offset"] = 0
 
     def _tui_model_picker_escape(self, event):
-        """ESC clears an active filter first, else steps back from the effort stage, else closes."""
-        st = self._model_picker_state
-        if st and st.get("stage") == "model" and (st.get("filter") or ""):
-            self._tui_set_filter(st, "")
-            event.app.invalidate()
-            return
-        if st and st.get("stage") == "reasoning":
-            st.update(stage="model", selected=0, _scroll_offset=0, switch_result=None)
-            event.app.invalidate()
-            return
+        """Escape cancels the picker at every stage, including filtered results."""
         self._close_model_picker()
-        event.app.current_buffer.reset()
         event.app.invalidate()
 
     def _tui_model_picker_filter_backspace(self, event):
@@ -1486,7 +1500,7 @@ class CLITuiMixin:
         """Dispatch inline model/steering/side-task commands and busy chat transport controls.
 
         /model needs the prompt_toolkit terminal-handoff helpers of the interactive pickers.
-        /steer, /bg and /btw while the agent runs must not queue through _pending_input: the
+        /steer, /bg and /side while the agent runs must not queue through _pending_input: the
         process loop is blocked inside self.chat(), so they would only run after the foreground
         turn — turning /steer into a next-turn message (defeating mid-run injection, #34569) and
         starting the /bg side task after the turn it should run alongside (#75221). The
@@ -1497,7 +1511,18 @@ class CLITuiMixin:
         submitted text (looking unsent, inviting a re-submit) until some unrelated redraw.
         """
         from sci_cli.background_chat_commands import dispatch_while_busy
-        if dispatch_while_busy(self, text, has_images=has_images):
+        from sci_cli.side_commands import current, route_input
+        submitted_buffer = event.app.current_buffer
+        side = current(self)
+        if side and side.active and side.running and not text.startswith(("/", "!")):
+            side.emit("Still working. Your draft is kept here; send it when this turn finishes.")
+            return True
+        if route_input(self, text, has_images=has_images):
+            pass
+        elif (getattr(self, "_agent_running", False) and not has_images
+              and text.split(None, 1)[0].lower() == "/rename"):
+            self.process_command(text)
+        elif dispatch_while_busy(self, text, has_images=has_images):
             pass
         elif self._should_handle_model_command_inline(text, has_images=has_images):
             if not self.process_command(text):
@@ -1510,7 +1535,8 @@ class CLITuiMixin:
             self.process_command(text)
         else:
             return False
-        event.app.current_buffer.reset(append_to_history=True)
+        # /side can switch composers; clear only the buffer that submitted this command.
+        submitted_buffer.reset(append_to_history=bool(getattr(self, "_side_surface", False) or not text.lower().startswith("/side")))
         event.app.invalidate()
         return True
 
@@ -1583,6 +1609,9 @@ class CLITuiMixin:
 
     def _tui_enter_overlay(self, event) -> bool:
         """Enter while a modal overlay is up: submit it. True when handled."""
+        from sci_cli.side_commands import active
+        if active(self) or event.app.current_buffer.text.strip().lower().split(None, 1)[:1] == ["/side"]:
+            return False
         from cli import _cprint
         buf = event.app.current_buffer
         if self._connection_state:
@@ -1837,10 +1866,14 @@ class CLITuiMixin:
         return self._get_voice_status_fragments()
 
     def _tui_spinner_text(self):
+        if side_input_active(self):
+            return []
         spinner_line = self._render_spinner_text()
         return [('class:hint', spinner_line)] if spinner_line else []
 
     def _tui_spinner_height(self):
+        if side_input_active(self):
+            return 0
         return self._spinner_widget_height()
 
     def _tui_hint_height(self):
@@ -1937,6 +1970,8 @@ class CLITuiMixin:
             _preserve_ctrl_enter_newline)
         from prompt_toolkit.keys import Keys
         kb = KeyBindings()
+        from sci_cli.side_view import bind_keys
+        bind_keys(self, kb)
         _multiline_shortcuts_enabled = _cli_multiline_shortcuts_enabled(self.config or CLI_CONFIG)
         self._tui_multiline_shortcuts = _multiline_shortcuts_enabled
 
@@ -1969,7 +2004,7 @@ class CLITuiMixin:
         kb.add('c-d')(self._tui_handle_ctrl_d)
         _modal_prompt_active = Condition(
             lambda: bool(self._secret_state or self._sudo_state or self._slash_confirm_state
-                         or self._connection_state))
+                         or self._connection_state or self._clarify_state or self._approval_state))
         kb.add('escape', filter=_modal_prompt_active, eager=True)(self._tui_handle_escape_modal)
         kb.add('escape', 'escape', filter=~_modal_prompt_active)(self._tui_handle_double_escape)
         kb.add('c-z')(self._tui_handle_ctrl_z)
@@ -2021,17 +2056,17 @@ class CLITuiMixin:
 
     def _tui_bind_overlay_navigation(self, kb) -> None:
         """Clarify / approval / slash-confirm / model picker / command palette navigation keys."""
-        _clarify_nav = Condition(lambda: bool(self._clarify_state) and not self._clarify_freetext)
+        _clarify_nav = Condition(lambda: not side_input_active(self) and bool(self._clarify_state) and not self._clarify_freetext)
         kb.add('up', filter=_clarify_nav)(self._tui_clarify_up)
         kb.add('down', filter=_clarify_nav)(self._tui_clarify_down)
-        _connection_nav = Condition(lambda: bool(self._connection_state))
+        _connection_nav = Condition(lambda: not side_input_active(self) and bool(self._connection_state))
         kb.add('up', filter=_connection_nav)(self._tui_connection_up)
         kb.add('down', filter=_connection_nav)(self._tui_connection_down)
         kb.add('left', filter=_connection_nav)(self._tui_connection_side)
         kb.add('right', filter=_connection_nav)(self._tui_connection_side)
         # Multi-select: Space toggles the checkbox under the cursor.
         kb.add('space', filter=Condition(
-            lambda: bool(self._clarify_state) and not self._clarify_freetext
+            lambda: not side_input_active(self) and bool(self._clarify_state) and not self._clarify_freetext
             and self._clarify_state.get("multi_select")
         ))(self._tui_clarify_toggle)
         # Batch clarify: Tab / Shift-Tab cycle the active question (any-order answering; moving
@@ -2042,11 +2077,13 @@ class CLITuiMixin:
         # Number keys: 1-9 select items 0-8, 0 selects item 9 (10th).
         for _num in range(10):
             _idx = 9 if _num == 0 else _num - 1
-            kb.add(str(_num), filter=_clarify_nav)(self._tui_make_clarify_number_handler(_idx))
+            kb.add(str(_num), filter=_clarify_nav & Condition(
+                lambda: bool(self._clarify_state) and self._clarify_state.get("numbered_choices", True)
+            ))(self._tui_make_clarify_number_handler(_idx))
 
-        _approval = Condition(lambda: bool(self._approval_state))
-        _slash_confirm = Condition(lambda: bool(self._slash_confirm_state))
-        _picker = Condition(lambda: bool(self._model_picker_state))
+        _approval = Condition(lambda: not side_input_active(self) and bool(self._approval_state))
+        _slash_confirm = Condition(lambda: not side_input_active(self) and bool(self._slash_confirm_state))
+        _picker = Condition(lambda: not side_input_active(self) and bool(self._model_picker_state))
         kb.add('up', filter=_approval)(self._tui_approval_up)
         kb.add('down', filter=_approval)(self._tui_approval_down)
         kb.add('up', filter=_slash_confirm)(self._tui_slash_confirm_up)
@@ -2057,7 +2094,7 @@ class CLITuiMixin:
         def _model_picker_typing_active() -> bool:
             # Type-to-filter is only live on the model stage (concrete list).
             st = self._model_picker_state
-            return bool(st) and st.get("stage") == "model"
+            return not side_input_active(self) and bool(st) and st.get("stage") == "model"
 
         _picker_typing = Condition(_model_picker_typing_active)
         for _ch in _TYPING_CHARS:
@@ -2065,9 +2102,9 @@ class CLITuiMixin:
         kb.add('backspace', filter=_picker_typing)(self._tui_model_picker_filter_backspace)
         kb.add('escape', filter=_picker, eager=True)(self._tui_model_picker_escape)
 
-        _palette = Condition(lambda: bool(self._command_palette_state))
+        _palette = Condition(lambda: not side_input_active(self) and bool(self._command_palette_state))
         kb.add('c-p', filter=Condition(
-            lambda: not self._command_palette_state and not self._model_picker_state and not self._clarify_state
+            lambda: not side_input_active(self) and not self._command_palette_state and not self._model_picker_state and not self._clarify_state
             and not self._approval_state and not self._slash_confirm_state and not self._sudo_state
             and not self._secret_state and not self._connection_state
         ))(self._tui_open_command_palette)
@@ -2134,15 +2171,17 @@ class CLITuiMixin:
 
     def _tui_overlay_widget(self, fragments_fn, state_attr: str):
         """Wrapped, auto-sized panel shown while ``self.<state_attr>`` is not None."""
+        from sci_cli.side_commands import active
         return ConditionalContainer(
             Window(FormattedTextControl(fragments_fn), wrap_lines=True),
-            filter=Condition(lambda: getattr(self, state_attr) is not None))
+            filter=Condition(lambda: not active(self) and getattr(self, state_attr) is not None))
 
     def _tui_build_layout(self, kb):
         """Build the TUI widgets, Layout and Style; registers wrapper keybindings on ``kb``."""
         cli_ref = self
         from sci_cli.cli_subagent_monitor import install_dock
-        install_dock(self)
+        if not getattr(self, "_side_surface", False):
+            install_dock(self)
         input_area = self._tui_build_input_area()
         spinner_widget = Window(
             content=FormattedTextControl(self._tui_spinner_text),
@@ -2220,6 +2259,9 @@ class CLITuiMixin:
             voice_status_bar=voice_status_bar,
             completions_menu=CompletionsMenu(max_height=12, scroll_offset=1))))
         self._tui_set_base_style()
+        from sci_cli.side_view import install
+        if not getattr(self, "_side_surface", False):
+            install(self, layout, input_area)
         return layout, PTStyle.from_dict(self._build_tui_style_dict())
 
     def _tui_build_input_area(self):
@@ -2281,12 +2323,12 @@ class CLITuiMixin:
         # Mask input with '*' while a sudo/secret prompt is active.
         input_area.control.input_processors.append(ConditionalProcessor(
             PasswordProcessor(),
-            filter=Condition(lambda: (bool(cli_ref._sudo_state)
+            filter=Condition(lambda: not side_input_active(cli_ref) and ((bool(cli_ref._sudo_state)
                                       and (cli_ref._sudo_state.get("vault_save") or {}).get("step") != "identifier"
                                       and not cli_ref._sudo_state.get("vault_code"))
                              or bool(cli_ref._secret_state)
                              or (bool(cli_ref._connection_state)
-                                 and cli_ref._connection_active_field_is_secret()))))
+                                 and cli_ref._connection_active_field_is_secret())))))
 
         class _PlaceholderProcessor(Processor):
             """Render grayed-out placeholder text inside the input when empty."""
@@ -2302,6 +2344,7 @@ class CLITuiMixin:
                 return Transformation(fragments=ti.fragments)
 
         input_area.control.input_processors.append(_PlaceholderProcessor(self._tui_placeholder_text))
+        self._input_area = input_area
         return input_area
 
     def _tui_set_base_style(self):

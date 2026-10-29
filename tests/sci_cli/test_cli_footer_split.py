@@ -65,7 +65,7 @@ def test_footer_survives_a_row_appearing_between_measure_and_paint(monkeypatch):
     cli._tui_init_run_state()
     kb = KeyBindings()
     layout, style = cli._tui_build_layout(kb)
-    root = layout.container
+    root = cli._side_view.footer
 
     measured = HSplit.preferred_height
 

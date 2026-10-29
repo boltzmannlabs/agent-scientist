@@ -453,6 +453,27 @@ def _render_final_assistant_content(text: str, mode: str = "render"):
     return Markdown(plain)
 
 
+def assistant_message_panel(text: str, *, mode: str = "render", width: int | None = None):
+    """Use one response presentation for live chat and retained transcript replay."""
+    from rich import box
+    from rich.panel import Panel
+    from cli import _maybe_remap_for_light_mode, _render_final_assistant_content
+    from sci_cli.skin_engine import get_active_skin
+
+    try:
+        skin = get_active_skin()
+        label = skin.get_branding("response_label", "☤ Sci")
+        border, body = skin.get_color("response_border", "#B93586"), skin.get_color("banner_text", "#FFE3ED")
+    except Exception:
+        label, border, body = "☤ Sci", "#B93586", "#FFE3ED"
+    color = _maybe_remap_for_light_mode(border)
+    text_color = _maybe_remap_for_light_mode(body)
+    return Panel(_render_final_assistant_content(text, mode=mode),
+                 title=_RichText(label, style=color + " bold"), title_align="left",
+                 border_style=color, style=text_color, box=box.HORIZONTALS,
+                 padding=(1, 0), width=width)
+
+
 def _post_stream_transform_output(response: str, result: dict | None) -> str:
     """Text still to display after a streamed response transform: the suffix, or the whole response when replaced."""
     if not result or not result.get("response_transformed"):
@@ -740,6 +761,9 @@ def _cprint(text: str):
     redraw and gets buried, so those are painted on the app's loop via ``call_soon_threadsafe``.
     """
     from cli import _PT_ANSI, _output_history_recording, _pt_print, _pt_print_ansi, _record_output_history
+    from sci_cli.side_surface import emit_side_output
+    if emit_side_output(text):
+        return
     recording = _output_history_recording()
     seq = next(_PAINT_SEQ)
 
@@ -747,6 +771,8 @@ def _cprint(text: str):
         # Recorded when painted, not when requested: a redraw replaying the history must
         # neither print rows still queued for the loop nor size them at a stale width.
         def _paint():
+            if _capture_side_parent_output(text):
+                return
             if recording:
                 _record_output_history(text, force=True)
             paint()
@@ -797,6 +823,8 @@ def _cprint(text: str):
     paint_now = _painted(_print_now)
 
     def _schedule():
+        if _capture_side_parent_output(text):
+            return
         if not getattr(app, "_is_running", False):
             paint_fallback()
             return
@@ -835,6 +863,13 @@ def _cprint(text: str):
         loop.call_soon_threadsafe(_schedule)
     except Exception:
         paint_fallback()
+
+
+def _capture_side_parent_output(text):
+    from prompt_toolkit.application import get_app_or_none
+    app = get_app_or_none()
+    view = getattr(app, "_sci_side_view", None) if app is not None else None
+    return view.capture_parent(text) if view is not None else False
 
 
 def _prepend_note_to_message(message, note: str):

@@ -354,3 +354,6 @@ apps/desktop/.dist-build*
 /ref_imgs/
 /image.png
 /image_*.png
+
+# Private internal notes; never part of source distributions.
+/20_doc/

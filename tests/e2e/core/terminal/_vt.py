@@ -92,6 +92,10 @@ class Screen:
         self.rows, self.cols = rows, cols
         self.top, self.bottom = 0, rows - 1
         self.x, self.y = min(self.x, cols - 1), max(0, min(self.y, rows - 1))
+        # Restoring a cursor saved before a shrink must stay inside the new grid.
+        self._saved = (min(self._saved[0], cols - 1), min(self._saved[1], rows - 1))
+        self._main_saved_cursor = (min(self._main_saved_cursor[0], cols - 1),
+                                   min(self._main_saved_cursor[1], rows - 1))
         self._pending_wrap = False
 
     def display(self) -> list[str]:

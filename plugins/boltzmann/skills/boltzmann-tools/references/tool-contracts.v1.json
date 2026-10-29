@@ -4960,9 +4960,10 @@
             }
           },
           "smiles": {
-            "description": "One validated ligand SMILES string. This is not the basic-docking ligand CSV path.",
+            "description": "Uploaded ligand CSV platform path ending in .csv, not a direct SMILES string. Upload the CSV using input_field=\"smiles\". The Node API rejected inline SMILES with \"smiles must be a .csv file\"; CSV column names are not yet confirmed for flexible docking.",
             "type": "string",
-            "x-input-kind": "value"
+            "x-input-kind": "file",
+            "pattern": "\\.csv$"
           }
         },
         "required": [
@@ -4980,7 +4981,25 @@
         "additionalProperties": true
       },
       "review_notes": [],
-      "examples": [],
+      "examples": [
+        {
+          "description": "Shape-only illustration, not scientific defaults or a live success receipt. Replace all values with reviewed inputs. CSV headers require confirmation.",
+          "experiment_data": {
+            "target_name": "<reviewed target name>",
+            "processed_pdb": "<uploaded receptor>.pdb",
+            "center_x": "0",
+            "center_y": "0",
+            "center_z": "0",
+            "max_radius_size": "10",
+            "exhaustivness": "8",
+            "upload_sdf": "True",
+            "flexible_residues": [
+              "<reviewed receptor residue>"
+            ],
+            "smiles": "<uploaded ligand library>.csv"
+          }
+        }
+      ],
       "submission": {
         "wire_job_name": "Vina_Flexible_Docking",
         "experiment_name_required": true,
@@ -9484,7 +9503,7 @@
       "module_id": "small-molecule-screening",
       "status": "active",
       "source": "modules/small-molecule-screening.md",
-      "description": "Substructure Screening",
+      "description": "Screen a molecule library with task-specific substructure inputs. For task=\"substructure\", upload the substructures CSV and supply its platform path. For task=\"toxic\", send substructures_path as exactly the empty string \"\"; do not request or upload a substructures file.",
       "execution_blocked": false,
       "request_schema": {
         "type": "object",
@@ -9495,9 +9514,10 @@
             "x-input-kind": "file"
           },
           "substructures_path": {
-            "description": "S3 path to CSV (upload first)",
+            "description": "Always include this key. task=\"substructure\": required nonempty uploaded CSV path. task=\"toxic\": exactly \"\" (empty string); no substructures file upload. Never omit the key or send null.",
             "type": "string",
-            "x-input-kind": "file"
+            "x-input-kind": "file",
+            "x-allow-empty": true
           },
           "method": {
             "description": "`\"graph_matcher\"` or `\"rdkit\"`",
@@ -9534,10 +9554,58 @@
           "task",
           "screening_type"
         ],
-        "additionalProperties": true
+        "additionalProperties": true,
+        "if": {
+          "properties": {
+            "task": {
+              "const": "substructure"
+            }
+          },
+          "required": [
+            "task"
+          ]
+        },
+        "then": {
+          "properties": {
+            "substructures_path": {
+              "minLength": 1,
+              "pattern": "\\S"
+            }
+          },
+          "additionalProperties": {}
+        },
+        "else": {
+          "properties": {
+            "substructures_path": {
+              "const": ""
+            }
+          },
+          "additionalProperties": {}
+        }
       },
       "review_notes": [],
-      "examples": [],
+      "examples": [
+        {
+          "description": "Illustrative substructure payload; replace upload placeholders. Not a live-test receipt.",
+          "experiment_data": {
+            "library_path": "<uploaded library CSV path>",
+            "substructures_path": "<uploaded substructures CSV path>",
+            "method": "rdkit",
+            "task": "substructure",
+            "screening_type": "in"
+          }
+        },
+        {
+          "description": "Illustrative toxic payload; replace upload placeholders. Not a live-test receipt.",
+          "experiment_data": {
+            "library_path": "<uploaded library CSV path>",
+            "substructures_path": "",
+            "method": "rdkit",
+            "task": "toxic",
+            "screening_type": "in"
+          }
+        }
+      ],
       "submission": {
         "wire_job_name": "Substructure_Screening",
         "experiment_name_required": true,

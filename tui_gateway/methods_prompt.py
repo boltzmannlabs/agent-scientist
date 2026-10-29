@@ -934,28 +934,6 @@ def _(rid, params: dict) -> dict:
     return _spawn_side_agent(rid, session, task_id, parent, "background.complete", body)
 
 
-@method("prompt.btw")
-def _(rid, params: dict) -> dict:
-    """Side question over a snapshot of the live conversation (``agent/side_question.py``);
-    history, alternation and prompt cache stay untouched.  Answer: ``btw.complete``."""
-    session, text, parent, task_id, err = _side_agent_args(rid, params, "btw")
-    if err:
-        return err
-    agent = session.get("agent")
-    snapshot = list(getattr(agent, "_session_messages", None) or session.get("history") or [])
-    main_runtime = {
-        k: getattr(agent, k, None)
-        for k in ("model", "provider", "base_url", "api_key", "api_mode", "session_id")}
-
-    def body():
-        from agent.side_question import answer_side_question
-        return answer_side_question(
-            text, snapshot, parent_agent=agent, main_runtime=main_runtime) or ""
-
-    return _spawn_side_agent(
-        rid, session, task_id, parent, "btw.complete", body, extra={"question": text})
-
-
 @method("preview.restart")
 def _(rid, params: dict) -> dict:
     session, err = _sess(params, rid)
@@ -1147,7 +1125,7 @@ def _pdf_page_range(rid, params):
     return first_page, last_page, None
 
 
-# ── side agents (background / btw / preview.restart) ────────────────────────
+# ── side agents (background / preview.restart) ────────────────────────
 
 def _final_response_text(result) -> str:
     return (result.get("final_response", str(result)) if isinstance(result, dict) else str(result))
@@ -1169,7 +1147,7 @@ def _spawn_side_agent(
         # session-create thread), so a side turn under a non-default profile ran against the wrong home.
         # Bind the profile's home + secrets + terminal policy for the whole body, exactly as a prompt turn
         # does: home alone left terminal_tool on the launch process's ambient TERMINAL_* (a docker
-        # secondary's background/btw/preview agent ran local). NOTE: we deliberately do NOT close this
+        # secondary's background/preview agent ran local). NOTE: we deliberately do NOT close this
         # agent through task-wide process cleanup — the whole point of preview.restart is to leave a
         # background server running under this task_id, and AIAgent.close() would kill every process for
         # the task_id and tear down the very server the restart just started.

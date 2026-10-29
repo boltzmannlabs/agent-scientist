@@ -115,13 +115,6 @@ gateway:
     final_output: "{header}\n\nFinal output:\n```\n{output}\n```"
     still_running: "⏳ Background task still running"
     recent_output: "{header}\n\nRecent output:\n```\n{output}\n```"
-  btw:
-    usage: "Usage: /btw <question>\nExample: /btw which file was that error in?\n\nAnswers a quick side question about this conversation without interrupting it. For an independent background task, use /bg <prompt>."
-    no_history: "No conversation yet — send your question as a normal message instead."
-    no_provider: "❌ Cannot answer side question: no provider credentials configured."
-    started: "💬 Side question: \"{preview}\"\nAnswering from a snapshot of this conversation — the current work continues."
-    answer: "💬 /btw: \"{preview}\"\n\n{answer}"
-    failed: "❌ /btw failed: \"{preview}\"\n{error}"
   branch:
     db_unavailable: "Session database not available."
     no_conversation: "No conversation to branch — send a message first."
@@ -1188,10 +1181,6 @@ platform:
       bg:
         arg_prompt: "The prompt to run in the background"
         followup: "Background task started~"
-      btw:
-        description: "Ask a side question about the current conversation"
-        arg_question: "The side question to answer without interrupting"
-        followup: "Side question dispatched~"
       skill:
         description: "Run a Sci skill"
         arg_name: "Which skill to run"
@@ -1604,8 +1593,6 @@ slash:
     description: "Pause new work globally (emergency stop); '/pause off' resumes"
   deny:
     description: "Deny a pending dangerous command (optionally with a reason)"
-  btw:
-    description: "Ask a side question about the current conversation without interrupting it"
   agents:
     description: "Show active agents and running tasks"
   journey:
@@ -3015,7 +3002,7 @@ cli:
       updating: "⚡ Updating AGENTS.md from a project scan..."
       generating: "⚡ Generating AGENTS.md from a project scan..."
     background:
-      usage: "Usage: /bg <prompt>\nExample: /bg Summarize the top HN stories today\n(For a side question about this conversation, use /btw <question>.)\nThe task runs in a separate session and results display here when done."
+      usage: "Usage: /bg <prompt>\nExample: /bg Summarize the top HN stories today\nThe task runs in a separate session and results display here when done."
       no_credentials: "(>_<) Cannot start background task: no valid credentials."
       started: "🔄 Background task #{number} started: \"{preview}\""
       task_id: "Task ID: {task_id}"
@@ -3032,12 +3019,6 @@ cli:
       label: "Sign-in"
       title_suffix: "(sign-in)"
       no_result: "(No result)"
-    btw:
-      usage: "Usage: /btw <question>\nExample: /btw which file was that error in?\nAnswers a quick question about this conversation without interrupting it.\n(For an independent background task, use /bg <prompt>.)"
-      no_credentials: "(>_<) Cannot answer side question: no valid credentials."
-      header: "💬 /btw: \"{preview}\""
-      title_suffix: "(btw)"
-      no_answer: "(No answer generated)"
     bundles:
       unavailable: "Bundle subsystem unavailable: {error}"
       none_installed: "No skill bundles installed."
@@ -3588,7 +3569,7 @@ explainer:
 tips:
   # CLI startup / /new discovery tips (sci_cli/tips.py). Zero-padded index keeps YAML
   # order stable; pickers read tips.tNNN for the active language.
-  t001: "/bg <prompt> runs a task in a separate session while your current one stays free; /btw <question> answers a side question about this conversation without interrupting it."
+  t001: "/bg <prompt> runs a task in a separate session while your current one stays free; /side <question> answers a side question about this conversation without interrupting it."
   t002: "/branch forks the current session so you can explore a different direction without losing progress."
   t003: "/compress manually compresses conversation context when things get long."
   t004: "/rollback lists filesystem checkpoints — restore files the agent modified to any prior state."

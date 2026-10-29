@@ -112,13 +112,6 @@ gateway:
     final_output: "{header}\n\nNihai çıktı:\n```\n{output}\n```"
     still_running: "⏳ Arka plan görevi hâlâ çalışıyor"
     recent_output: "{header}\n\nSon çıktı:\n```\n{output}\n```"
-  btw:
-    usage: "Kullanım: /btw <soru>\nÖrnek: /btw o hata hangi dosyadaydı?\n\nBu konuşma hakkında hızlı bir yan soruyu, konuşmayı kesmeden yanıtlar. Bağımsız bir arka plan görevi için /bg <prompt> kullan."
-    no_history: "Henüz konuşma yok — sorunu normal bir mesaj olarak gönder."
-    no_provider: "❌ Yan soru yanıtlanamıyor: sağlayıcı kimlik bilgileri yapılandırılmamış."
-    started: "💬 Yan soru: \"{preview}\"\nBu konuşmanın anlık görüntüsünden yanıtlanıyor — mevcut çalışma devam ediyor."
-    answer: "💬 /btw: \"{preview}\"\n\n{answer}"
-    failed: "❌ /btw başarısız oldu: \"{preview}\"\n{error}"
   branch:
     db_unavailable: "Oturum veritabanı kullanılamıyor."
     no_conversation: "Dallandırılacak konuşma yok — önce bir mesaj gönderin."
@@ -1138,10 +1131,6 @@ platform:
       bg:
         arg_prompt: "Arka planda çalıştırılacak istem"
         followup: "Arka plan görevi başlatıldı~"
-      btw:
-        description: "Geçerli konuşma hakkında yan bir soru sor"
-        arg_question: "Konuşmayı kesmeden yanıtlanacak yan soru"
-        followup: "Yan soru gönderildi~"
       skill:
         description: "Bir Sci skill'i çalıştır"
         arg_name: "Çalıştırılacak skill"
@@ -1533,8 +1522,6 @@ slash:
     description: "Yeni işleri genel olarak duraklat (acil durdurma); '/pause off' devam ettirir"
   deny:
     description: "Bekleyen tehlikeli bir komutu reddet (isteğe bağlı gerekçeyle)"
-  btw:
-    description: "Geçerli konuşmayı kesmeden onunla ilgili bir yan soru sor"
   agents:
     description: "Aktif ajanları ve çalışan görevleri göster"
   journey:
@@ -2915,7 +2902,7 @@ cli:
       updating: "⚡ AGENTS.md proje taramasından güncelleniyor..."
       generating: "⚡ AGENTS.md proje taramasından oluşturuluyor..."
     background:
-      usage: "Kullanım: /bg <prompt>\nÖrnek: /bg Bugünün öne çıkan HN haberlerini özetle\n(Bu konuşma hakkında bir yan soru için /btw <soru> kullanın.)\nGörev ayrı bir oturumda çalışır ve sonuçlar tamamlandığında burada görüntülenir."
+      usage: "Kullanım: /bg <prompt>\nÖrnek: /bg Bugünün öne çıkan HN haberlerini özetle\nGörev ayrı bir oturumda çalışır ve sonuçlar tamamlandığında burada görüntülenir."
       no_credentials: "(>_<) Arka plan görevi başlatılamıyor: geçerli kimlik bilgisi yok."
       started: "🔄 #{number} numaralı arka plan görevi başlatıldı: \"{preview}\""
       task_id: "Görev kimliği: {task_id}"
@@ -2932,12 +2919,6 @@ cli:
       label: "Giriş"
       title_suffix: "(giriş)"
       no_result: "(Sonuç yok)"
-    btw:
-      usage: "Kullanım: /btw <soru>\nÖrnek: /btw o hata hangi dosyadaydı?\nBu konuşma hakkındaki hızlı bir soruyu, konuşmayı kesmeden yanıtlar.\n(Bağımsız bir arka plan görevi için /bg <prompt> kullanın.)"
-      no_credentials: "(>_<) Yan soru yanıtlanamıyor: geçerli kimlik bilgisi yok."
-      header: "💬 /btw: \"{preview}\""
-      title_suffix: "(btw)"
-      no_answer: "(Yanıt üretilmedi)"
     bundles:
       unavailable: "Paket alt sistemi kullanılamıyor: {error}"
       none_installed: "Kurulu skill paketi yok."
@@ -3474,7 +3455,7 @@ explainer:
     and_more: "  • … ve {count} tane daha"
     the_model: "Model"
 tips:
-  t001: "/bg <prompt> bir görevi ayrı bir oturumda çalıştırır, mevcut oturumunuz boş kalır; /btw <question> ise bu konuşma hakkındaki yan bir soruyu konuşmayı bölmeden yanıtlar."
+  t001: "/bg <prompt> bir görevi ayrı bir oturumda çalıştırır, mevcut oturumunuz boş kalır; /side <question> ise bu konuşma hakkındaki yan bir soruyu konuşmayı bölmeden yanıtlar."
   t002: "/branch mevcut oturumu çatallar; böylece ilerlemenizi kaybetmeden farklı bir yönü keşfedebilirsiniz."
   t003: "/compress konuşma uzadığında bağlamı elle sıkıştırır."
   t004: "/rollback dosya sistemi kontrol noktalarını listeler — ajanın değiştirdiği dosyaları önceki herhangi bir duruma geri alın."

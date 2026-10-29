@@ -73,7 +73,8 @@ def test_resume_keeps_all_text_and_history_command_is_removed():
 
 
 def test_picker_paginates_searches_and_switch_refuses_failed_flush(tmp_path, monkeypatch):
-    from sci_cli.session_browser import pick_session, flush_before_switch
+    from sci_cli.session_browser import flush_before_switch
+    from sci_cli.session_picker import SessionPicker
     from sci_state import SessionDB
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setenv("SCI_HOME", str(tmp_path / ".sci"))
@@ -83,12 +84,14 @@ def test_picker_paginates_searches_and_switch_refuses_failed_flush(tmp_path, mon
             db.set_session_title(f"s-{i}", f"Conversation {i}")
             db.append_message(f"s-{i}", "user", "fixture")
         cli = SimpleNamespace(_session_db=db, session_id="current")
-        steps = iter(["Next page", "Search", "select"])
-        def choose(_, options):
-            action = next(steps)
-            return next(o for o in options if "Conversation 17" in o) if action == "select" else action
-        ui = SimpleNamespace(show=Mock(), choose=choose, ask=lambda _: "Conversation 17")
-        assert pick_session(cli, ui) == "s-17"
+        picker = SessionPicker(cli)
+        picker.limit = 8
+        picker.refresh()
+        assert len(picker.rows) == 8 and picker.more
+        picker.move(8)
+        assert picker.selected == 8 and len(picker.rows) > 8
+        picker.search.text = "Conversation 17"
+        assert [row["id"] for row in picker.rows] == ["s-17"]
         cli.agent = SimpleNamespace(_flush_messages_to_session_db=Mock(side_effect=OSError("disk failure")))
         cli.conversation_history = [{"role": "user", "content": "unsaved"}]
         with pytest.raises(OSError):

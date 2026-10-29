@@ -30,7 +30,7 @@ the steps below.
 ## Step 1: Create a Slack App
 
 The fastest path is to paste a manifest Sci generates for you. It
-declares every built-in slash command (`/btw`, `/stop`, `/model`, …),
+declares every built-in slash command (`/stop`, `/model`, …),
 every required OAuth scope, every event subscription, and enables Socket
 Mode — all at once.
 
@@ -253,7 +253,7 @@ The bot will **not** automatically join channels. You must invite it to each cha
 
 ## Slash Commands
 
-Every Sci command (`/btw`, `/stop`, `/new`, `/model`, `/help`, ...)
+Every Sci command (`/stop`, `/new`, `/model`, `/help`, ...)
 is a native Slack slash command — exactly the way they work on Telegram
 and Discord. Type `/` in Slack and the autocomplete picker lists every
 Sci command with its description.

@@ -953,7 +953,7 @@ def _inherit_parent_tool_surface(review_agent: Any, agent: Any) -> None:
     """Same-model fork: advertise the parent's exact tools[] (its last outbound payload — an
     empty list included) so the request prefix matches byte-for-byte, then freeze the snapshot
     generation. Dispatch stays behind the review whitelist; advertising is not permission."""
-    # getattr: /btw and review callers build bare object.__new__ agents in tests without ``tools``.
+    # getattr: /side and review callers build bare object.__new__ agents in tests without ``tools``.
     review_agent.tools = copy.deepcopy(getattr(agent, "tools", None) or [])
     review_agent.valid_tool_names = {tool["function"]["name"] for tool in review_agent.tools}
     review_agent._tool_snapshot_generation = _FROZEN_TOOL_SNAPSHOT_GENERATION
@@ -964,7 +964,7 @@ def build_cache_parity_fork(
     agent: Any, task_cfg: Optional[Dict[str, Any]] = None, *, max_iterations: int,
     write_origin: str = "background_review",
 ) -> Tuple[Any, Dict[str, Any], bool]:
-    """Construct a detached AIAgent fork with warm prompt-cache parity (shared with ``/btw``): same
+    """Construct a detached AIAgent fork with warm prompt-cache parity (shared with ``/side``): same
     runtime/credentials as the parent, byte-identical system prompt / tools[] / reasoning config on
     the same-model path, shared session_id for prefix warmth, full persistence detachment (no
     state.db writes, rotation, or external memory providers; in-place-only compaction). Returns
@@ -1028,7 +1028,8 @@ def build_cache_parity_fork(
             review_agent._inherited_cache_scope = inherited_scope
         # Slot-keyed caches (xAI): once the review's OWN compaction rewrites its transcript, its
         # divergent stream would evict the parent's server slot, so the resolver then derives
-        # ``<scope>::review``. /btw never tags: one prefix-extension call cannot diverge.
+        # ``<scope>::review``. Multi-turn side conversations assign their own independent
+        # scope after construction so they cannot evict the parent's provider slot.
         if write_origin == "background_review":
             review_agent._prompt_cache_fork_tag = "review"
         # Same reason for the Portal ``conversation=`` tag: with no DB the fork's own

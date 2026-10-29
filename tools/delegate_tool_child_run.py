@@ -796,8 +796,11 @@ class _ChildRun:
         every sign of progress, exactly the signals the heartbeat's stale verdict reads. Genuinely frozen children
         keep two authorities: this budget (when configured) and the heartbeat's stale threshold.
         """
+        from agent.specialist_policy import SpecialistPolicy
+        policy = getattr(self.child, "_specialist_policy", None)
+        hard_deadline = policy.deadline if isinstance(policy, SpecialistPolicy) else None
         if child_timeout is None:
-            settled.wait()
+            settled.wait(timeout=max(0.0, hard_deadline - time.monotonic()) if hard_deadline is not None else None)
             return
         deadline = time.monotonic() + child_timeout
         warn_at = deadline - child_timeout * (1.0 - _BUDGET_WARNING_FRACTION)
@@ -805,7 +808,8 @@ class _ChildRun:
         fingerprint = _child_activity_fingerprint(self.child)
         while True:
             now = time.monotonic()
-            remaining = deadline - now
+            # Progress can renew inactivity allowance, but never a saved specialist's total cap.
+            remaining = min(deadline, hard_deadline) - now if hard_deadline is not None else deadline - now
             if remaining <= 0:
                 return  # no progress for the whole budget
             wait = min(_LIVENESS_POLL_SECONDS, remaining)
@@ -841,6 +845,11 @@ class _ChildRun:
         from tools.daemon_pool import DaemonThreadPoolExecutor
         child, task_index = self.child, self.task_index
         child_timeout = _get_child_timeout()
+        policy = getattr(child, "_specialist_policy", None)
+        from agent.specialist_policy import SpecialistPolicy
+        if isinstance(policy, SpecialistPolicy):
+            remaining = max(0.01, policy.deadline - time.monotonic())
+            child_timeout = remaining if child_timeout is None else min(child_timeout, remaining)
         executor = DaemonThreadPoolExecutor(
             max_workers=1, initializer=_set_subagent_approval_cb, initargs=(_get_subagent_approval_callback(),),
         )

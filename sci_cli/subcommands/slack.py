@@ -14,7 +14,7 @@ def build_slack_parser(subparsers, *, cmd_slack: Callable) -> None:
     slack_manifest = slack_sub.add_parser(
         "manifest",
         help="Print or write a Slack app manifest with every gateway command "
-        "registered as a native slash (/btw, /stop, /model, ...)",
+        "registered as a native slash (/bg, /stop, /model, ...)",
         description="Generate a Slack app manifest that registers every gateway "
             "command in COMMAND_REGISTRY as a first-class Slack slash "
             "command (matching Discord and Telegram parity). Paste the "

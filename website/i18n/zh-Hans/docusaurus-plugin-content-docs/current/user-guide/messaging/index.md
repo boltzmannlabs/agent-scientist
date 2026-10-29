@@ -165,7 +165,6 @@ sci gateway status --system         # 仅 Linux：显式检查系统服务
 | `/voice [on\|off\|tts\|join\|leave\|status]` | 控制消息语音回复和 Discord 语音频道行为 |
 | `/rollback [number]` | 列出或恢复文件系统检查点 |
 | `/bg <prompt>` | 在独立后台会话中运行 prompt（提示词） |
-| `/btw <question>` | 在不打断当前对话的情况下，就当前对话提出顺带问题 |
 | `/reload-mcp` | 从配置重新加载 MCP 服务器 |
 | `/update` | 将 Sci Agent 更新至最新版本 |
 | `/help` | 显示可用命令 |

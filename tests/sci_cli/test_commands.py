@@ -141,12 +141,13 @@ class TestTelegramBotCommands:
             include_plugins=False)
 
     def test_includes_builtin_commands_with_required_args(self):
-        """Built-in arg-taking commands (e.g. /queue, /steer, /bg, /btw)
+        """Built-in arg-taking commands (e.g. /queue, /steer, /bg)
         are now included because their handlers return usage text when
         invoked without arguments — issue #24312."""
         names = {name for name, _ in telegram_bot_commands()}
         assert "bg" in names
-        assert "btw" in names
+        assert "side" not in names  # interactive side mode is classic-CLI only
+        assert "btw" not in names
         assert "queue" in names
         assert "steer" in names
 
@@ -185,7 +186,7 @@ class TestSlackNativeSlashes:
         """Every Telegram bot command must be registerable on Slack too.
 
         This catches the old behavior where Slack users couldn't invoke
-        commands like /btw natively. If a future command surfaces on
+        commands like /side natively. If a future command surfaces on
         Telegram but not Slack (because of Slack's 50-slash cap), this
         test fails loudly so we can curate the list rather than silently
         dropping parity.

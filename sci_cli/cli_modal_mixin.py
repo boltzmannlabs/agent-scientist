@@ -91,6 +91,11 @@ class CLIModalMixin:
 
     _connection_state = None
 
+    def _modal_buffer(self):
+        # A background parent or side can ask while the other composer is visible.
+        area = getattr(self, "_input_area", None)
+        return area.buffer if area is not None else self._app.current_buffer
+
     def _open_external_editor(self, buffer=None) -> bool:
         """Open the active input buffer in an external editor."""
         from cli import _DIM, _RST, _cprint
@@ -216,7 +221,7 @@ class CLIModalMixin:
         if app is None:
             return
         try:
-            buf = app.current_buffer
+            buf = self._modal_buffer()
             buf.text = text
             if hasattr(buf, "cursor_position"):
                 buf.cursor_position = len(text)
@@ -506,7 +511,7 @@ class CLIModalMixin:
         try:
             app = getattr(self, "_app", None)
             if app is not None:
-                buf = app.current_buffer
+                buf = self._modal_buffer()
                 buf.text = cmd + " "
                 buf.cursor_position = len(buf.text)
                 self._invalidate(min_interval=0.0)
@@ -609,13 +614,17 @@ class CLIModalMixin:
 
         if ConnectionOperation.on_change is not None:
             return False
-        ConnectionOperation.on_change = self._connection_on_change
+        owner = getattr(self, "_side_owner", self)
+        ConnectionOperation.on_change = owner._connection_on_change
         return True
 
     def _connection_restore_hook(self) -> None:
         from tools.connectors.operation import ConnectionOperation
 
-        if ConnectionOperation.on_change == self._connection_on_change:
+        owner = getattr(self, "_side_owner", self)
+        side = getattr(getattr(owner, "_side_view", None), "surface", None)
+        if (ConnectionOperation.on_change == owner._connection_on_change
+                and not owner._connection_state and not getattr(side, "_connection_state", None)):
             ConnectionOperation.on_change = None
 
     def _connection_close(self) -> None:
@@ -698,7 +707,7 @@ class CLIModalMixin:
 
         def _apply() -> None:
             try:
-                buf = app.current_buffer
+                buf = self._modal_buffer()
                 buf.text = self._connection_prefill_text()
                 buf.cursor_position = len(buf.text)
             except Exception:
@@ -811,6 +820,9 @@ class CLIModalMixin:
     def _connection_on_change(self, operation, _change, snapshot) -> None:
         state = self._connection_state
         if not state or operation.op_id != state["payload"].get("op_id"):
+            side = getattr(getattr(self, "_side_view", None), "surface", None)
+            if side is not None:
+                side._connection_on_change(operation, _change, snapshot)
             return
         if snapshot.get("settled_at") is not None:
             self._connection_close()
@@ -929,6 +941,7 @@ class CLIModalMixin:
         state["question"] = entry["question"]
         state["choices"] = choices
         state["allow_other"] = entry.get("allow_other", True)
+        state["numbered_choices"] = entry.get("numbered_choices", True)
         state["selected"] = 0
         state["multi_select"] = bool(entry["multi_select"])
         state["selected_indices"] = set() if entry["multi_select"] else None
@@ -1230,7 +1243,7 @@ class CLIModalMixin:
         if getattr(self, "_modal_input_snapshot", None) is not None or not getattr(self, "_app", None):
             return
         try:
-            buf = self._app.current_buffer
+            buf = self._modal_buffer()
             self._modal_input_snapshot = {"text": buf.text, "cursor_position": buf.cursor_position}
             buf.reset()
         except Exception:
@@ -1243,7 +1256,7 @@ class CLIModalMixin:
         if not snapshot or not getattr(self, "_app", None):
             return
         try:
-            buf = self._app.current_buffer
+            buf = self._modal_buffer()
             buf.text = snapshot.get("text", "")
             buf.cursor_position = min(snapshot.get("cursor_position", 0), len(buf.text))
         except Exception:
@@ -1295,6 +1308,6 @@ class CLIModalMixin:
     def _clear_secret_input_buffer(self) -> None:
         if getattr(self, "_app", None):
             try:
-                self._app.current_buffer.reset()
+                self._modal_buffer().reset()
             except Exception:
                 pass

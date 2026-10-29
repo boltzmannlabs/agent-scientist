@@ -256,7 +256,7 @@ export function useComposerSubmit({
     // clarify before it sees the follow-up. Awaiting first would leave the draft
     // live for a tick — long enough for a second Enter to send it twice.
     //
-    // /btw and /bg run beside the turn (snapshot / separate session) and answer
+    // /bg run beside the turn (snapshot / separate session) and answer
     // neither parked card. With attachments the draft isn't routed as a slash
     // command, so it falls back to the ordinary-message behavior.
     const isSideQuestion = !attachments.length && isSideTaskSlashCommand(text)
