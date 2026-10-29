@@ -90,10 +90,27 @@ def _ensure_chemistry_runtime(package: Path, runtime: Path) -> Path:
 
 
 def _sci_executable() -> str:
-    candidate = shutil.which("sci")
-    if not candidate:
+    from sci_platform.resolver import locate_command
+
+    command = locate_command("sci").command
+    if not command:
         raise RuntimeError("The sci executable is required to enable the environment")
-    return candidate
+    return command[0]
+
+
+def _default_profile_env(home: Path, *, extra: dict[str, str] | None = None) -> dict[str, str]:
+    """Run Sci children in the default profile without inherited profile secrets."""
+    from sci_constants import reset_sci_home_override, set_sci_home_override
+    from tools.environments.local import build_subprocess_env
+
+    token = set_sci_home_override(str(home))
+    try:
+        return build_subprocess_env(
+            scrub_secrets=True, strip_launch_profile=True,
+            extra={"SCI_HOME": str(home), "SCI_DISABLE_LAZY_INSTALLS": "1", **(extra or {})},
+        )
+    finally:
+        reset_sci_home_override(token)
 
 
 def _check_discovery(home: Path) -> None:
@@ -102,9 +119,11 @@ def _check_discovery(home: Path) -> None:
             "discover_plugins(force=True)\n"
             "if registry.get_entry('srg_action') is None:\n"
             "    raise RuntimeError('srg_action was not discovered')\n")
-    python_path = os.pathsep.join(path for path in sys.path if path)
-    _run([sys.executable, "-c", code], timeout=120,
-         env={**os.environ, "SCI_HOME": str(home), "PYTHONPATH": python_path})
+    # The sanitizer removes inherited Python paths. Restore only this Sci
+    # checkout so discovery works when the CLI was launched from elsewhere.
+    env = {**_default_profile_env(home),
+           "PYTHONPATH": str(Path(__file__).resolve().parent.parent)}
+    _run([sys.executable, "-c", code], timeout=120, env=env)
 
 
 def _write_runtime(path: Path, package: Path, chemistry_python: Path) -> None:
@@ -124,12 +143,14 @@ def _write_runtime(path: Path, package: Path, chemistry_python: Path) -> None:
 
 
 def _check_legacy_plugin(home: Path) -> None:
-    config = home / "config.yaml"
-    if not config.is_file():
-        return
-    from sci_yaml import safe_load
+    from sci_cli.config import load_config_readonly
+    from sci_constants import reset_sci_home_override, set_sci_home_override
 
-    parsed = safe_load(config.read_text(encoding="utf-8-sig")) or {}
+    token = set_sci_home_override(home)
+    try:
+        parsed = load_config_readonly()
+    finally:
+        reset_sci_home_override(token)
     plugins = parsed.get("plugins", {}) if isinstance(parsed, dict) else {}
     enabled = plugins.get("enabled", []) if isinstance(plugins, dict) else []
     if isinstance(enabled, list) and "synthesis-route-gym" in enabled:
@@ -164,7 +185,7 @@ def install_retrosynthesis(*, model_location: str | None = None,
         # The parent CLI has completed bootstrap. Nested Sci invocations must not
         # prepare a second PM generation or republish checkout launchers using a
         # custom profile's interpreter.
-        env = {**os.environ, "SCI_HOME": str(home), "SCI_DISABLE_LAZY_INSTALLS": "1"}
+        env = _default_profile_env(home)
         if model_location:
             with tempfile.TemporaryDirectory(prefix=".sci-default-", dir=home) as wrapper_dir:
                 wrapper = Path(wrapper_dir) / "sci-default"
@@ -195,8 +216,7 @@ def install_retrosynthesis(*, model_location: str | None = None,
         if enable_attempted:
             try:
                 _run([_sci_executable(), "-p", "default", "plugins", "disable", "retrosynthesis"],
-                     timeout=120, env={**os.environ, "SCI_HOME": str(home),
-                                       "SCI_DISABLE_LAZY_INSTALLS": "1"})
+                     timeout=120, env=_default_profile_env(home))
             except Exception:
                 pass
         shutil.rmtree(plugin, ignore_errors=True)

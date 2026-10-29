@@ -6,6 +6,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -154,6 +155,11 @@ def test_run_uses_default_root_when_active_profile_is_named(monkeypatch, tmp_pat
 
 
 def _fake_chat(monkeypatch, events, *, exit_code=0):
+    from sci_cli import environments_install
+
+    # The stream and child process are mocked; do not require a published Sci
+    # executable on the CI runner's PATH for these task-flow unit tests.
+    monkeypatch.setattr(environments_install, "_sci_executable", lambda: sys.executable)
     calls = {}
 
     class Process:
@@ -179,12 +185,14 @@ def _fake_chat(monkeypatch, events, *, exit_code=0):
 
 
 def test_launch_checks_real_tool_events_and_keeps_main_model(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("OPENAI_API_KEY", "named-profile-secret")
     events = [*_event("reset"), *_event("submit", ids=["route-1"]),
               {"type": "result", "session_id": "agent-session", "exit_code": 0, "text": "Route reviewed"}]
     calls = _fake_chat(monkeypatch, events)
     tasks._launch_agent("task prompt", {"task_id": "task-1"}, tmp_path)
     assert calls["prompt"] == "task prompt"
     assert calls["env"]["SCI_HOME"] == str(tmp_path)
+    assert "OPENAI_API_KEY" not in calls["env"]
     assert calls["command"][1:3] == ["-p", "default"]
     assert Path(calls["command"][0]).is_absolute()
     assert "-m" not in calls["command"]
@@ -267,6 +275,21 @@ def test_launch_from_unrelated_working_directory(tmp_path, monkeypatch):
     assert Path(calls["command"][0]).is_absolute()
 
 
+def test_launch_environment_uses_default_home_with_named_profile_override(tmp_path, monkeypatch):
+    from sci_constants import reset_sci_home_override, set_sci_home_override
+
+    main_home = tmp_path / "main"
+    named_home = main_home / "profiles" / "sirna"
+    token = set_sci_home_override(str(named_home))
+    try:
+        calls = _fake_chat(monkeypatch, [*_event("reset"), *_event("submit", ids=["route-1"]),
+                                      {"type": "result", "session_id": "agent-session", "exit_code": 0}])
+        tasks._launch_agent("task prompt", {"task_id": "task-1"}, main_home)
+    finally:
+        reset_sci_home_override(token)
+    assert calls["env"]["SCI_HOME"] == str(main_home)
+
+
 def test_validation_uses_chemistry_python_and_returns_canonical_task(tmp_path):
     root = Path(__file__).resolve().parents[3] / "srg-releases" / "retrosynthesis-managed-published" / "environments" / "retrosynthesis"
     python = Path(os.environ.get("SRG_TEST_CHEMISTRY_PYTHON", root.parents[2] / "retrosynthesis-managed-validate" / "venv" / "bin" / "python"))
@@ -281,3 +304,26 @@ def test_validation_uses_chemistry_python_and_returns_canonical_task(tmp_path):
         tasks._validate_task({**task, "target": "not-a-smiles"}, {
             "SRG_PACKAGE_ROOT": str(root), "SRG_CHEMISTRY_PYTHON": str(python),
         })
+
+
+def test_chemistry_validation_reports_child_errors_and_accepts_json(tmp_path, monkeypatch):
+    source = tmp_path / "src" / "synthesis_route_gym"
+    source.mkdir(parents=True)
+    (source / "schemas.py").touch()
+    runtime = {"SRG_PACKAGE_ROOT": str(tmp_path), "SRG_CHEMISTRY_PYTHON": sys.executable}
+    calls = []
+
+    def run(command, **kwargs):
+        calls.append((command, kwargs))
+        return SimpleNamespace(returncode=0, stdout='{"target":"CCO"}', stderr="")
+
+    monkeypatch.setattr(tasks.subprocess, "run", run)
+    assert tasks._validate_task({"target": "CCO"}, runtime) == {"target": "CCO"}
+    assert calls[0][0][0] == sys.executable
+    assert calls[0][1]["encoding"] == "utf-8"
+    assert json.loads(calls[0][1]["input"])["target"] == "CCO"
+
+    monkeypatch.setattr(tasks.subprocess, "run", lambda *_args, **_kwargs:
+                        SimpleNamespace(returncode=2, stdout="", stderr="bad input\n"))
+    with pytest.raises(ValueError, match="bad input"):
+        tasks._validate_task({"target": "bad"}, runtime)

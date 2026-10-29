@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
@@ -132,7 +131,8 @@ def _validate_task(payload: dict, runtime: dict) -> dict:
     try:
         result = subprocess.run(
             [runtime["SRG_CHEMISTRY_PYTHON"], "-I", "-c", _VALIDATE_SCRIPT, str(root)],
-            input=json.dumps(payload), text=True, capture_output=True,
+            input=json.dumps(payload), text=True, encoding="utf-8", errors="replace",
+            capture_output=True,
             timeout=60, check=False,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
@@ -280,7 +280,15 @@ def _launch_agent(prompt: str, task: dict, home: Path):
 
         command = [_sci_executable(), "-p", "default", "chat", "--query-file",
                    str(query_path), "--oneshot", "--format", "stream-json"]
-        environment = {**os.environ, "SCI_HOME": str(home)}
+        from tools.environments.local import build_subprocess_env
+        from sci_constants import reset_sci_home_override, set_sci_home_override
+
+        token = set_sci_home_override(str(home))
+        try:
+            environment = build_subprocess_env(
+                scrub_secrets=True, strip_launch_profile=True, extra={"SCI_HOME": str(home)})
+        finally:
+            reset_sci_home_override(token)
         try:
             with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None,
                                   text=True, encoding="utf-8", env=environment) as process:

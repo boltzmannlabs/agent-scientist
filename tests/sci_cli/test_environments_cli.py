@@ -72,6 +72,7 @@ def test_default_install_writes_base_runtime_and_discovers(tmp_path, monkeypatch
     from sci_cli import environments_install as installer
 
     calls = []
+    monkeypatch.setenv("OPENAI_API_KEY", "named-profile-secret")
     monkeypatch.setattr(installer, "get_default_sci_root", lambda: tmp_path)
     monkeypatch.setattr(installer, "fetch_pinned_source",
                         lambda repo, revision, destination: _stub_release(destination))
@@ -83,6 +84,7 @@ def test_default_install_writes_base_runtime_and_discovers(tmp_path, monkeypatch
         calls.append(command)
         if "plugins" in command:
             assert kwargs["env"]["SCI_DISABLE_LAZY_INSTALLS"] == "1"
+            assert "OPENAI_API_KEY" not in kwargs["env"]
         return ""
 
     monkeypatch.setattr(installer, "_run", run)
@@ -95,6 +97,34 @@ def test_default_install_writes_base_runtime_and_discovers(tmp_path, monkeypatch
     assert ["sci", "-p", "default", "plugins", "enable", "retrosynthesis",
             "--no-allow-tool-override"] in calls
     assert ["discover", str(tmp_path)] in calls
+
+
+def test_discovery_uses_default_profile_without_inherited_provider_key(tmp_path, monkeypatch):
+    from sci_cli import environments_install as installer
+
+    monkeypatch.setenv("OPENAI_API_KEY", "named-profile-secret")
+    seen = {}
+    monkeypatch.setattr(installer, "_run", lambda command, **kwargs: seen.update(kwargs) or "")
+    installer._check_discovery(tmp_path)
+    assert seen["env"]["SCI_HOME"] == str(tmp_path)
+    assert "OPENAI_API_KEY" not in seen["env"]
+    assert "PYTHONPATH" in seen["env"]
+
+
+def test_discovery_child_imports_checkout_from_unrelated_directory(tmp_path, monkeypatch):
+    from sci_cli import environments_install as installer
+
+    def run(command, **kwargs):
+        result = subprocess.run(
+            [command[0], "-c", "import sci_cli.plugins"],
+            cwd=tmp_path, env=kwargs["env"], capture_output=True,
+            text=True, encoding="utf-8", check=False,
+        )
+        assert result.returncode == 0, result.stderr
+        return ""
+
+    monkeypatch.setattr(installer, "_run", run)
+    installer._check_discovery(tmp_path)
 
 
 def test_discovery_failure_disables_and_cleans_new_files(tmp_path, monkeypatch):
