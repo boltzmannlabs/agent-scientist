@@ -54,14 +54,38 @@ Only local files require a new upload. Never infer input mode from a field name.
         ],
         "type": "string"
       },
-      "x-input-kind": "value"
+      "x-input-kind": "value",
+      "minItems": 1
     }
   },
   "required": [
     "dataPath",
     "property_name"
   ],
-  "additionalProperties": true
+  "additionalProperties": true,
+  "if": {
+    "$comment": "A selection contains CDR_Prediction when not every item excludes it. Uses the validator's existing JSON Schema keywords.",
+    "required": [
+      "property_name"
+    ],
+    "properties": {
+      "property_name": {
+        "type": "array",
+        "not": {
+          "items": {
+            "not": {
+              "const": "CDR_Prediction"
+            }
+          }
+        }
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "scheme"
+    ]
+  }
 }
 ```
 
