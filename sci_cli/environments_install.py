@@ -17,7 +17,7 @@ from sci_constants import get_default_sci_root
 
 
 RETROSYNTHESIS_REPO = "https://github.com/boltzmannlabs/science-environments.git"
-RETROSYNTHESIS_COMMIT = "912d79c7f832b744f83b02d45fa977fbb2797308"
+RETROSYNTHESIS_COMMIT = "baf094a30111eb6aa495ad1481aa3bbf9c1a600b"
 _SHA = re.compile(r"[0-9a-f]{40}\Z")
 
 
