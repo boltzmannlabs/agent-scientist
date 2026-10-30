@@ -173,11 +173,6 @@ For mode-dependent fields, include the fields required by the selected schema br
           "Sequences",
           "SMILES"
         ],
-        "aliases": {
-          "Sequences": [
-            "Sequence"
-          ]
-        },
         "values": {
           "Sequences": "protein",
           "SMILES": "smiles"
@@ -185,7 +180,21 @@ For mode-dependent fields, include the fields required by the selected schema br
       }
     ],
     "header_case_sensitive": true,
-    "notes": "The submission credit checker requires Seq_id, SMILES and one of Sequence or Sequences, with exact case. No automatic header or molecular-value rewriting. CSV shape checks do not verify protein/SMILES semantics; no backend rerun was performed to establish successful execution."
+    "notes": "Use exact Seq_id,Sequences,SMILES headers for the inspected Node/worker intersection. The Node credit checker lists singular Sequence too, but the local worker rejects it. Sequence alphabet and SMILES are checked locally; this is not deployment or execution proof.",
+    "semantic_values": {
+      "Sequences": {
+        "alphabet": "ACDEFGHIKLMNPQRSTVWY",
+        "whitespace": "preserve",
+        "case_sensitive": true
+      },
+      "SMILES": {
+        "smiles": true
+      }
+    },
+    "forbidden_columns": [
+      "sequence",
+      "smile"
+    ]
   }
 }
 ```
@@ -261,7 +270,18 @@ For mode-dependent fields, include the fields required by the selected schema br
       "Seq_id",
       "Sequences"
     ],
-    "notes": "S3 path to CSV (upload first)"
+    "notes": "S3 path to CSV (upload first)",
+    "semantic_values": {
+      "Sequences": {
+        "alphabet": "ACDEFGHIKLMNPQRSTVWYBXZUO.-",
+        "whitespace": "strip_spaces",
+        "case_sensitive": true
+      }
+    },
+    "forbidden_columns": [
+      "sequence",
+      "smile"
+    ]
   }
 }
 ```
@@ -413,7 +433,25 @@ For mode-dependent fields, include the fields required by the selected schema br
       "pdb"
     ],
     "header_case_sensitive": true,
-    "notes": "S3 path to PDB (upload first)"
+    "notes": "S3 path to PDB (upload first)",
+    "structure_profile": "protein_structure",
+    "backbone_atoms": [
+      "N",
+      "CA",
+      "C"
+    ]
+  }
+}
+```
+
+### Input limits
+
+```json
+{
+  "fields": {
+    "num_sequences": {
+      "minimum": 1
+    }
   }
 }
 ```
@@ -440,7 +478,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 | `contigs` | string | yes | value | Contig definition (e.g., `"A1-10"`) |
 | `targets` | string | yes | value | Target chains |
 | `min_lengths` | integer | yes | value | Minimum scaffold length |
-| `max_lengths` | integer | yes | value | Maximum scaffold length |
+| `max_lengths` | integer | yes | value | Exclusive maximum scaffold length in the current native sampler. For a fixed length L use min_lengths=L, max_lengths=L+1; both zero means unrestricted. No automatic bound conversion is performed. |
 | `samples_per_target` | integer | yes | value | Default: 2 |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
@@ -474,7 +512,7 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "value"
     },
     "max_lengths": {
-      "description": "Maximum scaffold length",
+      "description": "Exclusive maximum scaffold length in the current native sampler. For a fixed length L use min_lengths=L, max_lengths=L+1; both zero means unrestricted. No automatic bound conversion is performed.",
       "type": "integer",
       "x-input-kind": "value"
     },
@@ -525,7 +563,24 @@ For mode-dependent fields, include the fields required by the selected schema br
       "pdb"
     ],
     "header_case_sensitive": true,
-    "notes": "S3 path to PDB (upload first)"
+    "notes": "S3 path to PDB (upload first)",
+    "structure_profile": "protein_structure",
+    "validation_context": [
+      "contigs",
+      "targets"
+    ]
+  }
+}
+```
+
+### Input limits
+
+```json
+{
+  "fields": {
+    "samples_per_target": {
+      "minimum": 1
+    }
   }
 }
 ```
@@ -610,10 +665,26 @@ For mode-dependent fields, include the fields required by the selected schema br
     ],
     "header_case_sensitive": true,
     "columns": [
-      "Sequence_ID",
       "Sequences"
     ],
-    "notes": "S3 path to CSV or FASTA (upload first)"
+    "notes": "Use exact plural Sequences for the Node/worker intersection. Sequence_ID is optional metadata, not a required Node column in the recorded all-missing-column diagnostic; the worker also permits an absent identifier. No corrected-header live execution was performed.",
+    "semantic_values": {
+      "Sequences": {
+        "alphabet": "ACDEFGHIKLMNPQRSTVWYXBZUO.-",
+        "whitespace": "preserve",
+        "case_sensitive": true
+      }
+    },
+    "sequence_validation": {
+      "alphabet": "ACDEFGHIKLMNPQRSTVWYXBZUO.-",
+      "whitespace": "preserve",
+      "case_sensitive": true,
+      "unique_ids": true
+    },
+    "forbidden_columns": [
+      "sequence",
+      "smile"
+    ]
   }
 }
 ```
@@ -685,7 +756,8 @@ For mode-dependent fields, include the fields required by the selected schema br
       "pdb"
     ],
     "header_case_sensitive": true,
-    "notes": "S3 path to PDB (upload first)"
+    "notes": "S3 path to PDB (upload first)",
+    "structure_profile": "protein_structure"
   }
 }
 ```
@@ -771,7 +843,11 @@ For mode-dependent fields, include the fields required by the selected schema br
     ],
     "chains_field": "chain_list",
     "header_case_sensitive": true,
-    "notes": "Platform path to one `.pdb` or a `.zip` of PDB structures."
+    "notes": "Platform path to one `.pdb` or a `.zip` of PDB structures.",
+    "structure_profile": "protein_structure",
+    "validation_context": [
+      "chain_list"
+    ]
   }
 }
 ```
@@ -843,7 +919,13 @@ For mode-dependent fields, include the fields required by the selected schema br
       "pdb"
     ],
     "header_case_sensitive": true,
-    "notes": "Use the exact source field."
+    "notes": "Use the exact source field.",
+    "structure_profile": "protein_structure",
+    "backbone_atoms": [
+      "N",
+      "CA",
+      "C"
+    ]
   }
 }
 ```
@@ -949,7 +1031,16 @@ For mode-dependent fields, include the fields required by the selected schema br
       "zip"
     ],
     "header_case_sensitive": true,
-    "notes": "Use the exact source field."
+    "notes": "Use the exact source field.",
+    "structure_profile": "protein_structure",
+    "backbone_atoms": [
+      "N",
+      "CA",
+      "C"
+    ],
+    "member_formats": [
+      "pdb"
+    ]
   }
 }
 ```
@@ -1038,7 +1129,11 @@ For mode-dependent fields, include the fields required by the selected schema br
     "chains_field": "chain",
     "chain_scalar": true,
     "header_case_sensitive": true,
-    "notes": "Remote ZIP containing PDB files, including nested directories (not nested ZIPs)."
+    "notes": "Remote ZIP containing PDB files, including nested directories (not nested ZIPs).",
+    "structure_profile": "protein_structure",
+    "validation_context": [
+      "chain"
+    ]
   },
   "model_path": {
     "execution_blocked": true,
@@ -1130,14 +1225,16 @@ For mode-dependent fields, include the fields required by the selected schema br
       "pdb"
     ],
     "header_case_sensitive": true,
-    "notes": "At least one design PDB, directly or inside a ZIP; first chain is used from each structure."
+    "notes": "At least one design PDB, directly or inside a ZIP; first chain is used from each structure.",
+    "structure_profile": "protein_structure"
   },
   "wt_path": {
     "formats": [
       "pdb"
     ],
     "header_case_sensitive": true,
-    "notes": "Exactly one wild-type/reference PDB; first chain is used."
+    "notes": "Exactly one wild-type/reference PDB; first chain is used.",
+    "structure_profile": "protein_structure"
   }
 }
 ```
@@ -1183,8 +1280,11 @@ Only local files require a new upload. Never infer input mode from a field name.
       "type": "array",
       "x-input-kind": "value",
       "items": {
-        "type": "integer"
-      }
+        "type": "integer",
+        "minimum": 1
+      },
+      "minItems": 1,
+      "uniqueItems": true
     }
   },
   "required": [
@@ -1208,6 +1308,18 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
 ```
 
 For mode-dependent fields, include the fields required by the selected schema branch.
+
+### Input limits
+
+```json
+{
+  "fields": {
+    "samples_per_length": {
+      "minimum": 1
+    }
+  }
+}
+```
 
 ### Results
 
@@ -1344,7 +1456,10 @@ For mode-dependent fields, include the fields required by the selected schema br
     ],
     "content_format": "protein_structure_or_bundle",
     "notes": "Prepared PDB/CIF/mmCIF or ZIP. Candidate labels, atom names, and structure numbering must match template/binding/mapping.",
-    "coverage": "partial"
+    "structure_profile": "Catalytic_Geometry",
+    "validation_context": [
+      "input_source"
+    ]
   },
   "reaction_template": {
     "formats": [
@@ -1354,7 +1469,7 @@ For mode-dependent fields, include the fields required by the selected schema br
     "max_bytes": 1048576,
     "notes": "Live FastAPI accepts a relative .json storage path, not an inline object. Full template fields/check types are in modules/catalytic-geometry-template.md; no universal reaction geometry values.",
     "content_checks": "catalytic_geometry",
-    "coverage": "partial"
+    "inventory_kind": "reaction_template"
   },
   "template_binding": {
     "formats": [
@@ -1363,7 +1478,7 @@ For mode-dependent fields, include the fields required by the selected schema br
     "content_format": "utf8_json_object",
     "max_bytes": 1048576,
     "notes": "Live FastAPI currently requires this path. JSON must contain exactly mapping_keys with 1-1000 role mappings; each role targets an upstream key or chain/residue location. Do not invent dummy mappings.",
-    "coverage": "partial"
+    "inventory_kind": "template_binding"
   },
   "mapping_path": {
     "formats": [
@@ -1371,7 +1486,7 @@ For mode-dependent fields, include the fields required by the selected schema br
     ],
     "content_format": "candidate_residue_mapping",
     "notes": "Optional. CSV required columns candidate_id,mapping_key,chain_id,residue_number; insertion_code optional. JSON keyed by candidate ID then mapping key to location. Candidate ID matches structure basename. Node route requires JSON; CSV was explicitly rejected in live testing.",
-    "coverage": "partial"
+    "inventory_kind": "mapping"
   }
 }
 ```
@@ -1494,7 +1609,7 @@ Report actual service errors and incomplete outputs. Refresh status for expired 
 
 ## MolProbity
 
-Measure structural quality or apply explicitly supplied thresholds.
+Measure structural quality or apply explicitly supplied thresholds. Optional custom-ligand dictionaries use the existing input ZIP and a root ligand_manifest.json; no extra API field. Local bundle checks do not establish worker chemistry coverage or deployed backend support.
 
 [Product description and result interpretation](../enzyme-tools-guide.md#molprobity)
 
@@ -1508,7 +1623,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 |---|---|---|---|---|
 | `input_path` | string | yes | file | Uploaded structure or ZIP of structures. |
 | `execution_mode` | string | no / mode-dependent | value | measurement_only (default) or validation. |
-| `quality_thresholds` | see schema | no / mode-dependent | file_or_value | Only in validation mode: nonempty threshold object or uploaded .json path. |
+| `quality_thresholds` | see schema | no / mode-dependent | file_or_value | Validation-only threshold object or uploaded .json path. Connector preparation omits this field in measurement_only mode, matching the worker; original caller data is not modified. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -1535,7 +1650,7 @@ Only local files require a new upload. Never infer input mode from a field name.
       ]
     },
     "quality_thresholds": {
-      "description": "Only in validation mode: nonempty threshold object or uploaded .json path.",
+      "description": "Validation-only threshold object or uploaded .json path. Connector preparation omits this field in measurement_only mode, matching the worker; original caller data is not modified.",
       "x-input-kind": "file_or_value",
       "oneOf": [
         {
@@ -1686,8 +1801,8 @@ For mode-dependent fields, include the fields required by the selected schema br
       "zip"
     ],
     "content_format": "protein_structure_or_bundle",
-    "notes": "One structure or ZIP of structures.",
-    "coverage": "partial"
+    "notes": "One structure or ZIP of structures. Optional root ligand_manifest.json (molprobity-ligand-bundle.v1) binds reviewed restraint CIFs to exact custom ligand residues; dictionary CIFs are auxiliary files, not candidate structures. See molprobity-ligand-bundles.md. Local shape/path/hash/selector checks do not replace worker chemistry validation; backend ZIP billing/deployment support still needs live confirmation.",
+    "structure_profile": "Mol_Probity"
   },
   "quality_thresholds": {
     "formats": [
@@ -1696,7 +1811,7 @@ For mode-dependent fields, include the fields required by the selected schema br
     "content_format": "utf8_json_object",
     "max_bytes": 1048576,
     "notes": "Only in validation mode; nonempty object with supported threshold names. Inline object also accepted by live FastAPI.",
-    "coverage": "partial"
+    "inventory_kind": "thresholds"
   }
 }
 ```
@@ -1704,10 +1819,25 @@ For mode-dependent fields, include the fields required by the selected schema br
 Uploaded JSON content is validated against the full schema in
 `file-input-contracts.v1.json`; see the linked guide for field definitions.
 
+The optional ZIP-root ligand manifest shape is canonical in
+`file-input-contracts.v1.json`; see the linked ligand-bundle guide.
+
 ### Input limits
 
 ```json
 {
+  "ligand_bundle": {
+    "schema": "molprobity-ligand-bundle.v1",
+    "maximum_manifest_bytes": 1048576,
+    "maximum_dictionary_bytes": 1048576,
+    "maximum_dictionaries": 64,
+    "maximum_bindings_per_candidate": 256,
+    "maximum_dictionary_atoms": 2048,
+    "maximum_archive_members": 1000,
+    "maximum_structure_bytes": 52428800,
+    "maximum_expanded_bytes": 2147483648,
+    "maximum_compression_ratio": 200
+  },
   "fields": {},
   "files": {
     "quality_thresholds": {
@@ -1782,7 +1912,7 @@ Uploaded JSON content is validated against the full schema in
 
 ### Execution notices
 
-- Do not send quality_thresholds in measurement_only mode. In validation, supply a nonempty object or uploaded JSON path.
+- In measurement_only mode the connector ignores supplied quality_thresholds before validation/submission, matching the worker. In validation, a nonempty supported object or uploaded JSON path is required.
 - The latest recorded reference submission was accepted but remained pending without artifacts. This is not completed validation; do not duplicate a pending job.
 
 ### Recorded payload example

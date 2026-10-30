@@ -6,14 +6,26 @@ import io
 import json
 import math
 from pathlib import Path, PurePosixPath
+import re
 import stat
 import zipfile
+import zlib
 
 from .contracts import ValidationReport, validate_schema
+from .boltzyme_tools_input_sequence_validation import validate_molecule
 
 MAX_FILE_BYTES = 256 * 1024 * 1024
 MAX_EXPANDED_BYTES = 512 * 1024 * 1024
 MAX_ARCHIVE_MEMBERS = 10000
+MAX_INVENTORY_BYTES = 256 * 1024
+
+
+def _retain_inventory(report, kind, value):
+    inventory = {"kind": kind, "data": value}
+    if len(json.dumps(inventory, separators=(",", ":")).encode("utf-8")) > MAX_INVENTORY_BYTES:
+        report.warnings.append("Input checks ran, but the local receipt inventory budget was exceeded; cross-file references remain unchecked.")
+        return
+    report.inventory = inventory
 
 
 def _json(data, rule, report):
@@ -35,6 +47,8 @@ def _json(data, rule, report):
     if not report.errors and rule.get("content_checks"):
         from .enzyme_validation import validate_template
         validate_template(value, rule["json_schema"], report)
+    if not report.errors and rule.get("inventory_kind"):
+        _retain_inventory(report, rule["inventory_kind"], value)
 
 
 def _finite(text):
@@ -44,10 +58,42 @@ def _finite(text):
         return False
 
 
+def _sequence(value, spec, label, report):
+    """Return only a temporary worker-equivalent view, never rewritten input data."""
+    alphabet = spec.get("alphabet")
+    whitespace = {"preserve": lambda s: s, "remove": lambda s: "".join(s.split()),
+                  "strip_spaces": lambda s: s.strip().replace(" ", "")}
+    if (not isinstance(alphabet, str) or not alphabet
+            or spec.get("whitespace", "preserve") not in whitespace
+            or not isinstance(spec.get("case_sensitive", True), bool)):
+        report.warnings.append(f"{label}: sequence semantics unchecked; an explicit audited alphabet and normalization policy are required.")
+        return None
+    sequence = whitespace[spec.get("whitespace", "preserve")](value)
+    if not spec.get("case_sensitive", True):
+        sequence = sequence.upper()
+    if not sequence or set(sequence) - set(alphabet):
+        report.errors.append(f"{label}: sequence contains characters outside the documented alphabet or is empty.")
+        return None
+    return sequence
+
+
+def _semantic_value(value, spec, label, report):
+    if spec.get("smiles") is True:
+        validate_molecule(value, label, report)
+    elif "alphabet" in spec:
+        _sequence(value, spec, label, report)
+    else:
+        report.warnings.append(f"{label}: unsupported semantic value kind remains unchecked.")
+
+
 def _csv(data, rule, payload, report):
     text = data.decode("utf-8-sig")
     reader = csv.reader(io.StringIO(text), strict=True)
     headers = next(reader, [])
+    forbidden = {name.strip().casefold() for name in rule.get("forbidden_columns", [])}
+    if any(name.strip().casefold() in forbidden for name in headers):
+        report.errors.append("CSV contains a column forbidden by this tool's documented input rules.")
+        return
     normalize = (lambda s: s) if rule.get("header_case_sensitive", True) else str.casefold
     names = [normalize(h) for h in headers]
     if not names or any(not h.strip() for h in headers) or len(set(names)) != len(names):
@@ -72,6 +118,21 @@ def _csv(data, rule, payload, report):
                              f"Expected required columns: {layouts}.")
         return
     variant, mapping = selected
+    semantics = dict(variant.get("semantic_values", rule.get("semantic_values", {})))
+    for selector, choices in rule.get("semantic_values_by_field", {}).items():
+        if selector not in payload:
+            report.warnings.append(f"CSV semantic checks depend on {selector}; supply it before upload.")
+            continue
+        selections = payload[selector] if isinstance(payload[selector], list) else [payload[selector]]
+        for selection in selections:
+            semantics.update(choices.get(str(selection), {}))
+    for column in semantics.keys() - mapping.keys():
+        choices = [column, *variant.get("aliases", rule.get("aliases", {})).get(column, [])]
+        matches = [i for i, name in enumerate(names) if name in {normalize(c) for c in choices}]
+        if len(matches) != 1:
+            report.errors.append(f"CSV requires one unambiguous {column} column for the selected semantic checks.")
+            return
+        mapping[column] = matches[0]
     values = dict(variant.get("values", rule.get("values", {})))
     for selector, choices in rule.get("values_by_field", {}).items():
         if selector not in payload:
@@ -81,7 +142,7 @@ def _csv(data, rule, payload, report):
     checks = {"number": _finite, "binary": lambda s: s in {"0", "1"},
               "integer": lambda s: _finite(s) and float(s).is_integer()}
     for column, kind in values.items():
-        if not isinstance(kind, dict) and kind not in checks:
+        if not isinstance(kind, dict) and kind not in checks and column not in semantics:
             report.warnings.append(f"{column}: {kind} semantics are not verified by the generic CSV parser.")
     count = 0
     for row in reader:
@@ -101,6 +162,8 @@ def _csv(data, rule, payload, report):
                 check = checks.get(kind) if isinstance(kind, str) else None
                 if check and not check(value):
                     report.errors.append(f"CSV row {count + 1}: {column} violates its documented value type.")
+            if column in semantics and value.strip():
+                _semantic_value(value, semantics[column], f"CSV row {count + 1}: {column}", report)
         if report.errors:
             break
     if not count:
@@ -137,28 +200,79 @@ def _sdf(data, report):
     report.warnings.append("SDF record structure checked; atom/bond chemistry and electronic-state suitability are not verified.")
 
 
-def _fasta(data, rule, report):
-    """Check record structure without interpreting or designing sequences."""
+def _positions(parent, field, payload, report):
+    if field not in payload:
+        report.warnings.append(f"{field}: parent-residue position checks require request context and remain unchecked.")
+        return
+    tokens = payload[field].split() if isinstance(payload[field], str) else payload[field]
+    if not isinstance(tokens, list) or not tokens:
+        report.errors.append(f"{field}: expected nonempty AA1 residue-position tokens.")
+        return
+    seen = set()
+    for token in tokens:
+        match = re.fullmatch(r"([ACDEFGHIKLMNPQRSTVWY])([1-9][0-9]*)", str(token))
+        if match is None:
+            report.errors.append(f"{field}: expected canonical uppercase amino acid followed by a one-based position.")
+            return
+        position = int(match[2])
+        if position > len(parent) or position in seen or parent[position - 1] != match[1]:
+            report.errors.append(f"{field}: a position is duplicate, out of range or does not match the parent residue.")
+            return
+        seen.add(position)
+
+
+def _fasta(data, rule, report, payload=None):
+    """Syntax plus explicitly opted-in worker sequence and parent checks."""
     records = 0
-    residues = 0
+    parts = []
+    identifiers = set()
+    semantics = rule.get("sequence_validation")
+    constraints = semantics or {}
+
+    def finish():
+        if not parts:
+            report.errors.append("FASTA requires named records with nonempty sequences.")
+            return
+        if semantics:
+            parent = _sequence("".join(parts), semantics, f"FASTA record {records}", report)
+            if parent is not None and constraints.get("positions_field"):
+                _positions(parent, constraints["positions_field"], payload or {}, report)
+
     for line in data.decode("utf-8-sig").splitlines():
         line = line.strip()
         if not line:
             continue
         if line.startswith(">"):
-            if not line[1:].strip() or (records and not residues):
+            if not line[1:].strip():
                 report.errors.append("FASTA requires named records with nonempty sequences.")
                 return
+            if records:
+                finish()
+                if report.errors:
+                    return
+            if constraints.get("unique_ids") and line[1:] in identifiers:
+                report.errors.append("FASTA contains duplicate record identifiers.")
+                return
+            if constraints.get("unique_ids"):
+                identifiers.add(line[1:])
             records += 1
-            residues = 0
-        elif not records or not all(c.isascii() and (c.isalpha() or c in "*.-") for c in line):
+            if records > constraints.get("max_records", math.inf):
+                report.errors.append(f"FASTA exceeds the documented maximum of {constraints['max_records']} records.")
+                return
+            parts = []
+        elif not records or not semantics and not all(c.isascii() and (c.isalpha() or c in "*.-") for c in line):
             report.errors.append("FASTA has sequence data before a header or invalid sequence-line characters.")
             return
         else:
-            residues += len(line)
-    if not records or not residues:
+            parts.append(line)
+    if not records:
         report.errors.append("FASTA requires at least one named, nonempty sequence record.")
-    report.warnings.append("FASTA record syntax checked; biological sequence suitability is not established by this check.")
+    else:
+        finish()
+    if not semantics:
+        report.warnings.append("FASTA record syntax checked; biological sequence suitability is not established by this check.")
+    elif not report.errors:
+        report.info.append("Documented FASTA sequence constraints checked; this is not a prediction of biological function.")
 
 
 def _pdb(data, report):
@@ -175,7 +289,7 @@ def _pdb(data, report):
     report.warnings.append("PDB coordinate syntax checked; chain selection and scientific suitability require input review.")
 
 
-def _zip(data, rule, report):
+def _zip(data, rule, report, *, warn_contents=True):
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
         members = archive.infolist()
         if len(members) > MAX_ARCHIVE_MEMBERS or sum(m.file_size for m in members) > MAX_EXPANDED_BYTES:
@@ -210,7 +324,8 @@ def _zip(data, rule, report):
                         return
         if not any(not m.is_dir() and m.file_size for m in members):
             report.errors.append("ZIP has no nonempty input files.")
-        report.warnings.append("ZIP safety/integrity checked; member scientific contents and tool-specific layout need review.")
+        if warn_contents:
+            report.warnings.append("ZIP safety/integrity checked; member scientific contents and tool-specific layout need review.")
 
 
 def validate_file(path, rule, payload):
@@ -247,7 +362,7 @@ def validate_file(path, rule, payload):
             if len(data) > MAX_FILE_BYTES:
                 report.errors.append("Gzip expansion exceeds the connector's inspection budget.")
                 return report
-        except (OSError, EOFError):
+        except (OSError, EOFError, zlib.error):
             report.errors.append("Invalid gzip content.")
             return report
         extension = extension.removesuffix(".gz")
@@ -256,15 +371,28 @@ def validate_file(path, rule, payload):
                "zip": lambda: _zip(data, rule, report),
                "xyz": lambda: _xyz(data, report), "sdf": lambda: _sdf(data, report),
                "pdb": lambda: _pdb(data, report),
-               "fa": lambda: _fasta(data, rule, report), "fasta": lambda: _fasta(data, rule, report)}
+               "fa": lambda: _fasta(data, rule, report, payload), "fasta": lambda: _fasta(data, rule, report, payload)}
     try:
-        if extension in parsers:
+        if rule.get("structure_profile"):
+            if extension == "zip":
+                _zip(data, rule, report, warn_contents=False)
+            if not report.errors:
+                from .boltzyme_tools_input_structure_validation import inspect_structure
+                summary = inspect_structure(data, extension, rule["structure_profile"], payload, report,
+                                            filename=path.name, requirements=rule)
+                if not report.errors:
+                    _retain_inventory(report, "structure", summary)
+        elif extension in parsers:
             parsers[extension]()
         else:
             report.warnings.append(f"No content parser for .{extension}; only file existence, size and declared extension checked.")
     except (UnicodeError, ValueError, csv.Error, zipfile.BadZipFile, RuntimeError, NotImplementedError, OSError, RecursionError):
         report.errors.append("Input could not be decoded or its archive integrity check failed.")
     unsupported = {"alphabet", "chains_field", "chain_scalar", "required_chains", "residues_field", "content_format"} & rule.keys()
+    if rule.get("structure_profile") or rule.get("json_schema"):
+        unsupported.discard("content_format")
+    if rule.get("structure_profile") == "protein_structure":
+        unsupported -= {"chains_field", "chain_scalar", "residues_field"}
     if unsupported:
         report.warnings.append("Additional documented checks need review: " + ", ".join(sorted(unsupported)) + ".")
     if rule.get("coverage") in {"partial", "unknown"}:

@@ -108,7 +108,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_file_path` | string | yes | file | Platform path returned by `file_upload`; filename must end in `.pdb` or `.cif`. |
+| `input_file_path` | string | yes | file | Uploaded .pdb or .cif path. The native PDB parser requires protein and non-water ligand chains to be distinct. Prepare a reviewed copy with separate ligand chain labels and matching predict_ligand; do not silently relabel or change coordinates. |
 | `rerank` | string | yes | value | Exact value `prmsd`, `plddt`, or `plddt_pde`. |
 | `suffix` | string | yes | value | Ligand identifier appended to outputs; must match `^[A-Z]+-[A-Z]+-\d+$`, for example `D-LDP-501`. |
 | `predict_ligand` | string | yes | value | Exact ligand identifier in the input structure, including chain ID, 3-letter ligand name, and residue number; same format as `suffix`. |
@@ -125,7 +125,7 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "input_file_path": {
-      "description": "Platform path returned by `file_upload`; filename must end in `.pdb` or `.cif`.",
+      "description": "Uploaded .pdb or .cif path. The native PDB parser requires protein and non-water ligand chains to be distinct. Prepare a reviewed copy with separate ligand chain labels and matching predict_ligand; do not silently relabel or change coordinates.",
       "type": "string",
       "x-input-kind": "file"
     },
@@ -142,12 +142,14 @@ Only local files require a new upload. Never infer input mode from a field name.
     "suffix": {
       "description": "Ligand identifier appended to outputs; must match `^[A-Z]+-[A-Z]+-\\d+$`, for example `D-LDP-501`.",
       "type": "string",
-      "x-input-kind": "value"
+      "x-input-kind": "value",
+      "pattern": "^[A-Z]+-[A-Z]+-[0-9]+$"
     },
     "predict_ligand": {
       "description": "Exact ligand identifier in the input structure, including chain ID, 3-letter ligand name, and residue number; same format as `suffix`.",
       "type": "string",
-      "x-input-kind": "value"
+      "x-input-kind": "value",
+      "pattern": "^[A-Z]+-[A-Z]+-[0-9]+$"
     },
     "no_of_samples": {
       "description": "Number of poses; minimum 10 and maximum 100. Send an integer, not a string.",
@@ -195,7 +197,13 @@ For mode-dependent fields, include the fields required by the selected schema br
       "cif"
     ],
     "header_case_sensitive": true,
-    "notes": "Platform path returned by `file_upload`; filename must end in `.pdb` or `.cif`."
+    "notes": "Platform path returned by `file_upload`; filename must end in `.pdb` or `.cif`.",
+    "structure_profile": "protein_structure",
+    "ligand_field": "predict_ligand",
+    "pdb_separate_ligand_chains": true,
+    "validation_context": [
+      "predict_ligand"
+    ]
   }
 }
 ```

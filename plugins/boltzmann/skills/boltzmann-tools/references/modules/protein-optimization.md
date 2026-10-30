@@ -45,7 +45,8 @@ Only local files require a new upload. Never infer input mode from a field name.
     "active_sites": {
       "description": "Required comma-separated residue IDs, e.g. 105_A,224_A; every identifier must exist in reference_path PDB.",
       "type": "string",
-      "x-input-kind": "value"
+      "x-input-kind": "value",
+      "pattern": "^-?[0-9]+_[A-Za-z0-9](,-?[0-9]+_[A-Za-z0-9])*$"
     }
   },
   "required": [
@@ -87,7 +88,8 @@ For mode-dependent fields, include the fields required by the selected schema br
       "pdb"
     ],
     "header_case_sensitive": true,
-    "notes": "Uploaded file: `.pdb`, `.zip`"
+    "notes": "Uploaded file: `.pdb`, `.zip`",
+    "structure_profile": "protein_structure"
   },
   "reference_path": {
     "formats": [
@@ -95,7 +97,11 @@ For mode-dependent fields, include the fields required by the selected schema br
     ],
     "residues_field": "active_sites",
     "header_case_sensitive": true,
-    "notes": "Uploaded file: `.pdb`"
+    "notes": "Uploaded file: `.pdb`",
+    "structure_profile": "protein_structure",
+    "validation_context": [
+      "active_sites"
+    ]
   }
 }
 ```
@@ -187,9 +193,18 @@ For mode-dependent fields, include the fields required by the selected schema br
 {
   "fasta_path": {
     "formats": [
-      "fa",
       "fasta"
-    ]
+    ],
+    "sequence_validation": {
+      "alphabet": "ACDEFGHIKLMNPQRSTVWY",
+      "case_sensitive": false,
+      "max_records": 1,
+      "positions_field": "positions"
+    },
+    "validation_context": [
+      "positions"
+    ],
+    "notes": "One parent .fasta; the inspected worker accepts .fasta, not the generic .fa suffix. Positions must match its normalized parent sequence. CSV worker support is not established Node acceptance."
   }
 }
 ```
@@ -215,7 +230,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 | `seq` | string | yes | value | Input sequence (string, NOT list) |
 | `n_samples` | integer | yes | value | Number of mutants |
 | `file_format` | string | yes | value | CSV is the supported output format. |
-| `indices` | array | yes | value | Positions to mutate (e.g., `[5, 10]`) — must be array, not string |
+| `indices` | array | yes | value | Zero-based protected positions excluded from mutation; at least one position must remain available. An empty array is allowed. |
 | `mutaions_per_epoch` | integer | yes | value | Number of mutations per round. **API TYPO: spell it `mutaions_per_epoch` (missing the "t")** — the backend rejects the correct spelling `mutations_per_epoch` with `Schema validation failed: Mutations per epoch is required`. The skill docs and most reference files will say `mutations_per_epoch` but the live API only accepts the misspelled form. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
@@ -231,7 +246,8 @@ Only local files require a new upload. Never infer input mode from a field name.
     "seq": {
       "description": "Input sequence (string, NOT list)",
       "type": "string",
-      "x-input-kind": "value"
+      "x-input-kind": "value",
+      "pattern": "^[ACDEFGHIKLMNPQRSTVWY]+$"
     },
     "n_samples": {
       "description": "Number of mutants",
@@ -247,11 +263,12 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "value"
     },
     "indices": {
-      "description": "Positions to mutate (e.g., `[5, 10]`) — must be array, not string",
+      "description": "Zero-based protected positions excluded from mutation; at least one position must remain available. An empty array is allowed.",
       "type": "array",
       "x-input-kind": "value",
       "items": {
-        "type": "integer"
+        "type": "integer",
+        "minimum": 0
       }
     },
     "mutaions_per_epoch": {
@@ -289,6 +306,22 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
 ```
 
 For mode-dependent fields, include the fields required by the selected schema branch.
+
+### Input limits
+
+```json
+{
+  "fields": {
+    "n_samples": {
+      "minimum": 1
+    },
+    "mutaions_per_epoch": {
+      "minimum": 1,
+      "maximum": 109
+    }
+  }
+}
+```
 
 ### Results
 

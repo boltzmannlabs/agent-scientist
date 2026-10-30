@@ -4,6 +4,7 @@
 import json
 import os
 import time
+from copy import deepcopy
 from agent.memory_provider import spawn_context_thread
 
 from .nodeapi_helpers import (
@@ -137,6 +138,13 @@ def _handle_boltzmann_submit_inner(**kwargs):
     if job_name == "Enzyme_RFD3" and isinstance(experiment_data, dict):
         from .enzyme_validation import prepare_rfd3_payload
         experiment_data = prepare_rfd3_payload(experiment_data, experiment_name)
+    if job_name == "kcat_km" and isinstance(experiment_data, dict):
+        # The worker requires a run label distinct from the outer routing name.
+        experiment_data = deepcopy(experiment_data)
+        experiment_data.setdefault("job_name", experiment_name)
+    if job_name == "Mol_Probity" and isinstance(experiment_data, dict):
+        from .enzyme_validation import prepare_molprobity_payload
+        experiment_data = prepare_molprobity_payload(experiment_data)
 
     report = preflight_submission(job_name, experiment_data)
     blocked = decision(report, kwargs.get("allow_partial_validation"))
