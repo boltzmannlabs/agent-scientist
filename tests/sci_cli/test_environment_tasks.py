@@ -221,8 +221,17 @@ def test_launch_uses_full_stored_receipt_when_stream_is_clipped(tmp_path, monkey
     tasks._launch_agent("task prompt", {"task_id": "task-1"}, tmp_path)
 
 
-def test_stored_events_reconstructs_tool_calls(tmp_path, monkeypatch):
+@pytest.mark.parametrize("dispatch", ["direct", "lazy", "ambiguous"])
+def test_stored_events_reconstructs_tool_calls(tmp_path, monkeypatch, dispatch):
     import sci_state
+
+    def function(arguments):
+        if dispatch == "direct":
+            return {"name": "srg_action", "arguments": json.dumps(arguments)}
+        calls = [{"name": "srg_action", "arguments": arguments}]
+        if dispatch == "ambiguous":
+            calls = calls * 2
+        return {"name": "tool_call", "arguments": json.dumps({"calls": calls})}
 
     class DB:
         def __init__(self, **kwargs):
@@ -239,11 +248,9 @@ def test_stored_events_reconstructs_tool_calls(tmp_path, monkeypatch):
             reset = _event("reset")
             submit = _event("submit", ids=["route-1"])
             return [
-                {"role": "assistant", "tool_calls": [{"id": "a", "function": {
-                    "name": "srg_action", "arguments": json.dumps(reset[0]["input"])}}]},
+                {"role": "assistant", "tool_calls": [{"id": "a", "function": function(reset[0]["input"])}]},
                 {"role": "tool", "tool_call_id": "a", "content": reset[1]["output"]},
-                {"role": "assistant", "tool_calls": [{"id": "b", "function": {
-                    "name": "srg_action", "arguments": json.dumps(submit[0]["input"])}}]},
+                {"role": "assistant", "tool_calls": [{"id": "b", "function": function(submit[0]["input"])}]},
                 {"role": "tool", "tool_call_id": "b", "content":
                  "<persisted-output>\nFull output saved to: /tmp/untrusted-other-path\n</persisted-output>"},
             ]
@@ -253,7 +260,8 @@ def test_stored_events_reconstructs_tool_calls(tmp_path, monkeypatch):
     full_submit = _event("submit", ids=["route-1"])[1]["output"] + " " * 6000
     (spill / "b.txt").write_text(full_submit)
     monkeypatch.setattr(sci_state, "SessionDB", DB)
-    assert tasks._verify_trace(tasks._stored_events(tmp_path, "agent-session"), {"task_id": "task-1"})
+    verified = tasks._verify_trace(tasks._stored_events(tmp_path, "agent-session"), {"task_id": "task-1"})
+    assert verified is (dispatch != "ambiguous")
 
 
 def test_spill_receipt_ignores_embedded_path_and_rejects_oversize(tmp_path, monkeypatch):

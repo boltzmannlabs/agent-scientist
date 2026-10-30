@@ -248,14 +248,26 @@ def _stored_events(home: Path, session_id: str) -> list[dict]:
         if message.get("role") == "assistant":
             for call in message.get("tool_calls") or ():
                 function = call.get("function", {})
-                if function.get("name") != "srg_action":
+                if function.get("name") not in {"srg_action", "tool_call"}:
                     continue
                 arguments = function.get("arguments")
                 try:
                     arguments = json.loads(arguments) if isinstance(arguments, str) else arguments
                 except json.JSONDecodeError:
                     continue
-                if not isinstance(arguments, dict) or arguments.get("action") not in {"reset", "submit"}:
+                if not isinstance(arguments, dict):
+                    continue
+                if function.get("name") == "tool_call":
+                    calls = arguments.get("calls")
+                    # Stored results retain the outer call ID. Only one inner
+                    # action can be attributed to that receipt unambiguously.
+                    if (not isinstance(calls, list) or len(calls) != 1
+                            or not isinstance(calls[0], dict)
+                            or calls[0].get("name") != "srg_action"
+                            or not isinstance(calls[0].get("arguments"), dict)):
+                        continue
+                    arguments = calls[0]["arguments"]
+                if arguments.get("action") not in {"reset", "submit"}:
                     continue
                 call_id = call.get("id") or call.get("call_id")
                 if isinstance(call_id, str):

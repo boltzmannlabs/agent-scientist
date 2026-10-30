@@ -56,12 +56,19 @@ def fetch_pinned_source(repo_url: str, revision: str, destination: Path) -> Path
         raise ValueError(f"Environment source already exists: {destination}")
     destination.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix=".retrosynthesis-source-", dir=destination.parent))
+    # Hooks and callers may carry repository-local state. Every operation here
+    # must address the new staging repository selected by -C.
+    local_git_vars = {"GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_INDEX_FILE",
+                      "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+                      "GIT_GRAFT_FILE", "GIT_SHALLOW_FILE", "GIT_PREFIX",
+                      "GIT_IMPLICIT_WORK_TREE"}
+    git_env = {key: value for key, value in os.environ.items() if key not in local_git_vars}
     try:
-        _run(["git", "-C", str(stage), "init", "-q"], timeout=30)
+        _run(["git", "-C", str(stage), "init", "-q"], timeout=30, env=git_env)
         _run(["git", "-C", str(stage), "fetch", "--no-tags", "--depth=1", repo_url, revision],
-             timeout=600)
-        _run(["git", "-C", str(stage), "checkout", "--detach", "-q", "FETCH_HEAD"], timeout=60)
-        actual = _run(["git", "-C", str(stage), "rev-parse", "HEAD"], timeout=30)
+             timeout=600, env=git_env)
+        _run(["git", "-C", str(stage), "checkout", "--detach", "-q", "FETCH_HEAD"], timeout=60, env=git_env)
+        actual = _run(["git", "-C", str(stage), "rev-parse", "HEAD"], timeout=30, env=git_env)
         if actual != revision:
             raise ValueError(f"Fetched environment revision mismatch: {actual}")
         if destination.exists():

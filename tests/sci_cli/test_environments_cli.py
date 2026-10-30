@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -10,7 +11,9 @@ import pytest
 
 def _git(path: Path, *args: str) -> str:
     return subprocess.run(["git", *args], cwd=path, check=True,
-                          capture_output=True, text=True).stdout.strip()
+                          capture_output=True, text=True,
+                          env={k: v for k, v in os.environ.items()
+                               if not k.startswith("GIT_")}).stdout.strip()
 
 
 def test_parser_exposes_install_and_run_without_model_override():
@@ -29,7 +32,7 @@ def test_parser_exposes_install_and_run_without_model_override():
     assert not hasattr(args, "model")
 
 
-def test_clone_uses_only_exact_revision(tmp_path):
+def test_clone_uses_only_exact_revision(tmp_path, monkeypatch):
     from sci_cli.environments_install import fetch_pinned_source
 
     source = tmp_path / "source"
@@ -44,7 +47,11 @@ def test_clone_uses_only_exact_revision(tmp_path):
     (source / "marker").write_text("second")
     _git(source, "commit", "-qam", "second")
     checkout = tmp_path / "checkout"
+    monkeypatch.setenv("GIT_DIR", str(source / ".git"))
+    monkeypatch.setenv("GIT_WORK_TREE", str(source))
     fetch_pinned_source(str(source), first, checkout)
+    monkeypatch.delenv("GIT_DIR")
+    monkeypatch.delenv("GIT_WORK_TREE")
     assert (checkout / "marker").read_text() == "first"
     assert _git(checkout, "rev-parse", "HEAD") == first
 
