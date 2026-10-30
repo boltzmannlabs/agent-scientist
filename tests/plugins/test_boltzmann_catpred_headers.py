@@ -1,9 +1,20 @@
 """The upload credit checker requires exact CatPred CSV headers."""
 
 
-def test_catpred_headers_are_checked_before_upload_without_rewriting_input(tmp_path, monkeypatch):
+import sys
+
+import pytest
+
+
+@pytest.mark.parametrize("rdkit_available", [False, True])
+def test_catpred_headers_are_checked_before_upload_without_rewriting_input(tmp_path, monkeypatch, rdkit_available):
     from plugins.boltzmann import preflight
     from plugins.boltzmann.contracts import ContractStore
+
+    if rdkit_available:
+        pytest.importorskip("rdkit")
+    else:
+        monkeypatch.setitem(sys.modules, "rdkit", None)
 
     store = ContractStore()
     sent = []
@@ -32,7 +43,12 @@ def test_catpred_headers_are_checked_before_upload_without_rewriting_input(tmp_p
         if valid:
             assert result["status"] == "uploaded", result
             assert sent[-1] == contents.encode()
-            assert not result["validation"]["warnings"]  # Audited alphabet and SMILES checks now run locally.
+            warnings = result["validation"]["warnings"]
+            if rdkit_available:
+                assert not warnings
+            else:
+                assert len(warnings) == 1
+                assert "SMILES validity is unchecked because RDKit is unavailable" in warnings[0]
         else:
             assert result["status"] == "not_started", result
             assert result["validation"]["errors"]
