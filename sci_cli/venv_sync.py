@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -65,6 +66,43 @@ def check_runtime(project_root: Path) -> str | None:
     return f"install out of sync ({'; '.join(problems)}) — {remedy}"
 
 
+def _launcher_belongs_to_another_store(root: Path) -> bool:
+    """Keep one checkout's shared commands bound to their publishing Sci home.
+
+    A custom SCI_HOME selects its own PM store, but a previously published
+    source launcher may belong to the default home's store. Only recognize
+    the exact POSIX store-launcher shape; old venv launchers can still migrate.
+    """
+    if os.name == "nt":
+        return False
+    from sci_constants import get_default_sci_root
+
+    current_home = Path(os.path.abspath(get_default_sci_root()))
+    native_home = Path(os.path.abspath(get_default_sci_root(home="")))
+    if current_home == native_home:
+        return False  # the installation's native root may repair a stale custom binding
+    launcher = root / ".sci/bin/sci"
+    from sci_cli._launchers import _owns_launcher
+
+    if not _owns_launcher(launcher, root):
+        return False
+    try:
+        tokens = shlex.split(launcher.read_text(encoding="utf-8-sig"), comments=True)
+    except (OSError, UnicodeError, ValueError):
+        return False
+    if len(tokens) < 2 or tokens[0] != "exec":
+        return False
+    if not Path(tokens[1]).is_absolute():
+        return False
+    interpreter = Path(os.path.abspath(tokens[1]))
+    if interpreter.parent.name != "bin" or interpreter.parent.parent.parent.name != "tools":
+        return False
+    from pm.environments import store_root
+
+    current_store = Path(os.path.abspath(store_root(root)))
+    return not interpreter.is_relative_to(current_store) and not interpreter.is_relative_to(current_home)
+
+
 def publish_launchers(project_root: Path, *, create: bool = True) -> None:
     """Refresh durable commands; bootstrap repairs only existing PATH exposure."""
     import logging
@@ -79,6 +117,9 @@ def publish_launchers(project_root: Path, *, create: bool = True) -> None:
         return  # Sealed and external/Nix interpreters retain their own launchers.
     if read_install_stamp(root).get("updateMechanism") == "external":
         log.info("launchers: external runtime at %s keeps its own", root)
+        return
+    if _launcher_belongs_to_another_store(root):
+        log.info("launchers: preserving existing source launcher owned by another Sci store")
         return
     if resolve_store_python(root) is None:
         # A PM tree promises its launchers (tests/install/e2e-assets/
