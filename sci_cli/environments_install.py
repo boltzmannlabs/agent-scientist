@@ -1,0 +1,244 @@
+"""Install the pinned retrosynthesis environment into the default Sci profile."""
+
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import tempfile
+
+from sci_constants import get_default_sci_root
+
+
+RETROSYNTHESIS_REPO = "https://github.com/boltzmannlabs/science-environments.git"
+RETROSYNTHESIS_COMMIT = "baf094a30111eb6aa495ad1481aa3bbf9c1a600b"
+_SHA = re.compile(r"[0-9a-f]{40}\Z")
+
+
+def _run(command: list[str], *, timeout: int = 1800, env: dict[str, str] | None = None) -> str:
+    result = subprocess.run(command, check=True, capture_output=True, text=True, encoding="utf-8",
+                            errors="replace",
+                            timeout=timeout, env=env)
+    return result.stdout.strip()
+
+
+def _chemistry_env() -> dict[str, str]:
+    """Keep Sci's dependency overlay out of the chemistry interpreter."""
+    env = {key: value for key, value in os.environ.items()
+           if key not in {"PYTHONPATH", "PYTHONHOME"}}
+    return {**env, "PYTHONNOUSERSITE": "1"}
+
+
+def _verify_chemistry_runtime(python: Path) -> None:
+    env = _chemistry_env()
+    try:
+        _run([str(python), "-I", "-c",
+              "import rdkit,pydantic,numpy,sklearn,httpx,yaml,synthesis_route_gym,syntheseus"],
+             timeout=120, env=env)
+    except subprocess.CalledProcessError as exc:
+        detail = (exc.stderr or exc.stdout or "dependency import/check failed").strip()
+        raise RuntimeError(f"Retrosynthesis chemistry runtime is incomplete: {detail}") from exc
+
+
+def fetch_pinned_source(repo_url: str, revision: str, destination: Path) -> Path:
+    """Fetch one immutable Git object and reject moving refs or wrong checkout heads."""
+    if not _SHA.fullmatch(revision):
+        raise ValueError("A full 40-character Git revision is required")
+    destination = Path(destination)
+    if destination.exists() or destination.is_symlink():
+        raise ValueError(f"Environment source already exists: {destination}")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    stage = Path(tempfile.mkdtemp(prefix=".retrosynthesis-source-", dir=destination.parent))
+    # Hooks and callers may carry repository-local state. Every operation here
+    # must address the new staging repository selected by -C.
+    local_git_vars = {"GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_INDEX_FILE",
+                      "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+                      "GIT_GRAFT_FILE", "GIT_SHALLOW_FILE", "GIT_PREFIX",
+                      "GIT_IMPLICIT_WORK_TREE"}
+    git_env = {key: value for key, value in os.environ.items() if key not in local_git_vars}
+    try:
+        _run(["git", "-C", str(stage), "init", "-q"], timeout=30, env=git_env)
+        _run(["git", "-C", str(stage), "fetch", "--no-tags", "--depth=1", repo_url, revision],
+             timeout=600, env=git_env)
+        _run(["git", "-C", str(stage), "checkout", "--detach", "-q", "FETCH_HEAD"], timeout=60, env=git_env)
+        actual = _run(["git", "-C", str(stage), "rev-parse", "HEAD"], timeout=30, env=git_env)
+        if actual != revision:
+            raise ValueError(f"Fetched environment revision mismatch: {actual}")
+        if destination.exists():
+            raise ValueError(f"Environment source appeared during install: {destination}")
+        stage.rename(destination)
+    finally:
+        if stage.exists():
+            shutil.rmtree(stage)
+    return destination
+
+
+def _ensure_chemistry_runtime(package: Path, runtime: Path) -> Path:
+    if runtime.exists() or runtime.is_symlink():
+        raise ValueError(f"Chemistry runtime already exists: {runtime}")
+    from pm import build_environment
+
+    # PM validates dependency consistency and returns the host-native interpreter.
+    # The scientific package has no committed lock yet; retain its generated lock
+    # alongside the pinned source instead of claiming cross-install reproducibility.
+    python = build_environment(source=package, out=runtime, extras=["search"],
+                               frozen=False, explicit=True, timeout=1800,
+                               env=_chemistry_env())
+    try:
+        _verify_chemistry_runtime(python)
+    except BaseException:
+        shutil.rmtree(runtime, ignore_errors=True)
+        raise
+    return python
+
+
+def _sci_executable() -> str:
+    from sci_platform.resolver import locate_command
+
+    command = locate_command("sci").command
+    if not command:
+        raise RuntimeError("The sci executable is required to enable the environment")
+    return command[0]
+
+
+def _default_profile_env(home: Path, *, extra: dict[str, str] | None = None) -> dict[str, str]:
+    """Run Sci children in the default profile without inherited profile secrets."""
+    from sci_constants import reset_sci_home_override, set_sci_home_override
+    from tools.environments.local import build_subprocess_env
+
+    token = set_sci_home_override(str(home))
+    try:
+        return build_subprocess_env(
+            scrub_secrets=True, strip_launch_profile=True,
+            extra={"SCI_HOME": str(home), "SCI_DISABLE_LAZY_INSTALLS": "1", **(extra or {})},
+        )
+    finally:
+        reset_sci_home_override(token)
+
+
+def _check_discovery(home: Path) -> None:
+    code = ("from sci_cli.plugins import discover_plugins\n"
+            "from tools.registry import registry\n"
+            "discover_plugins(force=True)\n"
+            "if registry.get_entry('srg_action') is None:\n"
+            "    raise RuntimeError('srg_action was not discovered')\n")
+    # The sanitizer removes inherited Python paths. Restore only this Sci
+    # checkout so discovery works when the CLI was launched from elsewhere.
+    env = {**_default_profile_env(home),
+           "PYTHONPATH": str(Path(__file__).resolve().parent.parent)}
+    _run([sys.executable, "-c", code], timeout=120, env=env)
+
+
+def _write_runtime(path: Path, package: Path, chemistry_python: Path) -> None:
+    settings = {"SRG_PACKAGE_ROOT": str(package),
+                "SRG_CHEMISTRY_PYTHON": str(chemistry_python),
+                "SRG_BACKEND_TIMEOUT_SECONDS": "300"}
+    fd, temp = tempfile.mkstemp(prefix=".runtime-", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            json.dump(settings, stream, indent=2)
+            stream.write("\n")
+        os.chmod(temp, 0o600)
+        os.replace(temp, path)
+    finally:
+        if os.path.exists(temp):
+            os.unlink(temp)
+
+
+def _check_legacy_plugin(home: Path) -> None:
+    from sci_cli.config import load_config_readonly
+    from sci_constants import reset_sci_home_override, set_sci_home_override
+
+    token = set_sci_home_override(home)
+    try:
+        parsed = load_config_readonly()
+    finally:
+        reset_sci_home_override(token)
+    plugins = parsed.get("plugins", {}) if isinstance(parsed, dict) else {}
+    enabled = plugins.get("enabled", []) if isinstance(plugins, dict) else []
+    if isinstance(enabled, list) and "synthesis-route-gym" in enabled:
+        raise ValueError("Disable the legacy synthesis-route-gym plugin before installing retrosynthesis")
+
+
+def install_retrosynthesis(*, model_location: str | None = None,
+                           model_python: str | None = None) -> int:
+    """Install the no-model environment, or add approved local LocalRetro assets."""
+    if model_python and not model_location:
+        raise ValueError("--model-python requires --model-location")
+    from sci_platform.host.facts import os_family
+
+    if model_location and os_family() == "win32":
+        raise ValueError("LocalRetro asset setup requires a POSIX environment. "
+                         "Use WSL/Linux, or omit --model-location to install the base environment. "
+                         "No files were downloaded or installed.")
+    home = get_default_sci_root().expanduser().resolve()
+    checkout = home / "environments/retrosynthesis/source"
+    package = checkout / "environments/retrosynthesis"
+    runtime = home / "runtimes/retrosynthesis"
+    plugin = home / "plugins/retrosynthesis"
+    skill = home / "skills/retrosynthesis"
+    model_assets = home / "models/retrosynthesis/localretro"
+    model_preexisting = model_assets.exists() or model_assets.is_symlink()
+    _check_legacy_plugin(home)
+    if any(path.exists() or path.is_symlink() for path in (checkout, runtime, plugin, skill)):
+        raise ValueError("Retrosynthesis is already installed or partially installed in this profile")
+    fetch_pinned_source(RETROSYNTHESIS_REPO, RETROSYNTHESIS_COMMIT, checkout)
+    enable_attempted = False
+    try:
+        source_plugin = package / "integrations/agent_scientist"
+        source_skill = package / "skills/retrosynthesis"
+        if not (source_plugin / "plugin.yaml").is_file() or not (source_skill / "SKILL.md").is_file():
+            raise ValueError("Pinned release lacks the retrosynthesis plugin or skill")
+        chemistry = _ensure_chemistry_runtime(package, runtime)
+        sci = _sci_executable()
+        # The parent CLI has completed bootstrap. Nested Sci invocations must not
+        # prepare a second PM generation or republish checkout launchers using a
+        # custom profile's interpreter.
+        env = _default_profile_env(home)
+        if model_location:
+            with tempfile.TemporaryDirectory(prefix=".sci-default-", dir=home) as wrapper_dir:
+                wrapper = Path(wrapper_dir) / "sci-default"
+                wrapper.write_text(f"#!/bin/sh\nexec {shlex.quote(sci)} -p default \"$@\"\n",
+                                   encoding="utf-8")
+                wrapper.chmod(0o700)
+                command = [sys.executable, str(package / "scripts/setup_retrosynthesis.py"), "install",
+                           "--sci-home", str(home), "--chemistry-python", str(chemistry),
+                           "--sci-executable", str(wrapper),
+                           "--existing-rebolt-root", str(Path(model_location).expanduser())]
+                if model_python:
+                    command.extend(["--existing-rebolt-python", str(Path(model_python).expanduser())])
+                enable_attempted = True
+                _run(command, timeout=1800, env=env)
+        else:
+            plugin.parent.mkdir(parents=True, exist_ok=True)
+            skill.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(source_plugin, plugin)
+            shutil.copytree(source_skill, skill)
+            _write_runtime(plugin / "runtime.json", package, chemistry)
+            enable_attempted = True
+            _run([sci, "-p", "default", "plugins", "enable", "retrosynthesis",
+                  "--no-allow-tool-override"],
+                 timeout=1800, env=env)
+        _check_discovery(home)
+        _verify_chemistry_runtime(chemistry)
+    except BaseException:
+        if enable_attempted:
+            try:
+                _run([_sci_executable(), "-p", "default", "plugins", "disable", "retrosynthesis"],
+                     timeout=120, env=_default_profile_env(home))
+            except Exception:
+                pass
+        shutil.rmtree(plugin, ignore_errors=True)
+        shutil.rmtree(skill, ignore_errors=True)
+        shutil.rmtree(runtime, ignore_errors=True)
+        if not model_preexisting:
+            shutil.rmtree(model_assets, ignore_errors=True)
+        shutil.rmtree(checkout, ignore_errors=True)
+        raise
+    print(f"Retrosynthesis installed from {RETROSYNTHESIS_COMMIT} in {home}; srg_action discovered.")
+    return 0
