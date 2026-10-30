@@ -1393,6 +1393,10 @@ sci pairing <list|approve|revoke|clear-pending>
 
 ## `sci environments`
 
+Runtime installation uses SCI’s package manager in a separate chemistry environment. PM checks dependencies and selects the host-native interpreter; SCI’s own Python environment is unchanged. The source revision is pinned, but the scientific dependencies are resolved from ranges; the generated lock is retained with the source.
+
+Optional LocalRetro asset setup (`--model-location`) requires a POSIX environment. On native Windows, use WSL/Linux for this option or install the base environment without it. Unsupported asset setup stops before downloading or installing files.
+
 Install the pinned retrosynthesis environment into the default Sci profile:
 
 ```bash

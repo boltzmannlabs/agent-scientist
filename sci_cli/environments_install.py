@@ -11,7 +11,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import venv
 
 from sci_constants import get_default_sci_root
 
@@ -38,10 +37,9 @@ def _chemistry_env() -> dict[str, str]:
 def _verify_chemistry_runtime(python: Path) -> None:
     env = _chemistry_env()
     try:
-        _run([str(python), "-c",
+        _run([str(python), "-I", "-c",
               "import rdkit,pydantic,numpy,sklearn,httpx,yaml,synthesis_route_gym,syntheseus"],
              timeout=120, env=env)
-        _run([str(python), "-m", "pip", "check"], timeout=120, env=env)
     except subprocess.CalledProcessError as exc:
         detail = (exc.stderr or exc.stdout or "dependency import/check failed").strip()
         raise RuntimeError(f"Retrosynthesis chemistry runtime is incomplete: {detail}") from exc
@@ -83,17 +81,20 @@ def fetch_pinned_source(repo_url: str, revision: str, destination: Path) -> Path
 def _ensure_chemistry_runtime(package: Path, runtime: Path) -> Path:
     if runtime.exists() or runtime.is_symlink():
         raise ValueError(f"Chemistry runtime already exists: {runtime}")
-    runtime.parent.mkdir(parents=True, exist_ok=True)
+    from pm import build_environment
+
+    # PM validates dependency consistency and returns the host-native interpreter.
+    # The scientific package has no committed lock yet; retain its generated lock
+    # alongside the pinned source instead of claiming cross-install reproducibility.
+    python = build_environment(source=package, out=runtime, extras=["search"],
+                               frozen=False, explicit=True, timeout=1800,
+                               env=_chemistry_env())
     try:
-        venv.EnvBuilder(with_pip=True).create(runtime)
-        python = runtime / "bin/python"
-        _run([str(python), "-m", "pip", "install", "--no-input", f"{package}[search]"],
-             timeout=1800, env=_chemistry_env())
         _verify_chemistry_runtime(python)
-        return python
     except BaseException:
         shutil.rmtree(runtime, ignore_errors=True)
         raise
+    return python
 
 
 def _sci_executable() -> str:
@@ -169,6 +170,12 @@ def install_retrosynthesis(*, model_location: str | None = None,
     """Install the no-model environment, or add approved local LocalRetro assets."""
     if model_python and not model_location:
         raise ValueError("--model-python requires --model-location")
+    from sci_platform.host.facts import os_family
+
+    if model_location and os_family() == "win32":
+        raise ValueError("LocalRetro asset setup requires a POSIX environment. "
+                         "Use WSL/Linux, or omit --model-location to install the base environment. "
+                         "No files were downloaded or installed.")
     home = get_default_sci_root().expanduser().resolve()
     checkout = home / "environments/retrosynthesis/source"
     package = checkout / "environments/retrosynthesis"

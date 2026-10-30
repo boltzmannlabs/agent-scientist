@@ -8,6 +8,13 @@ from pathlib import Path
 
 import pytest
 
+from tests.pm._fixtures import (
+    _wheel,
+    build_worker as build_worker,
+    client as client,
+    isolated_python as isolated_python,
+)
+
 
 def _git(path: Path, *args: str) -> str:
     return subprocess.run(["git", *args], cwd=path, check=True,
@@ -164,6 +171,7 @@ def test_legacy_plugin_is_rejected_before_fetch(tmp_path, monkeypatch):
     assert not (tmp_path / "environments").exists()
 
 
+@pytest.mark.platforms("posix")
 def test_model_option_delegates_to_pinned_local_asset_setup(tmp_path, monkeypatch):
     from sci_cli import environments_install as installer
 
@@ -213,16 +221,40 @@ def test_install_home_resolves_named_profile_to_default_root(tmp_path, monkeypat
     assert get_default_sci_root() == tmp_path / "isolated-root"
 
 
-def test_chemistry_install_does_not_inherit_sci_pythonpath(tmp_path, monkeypatch):
+def test_chemistry_install_uses_pm_interpreter_without_sci_pythonpath(tmp_path, monkeypatch):
+    import pm
     from sci_cli import environments_install as installer
 
     calls = []
+    python = tmp_path / "pm-selected-interpreter"
+    package, runtime = tmp_path / "package", tmp_path / "runtime"
     monkeypatch.setenv("PYTHONPATH", "/foreign/sci/site-packages")
-    monkeypatch.setattr(installer.venv.EnvBuilder, "create", lambda self, path: None)
-    monkeypatch.setattr(installer, "_run", lambda command, **kwargs: calls.append(kwargs) or "")
-    installer._ensure_chemistry_runtime(tmp_path / "package", tmp_path / "runtime")
-    assert all("PYTHONPATH" not in call["env"] for call in calls)
-    assert all(call["env"]["PYTHONNOUSERSITE"] == "1" for call in calls)
+
+    def build(**kwargs):
+        assert kwargs["source"] == package and kwargs["out"] == runtime
+        assert kwargs["extras"] == ["search"] and kwargs["explicit"] is True
+        assert kwargs["frozen"] is False
+        assert "PYTHONPATH" not in kwargs["env"]
+        runtime.mkdir()
+        return python
+
+    monkeypatch.setattr(pm, "build_environment", build)
+    monkeypatch.setattr(installer, "_run", lambda command, **kwargs: calls.append((command, kwargs)) or "")
+    assert installer._ensure_chemistry_runtime(package, runtime) == python
+    assert calls[0][0][:3] == [str(python), "-I", "-c"]
+    assert all("PYTHONPATH" not in call[1]["env"] for call in calls)
+    assert all(call[1]["env"]["PYTHONNOUSERSITE"] == "1" for call in calls)
+
+
+@pytest.mark.platforms("windows")
+def test_native_windows_model_assets_fail_before_download(tmp_path, monkeypatch):
+    from sci_cli import environments_install as installer
+
+    monkeypatch.setattr(installer, "get_default_sci_root", lambda: tmp_path)
+    monkeypatch.setattr(installer, "fetch_pinned_source", lambda *args: pytest.fail("download started"))
+    with pytest.raises(ValueError, match="POSIX environment"):
+        installer.install_retrosynthesis(model_location=str(tmp_path / "assets"))
+    assert not (tmp_path / "environments").exists()
 
 
 def test_final_chemistry_verification_runs_after_enable(tmp_path, monkeypatch):
@@ -239,8 +271,8 @@ def test_final_chemistry_verification_runs_after_enable(tmp_path, monkeypatch):
     monkeypatch.setattr(installer, "_check_discovery", lambda home: calls.append(["discover"]))
     installer.install_retrosynthesis()
     enable_index = next(i for i, command in enumerate(calls) if "enable" in command)
-    pip_check_index = next(i for i, command in enumerate(calls) if command[-2:] == ["pip", "check"])
-    assert enable_index < pip_check_index
+    import_check_index = next(i for i, command in enumerate(calls) if command[1:3] == ["-I", "-c"])
+    assert enable_index < import_check_index
 
 
 def test_final_dependency_failure_rolls_back_install(tmp_path, monkeypatch):
@@ -257,7 +289,7 @@ def test_final_dependency_failure_rolls_back_install(tmp_path, monkeypatch):
 
     def run(command, **kwargs):
         calls.append(command)
-        if command[-2:] == ["pip", "check"]:
+        if command[1:3] == ["-I", "-c"]:
             raise subprocess.CalledProcessError(1, command, stderr="pydantic missing")
         return ""
 
@@ -266,3 +298,38 @@ def test_final_dependency_failure_rolls_back_install(tmp_path, monkeypatch):
         installer.install_retrosynthesis()
     assert ["sci", "-p", "default", "plugins", "disable", "retrosynthesis"] in calls
     assert not (tmp_path / "plugins/retrosynthesis").exists()
+
+
+def test_chemistry_runtime_builds_real_isolated_pm_environment(tmp_path, monkeypatch, build_worker):
+    """Exercise the PM worker with offline fixture wheels, not a science install."""
+    from sci_cli import environments_install as installer
+
+    package = tmp_path / "fixture package"
+    wheels = package / "wheels"
+    wheels.mkdir(parents=True)
+    _wheel(wheels, "base_dep")
+    _wheel(wheels, "search_dep")
+    (package / "pyproject.toml").write_text(
+        '[project]\nname="retrosynthesis-fixture"\nversion="1"\nrequires-python=">=3.11"\n'
+        'dependencies=["base-dep==1.0"]\n'
+        '[project.optional-dependencies]\nsearch=["search-dep==1.0"]\n'
+        '[tool.uv]\npackage=false\nno-index=true\nfind-links=["wheels"]\n',
+        encoding="utf-8",
+    )
+    verified = []
+
+    def verify(python):
+        result = subprocess.run(
+            [str(python), "-I", "-c", "import base_dep, search_dep; print(search_dep.__version__)"],
+            check=True, capture_output=True, text=True, encoding="utf-8",
+            env=installer._chemistry_env(), timeout=30,
+        )
+        assert result.stdout.strip() == "1.0"
+        verified.append(python)
+
+    monkeypatch.setattr(installer, "_verify_chemistry_runtime", verify)
+    runtime = tmp_path / "isolated runtime"
+    python = installer._ensure_chemistry_runtime(package, runtime)
+    assert verified == [python]
+    assert python.is_file() and (runtime / "pyvenv.cfg").is_file()
+    assert (package / "uv.lock").is_file()
