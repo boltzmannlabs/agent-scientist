@@ -47,7 +47,6 @@ The install also ships `sci-agent`, a minimal runner that sends one query and ex
 | Command | Purpose |
 |---------|---------|
 | `sci chat` | Interactive or one-shot chat with the agent. |
-| `sci environments` | Install and run optional scientific task environments. |
 | `sci model` | Interactively choose the default provider and model. |
 | `sci moa` | Configure named Mixture of Agents presets selectable from the model picker. |
 | `sci fallback` | Manage fallback providers tried when the primary model errors. |
@@ -1390,28 +1389,6 @@ sci pairing <list|approve|revoke|clear-pending>
 | `approve <platform> <code>` | Approve a pairing code. |
 | `revoke <platform> <user-id>` | Revoke a user's access. |
 | `clear-pending` | Clear pending pairing codes. |
-
-## `sci environments`
-
-Runtime installation uses SCI’s package manager in a separate chemistry environment. PM checks dependencies and selects the host-native interpreter; SCI’s own Python environment is unchanged. The source revision is pinned, but the scientific dependencies are resolved from ranges; the generated lock is retained with the source.
-
-Optional LocalRetro asset setup (`--model-location`) requires a POSIX environment. On native Windows, use WSL/Linux for this option or install the base environment without it. Unsupported asset setup stops before downloading or installing files.
-
-Install the pinned retrosynthesis environment into the default Sci profile:
-
-```bash
-sci environments install retrosynthesis
-```
-
-The command fetches one fixed science-environments Git revision, creates a separate chemistry Python environment, installs the retrosynthesis plugin and skill, enables the plugin, and verifies discovery of `srg_action`. The source revision is pinned; chemistry dependencies are resolved from version ranges during installation rather than a lockfile. The default installation supports route sessions and evidence import without a local route-generation model. To use an existing approved LocalRetro copy, add `--model-location /path/to/REBOLT-FEATURES`; supply `--model-python /path/to/python` if its compatible model runtime cannot be discovered. No checkpoint is downloaded by the command.
-
-Run a target using the configured main-profile model:
-
-```bash
-sci environments run retrosynthesis --target "CCO" --inventory inventory.json --constraints constraints.json
-```
-
-The optional `--budget budget.json` supplies task limits. JSON text can be used instead of a file path for inventory, constraints, or budget. Sci constructs and validates the route task, then lets Agent Scientist choose its workflow. Users do not manage `srg_action` calls or route session IDs.
 
 ## `sci skills`
 
