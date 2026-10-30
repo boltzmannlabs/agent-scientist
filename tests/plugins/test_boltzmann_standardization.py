@@ -16,7 +16,14 @@ def shape_fixture(schema):
     if isinstance(kind, list):
         kind = kind[0]
     if kind == "object":
-        return {name: shape_fixture(prop) for name, prop in schema.get("properties", {}).items()}
+        fixture = {name: shape_fixture(prop) for name, prop in schema.get("properties", {}).items()}
+        alternatives = schema.get("oneOf", [])
+        if alternatives:
+            selected = set(schema.get("required", [])) | set(alternatives[0].get("required", []))
+            mode_fields = {name for branch in alternatives for name in branch.get("required", [])}
+            for name in mode_fields - selected:
+                fixture.pop(name, None)
+        return fixture
     if kind == "array":
         return [shape_fixture(schema["items"])] if schema.get("items") else []
     if kind in {"integer", "number"}:
@@ -191,3 +198,65 @@ def test_file_modes_nested_models_and_known_invalid_values(tmp_path):
     assert not validate_file(pdb, {"formats": ["pdb"]}, {}).errors
     pdb.write_text("not a coordinate file\n", encoding="utf-8")
     assert validate_file(pdb, {"formats": ["pdb"]}, {}).errors
+
+
+@pytest.mark.parametrize("properties,scheme,valid", [
+    ([], None, False),
+    (["Solubility_ESM"], None, True),
+    (["CDR_Prediction"], None, False),
+    (["CDR_Prediction"], "", False),
+    (["CDR_Prediction"], "imgt", True),
+    (["Solubility_ESM", "CDR_Prediction"], None, False),
+    (["CDR_Prediction", "Solubility_ESM"], None, False),
+    (["Solubility_ESM", "CDR_Prediction"], "imgt", True),
+    (["unknown-property"], "imgt", False),
+    ("Solubility_ESM", None, False),
+])
+def test_antibody_property_selection_requires_scheme_only_for_cdr(tmp_path, properties, scheme, valid):
+    import shutil
+
+    from plugins.boltzmann.contracts import ContractStore
+
+    # Installed bundles must enforce the same contract as repository definitions.
+    installed = tmp_path / "references"
+    installed.mkdir()
+    for filename in ("tool-contracts.v1.json", "file-input-contracts.v1.json", "input-limits.v1.json"):
+        shutil.copy2(ROOT / filename, installed / filename)
+    payload = {"dataPath": "fixture/input.csv", "property_name": properties}
+    if scheme is not None:
+        payload["scheme"] = scheme
+    before = json.loads(json.dumps(payload))
+    for root in (ROOT, installed):
+        report = ContractStore(root).validate_payload("Antibody_Prediction", payload)
+        assert (not report.errors) is valid, report.errors
+        assert payload == before  # Validation must not invent or rewrite user selections.
+
+
+@pytest.mark.parametrize("job,payload,valid", [
+    ("ppiflowmonomer", {"task_name": "monomer"}, False),
+    ("ppiflowmonomer", {"task_name": "monomer", "length_subset": 80}, True),
+    ("ppiflowmonomer", {"task_name": "monomer", "length_subset": [80, 100]}, True),
+    ("ppiflowmonomer", {"task_name": "monomer", "motif_csv": "fixture/input.csv"}, True),
+    ("ppiflowmonomer", {"task_name": "monomer", "length_subset": 80,
+                       "motif_csv": "fixture/input.csv"}, False),
+    ("ppiflowprotein", {"task_name": "protein", "input_pdb": "fixture/input.pdb"}, False),
+    ("ppiflowprotein", {"task_name": "protein", "input_pdb": "fixture/input.pdb",
+                       "binder_chain": "B"}, True),
+    ("ppiflowprotein", {"task_name": "protein", "input_pdb": "fixture/input.pdb",
+                       "specified_hotspots": "A23"}, True),
+    ("ppiflowantibody", {"task_name": "antibody", "antigen_pdb": "fixture/antigen.pdb",
+                        "framework_pdb": "fixture/framework.pdb"}, False),
+    ("ppiflownanobody", {"task_name": "nanobody", "antigen_pdb": "fixture/antigen.pdb",
+                        "framework_pdb": "fixture/framework.pdb"}, False),
+    ("stability-binding-ddg", {"sequence": "ACD", "chain": "A", "mutations": ["1"],
+                               "num_mutations": "1"}, False),
+    ("stability-binding-ddg", {"pdb_path": "fixture/input.pdb", "sequence": "ACD",
+                               "chain": "A", "mutations": [1], "num_mutations": "1"}, False),
+    ("stability-binding-ddg", {"pdb_path": "fixture/input.pdb", "sequence": "ACD",
+                               "chain": "A", "mutations": ["1"], "num_mutations": "1"}, True),
+])
+def test_antibody_workflow_contract_modes(job, payload, valid):
+    from plugins.boltzmann.contracts import ContractStore
+
+    report = ContractStore(ROOT).validate_payload(job, payload)
+    assert (not report.errors) is valid, report.errors

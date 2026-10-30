@@ -331,7 +331,7 @@ Report actual service errors and incomplete outputs. Refresh status for expired 
 
 ## Stability-Binding DDG
 
-The experiment name belongs to top-level `experimentName` through the existing submission helper, not `experimentData.job_name`. The backend job is always `stability-binding-ddg`, never the sample experiment label or `stabddg`.
+Predict mutation-induced changes in protein-protein binding free energy from a supplied wild-type PDB. This wrapper generates sequence variants by substituting the selected positions, then scores their predicted binding effects. The backend job is `stability-binding-ddg`; the experiment name is supplied separately as top-level `experimentName`.
 
 Exact job name: `stability-binding-ddg`.
 
@@ -341,11 +341,11 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `pdb_path` | string | no / mode-dependent | file | Upload a PDB structure. Raw sequences, SMILES and PDB IDs are not structure uploads. |
-| `sequence` | string | yes | value | Protein sequence for the selected chain. |
-| `chain` | string | yes | value | Single uppercase protein chain ID; it must exist in the PDB when a structure is uploaded. |
-| `mutations` | array | yes | value | One-based residue positions or ranges, e.g. [1, 2, "8-15"]. Preserve the chosen positions; do not invent substitutions. |
-| `num_mutations` | string | yes | value | Requested count as a string, as required by the public payload. |
+| `pdb_path` | string | yes | file | Required file upload: the docked protein–protein complex as a `.pdb` structure file. Provide the structure itself, not a sequence, SMILES string, or PDB accession. The selected `chain` must be present; for the intended two-protein interface, the complex should contain chains A and B. |
+| `sequence` | string | yes | value | Amino-acid sequence of the chain named by `chain`, in the same residue order as that chain in `pdb_path`. Positions in `mutations` are counted from 1 and must align with the chain's residue numbering in the PDB, which the wrapper expects to start at 1. Only the 20 standard amino acids are accepted; lowercase letters are converted to uppercase. |
+| `chain` | string | yes | value | Single-character PDB chain ID for the protein to mutate, usually `A` or `B`. It must match a chain present in the uploaded `pdb_path` structure. |
+| `mutations` | array | yes | value | Required non-empty list of one-based residue positions or inclusive position ranges in `sequence`, each written as a string, for example ["1", "2", "8-15"]. These values identify which sites to change; they do not specify the replacement amino acids. Every generated variant changes all selected sites, choosing a different amino acid at each site. |
+| `num_mutations` | string | yes | value | Positive number of sequence variants to generate. Send the count as a string in the public payload, for example "10". Each variant applies changes at all positions listed in `mutations`; this count is not the number of residue positions. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -358,38 +358,36 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "pdb_path": {
-      "description": "Upload a PDB structure. Raw sequences, SMILES and PDB IDs are not structure uploads.",
+      "description": "Required file upload: the docked protein–protein complex as a `.pdb` structure file. Provide the structure itself, not a sequence, SMILES string, or PDB accession. The selected `chain` must be present; for the intended two-protein interface, the complex should contain chains A and B.",
       "type": "string",
       "x-input-kind": "file"
     },
     "sequence": {
-      "description": "Protein sequence for the selected chain.",
+      "description": "Amino-acid sequence of the chain named by `chain`, in the same residue order as that chain in `pdb_path`. Positions in `mutations` are counted from 1 and must align with the chain's residue numbering in the PDB, which the wrapper expects to start at 1. Only the 20 standard amino acids are accepted; lowercase letters are converted to uppercase.",
       "type": "string",
       "x-input-kind": "value"
     },
     "chain": {
-      "description": "Single uppercase protein chain ID; it must exist in the PDB when a structure is uploaded.",
+      "description": "Single-character PDB chain ID for the protein to mutate, usually `A` or `B`. It must match a chain present in the uploaded `pdb_path` structure.",
       "type": "string",
       "x-input-kind": "value"
     },
     "mutations": {
-      "description": "One-based residue positions or ranges, e.g. [1, 2, \"8-15\"]. Preserve the chosen positions; do not invent substitutions.",
+      "description": "Required non-empty list of one-based residue positions or inclusive position ranges in `sequence`, each written as a string, for example [\"1\", \"2\", \"8-15\"]. These values identify which sites to change; they do not specify the replacement amino acids. Every generated variant changes all selected sites, choosing a different amino acid at each site.",
       "type": "array",
       "x-input-kind": "value",
       "items": {
-        "type": [
-          "integer",
-          "string"
-        ]
+        "type": "string"
       }
     },
     "num_mutations": {
-      "description": "Requested count as a string, as required by the public payload.",
+      "description": "Positive number of sequence variants to generate. Send the count as a string in the public payload, for example \"10\". Each variant applies changes at all positions listed in `mutations`; this count is not the number of residue positions.",
       "type": "string",
       "x-input-kind": "value"
     }
   },
   "required": [
+    "pdb_path",
     "sequence",
     "chain",
     "mutations",
@@ -407,6 +405,7 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
   "job_name": "stability-binding-ddg",
   "experiment_name": "<confirmed experiment name>",
   "experiment_data": {
+    "pdb_path": "<user value; see pdb_path schema>",
     "sequence": "<user value; see sequence schema>",
     "chain": "<user value; see chain schema>",
     "mutations": "<user value; see mutations schema>",
@@ -432,6 +431,11 @@ For mode-dependent fields, include the fields required by the selected schema br
   }
 }
 ```
+
+### Execution notices
+
+- The local wrapper writes an output CSV with `id`, `MutatedSequences`, and `DDG_values` columns. Earlier product-facing documentation names the sequence column `Sequences`; check the returned CSV header before downstream use.
+- The upstream StaB-ddG documentation reports binding ΔΔG in kcal/mol and says negative values predict stronger binding. The copied local README describes the sign in the opposite direction; treat values as predictions and verify the deployed sign convention before labeling them stronger or weaker.
 
 ### Results
 
