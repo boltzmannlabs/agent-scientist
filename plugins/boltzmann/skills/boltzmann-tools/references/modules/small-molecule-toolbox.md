@@ -268,7 +268,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 | `exhaustivness` | string | yes | value | Preserve the backend misspelling. User must choose one supported value. |
 | `upload_sdf` | string | yes | value | Whether to return docked poses in SDF format. |
 | `flexible_residues` | array | yes | value | User-confirmed receptor residue identifiers. Every entry must exist in the processed receptor; do not fabricate residues. |
-| `smiles` | string | yes | value | One validated ligand SMILES string. This is not the basic-docking ligand CSV path. |
+| `smiles` | string | yes | file | Uploaded ligand CSV platform path ending in .csv, not a direct SMILES string. Upload the CSV using input_field="smiles". The Node API rejected inline SMILES with "smiles must be a .csv file"; CSV column names are not yet confirmed for flexible docking. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -342,9 +342,10 @@ Only local files require a new upload. Never infer input mode from a field name.
       }
     },
     "smiles": {
-      "description": "One validated ligand SMILES string. This is not the basic-docking ligand CSV path.",
+      "description": "Uploaded ligand CSV platform path ending in .csv, not a direct SMILES string. Upload the CSV using input_field=\"smiles\". The Node API rejected inline SMILES with \"smiles must be a .csv file\"; CSV column names are not yet confirmed for flexible docking.",
       "type": "string",
-      "x-input-kind": "value"
+      "x-input-kind": "file",
+      "pattern": "\\.csv$"
     }
   },
   "required": [
@@ -397,8 +398,39 @@ For mode-dependent fields, include the fields required by the selected schema br
     ],
     "header_case_sensitive": true,
     "notes": "Upload the processed receptor PDB and use the returned platform storage path."
+  },
+  "smiles": {
+    "formats": [
+      "csv"
+    ],
+    "notes": "Required uploaded ligand CSV. Pass its returned platform path as smiles; never a literal SMILES string. Exact required headers remain unconfirmed for flexible docking; do not infer them from basic docking. CSV syntax checks alone need explicit partial-validation approval."
   }
 }
+```
+
+### Recorded payload example
+
+Reference only; use current user inputs and upload references.
+```json
+[
+  {
+    "description": "Shape-only illustration, not scientific defaults or a live success receipt. Replace all values with reviewed inputs. CSV headers require confirmation.",
+    "experiment_data": {
+      "target_name": "<reviewed target name>",
+      "processed_pdb": "<uploaded receptor>.pdb",
+      "center_x": "0",
+      "center_y": "0",
+      "center_z": "0",
+      "max_radius_size": "10",
+      "exhaustivness": "8",
+      "upload_sdf": "True",
+      "flexible_residues": [
+        "<reviewed receptor residue>"
+      ],
+      "smiles": "<uploaded ligand library>.csv"
+    }
+  }
+]
 ```
 
 ### Results

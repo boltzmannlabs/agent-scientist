@@ -160,7 +160,21 @@ For mode-dependent fields, include the fields required by the selected schema br
       "csv"
     ],
     "header_case_sensitive": true,
-    "notes": "The identifier column may be sequence_id or seq_id; sequences is required. Column-group semantics require review."
+    "notes": "The identifier column may be sequence_id or seq_id; sequences is required. Column-group semantics require review. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred.",
+    "csv_variants": [
+      {
+        "columns": [
+          "sequence_id",
+          "sequences"
+        ]
+      },
+      {
+        "columns": [
+          "seq_id",
+          "sequences"
+        ]
+      }
+    ]
   }
 }
 ```

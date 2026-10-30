@@ -85,6 +85,4 @@ def build_relay_command_manifest() -> List[Dict[str, Any]]:
              _opt("text", "The prompt to queue")),
         _cmd("bg", "Run a prompt in a separate background session",
              _opt("text", "The prompt to run")),
-        _cmd("btw", "Ask a side question about the current conversation",
-             _opt("text", "The question to answer")),
     ]

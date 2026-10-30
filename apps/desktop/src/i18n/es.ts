@@ -4234,7 +4234,6 @@ export const esOverrides = {
       '/stop': 'Detener el turno activo y los procesos en segundo plano',
       '/pause': "Pausar globalmente el trabajo nuevo (parada de emergencia); '/pause off' lo reanuda",
       '/bg': 'Ejecutar un prompt en una sesión independiente en segundo plano',
-      '/btw': 'Hacer una pregunta al margen sobre esta conversación sin interrumpirla',
       '/agents': 'Mostrar los agentes activos y las tareas en curso',
       '/journey': 'Abrir el grafo de memoria: skills y recuerdos a lo largo del tiempo',
       '/queue':

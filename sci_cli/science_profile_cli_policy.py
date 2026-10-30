@@ -16,6 +16,14 @@ def prepare(cli):
     # Recheck before every turn, including one reusing a cached agent. Checking
     # does not rewrite the saved profile or its conversation's cached prefix.
     spec = validate_runtime(home)
+    from sci_cli.config import read_user_config_raw
+    from sci_cli.science_profile_approval import runtime_policy_id
+    policy_id = runtime_policy_id(spec, read_user_config_raw(home / "config.yaml"))
+    previous_policy = getattr(cli, "_legacy_science_policy_id", None)
+    if cli.agent is not None and previous_policy is not None and previous_policy != policy_id:
+        raise ValueError("Reviewed profile settings changed since this conversation started. "
+                         "Restart SCI and start a new conversation; the cached prompt and tools were not changed.")
+    cli._legacy_science_policy_id = policy_id
     cli._legacy_science_policy_home = str(home)
     if cli.agent is None:
         cli.enabled_toolsets = (["skills"] if spec.setup_pending else ["terminal", "file", "skills"]) + list(spec.mcp_tools)
@@ -53,7 +61,11 @@ def install(cli, spec):
         callback = getattr(cli, "_science_permission_ask", None)
         if callback is not None:
             return callback(kind, **values)
-        return cli._approval_callback(
+        from tools.terminal_tool import _get_approval_callback
+        # The policy is profile-scoped; the question belongs to the executing
+        # conversation (a side fork has its own thread-local modal callback).
+        prompt = _get_approval_callback() or cli._approval_callback
+        return prompt(
             redact_sensitive_text(json.dumps(values, ensure_ascii=False)),
             "Approve this external profile tool call/data transfer?",
             allow_permanent=False, allow_session=False) == "once"

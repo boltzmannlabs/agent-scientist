@@ -1,5 +1,5 @@
 """``sci slack manifest`` — generate the Slack app manifest JSON that registers every gateway
-command as a native Slack slash (``/btw``, ``/stop``, ``/model``, …)."""
+command as a native Slack slash (``/bg``, ``/stop``, ``/model``, …)."""
 from __future__ import annotations
 
 import json

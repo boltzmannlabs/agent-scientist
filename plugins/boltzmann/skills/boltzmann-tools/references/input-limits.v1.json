@@ -2,6 +2,45 @@
   "schema": "boltzmann-input-limits.v1",
   "policy": "Only source-backed hard limits are encoded. Defaults and recommendations are not hard limits.",
   "tools": {
+    "Motiff_Scaffolding": {
+      "fields": {
+        "samples_per_target": {
+          "minimum": 1
+        }
+      }
+    },
+    "Uncondtional_Sampling": {
+      "fields": {
+        "samples_per_length": {
+          "minimum": 1
+        }
+      }
+    },
+    "Ligand_MPNN": {
+      "fields": {
+        "num_sequences": {
+          "minimum": 1
+        }
+      }
+    },
+    "Random_Controlled_Mutagenesis": {
+      "fields": {
+        "n_samples": {
+          "minimum": 1
+        },
+        "mutaions_per_epoch": {
+          "minimum": 1,
+          "maximum": 109
+        }
+      }
+    },
+    "Function_Based_Enzyme_Generation": {
+      "fields": {
+        "n_samples": {
+          "minimum": 1
+        }
+      }
+    },
     "ligand_pharmacophore": {
       "source": "contract_sources/legacy-v1/boltchem_tools.md: Tool 9 Input Contract",
       "fields": {
@@ -277,6 +316,18 @@
       "fields": {}
     },
     "Mol_Probity": {
+      "ligand_bundle": {
+        "schema": "molprobity-ligand-bundle.v1",
+        "maximum_manifest_bytes": 1048576,
+        "maximum_dictionary_bytes": 1048576,
+        "maximum_dictionaries": 64,
+        "maximum_bindings_per_candidate": 256,
+        "maximum_dictionary_atoms": 2048,
+        "maximum_archive_members": 1000,
+        "maximum_structure_bytes": 52428800,
+        "maximum_expanded_bytes": 2147483648,
+        "maximum_compression_ratio": 200
+      },
       "fields": {},
       "files": {
         "quality_thresholds": {

@@ -769,7 +769,7 @@ Report actual service errors and incomplete outputs. Refresh status for expired 
 
 ## Substructure Screening
 
-Substructure Screening
+Screen a molecule library with task-specific substructure inputs. For task="substructure", upload the substructures CSV and supply its platform path. For task="toxic", send substructures_path as exactly the empty string ""; do not request or upload a substructures file.
 
 Exact job name: `Substructure_Screening`.
 
@@ -780,7 +780,7 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
 | `library_path` | string | yes | file | S3 path to CSV (upload first) |
-| `substructures_path` | string | yes | file | S3 path to CSV (upload first) |
+| `substructures_path` | string | yes | file | Always include this key. task="substructure": required nonempty uploaded CSV path. task="toxic": exactly "" (empty string); no substructures file upload. Never omit the key or send null. |
 | `method` | string | yes | value | `"graph_matcher"` or `"rdkit"` |
 | `task` | string | yes | value | `"toxic"` or `"substructure"` |
 | `screening_type` | string | yes | value | `"in"` or `"out"` |
@@ -801,9 +801,10 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "file"
     },
     "substructures_path": {
-      "description": "S3 path to CSV (upload first)",
+      "description": "Always include this key. task=\"substructure\": required nonempty uploaded CSV path. task=\"toxic\": exactly \"\" (empty string); no substructures file upload. Never omit the key or send null.",
       "type": "string",
-      "x-input-kind": "file"
+      "x-input-kind": "file",
+      "x-allow-empty": true
     },
     "method": {
       "description": "`\"graph_matcher\"` or `\"rdkit\"`",
@@ -840,7 +841,34 @@ Only local files require a new upload. Never infer input mode from a field name.
     "task",
     "screening_type"
   ],
-  "additionalProperties": true
+  "additionalProperties": true,
+  "if": {
+    "properties": {
+      "task": {
+        "const": "substructure"
+      }
+    },
+    "required": [
+      "task"
+    ]
+  },
+  "then": {
+    "properties": {
+      "substructures_path": {
+        "minLength": 1,
+        "pattern": "\\S"
+      }
+    },
+    "additionalProperties": {}
+  },
+  "else": {
+    "properties": {
+      "substructures_path": {
+        "const": ""
+      }
+    },
+    "additionalProperties": {}
+  }
 }
 ```
 
@@ -875,9 +903,38 @@ For mode-dependent fields, include the fields required by the selected schema br
   "substructures_path": {
     "formats": [
       "csv"
-    ]
+    ],
+    "notes": "Only used when task=\"substructure\": upload the required CSV. For task=\"toxic\", send substructures_path=\"\" and do not request or upload this file. The library CSV remains required in both modes."
   }
 }
+```
+
+### Recorded payload example
+
+Reference only; use current user inputs and upload references.
+```json
+[
+  {
+    "description": "Illustrative substructure payload; replace upload placeholders. Not a live-test receipt.",
+    "experiment_data": {
+      "library_path": "<uploaded library CSV path>",
+      "substructures_path": "<uploaded substructures CSV path>",
+      "method": "rdkit",
+      "task": "substructure",
+      "screening_type": "in"
+    }
+  },
+  {
+    "description": "Illustrative toxic payload; replace upload placeholders. Not a live-test receipt.",
+    "experiment_data": {
+      "library_path": "<uploaded library CSV path>",
+      "substructures_path": "",
+      "method": "rdkit",
+      "task": "toxic",
+      "screening_type": "in"
+    }
+  }
+]
 ```
 
 ### Results

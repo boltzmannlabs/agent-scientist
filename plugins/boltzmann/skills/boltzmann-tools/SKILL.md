@@ -151,5 +151,18 @@ Source-only or ambiguous candidates are not permission to guess. Missing
 diagnostic mappings do not block ordinary `boltzmann_status` polling or prove
 generation failed. See `references/tool-status-fetch.md` for lookup semantics.
 
+For property prediction and property-conditioned generation/optimization, save
+the exact requested model names and thresholds with the submission receipt.
+After downloading results, compare the requested properties with the actual CSV
+columns and any returned model metadata. A platform Success status, valid
+molecules, or a matching molecule count does not establish that the requested
+property was evaluated or optimized. If Solubility was requested but only CaCo2
+permeability appears, report a property mismatch and unverified optimization.
+Do not rename columns, assume values belong to the requested property, default
+to the first catalog model, or submit again to hide the mismatch. Distinguish a
+possible selection/mapping error from a possible output-label error; confirming
+which occurred requires backend evidence. Never invent backend model paths or
+an expanded worker payload to bypass the documented Node API.
+
 Generic validators do not certify scientific correctness. Missing dependencies
 or specialized validators must be disclosed; never claim checks ran when they did not.

@@ -43,34 +43,36 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* Sci Agent — Nous DS with the LENS_0 (Sci teal) palette applied
-   statically as the default dashboard theme. */
+/* Agent Scientist — black canvas with theme-controlled accents. */
 /* ------------------------------------------------------------------ */
 
 :root {
-  /* LENS_0 — from design-language/src/ui/components/overlays/index.tsx.
-     These are the defaults for the `default` (Sci Teal) dashboard theme;
-     ThemeProvider rewrites them as inline styles when a user switches themes. */
+  /* ThemeProvider controls accents and typography. Keep the branded canvas
+     black even when an older saved theme supplies inline background tokens. */
   --foreground: color-mix(in srgb, #ffffff 0%, transparent);
   --foreground-base: #ffffff;
   --foreground-alpha: 0;
   --midground: color-mix(in srgb, #ffe6cb 100%, transparent);
   --midground-base: #ffe6cb;
   --midground-alpha: 1;
-  --background: color-mix(in srgb, #041c1c 100%, transparent);
-  --background-base: #041c1c;
-  --background-alpha: 1;
+  --background: #000000 !important;
+  --background-base: #000000 !important;
+  --background-alpha: 1 !important;
+  --component-header-background: #000000 !important;
+  --component-sidebar-background: #000000 !important;
 
-  /* Typography tokens — rewritten by ThemeProvider. Defaults match the
-     system stack so themes that don't override look native. */
-  --theme-font-sans: system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  /* Keep the dashboard's serif typography across saved color themes;
+     an explicit choice in the font picker still takes precedence. */
+  --theme-font-sans: var(--theme-font-override-sans, "Times New Roman", Times, "Liberation Serif", serif) !important;
   --theme-font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo,
     Consolas, monospace;
-  --theme-font-display: var(--theme-font-sans);
-  --theme-base-size: 15px;
-  --theme-line-height: 1.55;
-  --theme-letter-spacing: 0;
+  --theme-font-display: var(--theme-font-sans) !important;
+  --font-rules-compressed: var(--theme-font-sans);
+  --font-rules-expanded: var(--theme-font-sans);
+  --font-mondwest: var(--theme-font-sans);
+  --theme-base-size: 16px !important;
+  --theme-line-height: 1.5 !important;
+  --theme-letter-spacing: 0 !important;
 
   /* Layout tokens. */
   --radius: 0.5rem;
@@ -120,6 +122,8 @@ code, kbd, pre, samp, .font-mono, .font-mono-ui {
   --spacing: calc(0.25rem * var(--theme-spacing-mul, 1));
   --font-sans: var(--theme-font-sans);
   --font-mono: var(--theme-font-mono);
+  --text-xs: 0.875rem;
+  --text-sm: 0.9375rem;
 }
 
 #root {

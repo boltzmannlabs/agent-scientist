@@ -223,7 +223,8 @@ def get_tool_definitions(enabled_toolsets: Optional[List[str]] = None, disabled_
     def compute():
         return _compute_tool_definitions(enabled_toolsets, disabled_toolsets, quiet_mode,
                                          skip_tool_search_assembly=skip_tool_search_assembly)
-    if not quiet_mode:
+    from agent.specialist_policy import current_policy
+    if current_policy() is not None or not quiet_mode:
         return compute()
     cache_key = _tool_defs_cache_key(enabled_toolsets, disabled_toolsets, skip_tool_search_assembly)
     # Cache the freshly-computed list, but hand callers a shallow copy so downstream mutations (e.g.
@@ -506,7 +507,8 @@ _TOOL_SEARCH_LISTING_FORMS = {
 def _compute_tool_definitions(enabled_toolsets: Optional[List[str]] = None, disabled_toolsets: Optional[List[str]] = None,
                               quiet_mode: bool = False, skip_tool_search_assembly: bool = False) -> List[Dict[str, Any]]:
     """Uncached implementation of :func:`get_tool_definitions`."""
-    tools_to_include = _select_tool_names(enabled_toolsets, disabled_toolsets, quiet_mode)
+    from agent.specialist_policy import filter_tools
+    tools_to_include = filter_tools(_select_tool_names(enabled_toolsets, disabled_toolsets, quiet_mode))
     # Selection is per schema, not per process/profile. Kanban's local checks
     # are uncached; the outer definitions cache already keys on this selection.
     from tools.kanban_toolset_context import scoped_kanban_toolset_selection
@@ -899,6 +901,10 @@ def handle_function_call(
         _emit_post_tool_call_hook(function_name=function_name, function_args=function_args, result=result,
                                   **asdict(ids), middleware_trace=list(trace), **extra)
         return result
+
+    from agent.specialist_policy import check_call
+    if specialist_error := check_call(function_name, function_args):
+        return _emit(tool_error(specialist_error), status="blocked", error_type="specialist_permission")
 
     # Tool Search bridge: tool_search / tool_describe are catalog reads handled
     # inline; tool_call is unwrapped so every downstream hook (pre/post, edit

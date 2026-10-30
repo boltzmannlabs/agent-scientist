@@ -253,7 +253,8 @@ def test_pinned_profile_without_this_platform_delivers_via_primary(tmp_path, mon
     assert len(primary.sent) == len(primary.handled) == 1
     assert primary.handled[0].source.profile == "yuki"
     assert not unseen(task)
-    assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
+    assert not [r for r in caplog.records
+                if r.name == notifier.logger.name and r.levelno >= logging.WARNING]
 
     # An owner stamped with the invoking shell's profile (#76483) instead of the route's
     # is a permanent dead-end and must surface once at WARNING.

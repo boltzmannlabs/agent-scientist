@@ -35,7 +35,8 @@ Only local files require a new upload. Never infer input mode from a field name.
     "label": {
       "description": "EC number a.b.c.d.",
       "type": "string",
-      "x-input-kind": "value"
+      "x-input-kind": "value",
+      "pattern": "\\S"
     },
     "n_samples": {
       "description": "Number of sequences",
@@ -75,6 +76,18 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
 
 For mode-dependent fields, include the fields required by the selected schema branch.
 
+### Input limits
+
+```json
+{
+  "fields": {
+    "n_samples": {
+      "minimum": 1
+    }
+  }
+}
+```
+
 ### Results
 
 Accepted is not completed. Poll the returned job ID without resubmitting.
@@ -96,8 +109,8 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 | `input_substrate` | string | yes | value | Substrate SMILES. |
 | `input_product` | string | yes | value | Product SMILES. |
 | `num_structures` | integer | yes | value | Number of enzyme structures to generate; product validation range is 1–100000 |
-| `complex_generation` | string | no / mode-dependent | value | Accepted as `"True"` by the verified submission, but absent from the product-sheet schema; omit unless the user explicitly requests it |
-| `top_k` | integer | no / mode-dependent | value | Accepted as `2` by the verified submission, but absent from the product-sheet schema; omit unless the user explicitly requests it |
+| `complex_generation` | string | yes | value | Required true/false string selecting complex generation. Obtain the user's choice; do not infer a default. Node rejected omission during the 2026-10-29 live test. |
+| `top_k` | integer | yes | value | Required integer in the current FastAPI schema even when complex_generation is false. When complex generation is enabled, must be positive and no greater than num_structures. Obtain the value; do not invent it. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -125,12 +138,12 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "value"
     },
     "complex_generation": {
-      "description": "Accepted as `\"True\"` by the verified submission, but absent from the product-sheet schema; omit unless the user explicitly requests it",
+      "description": "Required true/false string selecting complex generation. Obtain the user's choice; do not infer a default. Node rejected omission during the 2026-10-29 live test.",
       "type": "string",
       "x-input-kind": "value"
     },
     "top_k": {
-      "description": "Accepted as `2` by the verified submission, but absent from the product-sheet schema; omit unless the user explicitly requests it",
+      "description": "Required integer in the current FastAPI schema even when complex_generation is false. When complex generation is enabled, must be positive and no greater than num_structures. Obtain the value; do not invent it.",
       "type": "integer",
       "x-input-kind": "value"
     }
@@ -138,7 +151,9 @@ Only local files require a new upload. Never infer input mode from a field name.
   "required": [
     "input_substrate",
     "input_product",
-    "num_structures"
+    "num_structures",
+    "complex_generation",
+    "top_k"
   ],
   "additionalProperties": true
 }
@@ -154,7 +169,9 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
   "experiment_data": {
     "input_substrate": "<user value; see input_substrate schema>",
     "input_product": "<user value; see input_product schema>",
-    "num_structures": "<user value; see num_structures schema>"
+    "num_structures": "<user value; see num_structures schema>",
+    "complex_generation": "<user value; see complex_generation schema>",
+    "top_k": "<user value; see top_k schema>"
   }
 }
 ```
@@ -254,11 +271,10 @@ For mode-dependent fields, include the fields required by the selected schema br
     ],
     "content_format": "pdb",
     "notes": "Exactly one model; requested case-sensitive chain must exist; >10 standard amino-acid residues with CA. No ambiguous alternate locations.",
-    "values_by_field": {
-      "chain_id": {},
-      "motif_residues": {}
-    },
-    "coverage": "partial"
+    "structure_profile": "deepallo",
+    "validation_context": [
+      "chain_id"
+    ]
   }
 }
 ```
@@ -416,11 +432,11 @@ For mode-dependent fields, include the fields required by the selected schema br
     ],
     "content_format": "pdb",
     "notes": "Exactly one model; selected chain 2-2000 standard residues, finite N/CA/C coordinates; motif labels present and at least one non-motif residue.",
-    "values_by_field": {
-      "chain_id": {},
-      "motif_residues": {}
-    },
-    "coverage": "partial"
+    "structure_profile": "enzycontrol",
+    "validation_context": [
+      "chain_id",
+      "motif_residues"
+    ]
   }
 }
 ```
@@ -1032,7 +1048,19 @@ For mode-dependent fields, include the fields required by the selected schema br
     ],
     "content_format": "enzyme_structure",
     "notes": "Relative storage path. Selected motif residues and ligand component codes must occur in the input; atom labels are case-sensitive. ZIP not accepted by this input.",
-    "coverage": "partial"
+    "structure_profile": "Enzyme_RFD3",
+    "validation_context": [
+      "motif_residues",
+      "ligand",
+      "min_length",
+      "max_length",
+      "advanced_settings_enabled",
+      "advanced_settings.partial_t",
+      "advanced_settings.select_fixed_atoms",
+      "advanced_settings.geometry_constraints",
+      "advanced_settings.contig",
+      "advanced_settings.redesign_motif_sidechains"
+    ]
   }
 }
 ```

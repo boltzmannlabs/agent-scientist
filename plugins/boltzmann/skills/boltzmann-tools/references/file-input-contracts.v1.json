@@ -46,7 +46,8 @@
             "pdb"
           ],
           "header_case_sensitive": true,
-          "notes": "Uploaded file: `.pdb`, `.zip`"
+          "notes": "Uploaded file: `.pdb`, `.zip`",
+          "structure_profile": "protein_structure"
         },
         "reference_path": {
           "formats": [
@@ -54,7 +55,11 @@
           ],
           "residues_field": "active_sites",
           "header_case_sensitive": true,
-          "notes": "Uploaded file: `.pdb`"
+          "notes": "Uploaded file: `.pdb`",
+          "structure_profile": "protein_structure",
+          "validation_context": [
+            "active_sites"
+          ]
         }
       }
     },
@@ -91,7 +96,6 @@
                 "Sequences",
                 "SMILES"
               ],
-              "aliases": {"Sequences": ["Sequence"]},
               "values": {
                 "Sequences": "protein",
                 "SMILES": "smiles"
@@ -99,7 +103,21 @@
             }
           ],
           "header_case_sensitive": true,
-          "notes": "The submission credit checker requires Seq_id, SMILES and one of Sequence or Sequences, with exact case. No automatic header or molecular-value rewriting. CSV shape checks do not verify protein/SMILES semantics; no backend rerun was performed to establish successful execution."
+          "notes": "Use exact Seq_id,Sequences,SMILES headers for the inspected Node/worker intersection. The Node credit checker lists singular Sequence too, but the local worker rejects it. Sequence alphabet and SMILES are checked locally; this is not deployment or execution proof.",
+          "semantic_values": {
+            "Sequences": {
+              "alphabet": "ACDEFGHIKLMNPQRSTVWY",
+              "whitespace": "preserve",
+              "case_sensitive": true
+            },
+            "SMILES": {
+              "smiles": true
+            }
+          },
+          "forbidden_columns": [
+            "sequence",
+            "smile"
+          ]
         }
       }
     },
@@ -138,7 +156,11 @@
           "chains_field": "chain",
           "chain_scalar": true,
           "header_case_sensitive": true,
-          "notes": "Remote ZIP containing PDB files, including nested directories (not nested ZIPs)."
+          "notes": "Remote ZIP containing PDB files, including nested directories (not nested ZIPs).",
+          "structure_profile": "protein_structure",
+          "validation_context": [
+            "chain"
+          ]
         },
         "model_path": {
           "execution_blocked": true,
@@ -162,14 +184,16 @@
             "pdb"
           ],
           "header_case_sensitive": true,
-          "notes": "At least one design PDB, directly or inside a ZIP; first chain is used from each structure."
+          "notes": "At least one design PDB, directly or inside a ZIP; first chain is used from each structure.",
+          "structure_profile": "protein_structure"
         },
         "wt_path": {
           "formats": [
             "pdb"
           ],
           "header_case_sensitive": true,
-          "notes": "Exactly one wild-type/reference PDB; first chain is used."
+          "notes": "Exactly one wild-type/reference PDB; first chain is used.",
+          "structure_profile": "protein_structure"
         }
       }
     },
@@ -582,7 +606,7 @@
       }
     },
     "Vina_Flexible_Docking": {
-      "source": "modules/small-molecule-toolbox.md: supplied Flexible Docking schema",
+      "source": "Node /api/submit-job validation response: smiles must be a .csv file; receptor rule retained from supplied Flexible Docking schema",
       "files": {
         "processed_pdb": {
           "formats": [
@@ -590,6 +614,12 @@
           ],
           "header_case_sensitive": true,
           "notes": "Upload the processed receptor PDB and use the returned platform storage path."
+        },
+        "smiles": {
+          "formats": [
+            "csv"
+          ],
+          "notes": "Required uploaded ligand CSV. Pass its returned platform path as smiles; never a literal SMILES string. Exact required headers remain unconfirmed for flexible docking; do not infer them from basic docking. CSV syntax checks alone need explicit partial-validation approval."
         }
       }
     },
@@ -678,7 +708,11 @@
           ],
           "chains_field": "chain_list",
           "header_case_sensitive": true,
-          "notes": "Platform path to one `.pdb` or a `.zip` of PDB structures."
+          "notes": "Platform path to one `.pdb` or a `.zip` of PDB structures.",
+          "structure_profile": "protein_structure",
+          "validation_context": [
+            "chain_list"
+          ]
         }
       }
     },
@@ -806,7 +840,18 @@
             "Seq_id",
             "Sequences"
           ],
-          "notes": "S3 path to CSV (upload first)"
+          "notes": "S3 path to CSV (upload first)",
+          "semantic_values": {
+            "Sequences": {
+              "alphabet": "ACDEFGHIKLMNPQRSTVWYBXZUO.-",
+              "whitespace": "strip_spaces",
+              "case_sensitive": true
+            }
+          },
+          "forbidden_columns": [
+            "sequence",
+            "smile"
+          ]
         }
       }
     },
@@ -877,9 +922,18 @@
       "files": {
         "fasta_path": {
           "formats": [
-            "fa",
             "fasta"
-          ]
+          ],
+          "sequence_validation": {
+            "alphabet": "ACDEFGHIKLMNPQRSTVWY",
+            "case_sensitive": false,
+            "max_records": 1,
+            "positions_field": "positions"
+          },
+          "validation_context": [
+            "positions"
+          ],
+          "notes": "One parent .fasta; the inspected worker accepts .fasta, not the generic .fa suffix. Positions must match its normalized parent sequence. CSV worker support is not established Node acceptance."
         }
       }
     },
@@ -896,7 +950,36 @@
           ],
           "header_case_sensitive": true,
           "notes": "Use exact Seq_id and Sequences headers, matching the ENZ_PROP frontend credit checker. Sequence_ID is not an accepted alias. For an existing differently named column, offer a reviewed copy; never silently rewrite the original. Structural validation does not establish scientific correctness or guarantee credit calculation.",
-          "evidence": "https://app.boltzmann.co/static/js/main.5b329b08.js (ENZ_PROP requiredfields; inspected 2026-10-19)"
+          "evidence": "https://app.boltzmann.co/static/js/main.5b329b08.js (ENZ_PROP requiredfields; inspected 2026-10-19)",
+          "semantic_values": {
+            "Sequences": {
+              "alphabet": "ACDEFGHIKLMNPQRSTVWYBXZUO",
+              "whitespace": "preserve",
+              "case_sensitive": true
+            }
+          },
+          "semantic_values_by_field": {
+            "property_name": {
+              "substrate_pred": {
+                "SMILES": {
+                  "smiles": true
+                }
+              }
+            }
+          },
+          "validation_context": [
+            "property_name"
+          ],
+          "aliases": {
+            "SMILES": [
+              "smiles",
+              "Smiles"
+            ]
+          },
+          "forbidden_columns": [
+            "sequence",
+            "smile"
+          ]
         }
       }
     },
@@ -951,7 +1034,21 @@
             "Sequences",
             "Smiles"
           ],
-          "notes": "Exact Sequences and Smiles headers are required by the reported server diagnostic. Positive submission with corrected headers has not yet been verified."
+          "notes": "Exact Sequences and Smiles headers are required by the reported server diagnostic. Positive submission with corrected headers has not yet been verified.",
+          "semantic_values": {
+            "Sequences": {
+              "alphabet": "ACDEFGHIKLMNPQRSTVWYBXZUO",
+              "whitespace": "remove",
+              "case_sensitive": true
+            },
+            "Smiles": {
+              "smiles": true
+            }
+          },
+          "forbidden_columns": [
+            "sequence",
+            "smile"
+          ]
         }
       }
     },
@@ -968,7 +1065,21 @@
             "Sequences",
             "smiles"
           ],
-          "notes": "Use the exact source field."
+          "notes": "Use the exact source field.",
+          "semantic_values": {
+            "Sequences": {
+              "alphabet": "ACDEFGHIKLMNPQRSTVWYBXZJUO",
+              "whitespace": "remove",
+              "case_sensitive": false
+            },
+            "smiles": {
+              "smiles": true
+            }
+          },
+          "forbidden_columns": [
+            "sequence",
+            "smile"
+          ]
         }
       }
     },
@@ -1006,7 +1117,13 @@
             "pdb"
           ],
           "header_case_sensitive": true,
-          "notes": "S3 path to PDB (upload first)"
+          "notes": "S3 path to PDB (upload first)",
+          "structure_profile": "protein_structure",
+          "backbone_atoms": [
+            "N",
+            "CA",
+            "C"
+          ]
         }
       }
     },
@@ -1018,7 +1135,21 @@
             "csv"
           ],
           "header_case_sensitive": true,
-          "notes": "The identifier column may be sequence_id or seq_id; sequences is required. Column-group semantics require review."
+          "notes": "The identifier column may be sequence_id or seq_id; sequences is required. Column-group semantics require review. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred.",
+          "csv_variants": [
+            {
+              "columns": [
+                "sequence_id",
+                "sequences"
+              ]
+            },
+            {
+              "columns": [
+                "seq_id",
+                "sequences"
+              ]
+            }
+          ]
         }
       }
     },
@@ -1030,7 +1161,12 @@
             "pdb"
           ],
           "header_case_sensitive": true,
-          "notes": "S3 path to PDB (upload first)"
+          "notes": "S3 path to PDB (upload first)",
+          "structure_profile": "protein_structure",
+          "validation_context": [
+            "contigs",
+            "targets"
+          ]
         }
       }
     },
@@ -1055,10 +1191,26 @@
           ],
           "header_case_sensitive": true,
           "columns": [
-            "Sequence_ID",
             "Sequences"
           ],
-          "notes": "S3 path to CSV or FASTA (upload first)"
+          "notes": "Use exact plural Sequences for the Node/worker intersection. Sequence_ID is optional metadata, not a required Node column in the recorded all-missing-column diagnostic; the worker also permits an absent identifier. No corrected-header live execution was performed.",
+          "semantic_values": {
+            "Sequences": {
+              "alphabet": "ACDEFGHIKLMNPQRSTVWYXBZUO.-",
+              "whitespace": "preserve",
+              "case_sensitive": true
+            }
+          },
+          "sequence_validation": {
+            "alphabet": "ACDEFGHIKLMNPQRSTVWYXBZUO.-",
+            "whitespace": "preserve",
+            "case_sensitive": true,
+            "unique_ids": true
+          },
+          "forbidden_columns": [
+            "sequence",
+            "smile"
+          ]
         }
       }
     },
@@ -1070,7 +1222,8 @@
             "pdb"
           ],
           "header_case_sensitive": true,
-          "notes": "S3 path to PDB (upload first)"
+          "notes": "S3 path to PDB (upload first)",
+          "structure_profile": "protein_structure"
         }
       }
     },
@@ -1146,7 +1299,13 @@
             "cif"
           ],
           "header_case_sensitive": true,
-          "notes": "Platform path returned by `file_upload`; filename must end in `.pdb` or `.cif`."
+          "notes": "Platform path returned by `file_upload`; filename must end in `.pdb` or `.cif`.",
+          "structure_profile": "protein_structure",
+          "ligand_field": "predict_ligand",
+          "pdb_separate_ligand_chains": true,
+          "validation_context": [
+            "predict_ligand"
+          ]
         }
       }
     },
@@ -1247,7 +1406,13 @@
             "pdb"
           ],
           "header_case_sensitive": true,
-          "notes": "Use the exact source field."
+          "notes": "Use the exact source field.",
+          "structure_profile": "protein_structure",
+          "backbone_atoms": [
+            "N",
+            "CA",
+            "C"
+          ]
         }
       }
     },
@@ -1405,7 +1570,16 @@
             "zip"
           ],
           "header_case_sensitive": true,
-          "notes": "Use the exact source field."
+          "notes": "Use the exact source field.",
+          "structure_profile": "protein_structure",
+          "backbone_atoms": [
+            "N",
+            "CA",
+            "C"
+          ],
+          "member_formats": [
+            "pdb"
+          ]
         }
       }
     },
@@ -1420,7 +1594,8 @@
         "substructures_path": {
           "formats": [
             "csv"
-          ]
+          ],
+          "notes": "Only used when task=\"substructure\": upload the required CSV. For task=\"toxic\", send substructures_path=\"\" and do not request or upload this file. The library CSV remains required in both modes."
         }
       }
     },
@@ -1435,7 +1610,10 @@
           "columns": [
             "Sequences"
           ],
-          "notes": "Uploaded CSV containing a `Sequences` column"
+          "notes": "Uploaded CSV containing a `Sequences` column Property-specific alphabets differ (including Epitope lowercase handling); only the documented header/shape is enforced here, and sequence semantics remain explicitly unchecked. Property-specific alphabets differ (including Epitope lowercase handling); only the documented header/shape is enforced here, and sequence semantics remain explicitly unchecked.",
+          "values": {
+            "Sequences": "protein"
+          }
         }
       }
     },
@@ -1503,11 +1681,10 @@
           ],
           "content_format": "pdb",
           "notes": "Exactly one model; requested case-sensitive chain must exist; >10 standard amino-acid residues with CA. No ambiguous alternate locations.",
-          "values_by_field": {
-            "chain_id": {},
-            "motif_residues": {}
-          },
-          "coverage": "partial"
+          "structure_profile": "deepallo",
+          "validation_context": [
+            "chain_id"
+          ]
         }
       }
     },
@@ -1520,11 +1697,11 @@
           ],
           "content_format": "pdb",
           "notes": "Exactly one model; selected chain 2-2000 standard residues, finite N/CA/C coordinates; motif labels present and at least one non-motif residue.",
-          "values_by_field": {
-            "chain_id": {},
-            "motif_residues": {}
-          },
-          "coverage": "partial"
+          "structure_profile": "enzycontrol",
+          "validation_context": [
+            "chain_id",
+            "motif_residues"
+          ]
         }
       }
     },
@@ -1543,7 +1720,10 @@
           ],
           "content_format": "protein_structure_or_bundle",
           "notes": "Prepared PDB/CIF/mmCIF or ZIP. Candidate labels, atom names, and structure numbering must match template/binding/mapping.",
-          "coverage": "partial"
+          "structure_profile": "Catalytic_Geometry",
+          "validation_context": [
+            "input_source"
+          ]
         },
         "reaction_template": {
           "formats": [
@@ -2971,7 +3151,7 @@
             "additionalProperties": false
           },
           "content_checks": "catalytic_geometry",
-          "coverage": "partial"
+          "inventory_kind": "reaction_template"
         },
         "template_binding": {
           "formats": [
@@ -3033,7 +3213,7 @@
             ],
             "additionalProperties": false
           },
-          "coverage": "partial"
+          "inventory_kind": "template_binding"
         },
         "mapping_path": {
           "formats": [
@@ -3080,7 +3260,7 @@
               }
             }
           },
-          "coverage": "partial"
+          "inventory_kind": "mapping"
         }
       }
     },
@@ -3098,8 +3278,110 @@
             "zip"
           ],
           "content_format": "protein_structure_or_bundle",
-          "notes": "One structure or ZIP of structures.",
-          "coverage": "partial"
+          "notes": "One structure or ZIP of structures. Optional root ligand_manifest.json (molprobity-ligand-bundle.v1) binds reviewed restraint CIFs to exact custom ligand residues; dictionary CIFs are auxiliary files, not candidate structures. See molprobity-ligand-bundles.md. Local shape/path/hash/selector checks do not replace worker chemistry validation; backend ZIP billing/deployment support still needs live confirmation.",
+          "structure_profile": "Mol_Probity",
+          "zip_manifest_schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "MolProbity optional ZIP-root ligand_manifest.json",
+            "description": "Shape only. Worker additionally checks safe ZIP paths, unique selectors, file identities, candidate atoms, chemistry, bounds and supported restraints.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "schema",
+              "structures"
+            ],
+            "properties": {
+              "schema": {
+                "const": "molprobity-ligand-bundle.v1"
+              },
+              "structures": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 1000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path",
+                    "ligands"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1024
+                    },
+                    "ligands": {
+                      "type": "array",
+                      "maxItems": 256,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "dictionary",
+                          "sha256",
+                          "component_id",
+                          "chain_id",
+                          "residue_number",
+                          "smiles",
+                          "atom_mapping"
+                        ],
+                        "properties": {
+                          "dictionary": {
+                            "type": "string",
+                            "pattern": "\\.cif$",
+                            "description": "Safe canonical relative ZIP member path; validated by worker."
+                          },
+                          "sha256": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "component_id": {
+                            "type": "string",
+                            "pattern": "^[A-Z0-9]{1,8}$",
+                            "description": "Protected polymer and water residue names rejected by worker."
+                          },
+                          "chain_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 32
+                          },
+                          "residue_number": {
+                            "type": "integer",
+                            "minimum": -999999,
+                            "maximum": 999999
+                          },
+                          "insertion_code": {
+                            "type": "string",
+                            "maxLength": 1
+                          },
+                          "smiles": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 16384,
+                            "description": "Reviewed heavy-atom reference; v1 rejects specified stereo and isotopes."
+                          },
+                          "atom_mapping": {
+                            "type": "object",
+                            "minProperties": 1,
+                            "maxProperties": 2048,
+                            "propertyNames": {
+                              "pattern": "^[A-Za-z0-9'\"*+_-]{1,8}$"
+                            },
+                            "additionalProperties": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "description": "Heavy atom name to zero-based reference SMILES atom index. Must be bijective."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         },
         "quality_thresholds": {
           "formats": [
@@ -3186,7 +3468,7 @@
             "minProperties": 1,
             "additionalProperties": false
           },
-          "coverage": "partial"
+          "inventory_kind": "thresholds"
         }
       }
     },
@@ -3200,7 +3482,19 @@
           ],
           "content_format": "enzyme_structure",
           "notes": "Relative storage path. Selected motif residues and ligand component codes must occur in the input; atom labels are case-sensitive. ZIP not accepted by this input.",
-          "coverage": "partial"
+          "structure_profile": "Enzyme_RFD3",
+          "validation_context": [
+            "motif_residues",
+            "ligand",
+            "min_length",
+            "max_length",
+            "advanced_settings_enabled",
+            "advanced_settings.partial_t",
+            "advanced_settings.select_fixed_atoms",
+            "advanced_settings.geometry_constraints",
+            "advanced_settings.contig",
+            "advanced_settings.redesign_motif_sidechains"
+          ]
         }
       }
     }

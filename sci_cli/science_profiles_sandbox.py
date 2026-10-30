@@ -41,18 +41,34 @@ def cleanup_owned_containers(profile: str, session: str):
 
 def validate_runtime(home: Path):
     from sci_cli.config import read_user_config_raw
-    from sci_cli.science_profiles import read_spec, config_digest, regular_files
+    from sci_cli.science_profiles import read_spec
+    from sci_cli.science_profile_approval import require_approval
     spec = read_spec(home)
     config = read_user_config_raw(home / "config.yaml")
-    if not spec.config_digest or config_digest(config) != spec.config_digest:
-        raise ValueError("Reviewed model/sandbox settings changed. Recreate the profile to approve the new configuration; execution was blocked.")
+    require_approval(home, spec, config)
+    validate_sandbox(home, spec, config)
+    return spec
+
+
+def validate_sandbox(home, spec, config, *, check_image=True):
+    """Check a reviewed candidate without installing, running, or granting anything."""
+    from sci_cli.science_profiles import regular_files
+    if spec.name != home.name:
+        raise ValueError(f'Profile name changed. Run /Update_profile "{home.name}" to review its workspace paths.')
     terminal = config.get("terminal", {})
     required = {"backend": "docker", "docker_image": spec.image, "docker_network": False,
                 "docker_mount_cwd_to_workspace": False, "docker_extra_args": [],
                 "docker_shared_container_key": "", "env_passthrough": [], "cwd": "/workspace",
                 "container_persistent": False}
     if any(terminal.get(k) != v for k, v in required.items()):
-        raise ValueError("Project sandbox settings changed. Review/recreate the profile; execution was blocked.")
+        changed = ', '.join('terminal.' + k for k, v in required.items() if terminal.get(k) != v)
+        raise ValueError("Project sandbox settings changed: " + changed +
+                         ". Restore the reviewed isolation settings before using /Update_profile; no host fallback.")
+    if any(terminal.get(k) for k in ("docker_forward_env", "docker_env", "credential_files")):
+        raise ValueError("Restricted profiles cannot forward host credentials or environment values to Docker.")
+    if any(config.get("skills", {}).get(k) for k in
+           ("inline_shell", "template_vars", "external_dirs", "trusted_project_dirs")):
+        raise ValueError("Restricted profiles cannot enable skill shell expansion or external skill directories.")
     expected = [f"{home / 'workspace'}:/workspace:rw"]
     workspace = home / "workspace"
     if not workspace.is_dir() or workspace.resolve() != workspace.absolute():
@@ -81,6 +97,5 @@ def validate_runtime(home: Path):
     if spec.setup_pending:
         if config.get("platform_toolsets", {}).get("cli") != ["skills", *spec.mcp_tools, *(["boltzmann"] if spec.boltzmann_enabled else [])]:
             raise ValueError("Local tools cannot be enabled before isolated setup is approved.")
-    else:
+    elif check_image:
         resolve_image(spec.image)
-    return spec

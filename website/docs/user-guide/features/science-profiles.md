@@ -128,8 +128,8 @@ Review the additions/removals and choose **Save and enable for the next session*
 Deselecting disables profile access without uninstalling shared software. History,
 memory, workspace, persona and backend settings are retained. Changes to source mounts
 on non-local backends require separate environment review and are currently rejected
-before saving. Restricted legacy profiles require a separate reviewed migration, not
-automatic conversion by this command.
+before saving. For restricted legacy profiles this command opens the in-place approval
+review described below; it does not convert them to a less restricted native profile.
 
 The config commit is atomic and rejects intervening config/metadata edits. The entire
 operation is not a multi-file transaction: a failed commit can retain copied files,
@@ -255,6 +255,46 @@ The native CLI applies their existing execution checks and permission gate befor
 turns. A profile whose local setup was never completed still has no local execution;
 activation neither prepares it nor grants new access. Invalid or changed legacy sandbox
 configuration blocks execution with an error, not a setup wizard or host fallback.
+
+### Repair an older profile after an update
+
+If a profile reports that its reviewed model/sandbox settings changed, run:
+
+```text
+/Update_profile "profile-name"
+```
+
+The review shows the current configuration with credentials masked, the protected fields
+that changed when a field-level record is available, and any proposed workspace-path
+repair. Older records contain only a whole-configuration hash, so SCI cannot reconstruct
+their prior values: they require a one-time review of the current settings. Choose
+**Approve profile repair** to save a field-level approval; Cancel changes nothing.
+
+The repair keeps the same profile directory, credentials, conversations, persona, memory,
+skills and execution restrictions. For a renamed/moved profile it can reconnect its own
+existing workspace and copied sources; it never substitutes another profile's workspace
+or copies its credentials. Original configuration and approval files are backed up under
+that profile's `backups/profile-compatibility-*` directory. Missing files, unsafe mounts,
+expanded sandbox permissions and conflicting edits are rejected. A prepared Docker
+profile must still have its approved image available; review never installs an image or
+starts a container. Profiles awaiting setup remain without local execution.
+
+After approval, known cosmetic settings (such as theme, timestamps and reasoning-display
+preferences), catalog-cache lifetime and configuration-version stamps do not invalidate
+the approval. Provider/model destinations, auxiliary models, mounts, skills and tool
+permissions remain protected; unknown settings also require review. The approval stores
+field names and hashes, not another copy of secret values. No model request or service
+authentication test is made by this review.
+
+Restart SCI and start a new conversation after approving changed settings. The cached
+prompt and toolset of an existing conversation are not rebuilt. A running conversation
+whose protected policy changed stops with fresh-conversation guidance. New native
+profiles have no legacy approval record and continue through the normal update wizard.
+
+This behavior is shipped in SCI's source code, rather than a repair of one machine's
+`.sci` directory. Once your installed update channel contains it, run `sci update`,
+restart SCI, and review each affected older profile. No profile is silently reapproved
+by the updater.
 
 `/add_boltzmann` is always offered in the interactive CLI, including profiles that did
 not select Boltzmann during creation. The command itself grants no tool access.

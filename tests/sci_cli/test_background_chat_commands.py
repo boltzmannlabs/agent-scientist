@@ -92,7 +92,7 @@ def test_busy_transport_commands_are_immediate_and_never_interrupt_or_queue(monk
     detach = Mock(return_value=True)
     monkeypatch.setattr(background_chats, "detach_cli", detach)
     event = SimpleNamespace(app=SimpleNamespace(current_buffer=Mock(), invalidate=Mock()))
-    cli = SimpleNamespace(_agent_running=True, _background_managed=False,
+    cli = SimpleNamespace(session_id="busy-chat", _agent_running=True, _background_managed=False,
                           _pending_input=queue.Queue(), agent=Mock())
     for text in ("/background", "/background attach other", "/detach"):
         assert CLITuiMixin._tui_enter_inline_command(cli, event, text, False) is True

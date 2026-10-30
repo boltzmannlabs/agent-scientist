@@ -130,7 +130,8 @@ def _busy(cli):
 
 
 def transcript_available(cli):
-    return not (_busy(cli) or getattr(cli, "_transcript_open", False))
+    return not (_busy(cli) or getattr(cli, "_transcript_open", False)
+                or getattr(getattr(cli, "_side_view", None), "visible", False))
 
 
 def load_transcript(cli):

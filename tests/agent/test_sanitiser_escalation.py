@@ -103,8 +103,8 @@ class TestHealLogEscalation:
                 assert out[1]["content"] == _INTERRUPTED_PLACEHOLDER
                 assert durable[1]["content"] == ""
 
-        warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
-        errors = [r for r in caplog.records if r.levelno == logging.ERROR]
+        warnings = [r for r in caplog.records if r.name == "run_agent" and r.levelno == logging.WARNING]
+        errors = [r for r in caplog.records if r.name == "run_agent" and r.levelno == logging.ERROR]
         assert len(warnings) == 2
         assert len(errors) == 1
 
@@ -118,8 +118,8 @@ class TestHealLogEscalation:
             set_session_context("sess-b")
             repair_empty_non_final_messages([dict(m) for m in _poisoned_rows()])
 
-        warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
-        errors = [r for r in caplog.records if r.levelno == logging.ERROR]
+        warnings = [r for r in caplog.records if r.name == "run_agent" and r.levelno == logging.WARNING]
+        errors = [r for r in caplog.records if r.name == "run_agent" and r.levelno == logging.ERROR]
         assert len(warnings) == 2
         assert errors == []
 
@@ -190,7 +190,7 @@ class TestOneTimeUserNotice:
         with caplog.at_level(logging.WARNING, logger="run_agent"):
             self._heal_n(6)
         assert consume_pending_sanitizer_heal_notice() is None
-        assert not [r for r in caplog.records if r.levelno == logging.ERROR]
+        assert not [r for r in caplog.records if r.name == "run_agent" and r.levelno == logging.ERROR]
 
     def test_threshold_read_from_config(self, monkeypatch):
         import agent.agent_runtime_helpers as arh

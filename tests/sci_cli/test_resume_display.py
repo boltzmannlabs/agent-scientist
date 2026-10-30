@@ -127,11 +127,11 @@ class TestDisplayResumedHistory:
         cli.conversation_history = _simple_history()
         output = self._capture_display(cli)
 
-        assert "You:" in output
-        assert "Sci:" in output
-        assert "What is Python?" in output
-        assert "Python is a high-level programming language." in output
-        assert "How do I install it?" in output
+        messages = [row["content"] for row in cli.conversation_history
+                    if row["role"] in ("user", "assistant")]
+        positions = [output.index(message) for message in messages]
+        assert positions == sorted(positions)
+        assert "You are a helpful assistant." not in output
 
 
     def test_timeline_markers_are_not_printed_in_resumed_chat(self):
@@ -199,7 +199,11 @@ class TestDisplayResumedHistory:
         ]
         output = self._capture_display(cli)
         # Should render without error
-        assert "You:" in output
+        assert "Conversation restored." in output
+        assert cli.conversation_history == [
+            {"role": "user", "content": "   "},
+            {"role": "assistant", "content": "\n\n"},
+        ]
 
     def test_legacy_minimal_config_does_not_hide_resumed_conversation(self):
         cli = _make_cli(config_overrides={"display": {"resume_display": "minimal"}})

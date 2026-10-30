@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
 import "./index.css";
 import App from "./App";
+import { BrandEntrance } from "./components/BrandEntrance";
 import { SystemActionsProvider } from "./contexts/SystemActions";
 import { I18nProvider } from "./i18n";
 import { exposePluginSDK } from "./plugins";
@@ -17,7 +18,7 @@ createRoot(document.getElementById("root")!).render(
     <I18nProvider>
       <ThemeProvider>
         <SystemActionsProvider>
-          <App />
+          <BrandEntrance><App /></BrandEntrance>
         </SystemActionsProvider>
       </ThemeProvider>
     </I18nProvider>

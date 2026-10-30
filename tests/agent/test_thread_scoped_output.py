@@ -12,9 +12,48 @@ import io
 import sys
 import threading
 import time
+from contextvars import copy_context
 
 import agent.thread_scoped_output as thread_output
 from agent.thread_scoped_output import thread_scoped_silence
+
+
+def test_capture_follows_worker_context_without_capturing_other_threads():
+    """A late tool worker keeps its output owner after the caller leaves its scope."""
+    from agent.thread_scoped_output import context_scoped_output
+
+    original_out, original_err = sys.stdout, sys.stderr
+    main, side, other = io.StringIO(), io.StringIO(), io.StringIO()
+    entered, release = threading.Event(), threading.Event()
+    sys.stdout = sys.stderr = main
+
+    def worker():
+        entered.set()
+        assert release.wait(10)
+        print('side polling')
+        print('side diagnostic', file=sys.stderr)
+        sys.stdout.writelines(['side downloaded\n'])
+        with thread_scoped_silence():
+            print('internal suppressed')
+
+    try:
+        with context_scoped_output(side):
+            ctx = copy_context()
+            thread = threading.Thread(target=ctx.run, args=(worker,))
+            thread.start()
+            assert entered.wait(10)
+        print('main stays main')
+        with context_scoped_output(other):
+            print('different owner')
+        release.set()
+        thread.join(10)
+        assert not thread.is_alive()
+        assert side.getvalue() == 'side polling\nside diagnostic\nside downloaded\n'
+        assert main.getvalue() == 'main stays main\n'
+        assert other.getvalue() == 'different owner\n'
+    finally:
+        release.set()
+        sys.stdout, sys.stderr = original_out, original_err
 
 
 def _run_with_real_stream(fn):

@@ -249,6 +249,9 @@ def skills_list(category: str = None, task_id: str = None) -> str:
         if not all_skills:
             return _json({"success": True, "skills": [], "categories": [],
                           "message": "No skills found in skills/ directory."})
+        from agent.specialist_policy import current_policy
+        if (policy := current_policy()) is not None:
+            all_skills = [s for s in all_skills if s["name"] in policy.skills]
         if category:
             all_skills = [s for s in all_skills if s.get("category") == category]
         all_skills = _sort_skills(all_skills)
@@ -578,6 +581,11 @@ def skill_view(
     skills. ``preprocess`` applies the configured SKILL.md template / inline shell rendering;
     slash/preload callers render the message themselves. ``allow_setup=False`` reads
     instructions without host dependency installation or credential setup."""
+    from agent.specialist_policy import current_policy, check_call
+    if current_policy() is not None:
+        if error := check_call("skill_view", {"name": name}):
+            return _fail(error)
+        preprocess, allow_setup = False, False
     try:
         # Validate before the ':' dispatch so a Windows drive path (C:\skills\foo) can't be
         # reinterpreted as a plugin namespace.

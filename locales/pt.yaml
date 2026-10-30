@@ -112,13 +112,6 @@ gateway:
     final_output: "{header}\n\nSaída final:\n```\n{output}\n```"
     still_running: "⏳ Tarefa em segundo plano ainda em execução"
     recent_output: "{header}\n\nSaída recente:\n```\n{output}\n```"
-  btw:
-    usage: "Uso: /btw <pergunta>\nExemplo: /btw em que ficheiro estava aquele erro?\n\nResponde a uma pergunta rápida sobre esta conversa sem a interromper. Para uma tarefa independente em segundo plano, usa /bg <prompt>."
-    no_history: "Ainda não há conversa — envia a tua pergunta como mensagem normal."
-    no_provider: "❌ Não é possível responder: nenhuma credencial de fornecedor configurada."
-    started: "💬 Pergunta à parte: \"{preview}\"\nA responder a partir de um instantâneo desta conversa — o trabalho atual continua."
-    answer: "💬 /btw: \"{preview}\"\n\n{answer}"
-    failed: "❌ /btw falhou: \"{preview}\"\n{error}"
   branch:
     db_unavailable: "Base de dados de sessões indisponível."
     no_conversation: "Não há conversa para ramificar — envia uma mensagem primeiro."
@@ -1138,10 +1131,6 @@ platform:
       bg:
         arg_prompt: "O prompt a executar em segundo plano"
         followup: "Tarefa em segundo plano iniciada~"
-      btw:
-        description: "Fazer uma pergunta paralela sobre a conversa atual"
-        arg_question: "A pergunta paralela a responder sem interromper"
-        followup: "Pergunta paralela despachada~"
       skill:
         description: "Executar uma skill do Sci"
         arg_name: "Qual skill executar"
@@ -1533,8 +1522,6 @@ slash:
     description: "Pausar todo trabalho novo globalmente (parada de emergência); '/pause off' retoma"
   deny:
     description: "Negar um comando perigoso pendente (opcionalmente com um motivo)"
-  btw:
-    description: "Fazer uma pergunta paralela sobre a conversa atual sem interrompê-la"
   agents:
     description: "Mostrar agentes ativos e tarefas em execução"
   journey:
@@ -2915,7 +2902,7 @@ cli:
       updating: "⚡ Atualizando AGENTS.md a partir de uma varredura do projeto..."
       generating: "⚡ Gerando AGENTS.md a partir de uma varredura do projeto..."
     background:
-      usage: "Uso: /bg <prompt>\nExemplo: /bg Resuma as principais notícias do HN de hoje\n(Para uma pergunta paralela sobre esta conversa, use /btw <pergunta>.)\nA tarefa é executada em uma sessão separada e os resultados aparecem aqui ao terminar."
+      usage: "Uso: /bg <prompt>\nExemplo: /bg Resuma as principais notícias do HN de hoje\nA tarefa é executada em uma sessão separada e os resultados aparecem aqui ao terminar."
       no_credentials: "(>_<) Não é possível iniciar a tarefa em segundo plano: nenhuma credencial válida."
       started: "🔄 Tarefa em segundo plano #{number} iniciada: \"{preview}\""
       task_id: "ID da tarefa: {task_id}"
@@ -2932,12 +2919,6 @@ cli:
       label: "Login"
       title_suffix: "(login)"
       no_result: "(Nenhum resultado)"
-    btw:
-      usage: "Uso: /btw <pergunta>\nExemplo: /btw em qual arquivo estava aquele erro?\nResponde a uma pergunta rápida sobre esta conversa sem interrompê-la.\n(Para uma tarefa independente em segundo plano, use /bg <prompt>.)"
-      no_credentials: "(>_<) Não é possível responder à pergunta paralela: nenhuma credencial válida."
-      header: "💬 /btw: \"{preview}\""
-      title_suffix: "(btw)"
-      no_answer: "(Nenhuma resposta gerada)"
     bundles:
       unavailable: "Subsistema de bundles indisponível: {error}"
       none_installed: "Nenhum bundle de skills instalado."
@@ -3474,7 +3455,7 @@ explainer:
     and_more: "  • … e {count} mais"
     the_model: "O modelo"
 tips:
-  t001: "/bg <prompt> executa uma tarefa em uma sessão separada enquanto a atual fica livre; /btw <question> responde a uma pergunta paralela sobre esta conversa sem interrompê-la."
+  t001: "/bg <prompt> executa uma tarefa em uma sessão separada enquanto a atual fica livre; /side <question> responde a uma pergunta paralela sobre esta conversa sem interrompê-la."
   t002: "/branch ramifica a sessão atual para que você explore outra direção sem perder o progresso."
   t003: "/compress comprime manualmente o contexto da conversa quando ela fica longa."
   t004: "/rollback lista os pontos de verificação do sistema de arquivos — restaure arquivos modificados pelo agente para qualquer estado anterior."

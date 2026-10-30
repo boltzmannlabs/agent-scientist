@@ -125,7 +125,6 @@ sci -w -z "Fix issue #123"     # 在 worktree 中以单次查询模式运行
 | `/tools` | 列出当前可用工具 |
 | `/skills browse` | 浏览 skill 中心和官方可选 skill |
 | `/bg <prompt>` | 在独立后台会话中运行一个 prompt |
-| `/btw <question>` | 在不打断当前对话的情况下，就当前对话提出顺带问题 |
 | `/skin` | 显示或切换当前 CLI 皮肤 |
 | `/voice on` | 启用 CLI 语音模式（按 `Ctrl+B` 录音） |
 | `/voice tts` | 切换 Sci 回复的语音播放 |

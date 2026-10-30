@@ -130,6 +130,8 @@ def begin_interactive_shutdown(cli) -> None:
     from agent.interrupt_compat import request_hard_interrupt
 
     _arm_exit_watchdog_on_shutdown_signal()
+    from sci_cli.side_commands import shutdown as shutdown_side
+    shutdown_side(cli)
     cli._should_exit = True
     agent = getattr(cli, "agent", None)
     if agent and getattr(cli, "_agent_running", False):

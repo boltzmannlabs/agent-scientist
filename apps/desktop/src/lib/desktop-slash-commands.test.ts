@@ -53,7 +53,6 @@ const REGISTRY_CATALOG = registryCatalog(
     '/steer': 'text',
     '/stop': null,
     '/bg': 'text',
-    '/btw': 'text',
     '/debug': null,
     '/goal': 'mixed',
     '/personality': 'options',
@@ -83,8 +82,6 @@ describe('desktop slash command curation', () => {
     expect(isDesktopSlashSuggestion('/background')).toBe(false)
     expect(isDesktopSlashCommand('/bg')).toBe(true)
     expect(desktopSlashCommandArgumentMode('/bg')).toBe('text')
-    expect(isDesktopSlashCommand('/btw')).toBe(true)
-    expect(desktopSlashCommandArgumentMode('/btw')).toBe('text')
     expect(resolveDesktopCommand('/lcm')?.surface).toEqual({ kind: 'exec' })
     expect(desktopSlashCommandArgumentMode('/lcm')).toBe('text')
   })

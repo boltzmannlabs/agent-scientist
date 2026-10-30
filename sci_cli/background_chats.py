@@ -37,9 +37,10 @@ def locations(home=None):
     endpoint = None
     if os.name == "posix":
         name = f"sci-chat-{os.getuid()}-{digest}.sock"  # windows-footgun: ok — POSIX transport
-        endpoint = Path(tempfile.gettempdir()) / name
+        # Scratch retention must never own a persistent service's control socket.
+        endpoint = root / "control.sock"
         if len(os.fsencode(endpoint)) > 100:
-            # no-tmp: ok — AF_UNIX needs a short fallback independent of a long TMPDIR.
+            # no-tmp: ok — AF_UNIX needs a short fallback independent of SCI_HOME/TMPDIR.
             endpoint = Path("/tmp") / name
     return home, root, endpoint
 
@@ -56,22 +57,44 @@ def read_server(home=None):
         return None
 
 
+def _connection_endpoints(home, record, endpoint):
+    if record.get("endpoint"):
+        return [str(record["endpoint"])]
+    # Pre-endpoint records belong to live older services. Keep them reachable
+    # without restarting workers, even when the attaching shell changed TMPDIR.
+    digest = hashlib.sha256(str(home).encode()).hexdigest()[:24]
+    name = f"sci-chat-{os.getuid()}-{digest}.sock"  # windows-footgun: ok — connect requires POSIX endpoint
+    candidates = [endpoint, home / "cache" / "scratch" / name,
+                  Path(tempfile.gettempdir()) / name,
+                  Path("/tmp") / name]  # no-tmp: ok — legacy AF_UNIX fallback
+    return list(dict.fromkeys(str(path) for path in candidates if len(os.fsencode(path)) <= 100))
+
+
 def connect(home=None):
     home, _, endpoint = locations(home)
     record = read_server(home)
     if not record or endpoint is None:
         raise RuntimeError("No background chat service is running in this profile.")
-    # A reconnecting shell may have a different TMPDIR from the service owner.
-    endpoint = record.get("endpoint", str(endpoint))
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.settimeout(5)
-    try:
-        sock.connect(str(endpoint))
-        send(sock, {"token": record["token"], "home": str(home)})
-        return sock
-    except BaseException:
-        sock.close()
-        raise
+    endpoints = _connection_endpoints(home, record, endpoint)
+    for endpoint in endpoints:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.settimeout(5)
+        try:
+            sock.connect(endpoint)
+            send(sock, {"token": record["token"], "home": str(home)})
+            return sock
+        except (FileNotFoundError, ConnectionRefusedError):
+            sock.close()
+        except BaseException:
+            sock.close()
+            raise
+    raise RuntimeError(
+        f"Background chat service PID {record['pid']} is alive, but its socket is missing or refusing connections. "
+        f"Profile: {home}. Checked: {', '.join(endpoints)}. "
+        "No replacement was started; existing work may still be running. "
+        "Recover the existing service before resuming its chats. "
+        "Use `sci --no-daemon` for a separate foreground chat."
+    )
 
 
 def send(sock, data):

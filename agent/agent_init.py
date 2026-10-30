@@ -1108,7 +1108,7 @@ def _init_fallback_chain(agent, fallback_model):
             print(f"🔄 Fallback chain ({len(chain)} providers): " + " → ".join(labels))
 
 
-def _load_tools(agent, enabled_toolsets, disabled_toolsets):
+def _load_tools(agent, enabled_toolsets, disabled_toolsets, *, session_id=None, session_db=None):
     # A multiplexed gateway may have switched SCI_HOME since model_tools was imported;
     # make sure this profile's plugins are discovered before the tool snapshot.
     try:
@@ -1124,6 +1124,8 @@ def _load_tools(agent, enabled_toolsets, disabled_toolsets):
     except Exception:
         agent._tool_snapshot_generation = 0
     import model_tools
+    from agent.specialist_runtime import capture, decorate
+    capture(agent, session_id=session_id, session_db=session_db)
     agent.tools = model_tools.get_tool_definitions(
         enabled_toolsets=enabled_toolsets, disabled_toolsets=disabled_toolsets,
         quiet_mode=agent.quiet_mode,
@@ -1136,6 +1138,7 @@ def _load_tools(agent, enabled_toolsets, disabled_toolsets):
     if drops:
         agent.tools = [t for t in agent.tools if t["function"]["name"] not in drops]
 
+    decorate(agent, enabled_toolsets=enabled_toolsets, disabled_toolsets=disabled_toolsets)
     agent.valid_tool_names = {tool["function"]["name"] for tool in agent.tools} if agent.tools else set()
     # Kanban guidance is session-static for the dispatcher-owned worker only. Profiles may
     # expose kanban_show interactively, and children/cron runs inherit the env var, without
@@ -2470,11 +2473,13 @@ def init_agent(
     _set_defaults(agent, _STREAM_STATE)
     _build_client(agent, api_key, base_url, fallback_model)
     _init_fallback_chain(agent, fallback_model)
-    _load_tools(agent, enabled_toolsets, disabled_toolsets)
+    _load_tools(agent, enabled_toolsets, disabled_toolsets, session_id=session_id, session_db=session_db)
     _init_session_state(
         agent, session_id, session_db, parent_session_id, reasoning_config, max_tokens,
         checkpoints_enabled, checkpoint_max_snapshots, checkpoint_max_total_size_mb, checkpoint_max_file_size_mb,
     )
+    from agent.specialist_runtime import persist_snapshot_config
+    persist_snapshot_config(agent)
 
     # Load config once for memory, skills, and compression sections
     try:

@@ -113,7 +113,7 @@ _TELEGRAM_PRIORITY_TIERS: dict[str, tuple[str, ...]] = {
 _TELEGRAM_MENU_PRIORITY = (
     "help", "new", "stop", "status", "egress", "resume", "sessions", "model",
     "debug", "restart", "update", "verbose", "commands",
-    "approve", "deny", "queue", "steer", "bg", "btw",
+    "approve", "deny", "queue", "steer", "bg",
     "reasoning", "usage", "platforms", "platform", "profile", "whoami")
 
 

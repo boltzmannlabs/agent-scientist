@@ -3,6 +3,9 @@ version: "1.3.0"
 description: Boltzmann connector — locked until /add_boltzmann validates the user's key
 manifest_version: 2
 api_version: 1
+python_dependencies:
+  - "gemmi>=0.7.5,<0.8"
+  - "rdkit>=2026.9.1,<2027"
 provides_tools:
   - boltzmann_submit
   - boltzmann_status

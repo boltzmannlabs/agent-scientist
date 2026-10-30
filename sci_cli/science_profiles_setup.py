@@ -90,6 +90,8 @@ def prepare_profile(cli, home, ui):
                 worker.close()
                 del cli._science_workers[key]
         spec.config_digest = config_digest(config)
+        from sci_cli.science_profile_approval import approval_record
+        spec.config_review = approval_record(config)
         atomic_config_replace(home / "config.yaml", config)
         try:
             atomic_json_write(home / MANIFEST, asdict(spec))

@@ -362,7 +362,7 @@ class TestAppMentionHandler:
         assert "assistant_thread_started" in registered_events
         assert "assistant_thread_context_changed" in registered_events
         # Slack slash commands are registered via a single regex matcher
-        # covering every COMMAND_REGISTRY entry (e.g. /sci, /btw, /stop,
+        # covering every COMMAND_REGISTRY entry (e.g. /sci, /bg, /stop,
         # /model, ...) so users get native-slash parity with Discord and
         # Telegram. Verify the regex matches the key expected slashes.
         assert (
@@ -372,7 +372,7 @@ class TestAppMentionHandler:
         import re as _re
 
         assert isinstance(slash_matcher, _re.Pattern)
-        for expected in ("/sci", "/btw", "/stop", "/model", "/help"):
+        for expected in ("/sci", "/bg", "/stop", "/model", "/help"):
             assert slash_matcher.match(
                 expected
             ), f"Slack slash regex does not match {expected}"
@@ -3225,7 +3225,7 @@ class TestSlashCommands:
 
 
     # ------------------------------------------------------------------
-    # Native slash commands — /btw, /stop, /model, ... dispatched directly
+    # Native slash commands — /bg, /stop, /model, ... dispatched directly
     # instead of as /sci subcommands. This is the Discord/Telegram parity
     # fix: the slash name itself becomes the command.
     # ------------------------------------------------------------------
@@ -3270,21 +3270,21 @@ class TestSlashCommands:
 
     @pytest.mark.asyncio
     async def test_legacy_sci_prefix_still_works(self, adapter):
-        """Backward compat: /sci btw foo must still route to /btw foo.
+        """Backward compat: /sci bg foo must still route to /bg foo.
 
         Old workspace manifests only declared /sci as the single slash.
-        After users refresh their manifest they get /btw natively, but the
+        After users refresh their manifest they get /bg natively, but the
         legacy form must keep working during the transition.
         """
         command = {
             "command": "/sci",
-            "text": "btw run the tests",
+            "text": "bg run the tests",
             "user_id": "U1",
             "channel_id": "C1",
         }
         await adapter._handle_slash_command(command)
         msg = adapter.handle_message.call_args[0][0]
-        assert msg.text == "/btw run the tests"
+        assert msg.text == "/bg run the tests"
 
 
 # ---------------------------------------------------------------------------

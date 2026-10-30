@@ -132,6 +132,17 @@ def test_telegram_bot_command_descriptions_cut_at_256(monkeypatch):
 
 # ── Discord ──────────────────────────────────────────────────────────────────
 
+def test_discord_native_slash_templates_resolve_to_gateway_commands():
+    from sci_cli.commands import resolve_command
+
+    for name, _description, _args, template, _followup in _NATIVE_SLASH_COMMAND_SPECS:
+        if template is None:  # Native-only handlers, such as thread creation.
+            continue
+        command = resolve_command(template.split()[0].removeprefix("/"))
+        assert command is not None, (name, template)
+        assert not command.cli_only or command.gateway_config_gate, name
+
+
 def test_discord_native_slash_specs_hold_catalog_keys_only():
     for name, description_key, args, _template, followup_key in _NATIVE_SLASH_COMMAND_SPECS:
         assert description_key.startswith(("platform.discord.command.", "slash.")), name

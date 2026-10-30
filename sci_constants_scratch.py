@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import os
 import shutil
+import stat
 import subprocess
 import time
 from pathlib import Path
@@ -31,7 +32,10 @@ def subtree_touched_since(path: Path, cutoff: float) -> bool:
     An unreadable entry is kept: an incomplete scan cannot establish that it is idle.
     """
     try:
-        if os.lstat(path).st_mtime >= cutoff:
+        info = os.lstat(path)
+        # Socket mtime does not track traffic. Its service owns removal; age
+        # alone cannot prove that deleting it (or its parent tree) is safe.
+        if stat.S_ISSOCK(info.st_mode) or info.st_mtime >= cutoff:
             return True
         if not path.is_dir() or path.is_symlink():
             return False
@@ -43,7 +47,8 @@ def subtree_touched_since(path: Path, cutoff: float) -> bool:
             with os.scandir(stack.pop()) as it:
                 for child in it:
                     try:
-                        if child.stat(follow_symlinks=False).st_mtime >= cutoff:
+                        info = child.stat(follow_symlinks=False)
+                        if stat.S_ISSOCK(info.st_mode) or info.st_mtime >= cutoff:
                             return True
                     except OSError:
                         return True

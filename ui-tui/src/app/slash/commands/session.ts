@@ -105,26 +105,6 @@ export const sessionCommands: SlashCommand[] = [
   },
 
   {
-    help: 'ask a side question about this conversation',
-    name: 'btw',
-    run: (arg, ctx) => {
-      if (!arg) {
-        return ctx.transcript.sys(t('slashCmd.session.btw.usage'))
-      }
-
-      ctx.gateway.rpc<BackgroundStartResponse>('prompt.btw', { session_id: ctx.sid, text: arg }).then(
-        ctx.guarded<BackgroundStartResponse>(r => {
-          if (!r.task_id) {
-            return
-          }
-
-          ctx.transcript.sys(t('slashCmd.session.btw.answering', r.task_id))
-        })
-      )
-    }
-  },
-
-  {
     help: 'change or show model',
     name: 'model',
     run: (arg, ctx) => {

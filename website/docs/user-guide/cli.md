@@ -185,7 +185,16 @@ On the `openai-codex` provider, `/usage` also shows any banked usage-limit reset
 
 ### Session Resume Display
 
-When resuming a previous session (`sci -c` or `sci --resume <id>`), a "Previous Conversation" panel appears between the banner and the input prompt, showing a compact recap of the conversation history. See [Sessions — Conversation Recap on Resume](sessions.md#conversation-recap-on-resume) for details and configuration.
+`/resume` opens a searchable list with only the last-active time and conversation title, newest first. Type to filter, use ↑/↓ or PageUp/PageDown to navigate, and Enter to resume. Escape cancels without switching conversations. Session IDs and message counts are not shown in the list; direct `/resume <session-id>` still works.
+
+Escape also cancels the active CLI wizard, model picker, command palette, or setup menu, including while a search filter is active. It never accepts an approval; Escape on an approval denies the pending action.
+
+Attaching to a persistent CLI chat clears the terminal display and scrollback before
+replaying that chat. Opening another chat replaces the displayed conversation;
+saved histories remain available through `/resume`. Reattaching to a running agent
+does not restart it or load code updates from disk.
+
+When resuming a previous session (`sci -c` or `sci --resume <id>`), retained user and assistant messages appear in chronological order using the normal chat styling. Tool details remain accessible with Ctrl+O / F8 and are never rerun. This display does not expand the model’s compressed context. `/side` can open immediately after resume, using the restored conversation without requiring another main-chat message.
 
 ## Keybindings
 
@@ -248,12 +257,13 @@ Common examples:
 | `/bg <prompt>` | Run a prompt in a separate background session |
 | `/background [status\|attach ID\|stop ID]` | Opt into or manage persistent classic CLI chats |
 | `/detach` | Disconnect the viewer of a persistent chat; keep its worker running |
-| `/btw <question>` | Ask a side question about the current conversation without interrupting it |
 | `/skin` | Show or switch the active CLI skin |
 | `/voice on` | Enable CLI voice mode (press `Ctrl+B` to record) |
 | `/voice tts` | Toggle spoken playback for Sci replies |
 | `/reasoning high` | Increase reasoning effort |
 | `/title My Session` | Name the current session |
+| `/rename [name]` | Rename the conversation; omit the name to open a prompt (classic CLI) |
+| `/side [question]` | Open a temporary, multi-turn discussion using the parent conversation's context (classic CLI) |
 | `/status` | Show session info — model/profile/tokens/duration — followed by a local **Session recap** block (recent turn counts, top tools used, files touched, latest user prompt + assistant reply). Pure local compute; no LLM call. |
 | `/context [all]` | Visual context-usage breakdown — glyph block grid + per-category token table (system prompt / tools / skills / memory / conversation / free space). `/context all` adds per-skill and per-toolset costs. |
 | `/sessions` | Open an interactive session picker right inside the classic CLI (same surface the TUI uses). Type to filter, arrow keys to navigate, Enter to resume. |
@@ -538,6 +548,53 @@ auxiliary:
 ```
 
 When compression triggers, middle turns are summarized while the first 3 and last 20 turns are always preserved.
+
+## Temporary side conversations
+
+In the classic CLI, `/side` opens a temporary discussion, including while the parent is
+working. `/side Why did we choose this method?` opens it and asks the first question.
+Ordinary follow-up messages then go to the side discussion. The status bar labels the
+side view and shows whether the parent is running, idle, or waiting for input.
+The side transcript uses a separate terminal screen. Main replies arriving while you
+are there are shown in main when you return; they do not appear in the side transcript.
+Each chat keeps its own draft and input history. Page Up/Page Down scroll the side
+transcript without moving the composer; its reading position survives switching.
+The mouse wheel or trackpad scrolls the side transcript even over the input area.
+Wrapped messages scroll by screen rows. Use the draggable scrollbar at the right,
+or Ctrl+Home/Ctrl+End to jump to the beginning/latest output. New output does not
+pull you away while reading earlier messages; return to the bottom to follow it again.
+Mouse capture is limited to side mode; main retains normal terminal scrollback.
+Tool polling, download notices, and Python stdout/stderr stay in the originating side
+chat even while main is visible. Closing side discards its later display output;
+it does not undo completed external actions.
+
+- Ctrl+/: switch between main and the existing side conversation without cancelling either.
+  Terminals sending Ctrl+_ for this key are supported too.
+- `/side`: open or reopen the temporary conversation; optional text asks a question.
+- Ctrl+C: close side and return to main, even with an unfinished draft. Requests cancellation
+  of side work without cancelling main. There are no back, close, or status subcommands.
+
+Side conversations inherit the entire available context through the parent's last completed
+assistant message, including earlier turns (and existing compression summaries);
+unfinished turns and later parent activity are not included. The same selected model answers
+follow-ups without changing the parent's history, tools, or cached prompt. No provider
+fallback is made. Replies, tool activity, attachments, and approval prompts use the normal
+chat interface. Available tools and skills follow the active profile's permissions. Inherited
+requests and approvals are reference material: external actions require a request in side.
+Only the conversations are separated; files, credentials, and services are shared, so changes
+made with tools have real effects. Closing cannot undo completed actions or remote jobs.
+Closing returns immediately; opening another side waits for its cancelled worker to finish.
+Side conversations are not saved for `/resume`; provider processing and ordinary diagnostic
+logging still follow the application's existing settings. `/btw` has been removed.
+
+`/rename "Literature review"` saves a name for the active parent conversation. `/rename`
+opens the naming prompt when idle; use an inline name while work is running. Names are
+profile-scoped and survive restart/resume. Renaming does not rename the profile or change
+conversation content. `/title` remains available. Return from side mode before renaming.
+
+The side UI is currently available in the classic terminal (`sci chat --cli`), not the
+Ink TUI, desktop chat, or messaging integrations. Existing `/bg` and persistent
+`/background` chats remain separate features.
 
 ## Background Sessions
 

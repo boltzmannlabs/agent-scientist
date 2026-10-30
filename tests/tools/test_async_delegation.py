@@ -26,13 +26,10 @@ def _clean_state():
     while not process_registry.completion_queue.empty():
         process_registry.completion_queue.get_nowait()
     yield
-    # Give just-released workers a beat to finalize BEFORE draining, so their
-    # completion events land now instead of leaking into the next test's
-    # queue (worker threads push events asynchronously; a drain that races an
-    # in-flight _finalize misses it).
-    deadline = time.monotonic() + 2.0
-    while ad.active_count() and time.monotonic() < deadline:
-        time.sleep(0.02)
+    # Finalization persists to SQLite before queueing completion. Join the actual
+    # workers, rather than letting a slow disk leak writes/events into the next home.
+    if ad._executor is not None:
+        ad._executor.shutdown(wait=True)
     ad._reset_for_tests()
     while not process_registry.completion_queue.empty():
         process_registry.completion_queue.get_nowait()
@@ -444,22 +441,25 @@ def test_list_async_delegations_exposes_live_activity(monkeypatch):
     res = ad.dispatch_async_delegation(
         goal="live listing", context=None, toolsets=None, role="leaf",
         model="m", session_key="", max_async_children=1,
-        runner=lambda: {} if gate.wait(timeout=10) else {},
+        runner=lambda: (gate.wait(), {})[1],
         progress_fn=lambda: (((3, "web_search", base_ts),), True),
     )
     try:
-        time.sleep(0.1)  # let the monitor stamp _progress_ts at least once
+        before = time.time()
         item = next(
             d for d in ad.list_async_delegations()
             if d["delegation_id"] == res["delegation_id"]
         )
+        after = time.time()
         assert item["status"] == "running"
         assert item["in_tool"] is True
         assert "seconds_since_progress" in item
         (child,) = item["children_activity"]
         assert child["api_calls"] == 3
         assert child["current_tool"] == "web_search"
-        assert 10.0 <= child["seconds_since_activity"] <= 20.0
+        # The listing samples on demand, with one decimal place of precision.
+        # Startup/disk latency must not change what age the sample represents.
+        assert before - base_ts - 0.1 <= child["seconds_since_activity"] <= after - base_ts + 0.1
         # Callables and private bookkeeping must never leak.
         assert "progress_fn" not in item
         assert "interrupt_fn" not in item
@@ -686,9 +686,10 @@ def test_concurrent_dispatch_respects_capacity():
     """Two threads racing dispatch with cap=1 must yield exactly one accept
     (capacity check and record insert are atomic under the records lock)."""
     gate = threading.Event()
+    ad._connect().close()
 
     def blocker():
-        gate.wait(timeout=60)
+        gate.wait()
         return {"status": "completed", "summary": "x"}
 
     results = []
@@ -705,13 +706,18 @@ def test_concurrent_dispatch_respects_capacity():
         )
 
     threads = [threading.Thread(target=racer) for _ in range(2)]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join(timeout=10)
-    statuses = sorted(r["status"] for r in results)
-    assert statuses == ["dispatched", "rejected"]
-    gate.set()
+    try:
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(timeout=30)
+        assert all(not t.is_alive() for t in threads), "dispatch did not finish"
+        statuses = sorted(r["status"] for r in results)
+        assert statuses == ["dispatched", "rejected"]
+    finally:
+        gate.set()
+        for t in threads:
+            t.join(timeout=30)
 
 
 # ---------------------------------------------------------------------------

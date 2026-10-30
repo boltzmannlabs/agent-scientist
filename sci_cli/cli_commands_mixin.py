@@ -381,7 +381,7 @@ def _db_unavailable_line() -> str:
 
 
 def _print_side_result_panel(cli, *, header_lines, body, title_suffix, empty_note, console=None) -> None:
-    """Print a worker-thread result (/bg, /btw) into the scrollback: accent rules around
+    """Print a worker-thread result (/bg, /side) into the scrollback: accent rules around
     ``header_lines``, then ``body`` in a skinned Rich panel (or ``empty_note``).
     Forces a TUI refresh first so the spinner/status bar don't overlap the output."""
     from cli import ChatConsole, _accent_hex, _maybe_remap_for_light_mode, _render_final_assistant_content
@@ -2013,7 +2013,7 @@ class CLICommandsMixin(ScienceWorkspaceCommandsMixin):
         print("\n" + _t("init.updating" if "UPDATE the existing AGENTS.md" in msg else "init.generating"))
         self._queue_prompt_turn(msg, "/init")
 
-    # ---- side-session handlers: /bg, /btw -------------------------------------------------
+    # ---- side-session handlers: /bg, /side -------------------------------------------------
     def _handle_background_command(self, cmd: str):
         """Handle /bg <prompt> — run a prompt in a separate background session (its own AIAgent
         on a thread); the result prints here without touching the active history."""
@@ -2106,7 +2106,7 @@ class CLICommandsMixin(ScienceWorkspaceCommandsMixin):
 
     def _side_worker(self, produce, *, name, fail_label, header_lines, title_suffix, empty_note,
                      bell=False, on_done=None, console=None) -> threading.Thread:
-        """Daemon thread for /bg and /btw: ``produce()`` returns the body to print in a side-result
+        """Daemon thread for /bg and /side: ``produce()`` returns the body to print in a side-result
         panel; failures print ``fail_label`` failed; the TUI is always re-invalidated afterwards."""
         def run():
             try:
@@ -2136,40 +2136,6 @@ class CLICommandsMixin(ScienceWorkspaceCommandsMixin):
         """Open the ordinary SCI provider setup without rebuilding this conversation."""
         from sci_cli.cli_login import open_model_setup
         open_model_setup(self)
-
-    def _handle_btw_command(self, cmd: str):
-        """Handle /btw <question> — answer a side question about this conversation from a
-        history snapshot via a one-shot auxiliary call. The live session is never touched
-        (no history mutation, no role-alternation risk, no cache invalidation)."""
-        question = _command_arg(cmd)
-        if not question:
-            return _cp(*_lines(_t("btw.usage")))
-        if not self._ensure_runtime_credentials():
-            return _cp(f"  {_t('btw.no_credentials')}")
-        # Snapshot NOW, on the UI thread — the foreground turn keeps appending to
-        # conversation_history while the worker runs.
-        history_snapshot = list(self.conversation_history or [])
-        # Live agent → cache-parity fork (full context, warm cache reads).
-        parent_agent = self.agent
-        turn_route = self._resolve_turn_agent_config(question)
-        runtime = turn_route["runtime"]
-        main_runtime = {
-            "model": turn_route["model"],
-            **{k: runtime.get(k) for k in ("provider", "base_url", "api_key", "api_mode")},
-            "session_id": getattr(parent_agent, "session_id", None),
-        }
-        preview = _ellipsize(question, 60)
-        _cp(*_lines(_gt("btw.started", preview=preview)), "")
-
-        def produce():
-            from agent.side_question import answer_side_question
-            return answer_side_question(
-                question, history_snapshot, parent_agent=parent_agent, main_runtime=main_runtime)
-
-        self._side_worker(produce, name="btw-side-question", fail_label="/btw",
-                          header_lines=[f"  {_t('btw.header', preview=preview)}"],
-                          title_suffix=_t("btw.title_suffix"),
-                          empty_note=f"  {_t('btw.no_answer')}").start()
 
     # ---- /bundles, /browser ---------------------------------------------------------------
     def _handle_bundles_command(self, cmd: str) -> None:

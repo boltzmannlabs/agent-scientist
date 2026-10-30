@@ -112,13 +112,6 @@ gateway:
     final_output: "{header}\n\n最终输出：\n```\n{output}\n```"
     still_running: "⏳ 后台任务仍在运行"
     recent_output: "{header}\n\n最近输出：\n```\n{output}\n```"
-  btw:
-    usage: "用法：/btw <问题>\n示例：/btw 那个错误在哪个文件？\n\n在不打断当前工作的情况下，回答关于此对话的快速问题。要运行独立的后台任务，请使用 /bg <提示>。"
-    no_history: "还没有对话 — 请将问题作为普通消息发送。"
-    no_provider: "❌ 无法回答问题：未配置提供商凭据。"
-    started: "💬 顺便一问：「{preview}」\n正根据此对话的快照回答 — 当前工作继续进行。"
-    answer: "💬 /btw:「{preview}」\n\n{answer}"
-    failed: "❌ /btw 失败：「{preview}」\n{error}"
   branch:
     db_unavailable: "会话数据库不可用。"
     no_conversation: "没有可分支的对话 — 请先发送一条消息。"
@@ -1138,10 +1131,6 @@ platform:
       bg:
         arg_prompt: "要在后台运行的提示词"
         followup: "后台任务已启动~"
-      btw:
-        description: "就当前对话提一个附带问题"
-        arg_question: "要在不中断的情况下回答的附带问题"
-        followup: "附带问题已发出~"
       skill:
         description: "运行一个 Sci 技能"
         arg_name: "要运行的技能"
@@ -1533,8 +1522,6 @@ slash:
     description: "全局暂停新工作（紧急停止）；'/pause off' 恢复"
   deny:
     description: "拒绝待处理的危险命令（可附带原因）"
-  btw:
-    description: "就当前对话顺带提问，不打断进行中的工作"
   agents:
     description: "显示活跃的代理与运行中的任务"
   journey:
@@ -2915,7 +2902,7 @@ cli:
       updating: "⚡ 正在通过项目扫描更新 AGENTS.md..."
       generating: "⚡ 正在通过项目扫描生成 AGENTS.md..."
     background:
-      usage: "用法：/bg <prompt>\n示例：/bg 总结今天 HN 的热门文章\n（如需就本次对话提一个附带问题，请使用 /btw <question>。）\n任务会在独立会话中运行，完成后结果显示在这里。"
+      usage: "用法：/bg <prompt>\n示例：/bg 总结今天 HN 的热门文章\n任务会在独立会话中运行，完成后结果显示在这里。"
       no_credentials: "(>_<) 无法启动后台任务：没有有效的凭据。"
       started: "🔄 后台任务 #{number} 已启动：\"{preview}\""
       task_id: "任务 ID：{task_id}"
@@ -2932,12 +2919,6 @@ cli:
       label: "登录"
       title_suffix: "(登录)"
       no_result: "(无结果)"
-    btw:
-      usage: "用法：/btw <question>\n示例：/btw 刚才那个错误在哪个文件里？\n在不打断当前对话的情况下，快速回答一个关于本次对话的问题。\n（如需运行独立的后台任务，请使用 /bg <prompt>。）"
-      no_credentials: "(>_<) 无法回答附带问题：没有有效的凭据。"
-      header: "💬 /btw：\"{preview}\""
-      title_suffix: "(btw)"
-      no_answer: "(未生成回答)"
     bundles:
       unavailable: "技能包子系统不可用：{error}"
       none_installed: "尚未安装任何技能包。"
@@ -3474,7 +3455,7 @@ explainer:
     and_more: "  • ……还有 {count} 项"
     the_model: "模型"
 tips:
-  t001: "/bg <prompt> 会在独立会话中运行任务，当前会话保持空闲；/btw <question> 可就本次对话提一个旁支问题，而不打断当前进程。"
+  t001: "/bg <prompt> 会在独立会话中运行任务，当前会话保持空闲；/side <question> 可就本次对话提一个旁支问题，而不打断当前进程。"
   t002: "/branch 会从当前会话分叉出一个新会话，让你探索另一条思路而不丢失已有进展。"
   t003: "/compress 可在对话变长时手动压缩上下文。"
   t004: "/rollback 会列出文件系统检查点——可把代理修改过的文件恢复到任意先前状态。"

@@ -29,7 +29,8 @@ def test_reported_headers_gate_upload_without_rewriting(tmp_path, monkeypatch, j
         invalid.append(changed)
         invalid.append([*headers[:index], *headers[index + 1:]])
     for columns, valid in [(h, False) for h in invalid] + [(headers, True)]:
-        contents = (",".join(columns) + "\n" + ",".join("fixture" for _ in columns) + "\n").encode()
+        cells = {"sequences": "MKT", "smiles": "CCO"}
+        contents = (",".join(columns) + "\n" + ",".join(cells.get(name.casefold(), "fixture") for name in columns) + "\n").encode()
         source.write_bytes(contents)
         count = len(sent)
         result = preflight.validated_upload(str(source), job, field, {}, True, upload)

@@ -231,7 +231,7 @@ def _wire_callbacks(sid: str):
 
         owner_sid = get_session_env("SCI_UI_SESSION_ID")
         # Credential admission is fenced to a live runtime. owner_sid is a ContextVar copied onto
-        # the worker's thread at spawn: a background/btw/preview worker outlives its session, and
+        # the worker's thread at spawn: a background/preview worker outlives its session, and
         # the close path's `_clear_pending` cancels only requests ALREADY open — it cannot fence
         # one created afterward. Without a session here the request would register, wait 300s for
         # a client that never reconnects, and any late answer would settle into the saver with no

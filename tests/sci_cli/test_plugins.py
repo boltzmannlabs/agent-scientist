@@ -2005,7 +2005,24 @@ class TestGetPreVerifyContinueMessage:
 
 
 class TestThreadToolWhitelist:
-    """Tests for the thread-local tool whitelist used by background review forks."""
+    """Execution restrictions follow worker context without leaking to unrelated tasks."""
+
+    def test_pool_propagates_restriction_and_restores_nested_scope(self):
+        from sci_cli.plugins import set_thread_tool_whitelist, clear_thread_tool_whitelist
+        from tools.daemon_pool import DaemonThreadPoolExecutor
+
+        with DaemonThreadPoolExecutor(max_workers=1) as pool:
+            outer = set_thread_tool_whitelist({'memory'})
+            inner = set_thread_tool_whitelist(set())
+            try:
+                assert pool.submit(get_pre_tool_call_block_message, 'memory', {}).result() is not None
+            finally:
+                clear_thread_tool_whitelist(inner)
+            try:
+                assert pool.submit(get_pre_tool_call_block_message, 'terminal', {}).result() is not None
+            finally:
+                clear_thread_tool_whitelist(outer)
+            assert pool.submit(get_pre_tool_call_block_message, 'terminal', {}).result() is None
 
     def test_allowed_tool_passes_through_to_hooks(self, monkeypatch):
         from sci_cli.plugins import (

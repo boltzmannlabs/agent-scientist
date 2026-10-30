@@ -54,6 +54,22 @@ def test_fresh_profile_worker_turns_restart_and_a_b_a_isolation(tmp_path, monkey
             else:
                 profiles.append(create(ProfileSpec(name, purpose, "Cite evidence", "", setup_pending=True,
                                                    skills=["science/fixture"]), home))
+        if not native:
+            from sci_cli.config import atomic_config_replace, read_user_config_raw
+            from sci_cli.native_profile_update import update_wizard
+            from sci_cli.science_profiles import MANIFEST
+            for target in profiles:
+                # Exercise an actual pre-upgrade approval through the public wizard,
+                # then boot a separate worker/CLI with the migrated files.
+                record = json.loads((target / MANIFEST).read_text())
+                record.pop("config_review")
+                (target / MANIFEST).write_text(json.dumps(record))
+                cfg = read_user_config_raw(target / "config.yaml")
+                cfg["display"] = {"skin": "mono"}
+                atomic_config_replace(target / "config.yaml", cfg)
+                ui = SimpleNamespace(show=Mock(), choose=Mock(return_value="Approve profile repair"))
+                update_wizard(SimpleNamespace(), f'/Update_profile "{target.name}"', ui)
+                assert "Saved profile" in ui.show.call_args.args[0]
         parent = SimpleNamespace(agent=SimpleNamespace(system_prompt="cached", tools=["unchanged"],
                                                       _flush_messages_to_session_db=Mock()),
                                  conversation_history=[{"role": "user", "content": "main only"}],

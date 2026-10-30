@@ -112,13 +112,6 @@ gateway:
     final_output: "{header}\n\n最終輸出：\n```\n{output}\n```"
     still_running: "⏳ 背景任務仍在執行"
     recent_output: "{header}\n\n最近輸出：\n```\n{output}\n```"
-  btw:
-    usage: "用法：/btw <問題>\n範例：/btw 那個錯誤在哪個檔案？\n\n在不打斷目前工作的情況下，回答關於此對話的快速問題。若要執行獨立的背景任務，請使用 /bg <提示>。"
-    no_history: "尚無對話 — 請將問題作為一般訊息傳送。"
-    no_provider: "❌ 無法回答問題：未設定供應商憑證。"
-    started: "💬 順帶一問：「{preview}」\n正根據此對話的快照回答 — 目前的工作繼續進行。"
-    answer: "💬 /btw:「{preview}」\n\n{answer}"
-    failed: "❌ /btw 失敗：「{preview}」\n{error}"
   branch:
     db_unavailable: "工作階段資料庫無法使用。"
     no_conversation: "沒有可分支的對話 — 請先傳送一則訊息。"
@@ -1138,10 +1131,6 @@ platform:
       bg:
         arg_prompt: "要在背景執行的提示"
         followup: "背景任務已啟動～"
-      btw:
-        description: "針對目前對話提出附帶問題"
-        arg_question: "要在不中斷的情況下回答的附帶問題"
-        followup: "附帶問題已送出～"
       skill:
         description: "執行 Sci 技能"
         arg_name: "要執行的技能"
@@ -1533,8 +1522,6 @@ slash:
     description: "全域暫停新工作（緊急停止）；'/pause off' 恢復"
   deny:
     description: "拒絕待處理的危險指令（可附上原因）"
-  btw:
-    description: "針對目前對話提出附帶問題，而不中斷它"
   agents:
     description: "顯示活躍的代理與執行中的任務"
   journey:
@@ -2915,7 +2902,7 @@ cli:
       updating: "⚡ 正在根據專案掃描更新 AGENTS.md…"
       generating: "⚡ 正在根據專案掃描產生 AGENTS.md…"
     background:
-      usage: "用法：/bg <prompt>\n範例：/bg 摘要今天 HN 的熱門文章\n（若是關於這段對話的附帶問題，請使用 /btw <question>。）\n任務會在獨立的工作階段中執行，完成後結果將顯示於此。"
+      usage: "用法：/bg <prompt>\n範例：/bg 摘要今天 HN 的熱門文章\n任務會在獨立的工作階段中執行，完成後結果將顯示於此。"
       no_credentials: "(>_<) 無法啟動背景任務：沒有有效的憑證。"
       started: "🔄 背景任務 #{number} 已啟動：「{preview}」"
       task_id: "任務 ID：{task_id}"
@@ -2932,12 +2919,6 @@ cli:
       label: "登入"
       title_suffix: "（登入）"
       no_result: "（無結果）"
-    btw:
-      usage: "用法：/btw <question>\n範例：/btw 那個錯誤是在哪個檔案裡？\n在不打斷對話的情況下，快速回答關於這段對話的問題。\n（若是獨立的背景任務，請使用 /bg <prompt>。）"
-      no_credentials: "(>_<) 無法回答附帶問題：沒有有效的憑證。"
-      header: "💬 /btw：\"{preview}\""
-      title_suffix: "(btw)"
-      no_answer: "（未產生回答）"
     bundles:
       unavailable: "技能套件子系統無法使用：{error}"
       none_installed: "尚未安裝任何技能套件。"
@@ -3474,7 +3455,7 @@ explainer:
     and_more: "  • … 還有 {count} 個"
     the_model: "模型"
 tips:
-  t001: "/bg <prompt> 會在獨立的工作階段執行任務，讓你目前的工作階段保持空閒；/btw <question> 則會回答關於此對話的附帶問題，而不會中斷對話。"
+  t001: "/bg <prompt> 會在獨立的工作階段執行任務，讓你目前的工作階段保持空閒；/side <question> 則會回答關於此對話的附帶問題，而不會中斷對話。"
   t002: "/branch 會從目前的工作階段建立分支，讓你在不失去進度的情況下探索不同方向。"
   t003: "/compress 可在對話變長時手動壓縮對話上下文。"
   t004: "/rollback 會列出檔案系統檢查點 — 可將代理修改過的檔案還原到任何先前的狀態。"

@@ -179,22 +179,6 @@ def _collect_resume_entries(display_history, clean_assistant):
     return entries
 
 
-# (skin key, fallback) for transcript colors: body text, user label, border, assistant label.
-_RESUME_SKIN_COLORS = (
-    ("banner_text", "#FFE3ED"), ("session_label", "#FF8FB6"), ("session_border", "#853053"),
-    ("ui_ok", "#D1F2CD"))
-
-
-def _resume_panel_colors() -> tuple:
-    """Active-skin colors for ``_RESUME_SKIN_COLORS`` (fallbacks when no skin loads)."""
-    try:
-        from sci_cli.skin_engine import get_active_skin
-        _skin = get_active_skin()
-        return tuple(_skin.get_color(key, default) for key, default in _RESUME_SKIN_COLORS)
-    except Exception:
-        return tuple(default for _, default in _RESUME_SKIN_COLORS)
-
-
 def _retire_agent(cli) -> None:
     """Drop ``cli.agent`` so the next turn rebuilds it, releasing its LLM clients first: the Codex
     app-server child (and MCP descendants) belongs to the instance, so ``self.agent = None`` alone

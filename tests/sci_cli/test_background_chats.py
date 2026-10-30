@@ -72,9 +72,10 @@ from sci_cli.background_chat_service import ChatService
 from sci_cli.pty_bridge import PtyBridge
 from tools.environments.local import served_profile_child_env
 home = Path({str(home)!r})
-def spawn(session_id, cwd, cols, rows):
+def spawn(session_id, cwd, cols, rows, terminal_env=None):
     env = served_profile_child_env(target_home=home, inherit_credentials=True)
     env['PYTHONPATH'] = {str(ROOT)!r}
+    env.update(terminal_env or {{}})
     return PtyBridge.spawn([sys.executable, '-u', '-c', {worker_source!r}], cwd=cwd, env=env, cols=cols, rows=rows)
 asyncio.run(ChatService(home, worker_factory={"None" if real_cli else "spawn"}).run())
 '''
@@ -397,7 +398,7 @@ def test_shell_starts_service_and_terminal_detach_keeps_worker(tmp_path, monkeyp
             while "❯ ".encode() not in output and time.monotonic() < deadline:
                 if select.select([master], [], [], 0.2)[0]:
                     output += os.read(master, 65536)
-            assert b"Ctrl+] detaches" in output and "❯ ".encode() in output, output[-2000:]
+            assert "❯ ".encode() in output, output[-2000:]
             os.write(master, b"\x1d")
             assert relay.wait(timeout=15) == 0
             worker = find_worker(key, home)
@@ -442,13 +443,13 @@ def _resume_with_terminal(home, session_id, cwd, *, visit=None):
     output = b""
     try:
         deadline = time.monotonic() + 30
-        while b"Ctrl+] detaches" not in output and time.monotonic() < deadline:
+        while b"\x1b[3J" not in output and time.monotonic() < deadline:
             if select.select([master], [], [], 0.2)[0]:
                 try:
                     output += os.read(master, 65536)
                 except OSError:
                     break
-        assert b"Ctrl+] detaches" in output, output[-3000:]
+        assert b"\x1b[3J" in output, output[-3000:]
         assert b"This chat is open in another" not in output
         if visit:
             for target in (visit, session_id):

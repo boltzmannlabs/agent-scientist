@@ -38,12 +38,15 @@ def render_module(module, catalog, files, limits):
         if rules:
             # Full uploaded JSON schemas remain canonical file rules. Their human
             # guide is linked above; avoid duplicating thousands of lines per sheet.
-            shown = {name: {k: v for k, v in rule.items() if k != "json_schema"}
+            shown = {name: {k: v for k, v in rule.items() if k not in {"json_schema", "zip_manifest_schema"}}
                      for name, rule in rules.items()}
             lines += ["### File checks", "", "```json", json.dumps(shown, indent=2, ensure_ascii=False), "```", ""]
             if any("json_schema" in rule for rule in rules.values()):
                 lines += ["Uploaded JSON content is validated against the full schema in",
                           "`file-input-contracts.v1.json`; see the linked guide for field definitions.", ""]
+            if any("zip_manifest_schema" in rule for rule in rules.values()):
+                lines += ["The optional ZIP-root ligand manifest shape is canonical in",
+                          "`file-input-contracts.v1.json`; see the linked ligand-bundle guide.", ""]
         bounds = limits["tools"].get(job, {})
         if bounds:
             lines += ["### Input limits", "", "```json", json.dumps(bounds, indent=2, ensure_ascii=False), "```", ""]

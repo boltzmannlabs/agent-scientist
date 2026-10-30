@@ -81,9 +81,8 @@ def _read_numbered_choice(prompt_text: str) -> int | None | object:
 
 
 def _read_numbered_input(prompt_text: str) -> str | _NumberedNavigation:
-    """Plain ``input()`` outside setup flows; inside a scoped flow prompt_toolkit supplies portable
-    Escape / Ctrl+C / Left bindings on POSIX and native Windows."""
-    if _MENU_NAVIGATION_HANDLER.get() is None:
+    """Numbered menus retain Escape cancellation even when curses is unavailable."""
+    if _MENU_NAVIGATION_HANDLER.get() is None and not sys.stdin.isatty():
         return input(prompt_text)
     from prompt_toolkit import PromptSession
     from prompt_toolkit.formatted_text import ANSI
@@ -95,7 +94,7 @@ def _read_numbered_input(prompt_text: str) -> str | _NumberedNavigation:
     install_modify_other_keys_aliases()
     bindings = KeyBindings()
 
-    @bindings.add(Keys.Escape)
+    @bindings.add(Keys.Escape, eager=True)
     @bindings.add(Keys.ControlC)
     def _cancel(event) -> None:
         event.app.exit(result=_NumberedNavigation.CANCEL)
@@ -285,12 +284,8 @@ def _handle_active_search_key(
     if not search.active:
         return False, False, False
     if key == 27:
-        # Esc stops search AND clears the query so a no-match filter can't strand the user on
-        # an empty list; `changed` when there was a query so the driver resets scroll/cursor.
-        had_query = bool(search.query)
-        search.active = False
-        search.query = ""
-        return True, False, had_query
+        # Let the shared navigation decoder cancel the whole picker.
+        return False, False, False
     if key in (curses_mod.KEY_ENTER, 10, 13):
         return True, True, False
     if key in (curses_mod.KEY_BACKSPACE, 127, 8):
@@ -450,12 +445,10 @@ def _route_key(curses, stdscr, key: int, search: _SearchState, use_search: bool)
         return _decode_menu_key(stdscr, key), False
     if search.active and key == 27:
         # Enhanced keys (Ghostty/Kitty) also start with ESC: decode the full sequence before
-        # treating a genuine Escape as "stop search".
+        # treating a genuine Escape as cancellation.
         action = _decode_menu_key(stdscr, key)
         if action == NAV_CANCEL:
-            search.active = False
-            search.query = ""
-            return _CONSUMED, True
+            return NAV_CANCEL, False
         return (_CONSUMED if action == NAV_NONE else action), False
     if search.active:
         # Active search consumes query-editing keys; nav keys fall through.
@@ -545,7 +538,7 @@ def _run_curses_menu(
                 action, changed = _route_key(curses, stdscr, stdscr.getch(), search, use_search)
                 if changed:
                     scroll_offset = 0
-                    if search.active:  # Esc-clear resets scroll only; the loop re-reconciles
+                    if search.active:
                         cursor, cursor_pos = _reconcile_cursor(
                             _filter_indices(search_labels, search.query), cursor)
                 if action in (NAV_UP, NAV_DOWN):
@@ -618,7 +611,7 @@ def curses_checklist(
 def _search_hint(search, searchable: bool, confirm: str, cancel: str, back_enabled: bool) -> str:
     """Key-hint row for menus, swapping to the search prompt while ``/`` is active."""
     if searchable and search is not None and search.active:
-        hint = f"  Search: {search.query}\u258e  BACKSPACE edit  Ctrl+U clear  ESC stop"
+        hint = f"  Search: {search.query}\u258e  BACKSPACE edit  Ctrl+U clear  ESC cancel"
     else:
         hint = f"  \u2191\u2193 navigate  {confirm}  {'/ search  ' if searchable else ''}{cancel}"
     if back_enabled:

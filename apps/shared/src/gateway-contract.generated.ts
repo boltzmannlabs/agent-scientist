@@ -4702,7 +4702,7 @@ export interface BillingStepUpVerificationPayload {
   verification_url: string
   user_code: string
 }
-/** ``methods_prompt._spawn_side_agent``: ``{task_id, **extra, text}``; btw adds ``question``. */
+/** ``methods_prompt._spawn_side_agent``: ``{task_id, **extra, text}``. */
 export interface SideAgentCompletePayload {
   task_id: string
   text: string
@@ -5185,8 +5185,6 @@ export interface RpcMethods {
   'projects.update': { params: ProjectsUpdateParams; result: ProjectResult }
   /** Run a task on a fresh agent in the background; the answer arrives as background.complete. */
   'prompt.background': { params: SideAgentParams; result: TaskIdResult }
-  /** Side question over a snapshot of the live conversation; the answer arrives as btw.complete. */
-  'prompt.btw': { params: SideAgentParams; result: TaskIdResult }
   /** Send a user turn to a live session; busy sessions queue / steer / redirect instead of refusing. */
   'prompt.submit': { params: PromptSubmitParams; result: PromptSubmitResult }
   /** Re-read ~/.sci/.env (CLI /reload parity); built agents keep their pool until /new. */
@@ -5532,7 +5530,6 @@ export const RPC_METHODS = [
   'projects.tree',
   'projects.update',
   'prompt.background',
-  'prompt.btw',
   'prompt.submit',
   'reload.env',
   'reload.mcp',
@@ -5691,8 +5688,6 @@ export interface BackendGatewayEventMap {
   'browser.controller.command': BrowserControllerCommandPayload
   /** Browser (CDP) connect / install progress line. */
   'browser.progress': BrowserProgressPayload
-  /** A /btw side question was answered. */
-  'btw.complete': SideAgentCompletePayload
   /** A connection operation opened on this session; the desktop renders its card. */
   'connection.request': ConnectionRequestPayload
   /** One transition or the settlement of an open connection operation. */
@@ -5836,7 +5831,6 @@ export const GATEWAY_EVENT_TYPES = [
   'browser.controller.cancel',
   'browser.controller.command',
   'browser.progress',
-  'btw.complete',
   'connection.request',
   'connection.update',
   'cron.changed',

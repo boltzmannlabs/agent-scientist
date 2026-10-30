@@ -59,7 +59,6 @@ export type DesktopActionId =
   | 'background'
   | 'branch'
   | 'browser'
-  | 'btw'
   | 'compress'
   | 'handoff'
   | 'hatch'
@@ -256,15 +255,6 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
     description: 'Compress this conversation context',
     aliases: ['/compact'],
     surface: action('compress'),
-    argumentMode: 'text'
-  },
-  // /btw must be an action (prompt.btw RPC), not exec: the slash worker
-  // prints the answer after process_command returns, so Desktop only ever
-  // saw the acknowledgement (#99065). The answer arrives as btw.complete.
-  {
-    name: '/btw',
-    description: 'Ask a side question about this conversation without interrupting it',
-    surface: action('btw'),
     argumentMode: 'text'
   },
   // /bg (alias /background) must be an action (prompt.background RPC — the
@@ -513,10 +503,10 @@ export function resolveDesktopCommand(command: string): DesktopCommandSpec | nul
 }
 
 /** Actions that fork their own run instead of speaking into the current turn. */
-const SIDE_TASK_ACTIONS: ReadonlySet<DesktopActionId> = new Set(['background', 'btw'])
+const SIDE_TASK_ACTIONS: ReadonlySet<DesktopActionId> = new Set(['background'])
 
 /**
- * True for a slash command that runs beside the live turn (`/btw`, `/bg`,
+ * True for a slash command that runs beside the live turn (`/bg`,
  * `/background`): it answers from a snapshot or a separate session, so it must
  * not resolve a clarify/connection card parked on the current turn.
  */

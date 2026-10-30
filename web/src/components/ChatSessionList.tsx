@@ -1,22 +1,5 @@
-/**
- * ChatSessionList — a ChatGPT-style conversation switcher that sits beside
- * the embedded TUI on the dashboard Chat tab.
- *
- * It lists the most recent sessions for the active management profile and
- * lets the user swap between them without leaving the Chat page. Selecting
- * a row sets `/chat?resume=<id>`; ChatPage treats the resume target as part
- * of the PTY identity, so the change tears down the current terminal child
- * and respawns it resuming that conversation (see ChatPage.tsx). The
- * "New session" action clears the resume param, which spawns a fresh PTY.
- *
- * Best-effort, like ChatSidebar: a failed fetch surfaces a small inline
- * error with a retry affordance and the terminal pane keeps working.
- *
- * This is a navigation surface, NOT a session-management one — delete,
- * rename, export, and bulk actions live on the Sessions page. Keeping this
- * panel read-only (plus select / new) avoids duplicating that machinery and
- * keeps the chat context focused on switching conversations quickly.
- */
+/** Conversation navigation for native browser chat. Session selection updates
+ * ?resume; the owning ChatPage resumes it through the scoped gateway. */
 
 import { Button } from "@sci/ui/ui/components/button";
 import { ListItem } from "@sci/ui/ui/components/list-item";
@@ -32,23 +15,24 @@ import { cn, timeAgo } from "@/lib/utils";
 
 const SESSION_LIMIT = 30;
 interface ChatSessionListProps {
-  /** Active resume target (the session currently shown in the terminal). */
+  /** Active resume target (the conversation currently shown). */
   activeSessionId: string | null;
   /** Management profile from the dashboard switcher — scopes the listing. */
   profile?: string;
   className?: string;
+  refreshKey?: number;
   /** Optional callback fired after a row is picked (e.g. close mobile sheet). */
   onPicked?: () => void;
   /**
    * Starts a fresh chat. ChatPage supplies its `startFreshDashboardChat`,
-   * which clears `?resume` AND bumps the reconnect nonce so a brand-new PTY
+   * which clears `?resume` AND bumps the reconnect nonce so a brand-new conversation
    * spawns even when the user is already on an unsaved fresh session. When
    * omitted, we fall back to clearing the resume param ourselves.
    */
   onNewChat?: () => void;
   /**
    * Workspace a FRESH chat starts in (absolute host path, "" = server
-   * default). Owned by ChatPage, which sends it as `/api/pty?cwd=`; the
+   * default). Owned by ChatPage, which sends it as `session.create {cwd}`; the
    * picker renders here beside "New chat" so the choice sits next to the
    * action it affects. Omit both to hide the picker.
    */
@@ -68,6 +52,7 @@ export function ChatSessionList({
   activeSessionId,
   profile,
   className,
+  refreshKey,
   onPicked,
   onNewChat,
   workspaceCwd,
@@ -117,12 +102,12 @@ export function ChatSessionList({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
     // `reloadNonce` is a manual refetch trigger (Refresh button / row pick).
-  }, [load, reloadNonce]);
+  }, [load, reloadNonce, refreshKey]);
 
   const reload = useCallback(() => setReloadNonce((n) => n + 1), []);
 
   // Picking a row sets `/chat?resume=<id>`. Re-picking the row already in
-  // the terminal is a no-op (avoids a needless PTY teardown).
+  // the conversation is a no-op (avoids a needless resume).
   const pick = useCallback(
     (id: string) => {
       onPicked?.();
@@ -140,8 +125,8 @@ export function ChatSessionList({
   );
 
   // "New chat" prefers ChatPage's robust handler (clears resume + forces a
-  // PTY respawn even from an already-fresh session). Fallback: clear the
-  // resume param ourselves, which spawns a fresh PTY whenever one was being
+  // fresh session even from an already-fresh session). Fallback: clear the
+  // resume param ourselves, which creates a fresh conversation whenever one was being
   // resumed. Session management (delete/rename/export) lives on the Sessions
   // page; this panel only switches and starts conversations.
   const startNew = useCallback(() => {

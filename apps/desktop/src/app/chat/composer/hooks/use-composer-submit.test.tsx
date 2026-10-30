@@ -513,26 +513,23 @@ describe('useComposerSubmit with a clarify parked on the session', () => {
     vi.restoreAllMocks()
   })
 
-  it.each([
-    '/btw what is the task?',
-    '/BTW what is the task?',
-    '/btw',
-    '/bg summarize the logs',
-    '/background run the tests'
-  ])('keeps a pending clarify answerable while dispatching %s', async text => {
-    parkClarify('runtime-session')
-    const { hook, onSubmit, onSteer } = renderSubmitHook({ busy: true, text })
+  it.each(['/bg summarize the logs', '/background run the tests'])(
+    'keeps a pending clarify answerable while dispatching %s',
+    async text => {
+      parkClarify('runtime-session')
+      const { hook, onSubmit, onSteer } = renderSubmitHook({ busy: true, text })
 
-    act(() => {
-      hook.result.current.submitDraft()
-    })
+      act(() => {
+        hook.result.current.submitDraft()
+      })
 
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(text, expect.anything()))
-    expect(onSteer).not.toHaveBeenCalled()
-    expect(respond).not.toHaveBeenCalled()
-    expect(hasOpenServerRequest('req-runtime-session')).toBe(true)
-    expect($clarifyRequests.get()['runtime-session']).toBeDefined()
-  })
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(text, expect.anything()))
+      expect(onSteer).not.toHaveBeenCalled()
+      expect(respond).not.toHaveBeenCalled()
+      expect(hasOpenServerRequest('req-runtime-session')).toBe(true)
+      expect($clarifyRequests.get()['runtime-session']).toBeDefined()
+    }
+  )
 
   it('still skips clarify for a different slash command', async () => {
     parkClarify('runtime-session')
@@ -641,28 +638,25 @@ describe('useComposerSubmit with a connection card parked on the session', () =>
     $connectionRequests.set({ 'runtime-session': connection })
   }
 
-  it.each([
-    '/btw what is the task?',
-    '/BTW what is the task?',
-    '/btw',
-    '/bg summarize the logs',
-    '/background run the tests'
-  ])('keeps the connection card answerable while dispatching %s', async text => {
-    parkConnection()
-    vi.spyOn(sessionOwnerUtils, 'resolveSessionOwner').mockRejectedValue(new Error('test no owner'))
-    const gatewayRequest = vi.fn(async () => ({}))
-    $gateway.set({ request: gatewayRequest } as unknown as NonNullable<ReturnType<typeof $gateway.get>>)
-    const { hook, onSubmit, onSteer } = renderSubmitHook({ busy: true, text })
+  it.each(['/bg summarize the logs', '/background run the tests'])(
+    'keeps the connection card answerable while dispatching %s',
+    async text => {
+      parkConnection()
+      vi.spyOn(sessionOwnerUtils, 'resolveSessionOwner').mockRejectedValue(new Error('test no owner'))
+      const gatewayRequest = vi.fn(async () => ({}))
+      $gateway.set({ request: gatewayRequest } as unknown as NonNullable<ReturnType<typeof $gateway.get>>)
+      const { hook, onSubmit, onSteer } = renderSubmitHook({ busy: true, text })
 
-    act(() => {
-      hook.result.current.submitDraft()
-    })
+      act(() => {
+        hook.result.current.submitDraft()
+      })
 
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(text, expect.anything()))
-    expect(onSteer).not.toHaveBeenCalled()
-    expect(gatewayRequest).not.toHaveBeenCalledWith('connection.respond', expect.anything())
-    expect($connectionRequests.get()['runtime-session']?.settled).toBe(false)
-  })
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(text, expect.anything()))
+      expect(onSteer).not.toHaveBeenCalled()
+      expect(gatewayRequest).not.toHaveBeenCalledWith('connection.respond', expect.anything())
+      expect($connectionRequests.get()['runtime-session']?.settled).toBe(false)
+    }
+  )
 
   it('still continues the connection request for an ordinary reply', async () => {
     parkConnection()

@@ -224,6 +224,8 @@ def _modify_other_keys_aliases(ANSI_SEQUENCES: dict, Keys) -> dict[str, object]:
     }
     # Ctrl+digit has no useful raw byte (chr(ord('0') & 0x1F) is ControlP), so map directly.
     ctrl_key_map.update({ord('0') + d: getattr(Keys, f"Control{d}") for d in range(10)})
+    # Ctrl+/ traditionally sends US, the same byte as Ctrl+_. CSI-u keeps '/'.
+    ctrl_key_map[ord('/')] = Keys.ControlUnderscore
     _install_paired(5, ctrl_key_map)
 
     # Letter combos. Alt+a -> (Escape, 'a') like bare Alt. Shift+a -> 'A' (safe on every Latin

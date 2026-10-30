@@ -45,6 +45,7 @@ class ProfileSpec:
     pending_tools: dict[str, list[str]] = field(default_factory=dict)
     capability_source_home: str = ""
     boltzmann_enabled: bool = False
+    config_review: dict = field(default_factory=dict)
 
 
 def validate(spec: ProfileSpec):
@@ -250,6 +251,8 @@ def create(spec: ProfileSpec, source_home: Path) -> Path:
         payload = asdict(spec)
         payload["sources"] = manifest_sources
         payload["config_digest"] = config_digest(config)
+        from sci_cli.science_profile_approval import approval_record
+        payload["config_review"] = approval_record(config)
         (staging / MANIFEST).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     return create_profile(spec.name, no_alias=True, no_skills=True, description=spec.purpose,

@@ -257,7 +257,6 @@ platform network disconnect as an event-loop failure.
 | `/voice [on\|off\|tts\|join\|leave\|status]` | Control messaging voice replies and Discord voice-channel behavior |
 | `/rollback [number]` | List or restore filesystem checkpoints |
 | `/bg <prompt>` | Run a prompt in a separate background session |
-| `/btw <question>` | Ask a side question about the current conversation without interrupting it |
 | `/reload-mcp` | Reload MCP servers from config |
 | `/update` | Update Sci Agent to the latest version |
 | `/help` | Show available commands |

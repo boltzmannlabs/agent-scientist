@@ -59,7 +59,17 @@ class _Batch:
 
     def run_child(self, i: int, task: Dict[str, Any], child: Any) -> Dict[str, Any]:
         from tools.delegate_tool import _run_single_child
-        return _run_single_child(task_index=i, goal=task["goal"], child=child, parent_agent=self.parent_agent, **self.owner_kwargs())
+        result = _run_single_child(task_index=i, goal=task["goal"], child=child, parent_agent=self.parent_agent, **self.owner_kwargs())
+        from agent.specialist_runs import record
+        from agent.specialist_policy import SpecialistPolicy
+        if isinstance(getattr(child, "_specialist_policy", None), SpecialistPolicy):
+            result["specialist"] = child._specialist_policy.name
+            result["run_id"] = child._subagent_id
+            try:
+                record(child, task["goal"], result)
+            except (OSError, ValueError) as exc:
+                result["history_warning"] = f"Run finished but receipt could not be saved: {exc}"
+        return result
 
 
 def _announce_batch(parent_agent, n_tasks: int, live_deleg_id: Optional[str]) -> None:

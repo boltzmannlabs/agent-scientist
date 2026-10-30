@@ -2015,7 +2015,9 @@ def fire_pre_command_hook(
         logger.debug("pre_command hook dispatch failed (non-fatal): %s", exc)
 
 
-_thread_tool_whitelist = threading.local()
+# Execution moves to context-aware worker pools, even for sequential tool calls.
+# A thread-local allowlist vanishes on that hop and accidentally permits execution.
+_thread_tool_whitelist = contextvars.ContextVar("sci_tool_whitelist", default=(None, "Tool '{tool_name}' denied"))
 
 
 @dataclass(frozen=True)
@@ -2029,13 +2031,15 @@ class _PreToolCallDirective:
 def set_thread_tool_whitelist(
     allowed: Optional[Set[str]],
     deny_msg_fmt: str = "Tool '{tool_name}' denied: not in this thread's tool whitelist",
-) -> None:
-    _thread_tool_whitelist.allowed = allowed
-    _thread_tool_whitelist.fmt = deny_msg_fmt
+) -> contextvars.Token:
+    return _thread_tool_whitelist.set((None if allowed is None else frozenset(allowed), deny_msg_fmt))
 
 
-def clear_thread_tool_whitelist() -> None:
-    _thread_tool_whitelist.allowed = None
+def clear_thread_tool_whitelist(token: Optional[contextvars.Token] = None) -> None:
+    if token is not None:
+        _thread_tool_whitelist.reset(token)
+    else:
+        _thread_tool_whitelist.set((None, "Tool '{tool_name}' denied"))
 
 
 def _get_pre_tool_call_directive_details(
@@ -2049,9 +2053,8 @@ def _get_pre_tool_call_directive_details(
     ``block`` > ``approve`` > none, not registration order: any plugin's valid veto wins over an
     earlier plugin's request for human confirmation (#87420); among approves the first valid one
     wins. Irrelevant returns are ignored."""
-    allowed = getattr(_thread_tool_whitelist, "allowed", None)
+    allowed, fmt = _thread_tool_whitelist.get()
     if allowed is not None and tool_name not in allowed:
-        fmt = getattr(_thread_tool_whitelist, "fmt", "Tool '{tool_name}' denied")
         return _PreToolCallDirective(action="block", message=fmt.format(tool_name=tool_name))
     from sci_cli.lifecycle import invoke_hook as invoke_lifecycle_hook
     hook_results = invoke_lifecycle_hook(

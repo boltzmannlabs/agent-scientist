@@ -12,11 +12,16 @@ from pathlib import Path
 class ValidationReport:
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    info: list[str] = field(default_factory=list)
+    inventory: dict = field(default_factory=dict, repr=False)
 
     def as_dict(self):
-        return {"level": "invalid" if self.errors else "partial" if self.warnings else "checked",
-                "errors": list(dict.fromkeys(self.errors)),
-                "warnings": list(dict.fromkeys(self.warnings))}
+        result = {"level": "invalid" if self.errors else "partial" if self.warnings else "checked",
+                  "errors": list(dict.fromkeys(self.errors)),
+                  "warnings": list(dict.fromkeys(self.warnings))}
+        if self.info:
+            result["info"] = list(dict.fromkeys(self.info))
+        return result
 
 
 def _number(value):
@@ -191,7 +196,10 @@ class ContractStore:
         validate_schema(payload, tool["request_schema"], report)
         if not isinstance(payload, dict):
             return report
-        report.warnings.extend(tool.get("review_notes", []))
+        # Five-tool documentation is informational; preserve existing approval
+        # policies for the rest of the catalog.
+        notes = report.info if job in {"deepallo", "enzycontrol", "Enzyme_RFD3", "Catalytic_Geometry", "Mol_Probity"} else report.warnings
+        notes.extend(tool.get("review_notes", []))
         limits = self.limits.get(job, {})
         for name, rule in limits.get("fields", {}).items():
             if name not in payload:
@@ -223,4 +231,10 @@ class ContractStore:
         if not report.errors and tool.get("request_checks"):
             from .enzyme_validation import validate_request
             validate_request(tool["request_checks"], payload, report)
+        semantic_files = self.files.get(job, {}).get("files", {}).values()
+        if not report.errors and (job in {"deepallo", "enzycontrol", "Enzyme_RFD3", "Catalytic_Geometry", "Mol_Probity"}
+                or any(rule.get("structure_profile") or rule.get("semantic_values") or rule.get("sequence_validation")
+                       for rule in semantic_files)):
+            from .enzyme_validation import validate_storage_paths
+            validate_storage_paths(self, job, payload, report)
         return report

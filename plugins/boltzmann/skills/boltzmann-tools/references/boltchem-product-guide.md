@@ -140,6 +140,9 @@ Existing connector jobs are distinct:
 
 - `Vina_basic_docking`: basic Vina docking with a defined search region.
 - `Vina_Flexible_Docking`: Vina docking with explicitly selected flexible residues.
+  The Node submission API requires an uploaded ligand CSV path in `smiles`;
+  a direct SMILES string is rejected. Exact CSV headers for this mode remain
+  unconfirmed; do not assume basic docking's column requirements apply.
 - `Vina_Score_only_docking`: evaluate supplied poses without claiming a new docking search.
 - `Diffdock`: blind docking/pose prediction; do not reinterpret confidence as a
   Vina energy score.

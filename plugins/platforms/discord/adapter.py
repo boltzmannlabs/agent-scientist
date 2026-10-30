@@ -163,9 +163,6 @@ _NATIVE_SLASH_COMMAND_SPECS: tuple = (
     ("bg", "slash.bg.description",
      (("prompt", str, _REQUIRED, "platform.discord.command.bg.arg_prompt", None),),
      "/bg {prompt}", "platform.discord.command.bg.followup"),
-    ("btw", "platform.discord.command.btw.description",
-     (("question", str, _REQUIRED, "platform.discord.command.btw.arg_question", None),),
-     "/btw {question}", "platform.discord.command.btw.followup"),
 )
 # Discord rejects the whole bulk sync (error 50035) when ONE description / parameter description /
 # Choice name exceeds 100 UTF-16 units, so every localized slot is cut at the cap.

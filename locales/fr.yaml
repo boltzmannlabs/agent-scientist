@@ -138,13 +138,6 @@ gateway:
       ```
       {output}
       ```
-  btw:
-    usage: "Usage : /btw <question>\nExemple : /btw dans quel fichier était cette erreur ?\n\nRépond à une question rapide sur cette conversation sans l'interrompre. Pour une tâche d'arrière-plan indépendante, utilisez /bg <prompt>."
-    no_history: "Pas encore de conversation — envoyez plutôt votre question comme un message normal."
-    no_provider: "❌ Impossible de répondre : aucun identifiant de fournisseur configuré."
-    started: "💬 Question annexe : « {preview} »\nRéponse à partir d'un instantané de cette conversation — le travail en cours continue."
-    answer: "💬 /btw : « {preview} »\n\n{answer}"
-    failed: "❌ /btw a échoué : « {preview} »\n{error}"
   branch:
     db_unavailable: "Base de données des sessions indisponible."
     no_conversation: "Aucune conversation à brancher — envoyez d'abord un message."
@@ -1340,10 +1333,6 @@ platform:
       bg:
         arg_prompt: "Le prompt à exécuter en arrière-plan"
         followup: "Tâche en arrière-plan démarrée~"
-      btw:
-        description: "Poser une question annexe sur la conversation en cours"
-        arg_question: "La question annexe à traiter sans interrompre"
-        followup: "Question annexe envoyée~"
       skill:
         description: "Exécuter une skill Sci"
         arg_name: "Quelle skill exécuter"
@@ -1785,8 +1774,6 @@ slash:
     description: "Suspendre tout nouveau travail globalement (arrêt d'urgence) ; '/pause off' reprend"
   deny:
     description: "Refuser une commande dangereuse en attente (avec un motif, facultatif)"
-  btw:
-    description: "Poser une question annexe sur la conversation en cours sans l'interrompre"
   agents:
     description: "Afficher les agents actifs et les tâches en cours"
   journey:
@@ -3215,7 +3202,6 @@ cli:
       usage: |-
         Usage : /bg <prompt>
         Exemple : /bg Résume les meilleurs articles HN du jour
-        (Pour une question annexe sur cette conversation, utilisez /btw <question>.)
         La tâche s'exécute dans une session séparée et le résultat s'affiche ici une fois terminée.
       no_credentials: "(>_<) Impossible de lancer la tâche d'arrière-plan : aucun identifiant valide."
       started: "🔄 Tâche d'arrière-plan #{number} démarrée : « {preview} »"
@@ -3233,16 +3219,6 @@ cli:
       label: "Connexion"
       title_suffix: "(connexion)"
       no_result: "(Aucun résultat)"
-    btw:
-      usage: |-
-        Usage : /btw <question>
-        Exemple : /btw dans quel fichier était cette erreur ?
-        Répond à une question rapide sur cette conversation sans l'interrompre.
-        (Pour une tâche d'arrière-plan indépendante, utilisez /bg <prompt>.)
-      no_credentials: "(>_<) Impossible de répondre à la question annexe : aucun identifiant valide."
-      header: "💬 /btw : « {preview} »"
-      title_suffix: "(btw)"
-      no_answer: "(Aucune réponse générée)"
     bundles:
       unavailable: "Sous-système de bundles indisponible : {error}"
       none_installed: "Aucun bundle de skills installé."
@@ -3799,7 +3775,7 @@ explainer:
     and_more: "  • … et {count} de plus"
     the_model: "Le modèle"
 tips:
-  t001: "/bg <prompt> exécute une tâche dans une session séparée pendant que la vôtre reste disponible ; /btw <question> répond à une question annexe sur cette conversation sans l'interrompre."
+  t001: "/bg <prompt> exécute une tâche dans une session séparée pendant que la vôtre reste disponible ; /side <question> répond à une question annexe sur cette conversation sans l'interrompre."
   t002: "/branch duplique la session actuelle pour explorer une autre piste sans perdre votre progression."
   t003: "/compress compresse manuellement le contexte de la conversation quand elle devient longue."
   t004: "/rollback liste les points de contrôle du système de fichiers — restaurez les fichiers modifiés par l'agent à n'importe quel état antérieur."

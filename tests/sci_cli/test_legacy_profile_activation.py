@@ -103,3 +103,42 @@ def test_legacy_cli_retains_policy_and_rejects_changed_config_before_cached_turn
             assert cli.system_prompt == prompt
         finally:
             cli._legacy_science_gate.dispose()
+
+
+def test_activation_picker_has_no_number_prefixes_in_main_or_named_profiles(saved_profiles, monkeypatch):
+    from sci_cli.native_profile_creation import profile_scope
+    from sci_cli.science_profile_commands import activate
+    from sci_cli.cli_modal_mixin import CLIModalMixin
+    from sci_cli.cli_tui_mixin import CLITuiMixin
+    from sci_cli.skill_add import WizardUI
+
+    # More than ten entries exercises both the old numeric and blank-prefix rows.
+    root = saved_profiles['a'].parent
+    for letter in 'cdefghijklm':
+        profile = root / f'project-{letter}'
+        profile.mkdir()
+        (profile / 'config.yaml').write_text('{}\n')
+    notices = []
+    monkeypatch.setattr(WizardUI, 'show', lambda self, text: notices.append(text))
+    for source in ('main', 'a', 'b', 'a'):
+        with profile_scope(saved_profiles[source]):
+            cli = SimpleNamespace(_app=SimpleNamespace(is_running=True))
+            def clarify(batch):
+                entry = batch[0]
+                assert entry['numbered_choices'] is False
+                assert len(entry['choices']) > 10
+                assert f'{source} — currently active' in entry['choices']
+                cli._clarify_state = {'questions': batch, 'answers': {}, 'answer_meta': {}}
+                CLIModalMixin._clarify_batch_set_active(cli, cli._clarify_state, 0)
+                for index, choice in enumerate(entry['choices']):
+                    cli._clarify_state['selected'] = index
+                    text = ''.join(fragment[1] for fragment in CLITuiMixin._get_clarify_display_fragments(cli))
+                    row = next(line for line in text.splitlines() if line.rstrip('│ ').endswith(choice))
+                    prefix = row.rsplit(choice, 1)[0]
+                    assert not any(ch.isdigit() for ch in prefix) and '.' not in prefix
+                return {'outcome': 'cancelled', 'answers': {}}
+            cli._clarify_callback = clarify
+            activate(cli, '/activate')
+            assert notices[-1] == 'Activation cancelled. Current selection unchanged.'
+            assert hasattr(cli, '_clarify_state')
+            assert not hasattr(cli, '_pending_relaunch')

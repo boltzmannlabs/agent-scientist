@@ -19,6 +19,7 @@ from agent.pet import render as pet_render
 from contextlib import suppress
 from sci_constants import get_sci_home
 from prompt_toolkit.application import Application
+from prompt_toolkit.filters import Condition
 from rich.markup import escape as _escape
 
 # Log-record parity with the origin module.
@@ -79,6 +80,8 @@ class CLITuiRuntimeMixin:
             if _had_mouse_reports:
                 self._recover_terminal_input_modes(reason="mouse reports leaked into submitted input")
 
+        # The composer routes side input before queueing. An item already in this
+        # queue belongs to main, even if the user switched views before we read it.
         # A typed bare stop phrase ends an active voice chat (transcripts are checked earlier).
         if not is_voice_input and self._typed_voice_stop(user_input):
             return
@@ -403,12 +406,15 @@ class CLITuiRuntimeMixin:
             # Vi editing mode when display.vim_mode is on.
             # EMACS is prompt_toolkit's own default, so non-opted-in behaviour is unchanged.
             extra_kw["editing_mode"] = EditingMode.VI if self._vim_mode else EditingMode.EMACS
-        return Application(
+        app = Application(
             layout=layout,
             key_bindings=kb,
             style=style,
             full_screen=False,
-            mouse_support=False,
+            # Side owns an alternate screen, so wheel events scroll its transcript.
+            # Main keeps native terminal selection and scrollback behavior.
+            mouse_support=Condition(
+                lambda: bool(getattr(getattr(self, "_side_view", None), "visible", False))),
             # 0 (default) avoids fighting terminal auto-scroll in non-fullscreen mode.
             refresh_interval=float(CLI_CONFIG.get("display", {}).get("cli_refresh_interval", 0)),
             # Erase the bottom chrome on exit instead of freezing a copy into scrollback.
@@ -421,6 +427,13 @@ class CLITuiRuntimeMixin:
             erase_when_done=True,
             **extra_kw,
         )
+        app._sci_side_view = getattr(self, "_side_view", None)
+        if app._sci_side_view is not None:
+            from prompt_toolkit.key_binding import DynamicKeyBindings
+            view = app._sci_side_view
+            view.surface._app = app
+            app.key_bindings = DynamicKeyBindings(lambda: view.bindings if view.visible else kb)
+        return app
 
     def _tui_install_signal_handlers(self):
         """SIGTERM/SIGHUP -> graceful shutdown; Windows absorbs SIGINT (see body)."""

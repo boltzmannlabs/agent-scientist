@@ -4244,7 +4244,6 @@ export const deOverrides = {
       '/stop': 'Aktiven Turn und Hintergrundprozesse stoppen',
       '/pause': "Neue Arbeit global pausieren (Notstopp); '/pause off' setzt fort",
       '/bg': 'Einen Prompt in einer separaten Hintergrund-Session ausführen',
-      '/btw': 'Eine Nebenfrage zu dieser Unterhaltung stellen, ohne sie zu unterbrechen',
       '/agents': 'Aktive Agents und laufende Aufgaben anzeigen',
       '/journey': 'Den Gedächtnisgraphen öffnen – Skills und Erinnerungen im Zeitverlauf',
       '/queue':

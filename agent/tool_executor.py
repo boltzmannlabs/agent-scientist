@@ -701,7 +701,8 @@ def _dispatch_authorized_once(
         elif callback is not None:
             callback()
 
-    block_message, block_error_type = scope_block, "tool_scope_block"
+    from agent.specialist_policy import check_call
+    block_message, block_error_type = scope_block or check_call(ref.name, ref.args), "tool_scope_block"
     if block_message is None:
         block_error_type = "plugin_block"
         resolve = lambda: _pre_tool_block(agent, ref)  # noqa: E731

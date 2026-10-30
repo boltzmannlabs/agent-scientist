@@ -70,31 +70,3 @@ class TestLoadTranscriptReadFailure:
         # failure — that path must keep its [] contract.
         store._db = None
         assert store.load_transcript("nope") == []
-
-# --------------------------------------------------------------------------
-# B. slash-command handlers surface the failure instead of dying silently.
-#    Before: the handler raised, base.py's dispatch wrapper logged
-#    "Command '/x' dispatch failed" and the user got NO reply at all.
-# --------------------------------------------------------------------------
-
-class TestSlashCommandsOnUnreadableTranscript:
-
-    @pytest.mark.asyncio
-    async def test_btw_replies_history_unreadable_on_read_failure(self):
-        """The except-branch must actually run: after the Sep 2026 decomposition the
-        constant lived in slash_commands_status but was not imported by slash_commands,
-        so this path raised NameError (#102117 follow-up)."""
-        from unittest.mock import AsyncMock, MagicMock
-
-        from gateway.slash_commands_status import history_unreadable
-        from tests.gateway.test_background_command import _make_event, _make_runner
-
-        runner = _make_runner()
-        store = AsyncMock()
-        store.get_or_create_session.return_value = MagicMock(session_id="s1")
-        store.load_transcript.side_effect = TranscriptReadError("malformed")
-        store._store = runner.session_store
-        runner._async_session_store = store
-
-        result = await runner._handle_btw_command(_make_event(text="/btw what?"))
-        assert result == history_unreadable()

@@ -455,7 +455,7 @@ class CLIInfoMixin:
         is blocked inside ``self.chat()`` for the whole run, so by the time the queued command is
         pulled, ``_agent_running`` has flipped back to False and it would be delivered as a
         next-turn message. Dispatching inline on the UI thread acts mid-run (``agent.steer()`` is
-        thread-safe; ``/bg`` / ``/btw`` start their side session without touching the foreground turn).
+        thread-safe; ``/bg`` / ``/side`` start their side session without touching the foreground turn).
         """
         from cli import _looks_like_slash_command
         if not text or has_images or not _looks_like_slash_command(text):
@@ -477,9 +477,9 @@ class CLIInfoMixin:
 
     def _should_handle_background_command_inline(
         self, text: str, has_images: bool = False) -> bool:
-        """Return True when /bg or /btw should be dispatched while the agent runs (their
+        """Return True when /bg or /side should be dispatched while the agent runs (their
         ``CommandDef`` entries declare ``busy_policy="dispatch"``; the classic CLI honours it here)."""
-        return self._busy_inline_command(text, has_images, ("bg", "btw"))
+        return self._busy_inline_command(text, has_images, ("bg", "side"))
 
     def handle_bang_shell(self, text: str) -> bool:
         """Run a ``!<command>`` submission. Returns True when it was handled.

@@ -82,7 +82,7 @@ def skill_identifiers(name, source):
     return {name, Path(name).name, str(metadata.get("name") or source.name)}
 
 
-def select_science_items(ui, title, options, *, selected=None):
+def select_science_items(ui, title, options, *, selected=None, filtered_controls=False):
     """Bounded toggle picker: Done is first even when there are thousands of tools."""
     if not options:
         ui.show(f"{title}: none available here. You can still create the profile.")
@@ -94,7 +94,9 @@ def select_science_items(ui, title, options, *, selected=None):
         page = min(page, pages - 1)
         rows = matches[page * 4:page * 4 + 4]
         labels = {f"{'[selected] ' if key in selected else ''}{key} — {options[key][:100]}".strip(): key for key in rows}
-        controls = ["Done", *labels, "Select all", "Clear selection", "Search"]
+        select_label = "Select matching" if filtered_controls and query else "Select all"
+        clear_label = "Clear matching" if filtered_controls and query else "Clear selection"
+        controls = ["Done", *labels, select_label, clear_label, "Search"]
         if query:
             controls.append("Clear search")
         if page + 1 < pages:
@@ -102,15 +104,16 @@ def select_science_items(ui, title, options, *, selected=None):
         if page:
             controls.append("Previous page")
         controls.append("Cancel")
-        choice = ui.choose(f"{title}: {len(selected)} selected; page {page + 1}/{pages}. "
-                           "Select all/Clear selection apply to the entire section, including hidden search results.", controls)
+        choice = ui.choose(f"{title}: {len(selected)} selected; page {page + 1}/{pages}. " +
+                           ("Selection controls apply to the search results." if filtered_controls and query else
+                            "Select all/Clear selection apply to the entire section, including hidden search results."), controls)
         if choice == "Done":
             return selected
-        if choice == "Select all":
-            selected = list(dict.fromkeys([*selected, *options]))
+        if choice == select_label:
+            selected = list(dict.fromkeys([*selected, *(matches if filtered_controls and query else options)]))
             continue
-        if choice == "Clear selection":
-            selected = []
+        if choice == clear_label:
+            selected = [key for key in selected if key not in matches] if filtered_controls and query else []
             continue
         if choice in labels:
             key = labels[choice]

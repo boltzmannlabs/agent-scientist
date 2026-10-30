@@ -165,6 +165,7 @@ def update_wizard(cli, command, ui=None):
     ui = ui or WizardUI(cli)
     cli._science_cancel = threading.Event()
     saved = False
+    repairing = False
     try:
         if is_managed():
             raise ValueError("Profile changes are administrator-managed.")
@@ -179,7 +180,10 @@ def update_wizard(cli, command, ui=None):
             raise ValueError("Unknown profile.")
         home = get_profile_dir(names[name])
         if (home / "science-profile.json").exists():
-            raise ValueError("Restricted legacy profile: review a separate migration with /Create_profile; no settings changed.")
+            from sci_cli.science_profile_repair import review_repair
+            repairing = True
+            review_repair(cli, home, ui)
+            return
         original = read_user_config_raw(home / "config.yaml")
         meta = json.loads((home / PROJECT).read_text(encoding="utf-8-sig")) if (home / PROJECT).exists() else {}
         labels, skill_sources = science_skill_choices(*dict.fromkeys([_get_default_sci_home(), home]))
@@ -214,10 +218,17 @@ def update_wizard(cli, command, ui=None):
                 from sci_cli.native_profile_session import request_resume
                 request_resume(cli, None, ui)
     except (Cancelled, KeyboardInterrupt, EOFError):
+        if repairing:
+            ui.show("Profile repair cancelled. No approval saved; no external action was started.")
+            return
         ui.show("Profile was saved; starting a new conversation was cancelled." if saved else
                 "Profile update cancelled. No configuration saved; approved downloads/OAuth grants may remain.")
     except Exception as exc:
         from sci_cli.mcp_config import redact_mcp_probe_text
+        if repairing:
+            ui.show("Profile repair failed: " + redact_mcp_probe_text(str(exc)) +
+                    " No successful repair is confirmed; no retry is running.")
+            return
         ui.show("Profile update failed: " + redact_mcp_probe_text(str(exc)) +
                 ". Do not assume rollback: staged credentials/files or approved downloads may remain; no retry is running.")
     finally:

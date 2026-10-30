@@ -2,7 +2,7 @@ import { useMemo, type ReactNode } from "react";
 
 /**
  * Lightweight markdown renderer for LLM output.
- * Handles: code blocks, inline code, bold, italic, headers, links, lists, horizontal rules.
+ * Handles: code blocks, inline code, bold, italic, headers, links, lists, tables, horizontal rules.
  * NOT a full CommonMark parser — optimized for typical assistant message patterns.
  *
  * `streaming` renders a blinking caret at the tail of the last block so it
@@ -51,6 +51,7 @@ function StreamingCaret() {
 
 type BlockNode =
   | { type: "code"; lang: string; content: string }
+  | { type: "table"; headers: string[]; rows: string[][] }
   | { type: "heading"; level: number; content: string }
   | { type: "hr" }
   | { type: "list"; ordered: boolean; items: string[] }
@@ -60,6 +61,15 @@ type BlockNode =
 /*  Block parser                                                       */
 /* ------------------------------------------------------------------ */
 
+function tableCells(line: string): string[] {
+  return line.trim().replace(/^\|/, '').replace(/(?<!\\)\|$/, '').split(/(?<!\\)\|/).map(cell => cell.trim().replace(/\\\|/g, '|'));
+}
+
+function startsTable(header: string, divider = ''): boolean {
+  const cells = tableCells(divider);
+  return header.includes('|') && cells.length >= 2 && cells.every(cell => /^:?-{3,}:?$/.test(cell)) && tableCells(header).length === cells.length;
+}
+
 function parseBlocks(text: string): BlockNode[] {
   const lines = text.split("\n");
   const blocks: BlockNode[] = [];
@@ -67,6 +77,17 @@ function parseBlocks(text: string): BlockNode[] {
 
   while (i < lines.length) {
     const line = lines[i];
+
+    if (startsTable(line, lines[i + 1])) {
+      const headers = tableCells(line);
+      const rows: string[][] = [];
+      i += 2;
+      while (i < lines.length && lines[i].trim() && lines[i].includes('|')) {
+        rows.push(tableCells(lines[i++]));
+      }
+      blocks.push({ type: 'table', headers, rows });
+      continue;
+    }
 
     // Fenced code block
     const fenceMatch = line.match(/^```(\w*)/);
@@ -135,6 +156,7 @@ function parseBlocks(text: string): BlockNode[] {
     while (
       i < lines.length &&
       lines[i].trim() !== "" &&
+      !startsTable(lines[i], lines[i + 1]) &&
       !lines[i].match(/^```/) &&
       !lines[i].match(/^#{1,4}\s/) &&
       !lines[i].match(/^[-*+]\s/) &&
@@ -166,6 +188,11 @@ function Block({
   caret?: ReactNode;
 }) {
   switch (block.type) {
+    case 'table':
+      return <div className="overflow-x-auto"><table className="w-full border-collapse text-sm">
+        <thead><tr>{block.headers.map((cell, index) => <th key={index} className="border border-border px-3 py-2 text-left font-semibold"><InlineContent text={cell} highlightTerms={highlightTerms} /></th>)}</tr></thead>
+        <tbody>{block.rows.map((row, index) => <tr key={index}>{block.headers.map((_, column) => <td key={column} className="border border-border px-3 py-2 align-top"><InlineContent text={row[column] || ''} highlightTerms={highlightTerms} /></td>)}</tr>)}</tbody>
+      </table>{caret}</div>;
     case "code":
       return (
         <pre className="bg-secondary/60 border border-border px-3 py-2.5 text-xs font-mono leading-relaxed overflow-x-auto">

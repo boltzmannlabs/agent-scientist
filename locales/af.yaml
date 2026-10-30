@@ -112,13 +112,6 @@ gateway:
     final_output: "{header}\n\nFinale uitvoer:\n```\n{output}\n```"
     still_running: "⏳ Agtergrondtaak loop nog"
     recent_output: "{header}\n\nOnlangse uitvoer:\n```\n{output}\n```"
-  btw:
-    usage: "Gebruik: /btw <vraag>\nVoorbeeld: /btw in watter lêer was daardie fout?\n\nBeantwoord 'n vinnige newevraag oor hierdie gesprek sonder om dit te onderbreek. Vir 'n onafhanklike agtergrondtaak, gebruik /bg <prompt>."
-    no_history: "Nog geen gesprek nie — stuur jou vraag eerder as 'n gewone boodskap."
-    no_provider: "❌ Kan nie newevraag beantwoord nie: geen verskaffer-geloofsbriewe opgestel nie."
-    started: "💬 Newevraag: \"{preview}\"\nBeantwoord vanaf 'n momentopname van hierdie gesprek — die huidige werk gaan voort."
-    answer: "💬 /btw: \"{preview}\"\n\n{answer}"
-    failed: "❌ /btw het misluk: \"{preview}\"\n{error}"
   branch:
     db_unavailable: "Sessie-databasis is nie beskikbaar nie."
     no_conversation: "Geen gesprek om te vertak nie — stuur eers 'n boodskap."
@@ -1138,10 +1131,6 @@ platform:
       bg:
         arg_prompt: "Die prompt om in die agtergrond uit te voer"
         followup: "Agtergrondtaak begin~"
-      btw:
-        description: "Vra 'n newevraag oor die huidige gesprek"
-        arg_question: "Die newevraag om te beantwoord sonder om te onderbreek"
-        followup: "Newevraag gestuur~"
       skill:
         description: "Voer 'n Sci-vaardigheid uit"
         arg_name: "Watter vaardigheid om uit te voer"
@@ -1533,8 +1522,6 @@ slash:
     description: "Pouseer nuwe werk globaal (noodstop); '/pause off' hervat"
   deny:
     description: "Weier 'n hangende gevaarlike opdrag (opsioneel met 'n rede)"
-  btw:
-    description: "Vra 'n newevraag oor die huidige gesprek sonder om dit te onderbreek"
   agents:
     description: "Wys aktiewe agente en lopende take"
   journey:
@@ -2915,7 +2902,7 @@ cli:
       updating: "⚡ Werk AGENTS.md by vanaf 'n projekskandering..."
       generating: "⚡ Genereer AGENTS.md vanaf 'n projekskandering..."
     background:
-      usage: "Gebruik: /bg <prompt>\nVoorbeeld: /bg Som vandag se top HN-stories op\n(Vir 'n newevraag oor hierdie gesprek, gebruik /btw <vraag>.)\nDie taak loop in 'n aparte sessie en die resultate verskyn hier wanneer dit klaar is."
+      usage: "Gebruik: /bg <prompt>\nVoorbeeld: /bg Som vandag se top HN-stories op\nDie taak loop in 'n aparte sessie en die resultate verskyn hier wanneer dit klaar is."
       no_credentials: "(>_<) Kan nie agtergrondtaak begin nie: geen geldige geloofsbriewe nie."
       started: "🔄 Agtergrondtaak #{number} begin: \"{preview}\""
       task_id: "Taak-ID: {task_id}"
@@ -2932,12 +2919,6 @@ cli:
       label: "Aanmelding"
       title_suffix: "(aanmelding)"
       no_result: "(Geen resultaat nie)"
-    btw:
-      usage: "Gebruik: /btw <vraag>\nVoorbeeld: /btw in watter lêer was daardie fout?\nBeantwoord 'n vinnige vraag oor hierdie gesprek sonder om dit te onderbreek.\n(Vir 'n onafhanklike agtergrondtaak, gebruik /bg <prompt>.)"
-      no_credentials: "(>_<) Kan nie newevraag beantwoord nie: geen geldige geloofsbriewe nie."
-      header: "💬 /btw: \"{preview}\""
-      title_suffix: "(btw)"
-      no_answer: "(Geen antwoord gegenereer nie)"
     bundles:
       unavailable: "Bondel-substelsel nie beskikbaar nie: {error}"
       none_installed: "Geen vaardigheidsbondels geïnstalleer nie."
@@ -3474,7 +3455,7 @@ explainer:
     and_more: "  • … en nog {count}"
     the_model: "Die model"
 tips:
-  t001: "/bg <prompt> voer 'n taak in 'n aparte sessie uit terwyl jou huidige een vry bly; /btw <question> beantwoord 'n newevraag oor hierdie gesprek sonder om dit te onderbreek."
+  t001: "/bg <prompt> voer 'n taak in 'n aparte sessie uit terwyl jou huidige een vry bly; /side <question> beantwoord 'n newevraag oor hierdie gesprek sonder om dit te onderbreek."
   t002: "/branch vertak die huidige sessie sodat jy 'n ander rigting kan verken sonder om vordering te verloor."
   t003: "/compress pers die gesprekskonteks met die hand saam wanneer dinge lank word."
   t004: "/rollback lys lêerstelsel-kontrolepunte — herstel lêers wat die agent gewysig het na enige vorige toestand."
