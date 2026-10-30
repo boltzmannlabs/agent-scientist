@@ -247,7 +247,7 @@ Report actual service errors and incomplete outputs. Refresh status for expired 
 
 ## PPI Flow Monomer
 
-For an unspecified PPI Flow request, ask for `task_name` first: `monomer`, `protein`, `antibody`, or `nanobody`. Each choice routes to its own job below; never combine all four modes' required fields in one form. An explicit job or mode already supplies task_name. Mode changes rebuild the draft, preserve only compatible common values, and never reuse an old submitted job as new approval.
+Generate a single-chain monomer protein either unconditionally at a specified length or around a supplied motif.
 
 Exact job name: `ppiflowmonomer`.
 
@@ -257,14 +257,14 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `samples_min_length` | integer | yes | value | Use the exact source field. |
-| `samples_max_length` | integer | yes | value | Use the exact source field. |
-| `samples_num` | integer | yes | value | Use the exact source field. |
-| `length_subset` | string | no / mode-dependent | value | Operator confirmed string containing integer list, e.g. "[100, 150]". |
-| `motif_csv` | string | no / mode-dependent | file | Required only for motif scaffolding; not used for unconditional monomer generation. |
-| `motif_names` | string | no / mode-dependent | value | Use the exact source field. |
-| `generation_mode` | string | yes | value | Select the intended generation task; this is not a backend payload key. |
-| `task_name` | string | yes | value | Task must match the selected PPI Flow job. |
+| `samples_min_length` | integer | no / mode-dependent | value | Legacy length control from the earlier input form. The current monomer wrapper does not use it; set the requested length with length_subset. |
+| `samples_max_length` | integer | no / mode-dependent | value | Legacy length control from the earlier input form. The current monomer wrapper does not use it; set the requested length with length_subset. |
+| `samples_num` | integer | no / mode-dependent | value | Number of monomer structures to generate. Enter a positive integer; default is 5. |
+| `length_subset` | string / integer / array | no / mode-dependent | value | For unconditional generation, enter the desired protein length in amino acids, such as 80, [80, 100], or "80,100". Provide this or motif_csv, not both. |
+| `motif_csv` | string | no / mode-dependent | file | For motif-guided generation, upload a CSV with non-empty target, motif_path, length, and contig columns. Provide this or length_subset, not both. |
+| `motif_names` | string | no / mode-dependent | value | Optional motif name to select from the uploaded motif_csv. Used only in motif-guided generation. |
+| `generation_mode` | string | no / mode-dependent | value | Select unconditional generation or motif scaffolding in the input form. The wrapper determines the run from length_subset or motif_csv; this selector is not sent to the backend. |
+| `task_name` | string | yes | value | Must be exactly "monomer" to run PPI Flow monomer generation. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -277,37 +277,44 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "samples_min_length": {
-      "description": "Use the exact source field.",
+      "description": "Legacy length control from the earlier input form. The current monomer wrapper does not use it; set the requested length with length_subset.",
       "type": "integer",
       "x-input-kind": "value"
     },
     "samples_max_length": {
-      "description": "Use the exact source field.",
+      "description": "Legacy length control from the earlier input form. The current monomer wrapper does not use it; set the requested length with length_subset.",
       "type": "integer",
       "x-input-kind": "value"
     },
     "samples_num": {
-      "description": "Use the exact source field.",
+      "description": "Number of monomer structures to generate. Enter a positive integer; default is 5.",
       "type": "integer",
       "x-input-kind": "value"
     },
     "length_subset": {
-      "description": "Operator confirmed string containing integer list, e.g. \"[100, 150]\".",
-      "type": "string",
-      "x-input-kind": "value"
+      "description": "For unconditional generation, enter the desired protein length in amino acids, such as 80, [80, 100], or \"80,100\". Provide this or motif_csv, not both.",
+      "type": [
+        "string",
+        "integer",
+        "array"
+      ],
+      "x-input-kind": "value",
+      "items": {
+        "type": "integer"
+      }
     },
     "motif_csv": {
-      "description": "Required only for motif scaffolding; not used for unconditional monomer generation.",
+      "description": "For motif-guided generation, upload a CSV with non-empty target, motif_path, length, and contig columns. Provide this or length_subset, not both.",
       "type": "string",
       "x-input-kind": "file"
     },
     "motif_names": {
-      "description": "Use the exact source field.",
+      "description": "Optional motif name to select from the uploaded motif_csv. Used only in motif-guided generation.",
       "type": "string",
       "x-input-kind": "value"
     },
     "generation_mode": {
-      "description": "Select the intended generation task; this is not a backend payload key.",
+      "description": "Select unconditional generation or motif scaffolding in the input form. The wrapper determines the run from length_subset or motif_csv; this selector is not sent to the backend.",
       "type": "string",
       "enum": [
         "unconditional",
@@ -316,7 +323,7 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "value"
     },
     "task_name": {
-      "description": "Task must match the selected PPI Flow job.",
+      "description": "Must be exactly \"monomer\" to run PPI Flow monomer generation.",
       "type": "string",
       "enum": [
         "monomer"
@@ -325,18 +332,16 @@ Only local files require a new upload. Never infer input mode from a field name.
     }
   },
   "required": [
-    "samples_min_length",
-    "samples_max_length",
-    "samples_num",
-    "generation_mode",
     "task_name"
   ],
   "additionalProperties": true,
-  "x-required-if": [
+  "oneOf": [
     {
-      "when": {
-        "generation_mode": "motif_scaffolding"
-      },
+      "required": [
+        "length_subset"
+      ]
+    },
+    {
       "required": [
         "motif_csv"
       ]
@@ -353,10 +358,6 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
   "job_name": "ppiflowmonomer",
   "experiment_name": "<confirmed experiment name>",
   "experiment_data": {
-    "samples_min_length": "<user value; see samples_min_length schema>",
-    "samples_max_length": "<user value; see samples_max_length schema>",
-    "samples_num": "<user value; see samples_num schema>",
-    "generation_mode": "<user value; see generation_mode schema>",
     "task_name": "<user value; see task_name schema>"
   }
 }
@@ -392,7 +393,7 @@ Report actual service errors and incomplete outputs. Refresh status for expired 
 
 ## PPI Flow Antibody
 
-Generate antibody structures against an antigen using uploaded antigen and framework PDBs, explicit chain identities, CDR-length ranges, and optional antigen hotspots.
+Design antibody heavy- and light-chain CDR loops against an antigen using an antigen PDB, an antibody framework PDB, and specified antigen hotspots.
 
 Exact job name: `ppiflowantibody`.
 
@@ -402,15 +403,15 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `antigen_pdb` | string | yes | file | Uploaded antigen PDB. |
-| `framework_pdb` | string | yes | file | Uploaded antibody framework PDB. |
-| `antigen_chain` | string | yes | value | Antigen chain identifier. |
-| `heavy_chain` | string | yes | value | Framework heavy-chain identifier. |
-| `light_chain` | string | yes | value | Framework light-chain identifier. |
-| `cdr_length` | string | no / mode-dependent | value | Optional comma-separated CDR names and inclusive length ranges. |
-| `samples_per_target` | integer | yes | value | Number of designs; the accepted canary used `5`. |
-| `specified_hotspots` | string | no / mode-dependent | value | Comma-separated antigen chain/residue identifiers. |
-| `task_name` | string | yes | value | Task must match the selected PPI Flow job. |
+| `antigen_pdb` | string | yes | file | Upload the antigen PDB structure that the antibody should bind. |
+| `framework_pdb` | string | yes | file | Upload a framework-only PDB containing the heavy and light chains; do not include the antigen. Use IMGT numbering and remove the CDR residues to redesign, keeping the original residue numbers so each removed loop leaves a numbering gap. Gaps are assigned in order: H1, H2, H3, then L1, L2, L3. This wrapper detects jumps in integer PDB residue numbers; it does not validate IMGT numbering or interpret insertion codes, so avoid unrelated gaps. |
+| `antigen_chain` | string | no / mode-dependent | value | Chain ID of the antigen in antigen_pdb. Defaults to A and must exist in the PDB. |
+| `heavy_chain` | string | no / mode-dependent | value | Chain ID of the antibody heavy-chain framework in framework_pdb. Defaults to H. |
+| `light_chain` | string | no / mode-dependent | value | Chain ID of the antibody light-chain framework in framework_pdb. Defaults to L and must differ from heavy_chain. |
+| `cdr_length` | string | no / mode-dependent | value | Desired inclusive length ranges for CDRH1, CDRH2, CDRH3, CDRL1, CDRL2, and CDRL3, written as comma-separated CDR-name,min-max pairs. Default: CDRH1,5-12,CDRH2,4-17,CDRH3,5-26,CDRL1,5-12,CDRL2,3-10,CDRL3,4-13. |
+| `samples_per_target` | integer | no / mode-dependent | value | Number of antibody designs to generate. Positive integer; default is 5. |
+| `specified_hotspots` | string | yes | value | Required antigen interface residues in comma-separated chain-plus-residue format, for example A23,A24 (no colon). Each chain must match antigen_chain. |
+| `task_name` | string | yes | value | Must be exactly "antibody" to run PPI Flow antibody design. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -423,47 +424,47 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "antigen_pdb": {
-      "description": "Uploaded antigen PDB.",
+      "description": "Upload the antigen PDB structure that the antibody should bind.",
       "type": "string",
       "x-input-kind": "file"
     },
     "framework_pdb": {
-      "description": "Uploaded antibody framework PDB.",
+      "description": "Upload a framework-only PDB containing the heavy and light chains; do not include the antigen. Use IMGT numbering and remove the CDR residues to redesign, keeping the original residue numbers so each removed loop leaves a numbering gap. Gaps are assigned in order: H1, H2, H3, then L1, L2, L3. This wrapper detects jumps in integer PDB residue numbers; it does not validate IMGT numbering or interpret insertion codes, so avoid unrelated gaps.",
       "type": "string",
       "x-input-kind": "file"
     },
     "antigen_chain": {
-      "description": "Antigen chain identifier.",
+      "description": "Chain ID of the antigen in antigen_pdb. Defaults to A and must exist in the PDB.",
       "type": "string",
       "x-input-kind": "value"
     },
     "heavy_chain": {
-      "description": "Framework heavy-chain identifier.",
+      "description": "Chain ID of the antibody heavy-chain framework in framework_pdb. Defaults to H.",
       "type": "string",
       "x-input-kind": "value"
     },
     "light_chain": {
-      "description": "Framework light-chain identifier.",
+      "description": "Chain ID of the antibody light-chain framework in framework_pdb. Defaults to L and must differ from heavy_chain.",
       "type": "string",
       "x-input-kind": "value"
     },
     "cdr_length": {
-      "description": "Optional comma-separated CDR names and inclusive length ranges.",
+      "description": "Desired inclusive length ranges for CDRH1, CDRH2, CDRH3, CDRL1, CDRL2, and CDRL3, written as comma-separated CDR-name,min-max pairs. Default: CDRH1,5-12,CDRH2,4-17,CDRH3,5-26,CDRL1,5-12,CDRL2,3-10,CDRL3,4-13.",
       "type": "string",
       "x-input-kind": "value"
     },
     "samples_per_target": {
-      "description": "Number of designs; the accepted canary used `5`.",
+      "description": "Number of antibody designs to generate. Positive integer; default is 5.",
       "type": "integer",
       "x-input-kind": "value"
     },
     "specified_hotspots": {
-      "description": "Comma-separated antigen chain/residue identifiers.",
+      "description": "Required antigen interface residues in comma-separated chain-plus-residue format, for example A23,A24 (no colon). Each chain must match antigen_chain.",
       "type": "string",
       "x-input-kind": "value"
     },
     "task_name": {
-      "description": "Task must match the selected PPI Flow job.",
+      "description": "Must be exactly \"antibody\" to run PPI Flow antibody design.",
       "type": "string",
       "enum": [
         "antibody"
@@ -474,10 +475,7 @@ Only local files require a new upload. Never infer input mode from a field name.
   "required": [
     "antigen_pdb",
     "framework_pdb",
-    "antigen_chain",
-    "heavy_chain",
-    "light_chain",
-    "samples_per_target",
+    "specified_hotspots",
     "task_name"
   ],
   "additionalProperties": true
@@ -494,10 +492,7 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
   "experiment_data": {
     "antigen_pdb": "<user value; see antigen_pdb schema>",
     "framework_pdb": "<user value; see framework_pdb schema>",
-    "antigen_chain": "<user value; see antigen_chain schema>",
-    "heavy_chain": "<user value; see heavy_chain schema>",
-    "light_chain": "<user value; see light_chain schema>",
-    "samples_per_target": "<user value; see samples_per_target schema>",
+    "specified_hotspots": "<user value; see specified_hotspots schema>",
     "task_name": "<user value; see task_name schema>"
   }
 }
@@ -670,7 +665,7 @@ Report actual service errors and incomplete outputs. Refresh status for expired 
 
 ## PPI Flow Protein
 
-PPI Flow Protein
+Generate de novo protein binders for a target chain in a PDB structure, using either an existing binder chain or target hotspots to guide the interface.
 
 Exact job name: `ppiflowprotein`.
 
@@ -680,14 +675,14 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_pdb` | string | yes | file | Upload target/complex PDB. |
-| `target_chain` | string | yes | value | Target chain in the uploaded structure. |
-| `binder_chain` | string | no / mode-dependent | value | Binder chain present in that PDB; alternatively use specified_hotspots. |
-| `samples_min_length` | integer | yes | value | Minimum design length. |
-| `samples_max_length` | integer | yes | value | Maximum design length. |
-| `samples_per_target` | integer | yes | value | Number of designs. |
-| `specified_hotspots` | string | no / mode-dependent | value | Target hotspot residues. |
-| `task_name` | string | yes | value | Task must match the selected PPI Flow job. |
+| `input_pdb` | string | yes | file | Upload the target PDB structure. Include a binder chain if using binder_chain; otherwise identify the target interface with specified_hotspots. |
+| `target_chain` | string | no / mode-dependent | value | Chain ID of the target protein in input_pdb. Defaults to A and must exist in the PDB. |
+| `binder_chain` | string | no / mode-dependent | value | Optional chain ID of an existing binder in input_pdb. Supply this or specified_hotspots to guide the design. |
+| `samples_min_length` | integer | no / mode-dependent | value | Minimum length of each generated binder sequence, in amino acids. Positive integer; default is 50. |
+| `samples_max_length` | integer | no / mode-dependent | value | Maximum length of each generated binder sequence, in amino acids. Positive integer; default is 100 and must be at least samples_min_length. |
+| `samples_per_target` | integer | no / mode-dependent | value | Number of binder designs to generate for this target. Positive integer; default is 5. |
+| `specified_hotspots` | string | no / mode-dependent | value | Optional comma-separated target residues in chain-plus-residue format, for example A23,A24 (no colon). Use residues from target_chain; supply this or binder_chain. |
+| `task_name` | string | yes | value | Must be exactly "protein" to run PPI Flow protein-binder design. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -700,42 +695,42 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "input_pdb": {
-      "description": "Upload target/complex PDB.",
+      "description": "Upload the target PDB structure. Include a binder chain if using binder_chain; otherwise identify the target interface with specified_hotspots.",
       "type": "string",
       "x-input-kind": "file"
     },
     "target_chain": {
-      "description": "Target chain in the uploaded structure.",
+      "description": "Chain ID of the target protein in input_pdb. Defaults to A and must exist in the PDB.",
       "type": "string",
       "x-input-kind": "value"
     },
     "binder_chain": {
-      "description": "Binder chain present in that PDB; alternatively use specified_hotspots.",
+      "description": "Optional chain ID of an existing binder in input_pdb. Supply this or specified_hotspots to guide the design.",
       "type": "string",
       "x-input-kind": "value"
     },
     "samples_min_length": {
-      "description": "Minimum design length.",
+      "description": "Minimum length of each generated binder sequence, in amino acids. Positive integer; default is 50.",
       "type": "integer",
       "x-input-kind": "value"
     },
     "samples_max_length": {
-      "description": "Maximum design length.",
+      "description": "Maximum length of each generated binder sequence, in amino acids. Positive integer; default is 100 and must be at least samples_min_length.",
       "type": "integer",
       "x-input-kind": "value"
     },
     "samples_per_target": {
-      "description": "Number of designs.",
+      "description": "Number of binder designs to generate for this target. Positive integer; default is 5.",
       "type": "integer",
       "x-input-kind": "value"
     },
     "specified_hotspots": {
-      "description": "Target hotspot residues.",
+      "description": "Optional comma-separated target residues in chain-plus-residue format, for example A23,A24 (no colon). Use residues from target_chain; supply this or binder_chain.",
       "type": "string",
       "x-input-kind": "value"
     },
     "task_name": {
-      "description": "Task must match the selected PPI Flow job.",
+      "description": "Must be exactly \"protein\" to run PPI Flow protein-binder design.",
       "type": "string",
       "enum": [
         "protein"
@@ -745,13 +740,21 @@ Only local files require a new upload. Never infer input mode from a field name.
   },
   "required": [
     "input_pdb",
-    "target_chain",
-    "samples_min_length",
-    "samples_max_length",
-    "samples_per_target",
     "task_name"
   ],
-  "additionalProperties": true
+  "additionalProperties": true,
+  "anyOf": [
+    {
+      "required": [
+        "binder_chain"
+      ]
+    },
+    {
+      "required": [
+        "specified_hotspots"
+      ]
+    }
+  ]
 }
 ```
 
@@ -764,10 +767,6 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
   "experiment_name": "<confirmed experiment name>",
   "experiment_data": {
     "input_pdb": "<user value; see input_pdb schema>",
-    "target_chain": "<user value; see target_chain schema>",
-    "samples_min_length": "<user value; see samples_min_length schema>",
-    "samples_max_length": "<user value; see samples_max_length schema>",
-    "samples_per_target": "<user value; see samples_per_target schema>",
     "task_name": "<user value; see task_name schema>"
   }
 }
@@ -797,7 +796,7 @@ Report actual service errors and incomplete outputs. Refresh status for expired 
 
 ## PPI Flow Nanobody
 
-PPI Flow Nanobody
+Design nanobody CDR loops against an antigen using an antigen PDB, a nanobody framework PDB, and specified antigen hotspots.
 
 Exact job name: `ppiflownanobody`.
 
@@ -807,14 +806,14 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `antigen_pdb` | string | yes | file | Upload antigen PDB. |
-| `framework_pdb` | string | yes | file | Upload nanobody framework PDB. |
-| `antigen_chain` | string | yes | value | Antigen chain ID. |
-| `heavy_chain` | string | yes | value | Nanobody chain ID; there is no light_chain input. |
-| `cdr_length` | string | no / mode-dependent | value | Optional CDR length specification. |
-| `samples_per_target` | integer | yes | value | Number of designs. |
-| `specified_hotspots` | string | no / mode-dependent | value | Optional antigen hotspots. |
-| `task_name` | string | yes | value | Task must match the selected PPI Flow job. |
+| `antigen_pdb` | string | yes | file | Upload the antigen PDB structure that the nanobody should bind. |
+| `framework_pdb` | string | yes | file | Upload a framework-only PDB containing the nanobody VH/VHH chain selected by heavy_chain; do not include the antigen or a light chain. Use IMGT numbering and remove the CDR residues to redesign, keeping the original residue numbers so each removed loop leaves a numbering gap. Gaps are assigned in order: H1, H2, H3. This wrapper detects jumps in integer PDB residue numbers; it does not validate IMGT numbering or interpret insertion codes, so avoid unrelated gaps. |
+| `antigen_chain` | string | no / mode-dependent | value | Chain ID of the antigen in antigen_pdb. Defaults to A and must exist in the PDB. |
+| `heavy_chain` | string | no / mode-dependent | value | Chain ID of the nanobody framework in framework_pdb. Defaults to H. |
+| `cdr_length` | string | no / mode-dependent | value | Desired inclusive length ranges for CDRH1, CDRH2, and CDRH3, written as comma-separated CDR-name,min-max pairs. Default: CDRH1,8-8,CDRH2,8-8,CDRH3,9-21. |
+| `samples_per_target` | integer | no / mode-dependent | value | Number of nanobody designs to generate. Positive integer; default is 5. |
+| `specified_hotspots` | string | yes | value | Required antigen interface residues in comma-separated chain-plus-residue format, for example A23,A24 (no colon). Each chain must match antigen_chain. |
+| `task_name` | string | yes | value | Must be exactly "nanobody" to run PPI Flow nanobody design. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -827,42 +826,42 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "antigen_pdb": {
-      "description": "Upload antigen PDB.",
+      "description": "Upload the antigen PDB structure that the nanobody should bind.",
       "type": "string",
       "x-input-kind": "file"
     },
     "framework_pdb": {
-      "description": "Upload nanobody framework PDB.",
+      "description": "Upload a framework-only PDB containing the nanobody VH/VHH chain selected by heavy_chain; do not include the antigen or a light chain. Use IMGT numbering and remove the CDR residues to redesign, keeping the original residue numbers so each removed loop leaves a numbering gap. Gaps are assigned in order: H1, H2, H3. This wrapper detects jumps in integer PDB residue numbers; it does not validate IMGT numbering or interpret insertion codes, so avoid unrelated gaps.",
       "type": "string",
       "x-input-kind": "file"
     },
     "antigen_chain": {
-      "description": "Antigen chain ID.",
+      "description": "Chain ID of the antigen in antigen_pdb. Defaults to A and must exist in the PDB.",
       "type": "string",
       "x-input-kind": "value"
     },
     "heavy_chain": {
-      "description": "Nanobody chain ID; there is no light_chain input.",
+      "description": "Chain ID of the nanobody framework in framework_pdb. Defaults to H.",
       "type": "string",
       "x-input-kind": "value"
     },
     "cdr_length": {
-      "description": "Optional CDR length specification.",
+      "description": "Desired inclusive length ranges for CDRH1, CDRH2, and CDRH3, written as comma-separated CDR-name,min-max pairs. Default: CDRH1,8-8,CDRH2,8-8,CDRH3,9-21.",
       "type": "string",
       "x-input-kind": "value"
     },
     "samples_per_target": {
-      "description": "Number of designs.",
+      "description": "Number of nanobody designs to generate. Positive integer; default is 5.",
       "type": "integer",
       "x-input-kind": "value"
     },
     "specified_hotspots": {
-      "description": "Optional antigen hotspots.",
+      "description": "Required antigen interface residues in comma-separated chain-plus-residue format, for example A23,A24 (no colon). Each chain must match antigen_chain.",
       "type": "string",
       "x-input-kind": "value"
     },
     "task_name": {
-      "description": "Task must match the selected PPI Flow job.",
+      "description": "Must be exactly \"nanobody\" to run PPI Flow nanobody design.",
       "type": "string",
       "enum": [
         "nanobody"
@@ -873,9 +872,7 @@ Only local files require a new upload. Never infer input mode from a field name.
   "required": [
     "antigen_pdb",
     "framework_pdb",
-    "antigen_chain",
-    "heavy_chain",
-    "samples_per_target",
+    "specified_hotspots",
     "task_name"
   ],
   "additionalProperties": true
@@ -892,9 +889,7 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
   "experiment_data": {
     "antigen_pdb": "<user value; see antigen_pdb schema>",
     "framework_pdb": "<user value; see framework_pdb schema>",
-    "antigen_chain": "<user value; see antigen_chain schema>",
-    "heavy_chain": "<user value; see heavy_chain schema>",
-    "samples_per_target": "<user value; see samples_per_target schema>",
+    "specified_hotspots": "<user value; see specified_hotspots schema>",
     "task_name": "<user value; see task_name schema>"
   }
 }
