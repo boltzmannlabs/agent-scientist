@@ -44,12 +44,6 @@ The guide preserves API/runtime differences, full advanced/template references,
 and observed test outcomes. All five have callable contracts; recorded worker
 errors are disclosed uncertainties, not blanket missing-information blocks.
 
-For Boltz2, PPI Flow, Stability-Binding DDG and Antibody Property Prediction,
-read [the antibody workflow input guide](references/antibody-workflow-input-guide.md)
-alongside the matching generated module. It clarifies input meanings and records
-differences observed in copied worker source. It does not override connector
-validation or establish that the deployed workers contain those changes.
-
 Historical worker failures are not permanent prohibitions: disclose the recorded
 failure and possible charges, obtain approval, and allow an otherwise valid
 request. An unavailable entry is not a service ban: its executable

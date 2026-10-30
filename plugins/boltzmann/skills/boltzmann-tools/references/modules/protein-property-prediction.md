@@ -19,9 +19,8 @@ Fields below belong in `experiment_data`; `experiment_name` is supplied separate
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
 | `dataPath` | string | yes | file | S3 path to CSV (upload first) |
-| `scheme` | string | yes | value | `"imgt"`, `"kabat"`, `"chothia"` |
-| `property_name` | string | yes | value | See options below |
-| `Epitope` | string | no / mode-dependent | value |  |
+| `scheme` | string | no / mode-dependent | value | Conditionally required: numbering scheme (e.g. imgt/kabat/chothia) when property_name includes CDR_Prediction |
+| `property_name` | array | yes | value | One or more exact backend property identifiers |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -39,38 +38,27 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "file"
     },
     "scheme": {
-      "description": "`\"imgt\"`, `\"kabat\"`, `\"chothia\"`",
+      "description": "Conditionally required: numbering scheme (e.g. imgt/kabat/chothia) when property_name includes CDR_Prediction",
       "type": "string",
-      "enum": [
-        "imgt",
-        "kabat",
-        "chothia",
-        "martin",
-        "aho"
-      ],
       "x-input-kind": "value"
     },
     "property_name": {
-      "description": "See options below",
-      "type": "string",
-      "enum": [
-        "Thermal_Stability_Protbert",
-        "Thermal_Stability_ESM",
-        "Solubility_ESM",
-        "Antigen_Antibody_binding",
-        "CDR_Prediction"
-      ],
-      "x-input-kind": "value"
-    },
-    "Epitope": {
-      "description": "",
-      "type": "string",
+      "description": "One or more exact backend property identifiers",
+      "type": "array",
+      "items": {
+        "enum": [
+          "Thermal_Stability_Protbert",
+          "Thermal_Stability_ESM",
+          "Solubility_ESM",
+          "CDR_Prediction"
+        ],
+        "type": "string"
+      },
       "x-input-kind": "value"
     }
   },
   "required": [
     "dataPath",
-    "scheme",
     "property_name"
   ],
   "additionalProperties": true
@@ -86,7 +74,6 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
   "experiment_name": "<confirmed experiment name>",
   "experiment_data": {
     "dataPath": "<user value; see dataPath schema>",
-    "scheme": "<user value; see scheme schema>",
     "property_name": "<user value; see property_name schema>"
   }
 }

@@ -658,38 +658,27 @@
             "x-input-kind": "file"
           },
           "scheme": {
-            "description": "`\"imgt\"`, `\"kabat\"`, `\"chothia\"`",
+            "description": "Conditionally required: numbering scheme (e.g. imgt/kabat/chothia) when property_name includes CDR_Prediction",
             "type": "string",
-            "enum": [
-              "imgt",
-              "kabat",
-              "chothia",
-              "martin",
-              "aho"
-            ],
             "x-input-kind": "value"
           },
           "property_name": {
-            "description": "See options below",
-            "type": "string",
-            "enum": [
-              "Thermal_Stability_Protbert",
-              "Thermal_Stability_ESM",
-              "Solubility_ESM",
-              "Antigen_Antibody_binding",
-              "CDR_Prediction"
-            ],
-            "x-input-kind": "value"
-          },
-          "Epitope": {
-            "description": "",
-            "type": "string",
+            "description": "One or more exact backend property identifiers",
+            "type": "array",
+            "items": {
+              "enum": [
+                "Thermal_Stability_Protbert",
+                "Thermal_Stability_ESM",
+                "Solubility_ESM",
+                "CDR_Prediction"
+              ],
+              "type": "string"
+            },
             "x-input-kind": "value"
           }
         },
         "required": [
           "dataPath",
-          "scheme",
           "property_name"
         ],
         "additionalProperties": true
@@ -6003,11 +5992,26 @@
             "description": "Selected exact feature labels from public frontend options and recorded requests, including hb donor. Selecting a category does not guarantee that every resulting hypothesis contains it.",
             "items": {
               "type": "string",
-              "enum": ["hb acceptor", "hb donor", "aromatic ring", "hydrophobicity", "positive charge", "negative charge"]
+              "enum": [
+                "hb acceptor",
+                "hb donor",
+                "aromatic ring",
+                "hydrophobicity",
+                "positive charge",
+                "negative charge"
+              ]
             }
           }
         },
-        "required": ["smiles_file", "validation_file", "min_features", "max_features", "percentage", "n_conformers", "features"],
+        "required": [
+          "smiles_file",
+          "validation_file",
+          "min_features",
+          "max_features",
+          "percentage",
+          "n_conformers",
+          "features"
+        ],
         "additionalProperties": false
       },
       "review_notes": [
@@ -6026,7 +6030,12 @@
             "max_features": 5,
             "percentage": 0.5,
             "n_conformers": 20,
-            "features": ["hb acceptor", "hb donor", "aromatic ring", "hydrophobicity"]
+            "features": [
+              "hb acceptor",
+              "hb donor",
+              "aromatic ring",
+              "hydrophobicity"
+            ]
           }
         }
       ],
@@ -6307,43 +6316,50 @@
       "module_id": "protein-generative-design",
       "status": "active",
       "source": "modules/protein-generative-design.md",
-      "description": "For an unspecified PPI Flow request, ask for `task_name` first: `monomer`, `protein`, `antibody`, or `nanobody`. Each choice routes to its own job below; never combine all four modes' required fields in one form. An explicit job or mode already supplies task_name. Mode changes rebuild the draft, preserve only compatible common values, and never reuse an old submitted job as new approval.",
+      "description": "Generate a single-chain monomer protein either unconditionally at a specified length or around a supplied motif.",
       "execution_blocked": false,
       "request_schema": {
         "type": "object",
         "properties": {
           "samples_min_length": {
-            "description": "Use the exact source field.",
+            "description": "Legacy length control from the earlier input form. The current monomer wrapper does not use it; set the requested length with length_subset.",
             "type": "integer",
             "x-input-kind": "value"
           },
           "samples_max_length": {
-            "description": "Use the exact source field.",
+            "description": "Legacy length control from the earlier input form. The current monomer wrapper does not use it; set the requested length with length_subset.",
             "type": "integer",
             "x-input-kind": "value"
           },
           "samples_num": {
-            "description": "Use the exact source field.",
+            "description": "Number of monomer structures to generate. Enter a positive integer; default is 5.",
             "type": "integer",
             "x-input-kind": "value"
           },
           "length_subset": {
-            "description": "Operator confirmed string containing integer list, e.g. \"[100, 150]\".",
-            "type": "string",
-            "x-input-kind": "value"
+            "description": "For unconditional generation, enter the desired protein length in amino acids, such as 80, [80, 100], or \"80,100\". Provide this or motif_csv, not both.",
+            "type": [
+              "string",
+              "integer",
+              "array"
+            ],
+            "x-input-kind": "value",
+            "items": {
+              "type": "integer"
+            }
           },
           "motif_csv": {
-            "description": "Required only for motif scaffolding; not used for unconditional monomer generation.",
+            "description": "For motif-guided generation, upload a CSV with non-empty target, motif_path, length, and contig columns. Provide this or length_subset, not both.",
             "type": "string",
             "x-input-kind": "file"
           },
           "motif_names": {
-            "description": "Use the exact source field.",
+            "description": "Optional motif name to select from the uploaded motif_csv. Used only in motif-guided generation.",
             "type": "string",
             "x-input-kind": "value"
           },
           "generation_mode": {
-            "description": "Select the intended generation task; this is not a backend payload key.",
+            "description": "Select unconditional generation or motif scaffolding in the input form. The wrapper determines the run from length_subset or motif_csv; this selector is not sent to the backend.",
             "type": "string",
             "enum": [
               "unconditional",
@@ -6352,7 +6368,7 @@
             "x-input-kind": "value"
           },
           "task_name": {
-            "description": "Task must match the selected PPI Flow job.",
+            "description": "Must be exactly \"monomer\" to run PPI Flow monomer generation.",
             "type": "string",
             "enum": [
               "monomer"
@@ -6361,18 +6377,16 @@
           }
         },
         "required": [
-          "samples_min_length",
-          "samples_max_length",
-          "samples_num",
-          "generation_mode",
           "task_name"
         ],
         "additionalProperties": true,
-        "x-required-if": [
+        "oneOf": [
           {
-            "when": {
-              "generation_mode": "motif_scaffolding"
-            },
+            "required": [
+              "length_subset"
+            ]
+          },
+          {
             "required": [
               "motif_csv"
             ]
@@ -6408,53 +6422,53 @@
       "module_id": "protein-generative-design",
       "status": "active",
       "source": "modules/protein-generative-design.md",
-      "description": "Generate antibody structures against an antigen using uploaded antigen and framework PDBs, explicit chain identities, CDR-length ranges, and optional antigen hotspots.",
+      "description": "Design antibody heavy- and light-chain CDR loops against an antigen using an antigen PDB, an antibody framework PDB, and specified antigen hotspots.",
       "execution_blocked": false,
       "request_schema": {
         "type": "object",
         "properties": {
           "antigen_pdb": {
-            "description": "Uploaded antigen PDB.",
+            "description": "Upload the antigen PDB structure that the antibody should bind.",
             "type": "string",
             "x-input-kind": "file"
           },
           "framework_pdb": {
-            "description": "Uploaded antibody framework PDB.",
+            "description": "Upload a framework-only PDB containing the heavy and light chains; do not include the antigen. Use IMGT numbering and remove the CDR residues to redesign, keeping the original residue numbers so each removed loop leaves a numbering gap. Gaps are assigned in order: H1, H2, H3, then L1, L2, L3. This wrapper detects jumps in integer PDB residue numbers; it does not validate IMGT numbering or interpret insertion codes, so avoid unrelated gaps.",
             "type": "string",
             "x-input-kind": "file"
           },
           "antigen_chain": {
-            "description": "Antigen chain identifier.",
+            "description": "Chain ID of the antigen in antigen_pdb. Defaults to A and must exist in the PDB.",
             "type": "string",
             "x-input-kind": "value"
           },
           "heavy_chain": {
-            "description": "Framework heavy-chain identifier.",
+            "description": "Chain ID of the antibody heavy-chain framework in framework_pdb. Defaults to H.",
             "type": "string",
             "x-input-kind": "value"
           },
           "light_chain": {
-            "description": "Framework light-chain identifier.",
+            "description": "Chain ID of the antibody light-chain framework in framework_pdb. Defaults to L and must differ from heavy_chain.",
             "type": "string",
             "x-input-kind": "value"
           },
           "cdr_length": {
-            "description": "Optional comma-separated CDR names and inclusive length ranges.",
+            "description": "Desired inclusive length ranges for CDRH1, CDRH2, CDRH3, CDRL1, CDRL2, and CDRL3, written as comma-separated CDR-name,min-max pairs. Default: CDRH1,5-12,CDRH2,4-17,CDRH3,5-26,CDRL1,5-12,CDRL2,3-10,CDRL3,4-13.",
             "type": "string",
             "x-input-kind": "value"
           },
           "samples_per_target": {
-            "description": "Number of designs; the accepted canary used `5`.",
+            "description": "Number of antibody designs to generate. Positive integer; default is 5.",
             "type": "integer",
             "x-input-kind": "value"
           },
           "specified_hotspots": {
-            "description": "Comma-separated antigen chain/residue identifiers.",
+            "description": "Required antigen interface residues in comma-separated chain-plus-residue format, for example A23,A24 (no colon). Each chain must match antigen_chain.",
             "type": "string",
             "x-input-kind": "value"
           },
           "task_name": {
-            "description": "Task must match the selected PPI Flow job.",
+            "description": "Must be exactly \"antibody\" to run PPI Flow antibody design.",
             "type": "string",
             "enum": [
               "antibody"
@@ -6465,10 +6479,7 @@
         "required": [
           "antigen_pdb",
           "framework_pdb",
-          "antigen_chain",
-          "heavy_chain",
-          "light_chain",
-          "samples_per_target",
+          "specified_hotspots",
           "task_name"
         ],
         "additionalProperties": true
@@ -10184,48 +10195,48 @@
       "module_id": "protein-generative-design",
       "status": "active",
       "source": "modules/protein-generative-design.md",
-      "description": "PPI Flow Protein",
+      "description": "Generate de novo protein binders for a target chain in a PDB structure, using either an existing binder chain or target hotspots to guide the interface.",
       "execution_blocked": false,
       "request_schema": {
         "type": "object",
         "properties": {
           "input_pdb": {
-            "description": "Upload target/complex PDB.",
+            "description": "Upload the target PDB structure. Include a binder chain if using binder_chain; otherwise identify the target interface with specified_hotspots.",
             "type": "string",
             "x-input-kind": "file"
           },
           "target_chain": {
-            "description": "Target chain in the uploaded structure.",
+            "description": "Chain ID of the target protein in input_pdb. Defaults to A and must exist in the PDB.",
             "type": "string",
             "x-input-kind": "value"
           },
           "binder_chain": {
-            "description": "Binder chain present in that PDB; alternatively use specified_hotspots.",
+            "description": "Optional chain ID of an existing binder in input_pdb. Supply this or specified_hotspots to guide the design.",
             "type": "string",
             "x-input-kind": "value"
           },
           "samples_min_length": {
-            "description": "Minimum design length.",
+            "description": "Minimum length of each generated binder sequence, in amino acids. Positive integer; default is 50.",
             "type": "integer",
             "x-input-kind": "value"
           },
           "samples_max_length": {
-            "description": "Maximum design length.",
+            "description": "Maximum length of each generated binder sequence, in amino acids. Positive integer; default is 100 and must be at least samples_min_length.",
             "type": "integer",
             "x-input-kind": "value"
           },
           "samples_per_target": {
-            "description": "Number of designs.",
+            "description": "Number of binder designs to generate for this target. Positive integer; default is 5.",
             "type": "integer",
             "x-input-kind": "value"
           },
           "specified_hotspots": {
-            "description": "Target hotspot residues.",
+            "description": "Optional comma-separated target residues in chain-plus-residue format, for example A23,A24 (no colon). Use residues from target_chain; supply this or binder_chain.",
             "type": "string",
             "x-input-kind": "value"
           },
           "task_name": {
-            "description": "Task must match the selected PPI Flow job.",
+            "description": "Must be exactly \"protein\" to run PPI Flow protein-binder design.",
             "type": "string",
             "enum": [
               "protein"
@@ -10235,13 +10246,21 @@
         },
         "required": [
           "input_pdb",
-          "target_chain",
-          "samples_min_length",
-          "samples_max_length",
-          "samples_per_target",
           "task_name"
         ],
-        "additionalProperties": true
+        "additionalProperties": true,
+        "anyOf": [
+          {
+            "required": [
+              "binder_chain"
+            ]
+          },
+          {
+            "required": [
+              "specified_hotspots"
+            ]
+          }
+        ]
       },
       "review_notes": [],
       "examples": [],
@@ -10262,48 +10281,48 @@
       "module_id": "protein-generative-design",
       "status": "active",
       "source": "modules/protein-generative-design.md",
-      "description": "PPI Flow Nanobody",
+      "description": "Design nanobody CDR loops against an antigen using an antigen PDB, a nanobody framework PDB, and specified antigen hotspots.",
       "execution_blocked": false,
       "request_schema": {
         "type": "object",
         "properties": {
           "antigen_pdb": {
-            "description": "Upload antigen PDB.",
+            "description": "Upload the antigen PDB structure that the nanobody should bind.",
             "type": "string",
             "x-input-kind": "file"
           },
           "framework_pdb": {
-            "description": "Upload nanobody framework PDB.",
+            "description": "Upload a framework-only PDB containing the nanobody VH/VHH chain selected by heavy_chain; do not include the antigen or a light chain. Use IMGT numbering and remove the CDR residues to redesign, keeping the original residue numbers so each removed loop leaves a numbering gap. Gaps are assigned in order: H1, H2, H3. This wrapper detects jumps in integer PDB residue numbers; it does not validate IMGT numbering or interpret insertion codes, so avoid unrelated gaps.",
             "type": "string",
             "x-input-kind": "file"
           },
           "antigen_chain": {
-            "description": "Antigen chain ID.",
+            "description": "Chain ID of the antigen in antigen_pdb. Defaults to A and must exist in the PDB.",
             "type": "string",
             "x-input-kind": "value"
           },
           "heavy_chain": {
-            "description": "Nanobody chain ID; there is no light_chain input.",
+            "description": "Chain ID of the nanobody framework in framework_pdb. Defaults to H.",
             "type": "string",
             "x-input-kind": "value"
           },
           "cdr_length": {
-            "description": "Optional CDR length specification.",
+            "description": "Desired inclusive length ranges for CDRH1, CDRH2, and CDRH3, written as comma-separated CDR-name,min-max pairs. Default: CDRH1,8-8,CDRH2,8-8,CDRH3,9-21.",
             "type": "string",
             "x-input-kind": "value"
           },
           "samples_per_target": {
-            "description": "Number of designs.",
+            "description": "Number of nanobody designs to generate. Positive integer; default is 5.",
             "type": "integer",
             "x-input-kind": "value"
           },
           "specified_hotspots": {
-            "description": "Optional antigen hotspots.",
+            "description": "Required antigen interface residues in comma-separated chain-plus-residue format, for example A23,A24 (no colon). Each chain must match antigen_chain.",
             "type": "string",
             "x-input-kind": "value"
           },
           "task_name": {
-            "description": "Task must match the selected PPI Flow job.",
+            "description": "Must be exactly \"nanobody\" to run PPI Flow nanobody design.",
             "type": "string",
             "enum": [
               "nanobody"
@@ -10314,9 +10333,7 @@
         "required": [
           "antigen_pdb",
           "framework_pdb",
-          "antigen_chain",
-          "heavy_chain",
-          "samples_per_target",
+          "specified_hotspots",
           "task_name"
         ],
         "additionalProperties": true
@@ -10414,44 +10431,42 @@
       "module_id": "protein-optimization",
       "status": "active",
       "source": "modules/protein-optimization.md",
-      "description": "The experiment name belongs to top-level `experimentName` through the existing submission helper, not `experimentData.job_name`. The backend job is always `stability-binding-ddg`, never the sample experiment label or `stabddg`.",
+      "description": "Predict mutation-induced changes in protein-protein binding free energy from a supplied wild-type PDB. This wrapper generates sequence variants by substituting the selected positions, then scores their predicted binding effects. The backend job is `stability-binding-ddg`; the experiment name is supplied separately as top-level `experimentName`.",
       "execution_blocked": false,
       "request_schema": {
         "type": "object",
         "properties": {
           "pdb_path": {
-            "description": "Upload a PDB structure. Raw sequences, SMILES and PDB IDs are not structure uploads.",
+            "description": "Required file upload: the docked protein–protein complex as a `.pdb` structure file. Provide the structure itself, not a sequence, SMILES string, or PDB accession. The selected `chain` must be present; for the intended two-protein interface, the complex should contain chains A and B.",
             "type": "string",
             "x-input-kind": "file"
           },
           "sequence": {
-            "description": "Protein sequence for the selected chain.",
+            "description": "Amino-acid sequence of the chain named by `chain`, in the same residue order as that chain in `pdb_path`. Positions in `mutations` are counted from 1 and must align with the chain's residue numbering in the PDB, which the wrapper expects to start at 1. Only the 20 standard amino acids are accepted; lowercase letters are converted to uppercase.",
             "type": "string",
             "x-input-kind": "value"
           },
           "chain": {
-            "description": "Single uppercase protein chain ID; it must exist in the PDB when a structure is uploaded.",
+            "description": "Single-character PDB chain ID for the protein to mutate, usually `A` or `B`. It must match a chain present in the uploaded `pdb_path` structure.",
             "type": "string",
             "x-input-kind": "value"
           },
           "mutations": {
-            "description": "One-based residue positions or ranges, e.g. [1, 2, \"8-15\"]. Preserve the chosen positions; do not invent substitutions.",
+            "description": "Required non-empty list of one-based residue positions or inclusive position ranges in `sequence`, each written as a string, for example [\"1\", \"2\", \"8-15\"]. These values identify which sites to change; they do not specify the replacement amino acids. Every generated variant changes all selected sites, choosing a different amino acid at each site.",
             "type": "array",
             "x-input-kind": "value",
             "items": {
-              "type": [
-                "integer",
-                "string"
-              ]
+              "type": "string"
             }
           },
           "num_mutations": {
-            "description": "Requested count as a string, as required by the public payload.",
+            "description": "Positive number of sequence variants to generate. Send the count as a string in the public payload, for example \"10\". Each variant applies changes at all positions listed in `mutations`; this count is not the number of residue positions.",
             "type": "string",
             "x-input-kind": "value"
           }
         },
         "required": [
+          "pdb_path",
           "sequence",
           "chain",
           "mutations",
@@ -10459,7 +10474,10 @@
         ],
         "additionalProperties": true
       },
-      "review_notes": [],
+      "review_notes": [
+        "The local wrapper writes an output CSV with `id`, `MutatedSequences`, and `DDG_values` columns. Earlier product-facing documentation names the sequence column `Sequences`; check the returned CSV header before downstream use.",
+        "The upstream StaB-ddG documentation reports binding ΔΔG in kcal/mol and says negative values predict stronger binding. The copied local README describes the sign in the opposite direction; treat values as predictions and verify the deployed sign convention before labeling them stronger or weaker."
+      ],
       "examples": [],
       "submission": {
         "wire_job_name": "stability-binding-ddg",
@@ -10781,7 +10799,7 @@
       "status": "active",
       "source": "modules/protein-toolbox.md",
       "description": "Measure structural quality or apply explicitly supplied thresholds. Optional custom-ligand dictionaries use the existing input ZIP and a root ligand_manifest.json; no extra API field. Local bundle checks do not establish worker chemistry coverage or deployed backend support.",
-      "product_documentation": "molprobity-ligand-bundles.md",
+      "product_documentation": "enzyme-tools-guide.md#molprobity",
       "execution_blocked": false,
       "request_schema": {
         "type": "object",
@@ -10947,8 +10965,7 @@
           "evidence": "tool-team handoff; collection identity is not proof of diagnostic service availability"
         }
       ],
-      "fastapi_endpoint": "/v5/Toolbox/mol_probity",
-      "product_documentation": "enzyme-tools-guide.md#molprobity"
+      "fastapi_endpoint": "/v5/Toolbox/mol_probity"
     },
     "Enzyme_RFD3": {
       "display_name": "Enzyme RFD3",

@@ -16,7 +16,14 @@ def shape_fixture(schema):
     if isinstance(kind, list):
         kind = kind[0]
     if kind == "object":
-        return {name: shape_fixture(prop) for name, prop in schema.get("properties", {}).items()}
+        fixture = {name: shape_fixture(prop) for name, prop in schema.get("properties", {}).items()}
+        alternatives = schema.get("oneOf", [])
+        if alternatives:
+            selected = set(schema.get("required", [])) | set(alternatives[0].get("required", []))
+            mode_fields = {name for branch in alternatives for name in branch.get("required", [])}
+            for name in mode_fields - selected:
+                fixture.pop(name, None)
+        return fixture
     if kind == "array":
         return [shape_fixture(schema["items"])] if schema.get("items") else []
     if kind in {"integer", "number"}:
