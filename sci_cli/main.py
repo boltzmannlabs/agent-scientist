@@ -384,7 +384,6 @@ from sci_cli.subcommands.monitoring import build_monitoring_parser
 from sci_cli.subcommands.skills import build_skills_parser
 from sci_cli.subcommands.pairing import build_pairing_parser
 from sci_cli.subcommands.plugins import build_plugins_parser
-from sci_cli.subcommands.environments import build_environments_parser
 from sci_cli.subcommands.mcp import build_mcp_parser
 from sci_cli.subcommands.claw import build_claw_parser
 from sci_cli.subcommands.vault import build_vault_parser
@@ -2895,7 +2894,7 @@ _BUILTIN_SUBCOMMANDS = frozenset(
         "dump", "egress", "fallback", "gateway", "hooks", "import", "import-agent", "insights",
         "gui", "desktop", "kanban", "login", "logout", "logs", "lsp", "mcp", "memory", "migrate", "moa",
         "journey", "memory-graph", "learning",
-        "model", "monitoring", "pairing", "pause", "peer", "pets", "plugins", "portal", "profile", "environments",
+        "model", "monitoring", "pairing", "pause", "peer", "pets", "plugins", "portal", "profile",
         "project", "proxy",
         "prompt-size",
         "resume",
@@ -3529,7 +3528,6 @@ def _build_cli_parser():
     build_skills_parser(subparsers, cmd_skills=cmd_skills)
     build_bundles_parser(subparsers)
     build_plugins_parser(subparsers, cmd_plugins=cmd_plugins)
-    build_environments_parser(subparsers)
 
     _register_plugin_cli_commands(subparsers)
 
