@@ -8,348 +8,136 @@ and inspect all returned artifacts. Never invent inputs or reuse another user's 
 
 ## Boltz-2
 
-Predict unified three-dimensional structures for complexes containing proteins, DNA, RNA, and/or small-molecule ligands, with confidence and affinity outputs when applicable.
+Predict biomolecular structures for supported combinations of proteins, nucleic acids and ligands using Boltz2. Supply the entity sequences or ligand SMILES to compare. Predictions are scheduled as pairs, including first-versus-rest comparisons within a polymer type and supported combinations across entity types.
 
 Exact job name: `Boltz2`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `Protein_Sequences` | array | no / mode-dependent | value |  |
-| `DNA_Sequences` | array | no / mode-dependent | value |  |
-| `RNA_Sequences` | array | no / mode-dependent | value |  |
-| `SMILES` | array | no / mode-dependent | value |  |
+| `Protein_Sequences` | string | Required | value | Protein amino-acid sequences to model. Keep each protein as a separate entity. An unused entity type may be left empty; the complete request must contain at least one usable protein or nucleic-acid sequence. For API requests, send a JSON array of strings. Use [] when this entity type is unused; do not send an empty string or a list containing an empty string. |
+| `SMILES` | string | Required | value | Ligand structures expressed as SMILES, with one complete SMILES string per entity. Preserve each string as a unit; punctuation within a SMILES string is part of the molecular representation. Leave empty when no ligand is needed. For API requests, send a JSON array of strings. Use [] when this entity type is unused; do not send an empty string or a list containing an empty string. |
+| `DNA_Sequences` | string | Required | value | DNA nucleotide sequences to model, with each sequence supplied as a separate entity. Leave empty when the prediction does not include DNA. For API requests, send a JSON array of strings. Use [] when this entity type is unused; do not send an empty string or a list containing an empty string. |
+| `RNA_Sequences` | string | Required | value | RNA nucleotide sequences to model, with each sequence supplied as a separate entity. Leave empty when the prediction does not include RNA. For API requests, send a JSON array of strings. Use [] when this entity type is unused; do not send an empty string or a list containing an empty string. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "Protein_Sequences": {
-      "description": "",
-      "type": "array",
-      "x-input-kind": "value",
-      "items": {
-        "type": "string"
-      }
-    },
-    "DNA_Sequences": {
-      "description": "",
-      "type": "array",
-      "x-input-kind": "value",
-      "items": {
-        "type": "string"
-      }
-    },
-    "RNA_Sequences": {
-      "description": "",
-      "type": "array",
-      "x-input-kind": "value",
-      "items": {
-        "type": "string"
-      }
-    },
-    "SMILES": {
-      "description": "",
-      "type": "array",
-      "x-input-kind": "value",
-      "items": {
-        "type": "string"
-      }
-    }
-  },
-  "required": [],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "Boltz2",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {}
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+Prediction bundles, a ZIP of structures and a table of result paths. Inspect the confidence and affinity-related outputs where present. Supplying several entities does not request one arbitrary complex containing all of them.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## Monomer Structure Prediction
 
-Monomer Structure Prediction
+Predict individual protein structures from amino-acid sequences using AlphaFold. Supply a CSV containing sequence identifiers and protein sequences. Each input sequence is treated as a monomer prediction.
 
 Exact job name: `Protein_Structure_Prediction`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_csv` | string | yes | file | The identifier column may be sequence_id or seq_id; sequences is required. |
-| `property_name` | string | no / mode-dependent | value | Default: `"monomer_structure_prediction"` |
+| `job_name` | string | Required | value | Tool identifier: Protein_Structure_Prediction. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `input_csv` | string | Required | file | CSV containing sequences and exactly one identifier column named seq_id or sequence_id. Identifiers must be unique. Each row supplies one protein sequence; header matching is case-insensitive. Invalid rows may be excluded from results. |
+| `property_name` | string | Optional | value | Prediction task selector. Supply monomer_structure_prediction for single-protein structure prediction. |
+| `experiment_name` | string | Optional | value | Name you choose for this experiment. Use a meaningful label to identify the run and its results. |
+| `user_id` | string | Required | value | User account identifier supplied automatically when you submit the job. It associates the run and stored results with your account; no manual entry is needed. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "input_csv": {
-      "description": "The identifier column may be sequence_id or seq_id; sequences is required.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "property_name": {
-      "description": "Default: `\"monomer_structure_prediction\"`",
-      "type": "string",
-      "enum": [
-        "monomer_structure_prediction"
-      ],
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "input_csv"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "Protein_Structure_Prediction",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "input_csv": "<user value; see input_csv schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "input_csv": {
-    "formats": [
-      "csv"
-    ],
-    "header_case_sensitive": true,
-    "notes": "The identifier column may be sequence_id or seq_id; sequences is required. Column-group semantics require review. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred. Header groups are checked; no unavailable model-specific alphabet or length bound is inferred.",
-    "csv_variants": [
-      {
-        "columns": [
-          "sequence_id",
-          "sequences"
-        ]
-      },
-      {
-        "columns": [
-          "seq_id",
-          "sequences"
-        ]
-      }
-    ]
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A prediction table with confidence metrics and a ZIP of predicted structures. Check output coverage and confidence when interpreting individual predictions.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## Multimer Structure Prediction
 
-Predict multimeric protein structures from paired or grouped sequences.
+Predict protein complex structures from grouped amino-acid sequences using AlphaFold-Multimer/ColabFold. Provide the component sequences in the desired chain order to model their assembly.
 
 Exact job name: `Multimer_Structure_Prediction`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_path` | string | yes | value | Colon-separated input sequences as one string; the form sends this text unchanged in input_path. |
+| `job_name` | string | Required | value | Tool identifier: Multimer_Structure_Prediction. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `input_path` | string | Required | value | Two or more protein amino-acid sequences joined by colons in one text value, in the desired chain order. Supply sequence text without a prefixed record identifier. This interface uses the sequence-text input mode. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "input_path": {
-      "description": "Colon-separated input sequences as one string; the form sends this text unchanged in input_path.",
-      "x-input-kind": "value",
-      "type": "string"
-    }
-  },
-  "required": [
-    "input_path"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "Multimer_Structure_Prediction",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "input_path": "<user value; see input_path schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+Predicted complex structures and confidence tables, including pLDDT and ipTM where available. Confidence measures describe the prediction and do not establish experimental binding.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## ipSAE Generation
 
-Score protein-protein interfaces across AlphaFold2-multimer or Boltz2 prediction bundles using PAE, residue confidence, and inter-chain distance information.
+Calculate protein-interface confidence scores with ipSAE from AlphaFold2-Multimer or Boltz2 predictions. The analysis combines predicted structures with matched confidence and predicted aligned error information. Optional cutoffs control which residue pairs contribute to scoring.
 
 Exact job name: `ipsae-protein`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `model_type` | string | yes | value | Exact value `af2_multimer` or `boltz2`; choose it to match the archive producer. |
-| `input_path` | string | yes | file | Uploaded ZIP containing compatible prediction structures and their matching confidence/PAE files. A lone PDB is insufficient. |
-| `pae_cutoff` | number | no / mode-dependent | value | PAE threshold; worker default 10.0. |
-| `dist_cutoff` | number | no / mode-dependent | value | C-alpha contact-distance threshold; worker default 10.0. |
+| `job_name` | string | Required | value | Tool identifier: ipsae-protein. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `model_type` | string | Required | value | Prediction source: af2_multimer or boltz2. Select the type that matches the files in the uploaded archive. |
+| `input_path` | string | Required | file | ZIP containing matched structures and confidence files. AF2-Multimer inputs need ranked PDBs and score JSON or JSON.GZ files. Boltz2 inputs need PDB/CIF structures and matching PAE NPZ files. A structure alone is insufficient. |
+| `pae_cutoff` | number | Optional | value | Positive predicted aligned error cutoff, in angstroms. Fractional values are allowed. Omission uses 10.0; do not supply null. |
+| `dist_cutoff` | number | Optional | value | Positive C-alpha distance cutoff, in angstroms. A smaller value selects closer residue pairs. Fractional values are allowed; omission uses 10.0. Do not supply null. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "model_type": {
-      "description": "Exact value `af2_multimer` or `boltz2`; choose it to match the archive producer.",
-      "type": "string",
-      "enum": [
-        "af2_multimer",
-        "boltz2"
-      ],
-      "x-input-kind": "value"
-    },
-    "input_path": {
-      "description": "Uploaded ZIP containing compatible prediction structures and their matching confidence/PAE files. A lone PDB is insufficient.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "pae_cutoff": {
-      "description": "PAE threshold; worker default 10.0.",
-      "type": "number",
-      "x-input-kind": "value"
-    },
-    "dist_cutoff": {
-      "description": "C-alpha contact-distance threshold; worker default 10.0.",
-      "type": "number",
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "model_type",
-    "input_path"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "ipsae-protein",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "model_type": "<user value; see model_type schema>",
-    "input_path": "<user value; see input_path schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "input_path": {
-    "formats": [
-      "zip"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Uploaded ZIP containing compatible prediction structures and their matching confidence/PAE files. A lone PDB is insufficient."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Input limits
 
-```json
-{
-  "fields": {
-    "pae_cutoff": {
-      "exclusive_minimum": 0
-    },
-    "dist_cutoff": {
-      "exclusive_minimum": 0
-    }
-  }
-}
-```
+PAE and distance cutoffs must be positive numbers. Fractional values are accepted; each omitted cutoff defaults to 10.0 angstroms.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A flattened CSV of interface scores. These scores describe confidence in a predicted interface and are not experimental affinity measurements.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.

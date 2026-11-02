@@ -8,289 +8,111 @@ and inspect all returned artifacts. Never invent inputs or reuse another user's 
 
 ## Cyclic Binder
 
-Design cyclic peptide binders against a selected target chain.
+Design cyclic peptide binder candidates against a selected protein chain in a target PDB structure. Specify the target chain and peptide length to guide structure-based peptide design.
 
 Exact job name: `cyclic_binder`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `pdb_path` | string | yes | file | Uploaded file: `.pdb` |
-| `target_chain` | string | yes | value | Use the exact source field. |
-| `binder_len` | integer | yes | value | Use the exact source field. |
+| `experimentname` | string | Optional | value | Name you choose for this experiment. Use a meaningful label to identify the run and its results. |
+| `pdb_path` | string | Required | file | Target protein structure as a PDB file. The structure must contain the chain selected in target_chain. |
+| `target_chain` | string | Required | value | Single-character identifier of the protein target chain in the uploaded PDB. |
+| `binder_len` | string | Required | value | Length of the cyclic peptide to design, in amino acids. Enter an integer from 3 through 100. For API requests, send a JSON integer rather than quoted numeric text. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "pdb_path": {
-      "description": "Uploaded file: `.pdb`",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "target_chain": {
-      "description": "Use the exact source field.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "binder_len": {
-      "description": "Use the exact source field.",
-      "type": "integer",
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "pdb_path",
-    "target_chain",
-    "binder_len"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "cyclic_binder",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "pdb_path": "<user value; see pdb_path schema>",
-    "target_chain": "<user value; see target_chain schema>",
-    "binder_len": "<user value; see binder_len schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "pdb_path": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Uploaded file: `.pdb`"
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+Generated peptide–target structures and design-run outputs. Predicted cyclization and interface geometry require further evaluation before synthesis or binding conclusions.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## Evobind
 
-Never invent an alignment or target residues. Download and verify the actual backend outputs before describing the generated peptides. No durable Mongo collection is inferred from this job name.
+Optimize peptide binder sequences and predicted complex structures against a target protein using EvoBind. Supply the target sequence and a matching A3M alignment. Target residue selections can focus the interface, while cyclic_offset selects linear or cyclic peptide modeling.
 
 Exact job name: `Evobind`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `sequence` | string | yes | value | Target protein amino-acid sequence. |
-| `a3m_file_path` | string | yes | file | Upload the corresponding A3M alignment. |
-| `num_peptides` | integer | no / mode-dependent | value | Number of peptides to generate. |
-| `seq_length` | integer | no / mode-dependent | value | Generated peptide length. |
-| `target_residues` | string | no / mode-dependent | value | Comma-separated target residue positions. |
-| `cyclic_offset` | string | no / mode-dependent | value | Exactly `"True"` or `"False"`, not a JSON boolean. |
+| `job_name` | string | Required | value | Tool identifier: Evobind. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `sequence` | string | Required | value | Target protein sequence in uppercase one-letter amino-acid codes. The 20 standard residues and X are accepted. It must match the first query sequence in the A3M alignment after removing gaps. |
+| `num_peptides` | number | Required | value | Number of optimization iterations. Enter an integer of at least 2. This field controls optimization steps, not the number of independent peptide sequences returned. |
+| `target_residues` | string | Required | value | Comma-separated, one-based target sequence positions used to focus the interface, for example 23,24. Include an empty string when no interface positions are specified. |
+| `cyclic_offset` | string | Required | value | Select True for cyclic-peptide modeling or False for linear-peptide modeling. Lowercase true and false are also accepted. This setting controls modeled geometry. |
+| `a3m_file_path` | string | Required | file | A3M multiple-sequence alignment for the target protein. The first sequence must match sequence; preserve valid A3M alignment formatting. |
+| `seq_length` | number | Required | value | Requested peptide length in amino acids. Supply a positive integer for a fixed length, or 0 to use 40 residues. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "sequence": {
-      "description": "Target protein amino-acid sequence.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "a3m_file_path": {
-      "description": "Upload the corresponding A3M alignment.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "num_peptides": {
-      "description": "Number of peptides to generate.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "seq_length": {
-      "description": "Generated peptide length.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "target_residues": {
-      "description": "Comma-separated target residue positions.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "cyclic_offset": {
-      "description": "Exactly `\"True\"` or `\"False\"`, not a JSON boolean.",
-      "type": "string",
-      "enum": [
-        "True",
-        "False"
-      ],
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "sequence",
-    "a3m_file_path"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "Evobind",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "sequence": "<user value; see sequence schema>",
-    "a3m_file_path": "<user value; see a3m_file_path schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "a3m_file_path": {
-    "formats": [
-      "a3m"
-    ],
-    "alphabet": "protein",
-    "header_case_sensitive": true,
-    "notes": "Upload the corresponding A3M alignment."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A ZIP containing generated PDB structures and metrics.csv. The optimization may produce repeated or related candidates; its iteration count is not a count of independent binders.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## Sequence based peptide generation
 
-Generate candidate peptide binders conditioned on a target protein sequence using the target-based PepPrCLIP backend.
+Generate and prioritize peptides for a target protein using PepPrCLIP. Language-model-based peptide generation produces candidates, and contrastive target-conditioned scoring ranks them against the supplied protein sequence.
 
 Exact job name: `Sequence_based_peptide_generation`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `sequence` | string | yes | value | Antigen/target sequence. |
-| `num_peptides` | string | yes | value | Requested candidate count, for example `"15"`. Preserve the plural field name. |
-| `seq_length` | string | yes | value | Desired peptide length. Documented supported range is 11–50 residues. |
+| `job_name` | string | Required | value | Tool identifier: Sequence_based_peptide_generation. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `sequence` | string | Required | value | Target protein amino-acid sequence used to condition peptide generation. This is the protein to bind, not a starting peptide. Uppercase standard amino acids and X, B, U, Z and O are accepted. |
+| `num_peptides` | string | Required | value | Number of peptide candidates to generate, supplied as a positive whole-number string such as "15". |
+| `seq_length` | string | Required | value | One desired peptide length in amino acids, supplied as a whole-number string from "11" through "50". Choose a single length, not a min/max object. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "sequence": {
-      "description": "Antigen/target sequence.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "num_peptides": {
-      "description": "Requested candidate count, for example `\"15\"`. Preserve the plural field name.",
-      "type": "string",
-      "x-input-kind": "value",
-      "x-numeric-string": true
-    },
-    "seq_length": {
-      "description": "Desired peptide length. Documented supported range is 11–50 residues.",
-      "type": "string",
-      "x-input-kind": "value",
-      "x-numeric-string": true
-    }
-  },
-  "required": [
-    "sequence",
-    "num_peptides",
-    "seq_length"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "Sequence_based_peptide_generation",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "sequence": "<user value; see sequence schema>",
-    "num_peptides": "<user value; see num_peptides schema>",
-    "seq_length": "<user value; see seq_length schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### Input limits
 
-```json
-{
-  "fields": {
-    "seq_length": {
-      "minimum": 11,
-      "maximum": 50
-    }
-  }
-}
-```
+Choose one peptide length from 11 through 50 amino acids and a positive candidate count. Supply both values as whole-number strings.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A CSV of peptide sequences, model scores and calculated properties such as molecular weight and pI. Model scores support ranking; they do not establish measured affinity or activity.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## Structure-Based Peptide Generation
 

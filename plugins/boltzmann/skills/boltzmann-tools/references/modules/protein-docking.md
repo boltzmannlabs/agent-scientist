@@ -8,93 +8,37 @@ and inspect all returned artifacts. Never invent inputs or reuse another user's 
 
 ## MegaDock
 
-Run rigid protein–protein docking with the active MEGADOCK-GPU v2 backend.
+Dock protein ligands against a receptor structure using MEGADOCK-GPU rigid-body docking. The FFT-grid search samples relative protein orientations and positions. Supply one receptor PDB and a ZIP of ligand PDB files.
 
 Exact job name: `MegaDock`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `ligand_path` | string | yes | file | ZIP containing ligand PDB structures. |
-| `receptor_path` | string | yes | file | One receptor PDB structure. |
+| `job_name` | string | Required | value | Tool identifier: MegaDock. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `ligand_path` | string | Required | file | ZIP of protein ligand PDB structures with finite atom coordinates. Ligands are proteins, not small molecules. Use unique PDB filenames across the archive, including files in subdirectories. |
+| `receptor_path` | string | Required | file | Receptor protein PDB with valid atom coordinates. Each usable ligand is docked against this structure. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "ligand_path": {
-      "description": "ZIP containing ligand PDB structures.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "receptor_path": {
-      "description": "One receptor PDB structure.",
-      "type": "string",
-      "x-input-kind": "file"
-    }
-  },
-  "required": [
-    "ligand_path",
-    "receptor_path"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "MegaDock",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "ligand_path": "<user value; see ligand_path schema>",
-    "receptor_path": "<user value; see receptor_path schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "ligand_path": {
-    "formats": [
-      "zip"
-    ],
-    "member_formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": "ZIP containing ligand PDB structures."
-  },
-  "receptor_path": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": "One receptor PDB structure."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+Docking decoy structures and run outputs for the usable ligand inputs. Docking scores rank predicted poses and are not measured binding energies.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## Placer
 

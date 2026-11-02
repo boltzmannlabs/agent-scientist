@@ -8,102 +8,38 @@ and inspect all returned artifacts. Never invent inputs or reuse another user's 
 
 ## Antibody Numbering
 
-Number antibody residues with a supported numbering scheme.
+Assign antibody residue numbers to paired heavy- and light-chain sequences using AbNumber. Numbering provides a consistent reference for comparing antibody positions and identifying regions under a selected numbering convention.
 
 Exact job name: `Antibody_Numbering`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `dataPath` | string | yes | file | Use the exact source field. |
-| `scheme` | string | no / mode-dependent | value | values: `Kabat, Chothia, Aho` |
-| `property_name` | string | yes | value | `AbNumber` only; preserve the capital N in the backend value. |
+| `dataPath` | string | Required | file | CSV containing Heavy_chain and Light_chain columns, with one antibody pair per row. Supply amino-acid sequences and use column names without surrounding spaces; header matching is case-insensitive. |
+| `job_name` | string | Required | value | Tool identifier: Antibody_Numbering. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `scheme` | string | Required | value | Antibody numbering convention. The available choices are Kabat, Chothia, Aho and IMGT. Aho requires an associated CDR-definition convention and is available only when that configuration is supported. |
+| `property_name` | string | Required | value | Tool selector. Use AbNumber for antibody residue numbering. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "dataPath": {
-      "description": "Use the exact source field.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "scheme": {
-      "description": "values: `Kabat, Chothia, Aho`",
-      "type": "string",
-      "enum": [
-        "Kabat",
-        "Chothia",
-        "Aho",
-        "IMGT"
-      ],
-      "x-input-kind": "value"
-    },
-    "property_name": {
-      "description": "`AbNumber` only; preserve the capital N in the backend value.",
-      "type": "string",
-      "enum": [
-        "AbNumber"
-      ],
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "dataPath",
-    "property_name"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "Antibody_Numbering",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "dataPath": "<user value; see dataPath schema>",
-    "property_name": "<user value; see property_name schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "dataPath": {
-    "formats": [
-      "csv"
-    ],
-    "header_case_sensitive": true,
-    "columns": [
-      "Heavy_chain",
-      "Light_chain"
-    ],
-    "notes": "Use the exact source field."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A CSV containing the input records and Heavy Number and Light Number mappings. Numbering is an annotation of sequence positions, not a structure or binding prediction.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## Cat_Pred (Catalyst Prediction)
 
@@ -294,75 +230,36 @@ Report actual service errors and incomplete outputs. Refresh status for expired 
 
 ## IG Design
 
-Design immunoglobulin sequences conditioned on an antigen-antibody complex structure.
+Redesign antibody CDR sequences from an antibody–antigen complex using IgDesign inverse folding. The supported structure layout uses heavy chain B, light chain A and antigen chain C, with fixed CDR position sets.
 
 Exact job name: `igdesign`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `pdb_path` | string | yes | file | Uploaded file: `.pdb` |
+| `job_name` | string | Required | value | Tool identifier: igdesign. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `pdb_path` | string | Required | file | Antibody–antigen complex PDB with heavy chain B, light chain A and antigen chain C. Chains must cover the configured CDR positions, which use zero-based residue order. Automatic chain remapping and CDR reannotation are not performed. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "pdb_path": {
-      "description": "Uploaded file: `.pdb`",
-      "type": "string",
-      "x-input-kind": "file"
-    }
-  },
-  "required": [
-    "pdb_path"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "igdesign",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "pdb_path": "<user value; see pdb_path schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "pdb_path": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Uploaded file: `.pdb`"
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A CSV of sampled CDR sequences and model scores. Confirm that the fixed position sets correspond to the intended CDRs in the supplied antibody.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## Ligand MPNN
 
@@ -770,93 +667,37 @@ Report actual service errors and incomplete outputs. Refresh status for expired 
 
 ## Prodigy (Binding Affinity)
 
-Estimate protein–protein binding affinity and identify interface residues for selected chains in one PDB or a ZIP of PDB structures.
+Estimate protein–protein binding affinity from an existing complex structure with PRODIGY. Interface contacts and structural surface information are used to score selected interacting chain groups. Supply one PDB or a ZIP of complex PDB files.
 
 Exact job name: `Prodigy`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_path` | string | yes | file | Platform path to one `.pdb` or a `.zip` of PDB structures. |
-| `chain_list` | array | no / mode-dependent | value | Optional list of interacting chain IDs, e.g. ["A", "B"]. Omit or use [] to select all chains. |
+| `job_name` | string | Required | value | Tool identifier: Prodigy. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `input_path` | string | Required | file | Protein complex PDB, or ZIP of complex PDBs, with interacting chains positioned together in each structure. |
+| `chain_list` | array | Optional | value | Two non-overlapping interacting chain groups, such as ["A","B"] or ["A,B","C"]. Include [] for automatic pairwise analysis of uppercase chain identifiers, limited to 100 pairs. Use an array, not an empty string. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "input_path": {
-      "description": "Platform path to one `.pdb` or a `.zip` of PDB structures.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "chain_list": {
-      "description": "Optional list of interacting chain IDs, e.g. [\"A\", \"B\"]. Omit or use [] to select all chains.",
-      "type": "array",
-      "x-input-kind": "value",
-      "items": {
-        "type": "string"
-      }
-    }
-  },
-  "required": [
-    "input_path"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "Prodigy",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "input_path": "<user value; see input_path schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "input_path": {
-    "formats": [
-      "pdb",
-      "zip"
-    ],
-    "member_formats": [
-      "pdb"
-    ],
-    "chains_field": "chain_list",
-    "header_case_sensitive": true,
-    "notes": "Platform path to one `.pdb` or a `.zip` of PDB structures.",
-    "structure_profile": "protein_structure",
-    "validation_context": [
-      "chain_list"
-    ]
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A CSV containing predicted affinity and interface-contact results. The input must already represent an assembled complex; this tool does not dock separate proteins.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## RC Plot
 
@@ -1053,104 +894,36 @@ Report actual service errors and incomplete outputs. Refresh status for expired 
 
 ## Thermal MPNN
 
-Predict stability changes for protein point mutants with ThermoMPNN.
+Estimate the effects of single amino-acid substitutions on protein stability using ThermoMPNN, a structure-based graph neural network. Supply a ZIP of protein PDB files. Predictions use the first chain of each structure and evaluate mutation effects relative to the original residues.
 
 Exact job name: `Thermal_MPNN`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `zip_path` | string | yes | file | Remote ZIP containing PDB files, including nested directories (not nested ZIPs). |
-| `chain` | string | no / mode-dependent | value | Empty or omitted: backend selects the first chain in each PDB. |
-| `model_path` | string | no / mode-dependent | file | Omit to use the platform default ${PRODUCT_BASE}/models/thermompnn/models/thermoMPNN_default.pt. Custom model PT inspection is not supported; do not fabricate or submit the placeholder path. |
+| `job_name` | string | Required | value | Tool identifier: Thermal_MPNN. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `zip_path` | string | Required | file | ZIP containing protein PDB structures. PDB files may be in subdirectories; nested ZIP archives are not supported. The first chain of each structure is used for prediction. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "zip_path": {
-      "description": "Remote ZIP containing PDB files, including nested directories (not nested ZIPs).",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "chain": {
-      "description": "Empty or omitted: backend selects the first chain in each PDB.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "model_path": {
-      "description": "Omit to use the platform default ${PRODUCT_BASE}/models/thermompnn/models/thermoMPNN_default.pt. Custom model PT inspection is not supported; do not fabricate or submit the placeholder path.",
-      "type": "string",
-      "x-input-kind": "file"
-    }
-  },
-  "required": [
-    "zip_path"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "Thermal_MPNN",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "zip_path": "<user value; see zip_path schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "zip_path": {
-    "formats": [
-      "zip"
-    ],
-    "member_formats": [
-      "pdb"
-    ],
-    "chains_field": "chain",
-    "chain_scalar": true,
-    "header_case_sensitive": true,
-    "notes": "Remote ZIP containing PDB files, including nested directories (not nested ZIPs).",
-    "structure_profile": "protein_structure",
-    "validation_context": [
-      "chain"
-    ]
-  },
-  "model_path": {
-    "execution_blocked": true,
-    "formats": [
-      "pt"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Omit to use the platform default ${PRODUCT_BASE}/models/thermompnn/models/thermoMPNN_default.pt. Custom model PT inspection is not supported; do not fabricate or submit the placeholder path."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+Mutation-level CSV predictions containing Model, Dataset, ddG_pred, position, wildtype and mutation. Confirm residue indexing and the score convention when interpreting stability changes. These are stability predictions, not protein–protein binding ΔΔG.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## TM Align
 

@@ -331,114 +331,44 @@ Report actual service errors and incomplete outputs. Refresh status for expired 
 
 ## Stability-Binding DDG
 
-Predict mutation-induced changes in protein-protein binding free energy from a supplied wild-type PDB. This wrapper generates sequence variants by substituting the selected positions, then scores their predicted binding effects. The backend job is `stability-binding-ddg`; the experiment name is supplied separately as top-level `experimentName`.
+Estimate how amino-acid substitutions change protein–protein binding free energy relative to a wild-type complex using StaB-ddG. Supply the docked complex, the sequence and identifier of the chain to mutate, and the residue positions to change. Each sampled variant changes all selected positions and is scored against the original complex.
 
 Exact job name: `stability-binding-ddg`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `pdb_path` | string | yes | file | Required file upload: the docked protein–protein complex as a `.pdb` structure file. Provide the structure itself, not a sequence, SMILES string, or PDB accession. The selected `chain` must be present; for the intended two-protein interface, the complex should contain chains A and B. |
-| `sequence` | string | yes | value | Amino-acid sequence of the chain named by `chain`, in the same residue order as that chain in `pdb_path`. Positions in `mutations` are counted from 1 and must align with the chain's residue numbering in the PDB, which the wrapper expects to start at 1. Only the 20 standard amino acids are accepted; lowercase letters are converted to uppercase. |
-| `chain` | string | yes | value | Single-character PDB chain ID for the protein to mutate, usually `A` or `B`. It must match a chain present in the uploaded `pdb_path` structure. |
-| `mutations` | array | yes | value | Required non-empty list of one-based residue positions or inclusive position ranges in `sequence`, each written as a string, for example ["1", "2", "8-15"]. These values identify which sites to change; they do not specify the replacement amino acids. Every generated variant changes all selected sites, choosing a different amino acid at each site. |
-| `num_mutations` | string | yes | value | Positive number of sequence variants to generate. Send the count as a string in the public payload, for example "10". Each variant applies changes at all positions listed in `mutations`; this count is not the number of residue positions. |
+| `job_name` | string | Required | value | Tool identifier: stability-binding-ddg. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `pdb_path` | string | Required | file | Docked wild-type protein–protein complex as a PDB with exactly two interface chains named A and B. The selected mutation chain must exist, and its sequence and residue numbering must match the supplied sequence. |
+| `sequence` | string | Required | value | Amino-acid sequence of the chain selected by chain, in the same residue order as in pdb_path. Use the 20 standard amino acids; lowercase letters are converted to uppercase. Mutation positions are one-based and must align with PDB numbering starting at 1. |
+| `chain` | string | Required | value | Identifier of the chain to mutate: A or B. It must match the uploaded complex and the supplied sequence. |
+| `mutations` | string | Required | value | One-based residue positions to change. Individual positions and inclusive ranges identify sites, for example 1, 2 and 8-15. These are positions, not replacement amino acids; every sampled variant changes all selected sites. For API requests, send a non-empty JSON array of quoted positions or ranges, such as ["1","2","8-15"]. |
+| `num_mutations` | string | Required | value | Number of sequence variants to sample, supplied as a positive whole-number string such as "10". Every variant changes all selected sites. This is not a guarantee of unique sequences. |
+| `user_id` | string | Required | value | User account identifier supplied automatically when you submit the job. It associates the run and stored results with your account; no manual entry is needed. |
+| `experiment_id` | string | Optional | value | Unique run identifier assigned automatically when the experiment is created. It is used to track job status and retrieve results; no manual entry is needed. |
+| `tokenid` | string | Optional | value | Authentication credential supplied automatically by the signed-in service. It authorizes the request; do not enter or share it as a tool parameter. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "pdb_path": {
-      "description": "Required file upload: the docked protein–protein complex as a `.pdb` structure file. Provide the structure itself, not a sequence, SMILES string, or PDB accession. The selected `chain` must be present; for the intended two-protein interface, the complex should contain chains A and B.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "sequence": {
-      "description": "Amino-acid sequence of the chain named by `chain`, in the same residue order as that chain in `pdb_path`. Positions in `mutations` are counted from 1 and must align with the chain's residue numbering in the PDB, which the wrapper expects to start at 1. Only the 20 standard amino acids are accepted; lowercase letters are converted to uppercase.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "chain": {
-      "description": "Single-character PDB chain ID for the protein to mutate, usually `A` or `B`. It must match a chain present in the uploaded `pdb_path` structure.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "mutations": {
-      "description": "Required non-empty list of one-based residue positions or inclusive position ranges in `sequence`, each written as a string, for example [\"1\", \"2\", \"8-15\"]. These values identify which sites to change; they do not specify the replacement amino acids. Every generated variant changes all selected sites, choosing a different amino acid at each site.",
-      "type": "array",
-      "x-input-kind": "value",
-      "items": {
-        "type": "string"
-      }
-    },
-    "num_mutations": {
-      "description": "Positive number of sequence variants to generate. Send the count as a string in the public payload, for example \"10\". Each variant applies changes at all positions listed in `mutations`; this count is not the number of residue positions.",
-      "type": "string",
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "pdb_path",
-    "sequence",
-    "chain",
-    "mutations",
-    "num_mutations"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "stability-binding-ddg",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "pdb_path": "<user value; see pdb_path schema>",
-    "sequence": "<user value; see sequence schema>",
-    "chain": "<user value; see chain schema>",
-    "mutations": "<user value; see mutations schema>",
-    "num_mutations": "<user value; see num_mutations schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "pdb_path": {
-    "formats": [
-      "pdb"
-    ],
-    "chains_field": "chain",
-    "chain_scalar": true,
-    "header_case_sensitive": true,
-    "notes": "Upload a PDB structure. Raw sequences, SMILES and PDB IDs are not structure uploads."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Execution notices
 
-- The local wrapper writes an output CSV with `id`, `MutatedSequences`, and `DDG_values` columns. Earlier product-facing documentation names the sequence column `Sequences`; check the returned CSV header before downstream use.
-- The upstream StaB-ddG documentation reports binding ΔΔG in kcal/mol and says negative values predict stronger binding. The copied local README describes the sign in the opposite direction; treat values as predictions and verify the deployed sign convention before labeling them stronger or weaker.
+Align the selected chain sequence and one-based mutation positions with the PDB residue numbering before submission. Interpret the score sign using the model convention.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A CSV containing id (variant identifier), MutatedSequences (full mutant sequence) and DDG_values (predicted binding free-energy change). Duplicate variants may occur. Confirm the model score-sign convention before interpreting values as stronger or weaker binding. This is not a separate folding-stability prediction.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.

@@ -8,540 +8,152 @@ and inspect all returned artifacts. Never invent inputs or reuse another user's 
 
 ## Antibody RFD3
 
-Generate alternative antibody CDR backbone conformations while preserving the framework and antigen.
+Generate alternative antibody CDR backbone conformations with AgCDR-Diff, conditioned on an antibody–antigen structure. Supply separate antibody and antigen PDB files positioned in the same coordinate frame. The model samples CDR geometry while using the surrounding complex as structural context.
 
 Exact job name: `agcdr_diff`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `antibody_pdb_path` | string | yes | file | Use the exact source field. |
-| `antigen_pdb_path` | string | yes | file | Use the exact source field. |
-| `num_samples` | number | yes | value | Use the exact source field. |
-| `num_steps` | number | yes | value | Use the exact source field. |
+| `job_name` | string | Required | value | Tool identifier: agcdr_diff. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `antibody_pdb_path` | file / mixed | Required | file | Antibody PDB containing a numberable heavy chain and, for a paired antibody, a light chain. Its coordinates must already be positioned relative to the supplied antigen; this step does not dock the two inputs. |
+| `antigen_pdb_path` | file / mixed | Required | file | Protein antigen PDB containing valid protein ATOM records. Use the same coordinate frame as the antibody structure. |
+| `num_samples` | number | Required | value | Number of CDR backbone conformations to sample. Enter an integer from 1 through 100. |
+| `num_steps` | number | Required | value | Number of diffusion sampling steps per sample. Enter an integer from 2 through 100; 50 is the standard setting. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "antibody_pdb_path": {
-      "description": "Use the exact source field.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "antigen_pdb_path": {
-      "description": "Use the exact source field.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "num_samples": {
-      "description": "Use the exact source field.",
-      "type": "number",
-      "x-input-kind": "value"
-    },
-    "num_steps": {
-      "description": "Use the exact source field.",
-      "type": "number",
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "antibody_pdb_path",
-    "antigen_pdb_path",
-    "num_samples",
-    "num_steps"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "agcdr_diff",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "antibody_pdb_path": "<user value; see antibody_pdb_path schema>",
-    "antigen_pdb_path": "<user value; see antigen_pdb_path schema>",
-    "num_samples": "<user value; see num_samples schema>",
-    "num_steps": "<user value; see num_steps schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "antibody_pdb_path": {
-    "formats": [],
-    "header_case_sensitive": true,
-    "notes": "Use the exact source field."
-  },
-  "antigen_pdb_path": {
-    "formats": [],
-    "header_case_sensitive": true,
-    "notes": "Use the exact source field."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+Generated complex PDB structures, the input reference and generation reports. The output describes CDR backbone conformations; amino-acid sequence design is a separate step.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## RF-Antibody
 
-Generate antibody or nanobody sequences from antibody and antigen structures.
+Generate antibody or nanobody designs against an antigen using the RFantibody workflow, followed by ProteinMPNN sequence design. Supply an appropriate framework structure and antigen structure, then select the antibody type and requested design count.
 
 Exact job name: `rfdiffusion_proteinmpnn`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `antibody_pdb_path` | string | yes | file | Antibody PDB or PDB ID. |
-| `antigen_pdb_path` | string | yes | file | Antigen PDB or PDB ID. |
-| `num_sequences` | integer | yes | value | Use the exact source field. |
-| `antibody_type` | string | yes | value |  |
+| `job_name` | string | Required | value | Tool identifier: rfdiffusion_proteinmpnn. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `antibody_pdb_path` | file / mixed | Required | file | Uploaded antibody or nanobody framework PDB used to condition design. Supply the structure file rather than a PDB accession alone. |
+| `antigen_pdb_path` | file / mixed | Required | file | Uploaded target antigen PDB structure. Use the actual structure file, not a bare structure identifier. |
+| `num_sequences` | number | Required | value | Requested design count. Enter a positive integer; the default is 10. Check the delivered sequence count in the result archive. |
+| `antibody_type` | string | Required | value | Select antibody for a paired heavy/light framework or nanobody for a heavy-chain-only framework. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "antibody_pdb_path": {
-      "description": "Antibody PDB or PDB ID.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "antigen_pdb_path": {
-      "description": "Antigen PDB or PDB ID.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "num_sequences": {
-      "description": "Use the exact source field.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "antibody_type": {
-      "description": "",
-      "type": "string",
-      "enum": [
-        "antibody",
-        "nanobody"
-      ],
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "antibody_pdb_path",
-    "antigen_pdb_path",
-    "num_sequences",
-    "antibody_type"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "rfdiffusion_proteinmpnn",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "antibody_pdb_path": "<user value; see antibody_pdb_path schema>",
-    "antigen_pdb_path": "<user value; see antigen_pdb_path schema>",
-    "num_sequences": "<user value; see num_sequences schema>",
-    "antibody_type": "<user value; see antibody_type schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "antibody_pdb_path": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Antibody PDB or PDB ID."
-  },
-  "antigen_pdb_path": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Antigen PDB or PDB ID."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A ZIP of the ProteinMPNN-stage outputs. Inspect the included sequences, structures and any available metrics before selecting candidates for further evaluation.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## Target-Aware CDR Designer / Epitope Conditioned Antibody Generation
 
-Generate antigen- and epitope-conditioned antibody CDR backbones.
+Generate antibody CDR backbone conformations conditioned on an antigen epitope using Epitope AbGen/AbsciDiff. Supply antigen and antibody framework PDB structures, identify their chains, and select the CDR regions to regenerate. The remaining structure provides context for the sampled loops.
 
 Exact job name: `epitope_abgen`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_path` | string | no / mode-dependent | file | Prepared-feature mode: .pt or ZIP of .pt. Content validation is not implemented, so this route currently blocks submission. |
-| `antigen_pdb_path` | string | no / mode-dependent | file |  |
-| `antibody_pdb_path` | string | no / mode-dependent | file |  |
-| `complex_pdb_path` | string | no / mode-dependent | file | Optional for one prepared feature lacking Atom14 labels. |
-| `complex_id` | string | no / mode-dependent | value | Omitted: defaults to platform-assigned experiment_id; never invent an experiment ID. |
-| `mask_cdrs` | string | no / mode-dependent | value | User-selected scalar string from the form; do not send the UI wrapper object. |
-| `epitope_residues` | array | no / mode-dependent | value | Array of user-supplied strings, as emitted by the recorded form. |
-| `task_id` | string | no / mode-dependent | value | Optional for a single prepared feature only. |
-| `mask_type` | string | no / mode-dependent | value |  |
-| `min_finite_coordinate_rate` | number | no / mode-dependent | value |  |
-| `allow_cpu` | boolean | no / mode-dependent | value |  |
-| `samples_per_task` | integer | no / mode-dependent | value |  |
-| `seed` | integer | no / mode-dependent | value |  |
-| `max_tokens` | integer | no / mode-dependent | value |  |
-| `heavy_chain_id` | string | no / mode-dependent | value | User-selected chain identifier in the input structure. |
-| `light_chain_id` | string | no / mode-dependent | value | User-selected chain identifier in the input structure. |
-| `antigen_chain_ids` | array | no / mode-dependent | value | Array of user-supplied strings, as emitted by the recorded form. |
+| `job_name` | string | Required | value | Tool identifier: epitope_abgen. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `antigen_pdb_path` | file / mixed | Required | file | Antigen PDB containing valid protein ATOM records and the chains carrying the selected epitope. |
+| `antibody_pdb_path` | file / mixed | Required | file | Antibody framework PDB containing the heavy and light chains used to condition CDR generation. |
+| `mask_cdrs` | string | Required | value | CDR regions to regenerate: hcdr3 for heavy-chain CDR3, heavy_cdrs for all heavy-chain CDRs, or all_cdrs for heavy- and light-chain CDRs. |
+| `heavy_chain_id` | string | Required | value | Actual heavy-chain identifier in the antibody PDB. |
+| `light_chain_id` | string | Required | value | Actual light-chain identifier in the antibody PDB. This paired-antibody workflow requires the corresponding light-chain structure. |
+| `antigen_chain_ids` | string | Required | value | Identifiers of the antigen chains to include. Every selected chain must exist in antigen_pdb_path. For API requests, send a JSON array of chain IDs, such as ["A","C"]. |
+| `epitope_residues` | string | Required | value | Antigen residues defining the desired interface. Identify each residue by its antigen chain and original PDB residue number, for example C:23 and C:24. For API requests, send a JSON array containing one chain-qualified residue per entry, such as ["C:23","C:24"]. |
+| `samples_per_task` | number | Required | value | Number of structures to sample for each prepared task. Enter an integer from 1 through 16; the default is 4. |
+| `seed` | number | Required | value | Random seed controlling sampling. Enter an integer from 0 through 4294967295; the default is 2026. Identical seeds do not guarantee identical results across software or hardware versions. |
+| `max_tokens` | number | Required | value | Model sequence-token budget. Enter an integer from 32 through 416; the default is 384. This controls the modeling budget, not the number of output samples. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "input_path": {
-      "description": "Prepared-feature mode: .pt or ZIP of .pt. Content validation is not implemented, so this route currently blocks submission.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "antigen_pdb_path": {
-      "description": "",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "antibody_pdb_path": {
-      "description": "",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "complex_pdb_path": {
-      "description": "Optional for one prepared feature lacking Atom14 labels.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "complex_id": {
-      "description": "Omitted: defaults to platform-assigned experiment_id; never invent an experiment ID.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "mask_cdrs": {
-      "description": "User-selected scalar string from the form; do not send the UI wrapper object.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "epitope_residues": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Array of user-supplied strings, as emitted by the recorded form.",
-      "x-input-kind": "value"
-    },
-    "task_id": {
-      "description": "Optional for a single prepared feature only.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "mask_type": {
-      "description": "",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "min_finite_coordinate_rate": {
-      "description": "",
-      "type": "number",
-      "x-input-kind": "value"
-    },
-    "allow_cpu": {
-      "description": "",
-      "type": "boolean",
-      "x-input-kind": "value"
-    },
-    "samples_per_task": {
-      "description": "",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "seed": {
-      "description": "",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "max_tokens": {
-      "description": "",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "heavy_chain_id": {
-      "type": "string",
-      "description": "User-selected chain identifier in the input structure.",
-      "x-input-kind": "value"
-    },
-    "light_chain_id": {
-      "type": "string",
-      "description": "User-selected chain identifier in the input structure.",
-      "x-input-kind": "value"
-    },
-    "antigen_chain_ids": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Array of user-supplied strings, as emitted by the recorded form.",
-      "x-input-kind": "value"
-    }
-  },
-  "required": [],
-  "additionalProperties": true,
-  "anyOf": [
-    {
-      "required": [
-        "input_path"
-      ]
-    },
-    {
-      "required": [
-        "antigen_pdb_path",
-        "antibody_pdb_path",
-        "mask_cdrs",
-        "heavy_chain_id",
-        "light_chain_id",
-        "antigen_chain_ids",
-        "epitope_residues",
-        "samples_per_task",
-        "seed",
-        "max_tokens"
-      ]
-    }
-  ]
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "epitope_abgen",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {}
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "input_path": {
-    "execution_blocked": true,
-    "formats": [
-      "pt",
-      "zip"
-    ],
-    "member_formats": [
-      "pt"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Prepared-feature mode: .pt or ZIP of .pt. Content validation is not implemented, so this route currently blocks submission."
-  },
-  "antigen_pdb_path": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": ""
-  },
-  "antibody_pdb_path": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": ""
-  },
-  "complex_pdb_path": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Optional for one prepared feature lacking Atom14 labels."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+Generated PDB structures and accompanying reports. The outputs are CDR backbone conformations; final antibody sequence design is a separate step.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## AntiBMPNN
 
-Generate structure-conditioned antibody sequence variants for selected chains or residue positions in an antibody or antibody-antigen structure.
+Generate antibody-chain amino-acid sequence variants conditioned on a backbone structure using AntiBMPNN. Supply an antibody or antibody–antigen structure, identify the chains to redesign and choose the number of samples. Structural conditioning helps retain the supplied backbone context during sequence design.
 
 Exact job name: `AntiBMPNN`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_path` | string | yes | file | Uploaded single `.pdb` antibody/complex structure or one `.zip` containing PDB structures. Raw sequences and local paths are invalid. |
-| `chains_to_design` | array | yes | value | Non-empty list of one-character PDB chain IDs, for example `['H', 'L']`. Every chain must exist in every applicable input structure. |
-| `residue_positions_to_design` | object | no / mode-dependent | value | Designed-chain IDs mapped to one-based residue selections such as `101-106,115,119-123`. Omit or send `{}` for full-chain design. |
-| `generation_count` | integer | yes | value | Sequences to generate per PDB; accepted range 1–10000. Use a small count for validation. |
+| `input_path` | string | Required | file | One antibody or antibody–antigen PDB, or a ZIP of PDB structures. Every chain selected for redesign must be present in each applicable structure. Only PDB members are processed. |
+| `chains_to_design` | string | Optional | value | Identifiers of the antibody chains whose sequences should be redesigned, such as H and L. Supply an explicit, non-empty selection without duplicates; each selected chain must exist in the structure. For API requests, send a non-empty JSON array of one-character chain IDs, such as ["H","L"]. |
+| `generation_count` | number | Required | value | Number of sequence samples per input PDB. Enter an integer from 1 through 10000. Duplicate sequences may occur. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "input_path": {
-      "description": "Uploaded single `.pdb` antibody/complex structure or one `.zip` containing PDB structures. Raw sequences and local paths are invalid.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "chains_to_design": {
-      "description": "Non-empty list of one-character PDB chain IDs, for example `['H', 'L']`. Every chain must exist in every applicable input structure.",
-      "type": "array",
-      "x-input-kind": "value",
-      "items": {
-        "type": "string"
-      }
-    },
-    "residue_positions_to_design": {
-      "description": "Designed-chain IDs mapped to one-based residue selections such as `101-106,115,119-123`. Omit or send `{}` for full-chain design.",
-      "type": "object",
-      "additionalProperties": {
-        "type": "string"
-      },
-      "x-input-kind": "value"
-    },
-    "generation_count": {
-      "description": "Sequences to generate per PDB; accepted range 1–10000. Use a small count for validation.",
-      "type": "integer",
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "input_path",
-    "chains_to_design",
-    "generation_count"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "AntiBMPNN",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "input_path": "<user value; see input_path schema>",
-    "chains_to_design": "<user value; see chains_to_design schema>",
-    "generation_count": "<user value; see generation_count schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "input_path": {
-    "formats": [
-      "pdb",
-      "zip"
-    ],
-    "member_formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Uploaded single `.pdb` antibody/complex structure or one `.zip` containing PDB structures. Raw sequences and local paths are invalid."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Input limits
 
-```json
-{
-  "fields": {
-    "generation_count": {
-      "minimum": 1,
-      "maximum": 10000
-    }
-  }
-}
-```
+Request 1–10000 sequence samples per PDB. Chain selection must be non-empty and every selected chain must exist in the corresponding structure.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+An archive of designed sequence records and run outputs. Sample count does not guarantee sequence uniqueness or improved antibody properties.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.

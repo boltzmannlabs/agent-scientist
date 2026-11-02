@@ -8,366 +8,135 @@ and inspect all returned artifacts. Never invent inputs or reuse another user's 
 
 ## Antibody Backbone to Sequence Generation
 
-Antibody Backbone to Sequence Generation
+Design amino-acid sequences for antibody-chain backbone structures using PiFold/ProDesign inverse folding. Supply a ZIP of backbone PDB files and select heavy- or light-chain mode. Each backbone must use chain A. The designed sequences can support subsequent structure and antibody-property evaluation.
 
 Exact job name: `Antibody_Backbone_to_Sequence_Generation`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `dataPath` | string | yes | file | ZIP containing PDB backbone files; each must contain chain A, which the helper parses for both H/L modes. |
-| `mode` | string | yes | value | `"H"` or `"L"` |
+| `job_name` | string | Required | value | Tool identifier: Antibody_Backbone_to_Sequence_Generation. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `mode` | string | Required | value | Antibody chain type: H for a heavy-chain backbone or L for a light-chain backbone. Both modes require the backbone to be identified as chain A in the PDB. |
+| `dataPath` | string | Required | file | ZIP containing non-empty PDB backbone files directly at the archive root. Each structure must contain chain A. PDB files in nested directories are not accepted. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "dataPath": {
-      "description": "ZIP containing PDB backbone files; each must contain chain A, which the helper parses for both H/L modes.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "mode": {
-      "description": "`\"H\"` or `\"L\"`",
-      "type": "string",
-      "enum": [
-        "H",
-        "L"
-      ],
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "dataPath",
-    "mode"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "Antibody_Backbone_to_Sequence_Generation",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "dataPath": "<user value; see dataPath schema>",
-    "mode": "<user value; see mode schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "dataPath": {
-    "formats": [
-      "zip"
-    ],
-    "member_formats": [
-      "pdb"
-    ],
-    "required_chains": [
-      "A"
-    ],
-    "header_case_sensitive": true,
-    "notes": "ZIP containing PDB backbone files; each must contain chain A, which the helper parses for both H/L modes."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+Designed full-chain amino-acid sequences with calculated sequence properties. Heavy/light compatibility and antigen binding require separate evaluation.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## Backbone Generation
 
-Backbone Generation
+Generate antibody heavy- and light-chain backbone structures using Protein Frame Flow. Sampling covers configured chain lengths and produces structures for subsequent sequence design. The output contains separate heavy- and light-chain collections.
 
 Exact job name: `Backbone_Generation`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `n_samples` | integer | yes | value | Number of structures |
-| `mode` | string | yes | value | `"H"` or `"L"` |
+| `job_name` | string | Required | value | Tool identifier: Backbone_Generation. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `mode` | string | Required | value | Requested antibody chain mode: H for heavy chain or L for light chain. Results currently include both chain collections; this selection does not filter the output to one chain type. |
+| `n_samples` | number | Required | value | Requested backbone sampling count. Enter a whole number of at least 7. Samples are distributed over configured chain lengths, so the final count may differ. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "n_samples": {
-      "description": "Number of structures",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "mode": {
-      "description": "`\"H\"` or `\"L\"`",
-      "type": "string",
-      "enum": [
-        "H",
-        "L"
-      ],
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "n_samples",
-    "mode"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "Backbone_Generation",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "n_samples": "<user value; see n_samples schema>",
-    "mode": "<user value; see mode schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+Separate heavy- and light-chain PDB archives. Sampling is distributed over chain lengths, so the delivered count can differ from the requested count.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## CDR Generator
 
-CDR Generator
+Generate antibody heavy-chain sequence variants by replacing one CDR with EvoDiff-generated sequence. The selected numbering scheme locates HCDR1, HCDR2 or HCDR3 in the full heavy-chain sequence. The surrounding sequence is retained as context.
 
 Exact job name: `CDR_Generator`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `sequence` | string | yes | value | Input antibody sequence (NOT `seq`) |
-| `file_format` | string | yes | value | CSV is the supported output format. |
-| `n_samples` | integer | yes | value | Number of sequences |
-| `scheme` | string | yes | value | Operator confirmed chothia, not chotia. |
-| `cdr_reg` | string | yes | value | `"HCDR1"`, `"HCDR2"`, `"HCDR3"` |
-| `mode` | string | yes | value | Operator confirmed 2026-09-12: H only. Never submit L. |
-| `property_name` | string | no / mode-dependent | value |  |
+| `n_samples` | number | Required | value | Number of full-length sequence variants to sample. Enter a positive integer. |
+| `job_name` | string | Required | value | Tool identifier: CDR_Generator. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `mode` | string | Optional | value | Antibody chain mode. Use H for heavy-chain CDR generation. Light-chain CDR generation is not supported by this tool. |
+| `property_name` | string | Optional | value | Tool selector. Supply Antibody_CDR to request CDR sequence generation. |
+| `scheme` | string | Required | value | Antibody numbering scheme used to locate the CDR: imgt, kabat or chothia. |
+| `sequence` | string | Required | value | Full heavy-chain amino-acid sequence using the 20 standard residues. The selected CDR is replaced while the surrounding sequence is retained. |
+| `cdr_reg` | string | Required | value | Heavy-chain region to regenerate: HCDR1, HCDR2 or HCDR3. |
+| `file_format` | string | Required | value | Output file format. Use csv for this interface to obtain sequence variants and calculated properties. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "sequence": {
-      "description": "Input antibody sequence (NOT `seq`)",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "file_format": {
-      "description": "CSV is the supported output format.",
-      "type": "string",
-      "enum": [
-        "csv"
-      ],
-      "x-input-kind": "value"
-    },
-    "n_samples": {
-      "description": "Number of sequences",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "scheme": {
-      "description": "Operator confirmed chothia, not chotia.",
-      "type": "string",
-      "enum": [
-        "imgt",
-        "kabat",
-        "chothia"
-      ],
-      "x-input-kind": "value"
-    },
-    "cdr_reg": {
-      "description": "`\"HCDR1\"`, `\"HCDR2\"`, `\"HCDR3\"`",
-      "type": "string",
-      "enum": [
-        "HCDR1",
-        "HCDR2",
-        "HCDR3"
-      ],
-      "x-input-kind": "value"
-    },
-    "mode": {
-      "description": "Operator confirmed 2026-09-12: H only. Never submit L.",
-      "type": "string",
-      "enum": [
-        "H"
-      ],
-      "x-input-kind": "value"
-    },
-    "property_name": {
-      "description": "",
-      "type": "string",
-      "enum": [
-        "Antibody_CDR"
-      ],
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "sequence",
-    "file_format",
-    "n_samples",
-    "scheme",
-    "cdr_reg",
-    "mode"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "CDR_Generator",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "sequence": "<user value; see sequence schema>",
-    "file_format": "<user value; see file_format schema>",
-    "n_samples": "<user value; see n_samples schema>",
-    "scheme": "<user value; see scheme schema>",
-    "cdr_reg": "<user value; see cdr_reg schema>",
-    "mode": "<user value; see mode schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+Full-length heavy-chain variants with the selected CDR replaced. CSV output includes calculated sequence properties. Generation is not conditioned on an antigen.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## Random Antibody Generation
 
-Random Antibody Generation
+Generate antibody heavy- and light-chain sequence libraries with IgLM and calculate sequence properties. The two chain sets are sampled independently and returned separately, providing candidates for subsequent pairing and property evaluation.
 
 Exact job name: `Random_Antibody_Generation`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `n_samples` | integer | yes | value | Hard constraint: integer greater than 16 (minimum 17). The UI/sample value is 20 and is the recommended normal minimum. |
-| `file_format` | string | yes | value | `"csv"` or `"fasta"`; user-facing alias `format`. These and `n_samples` are the only user input fields. |
+| `n_samples` | number | Required | value | Requested sampling count. Enter a whole number of at least 16. Heavy chains are sampled in groups of 8 and light chains in groups of 16, with each count rounded down independently. |
+| `job_name` | string | Required | value | Tool identifier: Random_Antibody_Generation. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `user_id` | string | Required | value | User account identifier supplied automatically when you submit the job. It associates the run and stored results with your account; no manual entry is needed. |
+| `file_format` | string | Optional | value | Output format selector. Use csv; the generated heavy- and light-chain results are CSV files. Selecting fasta does not provide FASTA output. |
+| `property_name` | string | Optional | value | Optional generation label. It does not select the chain type or alter generation; both heavy- and light-chain collections are produced. It may be left unused. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "n_samples": {
-      "description": "Hard constraint: integer greater than 16 (minimum 17). The UI/sample value is 20 and is the recommended normal minimum.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "file_format": {
-      "description": "`\"csv\"` or `\"fasta\"`; user-facing alias `format`. These and `n_samples` are the only user input fields.",
-      "type": "string",
-      "enum": [
-        "csv",
-        "fasta"
-      ],
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "n_samples",
-    "file_format"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "Random_Antibody_Generation",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "n_samples": "<user value; see n_samples schema>",
-    "file_format": "<user value; see file_format schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### Input limits
 
-```json
-{
-  "fields": {
-    "n_samples": {
-      "exclusive_minimum": 16,
-      "recommended_minimum": 20
-    }
-  }
-}
-```
+Use an integer sampling count of at least 16. Heavy-chain counts are rounded down to groups of 8 and light-chain counts to groups of 16.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+Separate heavy- and light-chain CSV files containing sequences and calculated properties. The collections do not represent confirmed heavy/light pairs or antigen-specific antibodies.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.

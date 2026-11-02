@@ -8,126 +8,39 @@ and inspect all returned artifacts. Never invent inputs or reuse another user's 
 
 ## Antibody Property Prediction
 
-Antibody Property Prediction
+Predict selected antibody sequence properties and annotate complementarity-determining regions from paired heavy- and light-chain sequences. Available analyses include ProtBERT/ESM thermal-stability models, ESM solubility prediction and CDR identification under a selected numbering scheme.
 
 Exact job name: `Antibody_Prediction`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `dataPath` | string | yes | file | S3 path to CSV (upload first) |
-| `scheme` | string | no / mode-dependent | value | Conditionally required: numbering scheme (e.g. imgt/kabat/chothia) when property_name includes CDR_Prediction |
-| `property_name` | array | yes | value | One or more exact backend property identifiers |
+| `job_name` | string | Required | value | Tool identifier: Antibody_Prediction. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `property_name` | string | Required | value | Analysis to perform: Thermal_Stability_Protbert, Thermal_Stability_ESM, Solubility_ESM or CDR_Prediction. Choose the model appropriate to the property of interest. Antigen_Antibody_binding is not available as a verified analysis through this interface. For API requests, send a non-empty JSON array of model names, such as ["Solubility_ESM"], even when selecting one model. |
+| `dataPath` | string | Required | file | CSV containing Heavy_chain and Light_chain columns, with one paired antibody per row. Include seq_id when selecting Solubility_ESM. Column matching is case-insensitive; avoid surrounding spaces in headers. |
+| `Epitope` | string | Optional | value | Binding-context label reserved for antigen-binding analysis. This field has no effect on the supported stability, solubility or CDR analyses. Leave it unused for those analyses. |
+| `scheme` | string | Required | value | Antibody numbering convention for CDR identification: kabat, imgt or chothia. Supply the desired convention explicitly when requesting CDR_Prediction. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "dataPath": {
-      "description": "S3 path to CSV (upload first)",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "scheme": {
-      "description": "Conditionally required: numbering scheme (e.g. imgt/kabat/chothia) when property_name includes CDR_Prediction",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "property_name": {
-      "description": "One or more exact backend property identifiers",
-      "type": "array",
-      "items": {
-        "enum": [
-          "Thermal_Stability_Protbert",
-          "Thermal_Stability_ESM",
-          "Solubility_ESM",
-          "CDR_Prediction"
-        ],
-        "type": "string"
-      },
-      "x-input-kind": "value",
-      "minItems": 1
-    }
-  },
-  "required": [
-    "dataPath",
-    "property_name"
-  ],
-  "additionalProperties": true,
-  "if": {
-    "$comment": "A selection contains CDR_Prediction when not every item excludes it. Uses the validator's existing JSON Schema keywords.",
-    "required": [
-      "property_name"
-    ],
-    "properties": {
-      "property_name": {
-        "type": "array",
-        "not": {
-          "items": {
-            "not": {
-              "const": "CDR_Prediction"
-            }
-          }
-        }
-      }
-    }
-  },
-  "then": {
-    "required": [
-      "scheme"
-    ]
-  }
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "Antibody_Prediction",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "dataPath": "<user value; see dataPath schema>",
-    "property_name": "<user value; see property_name schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "dataPath": {
-    "formats": [
-      "csv"
-    ],
-    "header_case_sensitive": true,
-    "columns": [
-      "Heavy_chain",
-      "Light_chain"
-    ],
-    "notes": "S3 path to CSV (upload first)"
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A CSV with per-antibody property predictions or heavy/light CDR annotations for the selected analyses. Scores are model estimates and should be interpreted in the context of the selected model.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## Enzymes
 
@@ -556,138 +469,41 @@ Report actual service errors and incomplete outputs. Refresh status for expired 
 
 ## Peptiverse
 
-Predict selected peptide-related properties for records supplied through an uploaded CSV.
+Predict peptide properties from amino-acid sequences or peptide SMILES using PeptiVerse. Sequence models cover hemolysis, non-fouling, solubility, penetrance and half-life. SMILES inputs additionally support toxicity, PAMPA permeability and Caco-2 permeability models.
 
 Exact job name: `peptiverse`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_path` | string | yes | file | Exactly one UTF-8/UTF-8-sig data column: sequences (aliases sequence/seq) OR smiles (alias smile); no extra columns. Named pasted data can be built into this CSV. |
-| `properties` | array | yes | value | One or more exact identifiers from the supplied platform list. |
+| `job_name` | string | Required | value | Tool identifier: peptiverse. This value selects the tool for submission; use a separate experiment name to label the run. |
+| `input_path` | string | Required | file | UTF-8 or UTF-8-sig CSV with exactly one column named sequences or smiles. Header matching is case-insensitive; omit surrounding spaces and extra columns. Limits: 1–5000 rows, at most 5000 characters per value and at most 100 MiB per file. |
+| `properties` | string | Optional | value | Properties to predict. For sequences: hemolysis, nf, solubility, permeability_penetrance and halflife. For SMILES, toxicity, permeability_pampa and permeability_caco2 are also available. Select at least one property supported by the input format. For API requests, send a non-empty JSON array of property names, such as ["hemolysis","solubility"]. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "input_path": {
-      "description": "Exactly one UTF-8/UTF-8-sig data column: sequences (aliases sequence/seq) OR smiles (alias smile); no extra columns. Named pasted data can be built into this CSV.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "properties": {
-      "description": "One or more exact identifiers from the supplied platform list.",
-      "type": "array",
-      "items": {
-        "enum": [
-          "hemolysis",
-          "nf",
-          "solubility",
-          "permeability_penetrance",
-          "halflife",
-          "toxicity",
-          "permeability_pampa",
-          "permeability_caco2"
-        ],
-        "type": "string"
-      },
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "input_path",
-    "properties"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "peptiverse",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "input_path": "<user value; see input_path schema>",
-    "properties": "<user value; see properties schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "input_path": {
-    "formats": [
-      "csv"
-    ],
-    "extra_columns": false,
-    "csv_variants": [
-      {
-        "columns": [
-          "sequences"
-        ],
-        "aliases": {
-          "sequences": [
-            "sequence",
-            "seq"
-          ]
-        },
-        "values": {
-          "sequences": "protein"
-        }
-      },
-      {
-        "columns": [
-          "smiles"
-        ],
-        "aliases": {
-          "smiles": [
-            "smile"
-          ]
-        },
-        "values": {
-          "smiles": "smiles"
-        }
-      }
-    ],
-    "header_case_sensitive": false,
-    "notes": "Exactly one UTF-8/UTF-8-sig data column: sequences (aliases sequence/seq) OR smiles (alias smile); no extra columns. Named pasted data can be built into this CSV."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Input limits
 
-```json
-{
-  "fields": {
-    "properties": {
-      "min_items": 1
-    }
-  }
-}
-```
+CSV: 1–5000 rows, at most 5000 characters per value and at most 100 MiB. Select at least one property supported by the input representation.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A CSV retaining the input sequence or SMILES column and adding the selected numeric property scores. Binding-affinity prediction and exported classifier labels are not provided.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## Vaccines
 

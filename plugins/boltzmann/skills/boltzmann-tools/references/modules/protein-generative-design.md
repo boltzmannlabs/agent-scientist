@@ -8,1037 +8,288 @@ and inspect all returned artifacts. Never invent inputs or reuse another user's 
 
 ## BoltzGen
 
-Generate protein, nanobody, or antibody designs with optional ligand and structural constraints.
+Generate structural design candidates with BoltzGen using a selected design protocol, target structure and designed-chain length. Optional ligand definitions and geometric constraints specify additional design requirements. A selection budget controls how many designs are retained for final ranking.
 
 Exact job name: `boltzgen`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `protocol` | string | yes | value | `protein`, `nanobody`, `antibody`, `peptide`, `protein-small_molecule` |
-| `file_path` | string | yes | file | Upload PDB File. |
-| `protein_id` | string | yes | value | Protein ID (Single Capital Letter). |
-| `sequence_len` | integer | yes | value | Must be an integer. |
-| `num_designs` | integer | yes | value | Number of designs (minimum 1). |
-| `budget` | integer | yes | value | Budget (minimum 1). |
-| `cyclic` | boolean | yes | value | Published frontend payload builder sends a boolean, not the display string. |
-| `ligand_id` | string | no / mode-dependent | value | Ligand ID (required for protein-small_molecule). |
-| `use_ccd` | boolean | no / mode-dependent | value | Use CCD instead of SMILES. |
-| `ccd` | string | no / mode-dependent | value | CCD. |
-| `smiles` | string | no / mode-dependent | value | SMILES. |
-| `ligand_binding_types` | string | no / mode-dependent | value | Ligand Binding Types (comma separated). |
-| `advanced` | boolean | no / mode-dependent | value | Show advanced configuration options. |
-| `secondary_structure` | string | no / mode-dependent | value | Secondary Structure (Optional). |
-| `include_chains_id` | string | no / mode-dependent | value | Include Chain ID (e.g. A). |
-| `include_chains_res_index` | string | no / mode-dependent | value | Include Chain Res Index (e.g. 2..50). |
-| `atom1_list` | array | no / mode-dependent | value | Atom 1 List (e.g. [["A", 105, "SG"]]). |
-| `atom2_list` | array | no / mode-dependent | value | Atom 2 List (e.g. [["A", 105, "SG"]]). |
-| `total_len` | object | no / mode-dependent | value | Use the exact source field. |
+| `protocol` | string | Required | value | Design task: protein, peptide or protein-small_molecule. Antibody and nanobody protocols need a supported framework input and are not available through this field set alone. |
+| `file_path` | file / mixed | Required | file | Target structure uploaded as a PDB or mmCIF file. Include the target entities needed to condition the design. |
+| `protein_id` | string | Required | value | Single-letter identifier for the entity being designed. Use an identifier distinct from the retained target and ligand identifiers; this is not a target-chain selector. |
+| `sequence_len` | number | Required | value | Fixed length of the designed protein or peptide, in amino acids. Enter a positive integer. |
+| `num_designs` | number | Required | value | Number of candidate designs to generate. Enter a positive integer. |
+| `budget` | number | Required | value | Number of designs allocated to the final selection stage. Enter a positive integer no greater than num_designs. |
+| `cyclic` | string | Required | value | Whether to model the designed entity as cyclic. The choices are true and false; false requests a non-cyclic design. For API requests, send the JSON boolean true or false without quotation marks. |
+| `ligand_id` | string | Optional | value | Single-character identifier for the ligand entity. Required for protein-small_molecule design. Provide exactly one ligand representation using ccd or smiles. |
+| `use_ccd` | boolean | Optional | value | Selects CCD entry instead of SMILES entry in the form. The ligand structure is defined by the corresponding ccd or smiles value. |
+| `ccd` | string | Optional | value | Chemical Component Dictionary identifier for the ligand. Use ccd or smiles, not both. |
+| `smiles` | string | Optional | value | SMILES representation of the ligand. Use smiles or ccd, not both. |
+| `ligand_binding_types` | string | Optional | value | Optional binding-type specification for the ligand. Use only values supported by the selected design protocol. |
+| `advanced` | boolean | Optional | value | Shows the advanced design options. Set the individual constraint fields to specify a design requirement; this switch alone does not add a constraint. |
+| `secondary_structure` | string | Optional | value | Optional secondary-structure constraint for the designed entity. Use the specification format supported by the selected BoltzGen protocol. |
+| `include_chains_id` | string | Optional | value | Target chain selection associated with include_chains_res_index. This form control alone does not guarantee that the target is restricted to those chains; check the retained target in the results. |
+| `include_chains_res_index` | string | Optional | value | Target residue selection within the chains identified by include_chains_id. Check the retained target residues before treating the selection as an enforced design constraint. |
+| `atom1_list` | string | Optional | value | First atom endpoints of optional bond constraints. Each endpoint identifies a chain, positive residue number and atom name, such as ["A",12,"SG"]. Pair each endpoint with the entry at the same position in atom2_list. For API requests, send an array of endpoint triples, for example [["A",12,"SG"]], rather than quoted text. |
+| `atom2_list` | string | Optional | value | Second atom endpoints of the bond constraints, using the same chain/residue/atom layout as atom1_list. The two non-empty endpoint collections must have equal length. Leave both unused when no bonds are specified. For API requests, send an array of endpoint triples. Use [] for both atom lists when no bond constraints are requested. |
+| `total_len` | object | Optional | value | Optional total-length bounds as an object, for example {"min":80,"max":120}. Both bounds must be positive integers and min must not exceed max. Omit or use {} when no total-length constraint is needed. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "protocol": {
-      "description": "`protein`, `nanobody`, `antibody`, `peptide`, `protein-small_molecule`",
-      "type": "string",
-      "enum": [
-        "protein",
-        "nanobody",
-        "antibody",
-        "peptide",
-        "protein-small_molecule"
-      ],
-      "x-input-kind": "value"
-    },
-    "file_path": {
-      "description": "Upload PDB File.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "protein_id": {
-      "description": "Protein ID (Single Capital Letter).",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "sequence_len": {
-      "description": "Must be an integer.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "num_designs": {
-      "description": "Number of designs (minimum 1).",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "budget": {
-      "description": "Budget (minimum 1).",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "cyclic": {
-      "description": "Published frontend payload builder sends a boolean, not the display string.",
-      "type": "boolean",
-      "enum": [
-        true,
-        false
-      ],
-      "x-input-kind": "value"
-    },
-    "ligand_id": {
-      "description": "Ligand ID (required for protein-small_molecule).",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "use_ccd": {
-      "description": "Use CCD instead of SMILES.",
-      "type": "boolean",
-      "x-input-kind": "value"
-    },
-    "ccd": {
-      "description": "CCD.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "smiles": {
-      "description": "SMILES.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "ligand_binding_types": {
-      "description": "Ligand Binding Types (comma separated).",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "advanced": {
-      "description": "Show advanced configuration options.",
-      "type": "boolean",
-      "x-input-kind": "value"
-    },
-    "secondary_structure": {
-      "description": "Secondary Structure (Optional).",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "include_chains_id": {
-      "description": "Include Chain ID (e.g. A).",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "include_chains_res_index": {
-      "description": "Include Chain Res Index (e.g. 2..50).",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "atom1_list": {
-      "description": "Atom 1 List (e.g. [[\"A\", 105, \"SG\"]]).",
-      "type": "array",
-      "x-input-kind": "value"
-    },
-    "atom2_list": {
-      "description": "Atom 2 List (e.g. [[\"A\", 105, \"SG\"]]).",
-      "type": "array",
-      "x-input-kind": "value"
-    },
-    "total_len": {
-      "description": "Use the exact source field.",
-      "type": "object",
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "protocol",
-    "file_path",
-    "protein_id",
-    "sequence_len",
-    "num_designs",
-    "budget",
-    "cyclic"
-  ],
-  "additionalProperties": true,
-  "x-required-if": [
-    {
-      "when": {
-        "protocol": "protein-small_molecule"
-      },
-      "required": [
-        "ligand_id"
-      ]
-    },
-    {
-      "when": {
-        "protocol": "protein-small_molecule"
-      },
-      "required": [
-        "use_ccd"
-      ]
-    },
-    {
-      "when": {
-        "protocol": "protein-small_molecule",
-        "use_ccd": true
-      },
-      "required": [
-        "ccd"
-      ]
-    },
-    {
-      "when": {
-        "protocol": "protein-small_molecule",
-        "use_ccd": false
-      },
-      "required": [
-        "smiles"
-      ]
-    }
-  ]
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "boltzgen",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "protocol": "<user value; see protocol schema>",
-    "file_path": "<user value; see file_path schema>",
-    "protein_id": "<user value; see protein_id schema>",
-    "sequence_len": "<user value; see sequence_len schema>",
-    "num_designs": "<user value; see num_designs schema>",
-    "budget": "<user value; see budget schema>",
-    "cyclic": "<user value; see cyclic schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "file_path": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Upload PDB File."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+An archive of final ranked design artifacts. Review the returned structures and available scores to assess whether candidates meet the requested design constraints.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## PPI Flow Monomer
 
-Generate a single-chain monomer protein either unconditionally at a specified length or around a supplied motif.
+Generate single-chain protein backbones with PPIFlow. Choose unconditional generation at selected protein lengths or motif scaffolding around a supplied structural motif. These modes provide structural candidates for subsequent sequence design and evaluation.
 
 Exact job name: `ppiflowmonomer`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `samples_min_length` | integer | no / mode-dependent | value | Legacy length control from the earlier input form. The current monomer wrapper does not use it; set the requested length with length_subset. |
-| `samples_max_length` | integer | no / mode-dependent | value | Legacy length control from the earlier input form. The current monomer wrapper does not use it; set the requested length with length_subset. |
-| `samples_num` | integer | no / mode-dependent | value | Number of monomer structures to generate. Enter a positive integer; default is 5. |
-| `length_subset` | string / integer / array | no / mode-dependent | value | For unconditional generation, enter the desired protein length in amino acids, such as 80, [80, 100], or "80,100". Provide this or motif_csv, not both. |
-| `motif_csv` | string | no / mode-dependent | file | For motif-guided generation, upload a CSV with non-empty target, motif_path, length, and contig columns. Provide this or length_subset, not both. |
-| `motif_names` | string | no / mode-dependent | value | Optional motif name to select from the uploaded motif_csv. Used only in motif-guided generation. |
-| `generation_mode` | string | no / mode-dependent | value | Select unconditional generation or motif scaffolding in the input form. The wrapper determines the run from length_subset or motif_csv; this selector is not sent to the backend. |
-| `task_name` | string | yes | value | Must be exactly "monomer" to run PPI Flow monomer generation. |
+| `task_name` | string | Required | value | Workflow selector. Use monomer for single-chain backbone generation. |
+| `samples_min_length` | number | Required | value | Lower protein-length preference in amino acids. Enter a whole number. Actual generated lengths are selected by length_subset or motif_csv; this field does not independently enforce a lower bound. |
+| `samples_max_length` | number | Required | value | Upper protein-length preference in amino acids. Enter a whole number greater than samples_min_length. Actual generated lengths are selected by length_subset or motif_csv; this field does not independently enforce an upper bound. |
+| `samples_num` | number | Required | value | Number of monomer structures to sample. Enter a positive integer; the default is 5. |
+| `length_subset` | string | Optional | value | Requested protein lengths in amino acids for unconditional generation, such as 80 or 80,100. Use this mode only when motif_csv is absent. |
+| `motif_csv` | file / mixed | Required | file | Motif-scaffolding CSV with non-empty target, motif_path, length and contig columns. Use this mode only when length_subset is absent. Every referenced motif structure must also be accessible to the job; uploading the CSV does not upload those structures. |
+| `motif_names` | string | Optional | value | Optional selector for the motifs to scaffold. Omit the field when no selection is needed; a supplied value must not be blank. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "samples_min_length": {
-      "description": "Legacy length control from the earlier input form. The current monomer wrapper does not use it; set the requested length with length_subset.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "samples_max_length": {
-      "description": "Legacy length control from the earlier input form. The current monomer wrapper does not use it; set the requested length with length_subset.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "samples_num": {
-      "description": "Number of monomer structures to generate. Enter a positive integer; default is 5.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "length_subset": {
-      "description": "For unconditional generation, enter the desired protein length in amino acids, such as 80, [80, 100], or \"80,100\". Provide this or motif_csv, not both.",
-      "type": [
-        "string",
-        "integer",
-        "array"
-      ],
-      "x-input-kind": "value",
-      "items": {
-        "type": "integer"
-      }
-    },
-    "motif_csv": {
-      "description": "For motif-guided generation, upload a CSV with non-empty target, motif_path, length, and contig columns. Provide this or length_subset, not both.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "motif_names": {
-      "description": "Optional motif name to select from the uploaded motif_csv. Used only in motif-guided generation.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "generation_mode": {
-      "description": "Select unconditional generation or motif scaffolding in the input form. The wrapper determines the run from length_subset or motif_csv; this selector is not sent to the backend.",
-      "type": "string",
-      "enum": [
-        "unconditional",
-        "motif_scaffolding"
-      ],
-      "x-input-kind": "value"
-    },
-    "task_name": {
-      "description": "Must be exactly \"monomer\" to run PPI Flow monomer generation.",
-      "type": "string",
-      "enum": [
-        "monomer"
-      ],
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "task_name"
-  ],
-  "additionalProperties": true,
-  "oneOf": [
-    {
-      "required": [
-        "length_subset"
-      ]
-    },
-    {
-      "required": [
-        "motif_csv"
-      ]
-    }
-  ]
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "ppiflowmonomer",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "task_name": "<user value; see task_name schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "motif_csv": {
-    "formats": [
-      "csv"
-    ],
-    "header_case_sensitive": true,
-    "columns": [
-      "target",
-      "motif_path",
-      "contig",
-      "length"
-    ],
-    "notes": "Required only for motif scaffolding; not used for unconditional monomer generation."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A ZIP of sampled monomer PDB structures and sample_metrics.csv. Inspect the sampled structures and motif placement where applicable.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## PPI Flow Antibody
 
-Design antibody heavy- and light-chain CDR loops against an antigen using an antigen PDB, an antibody framework PDB, and specified antigen hotspots.
+Generate antibody heavy- and light-chain CDR backbone conformations against an antigen using PPIFlow. Separate antigen and antibody framework structures define the structural context. Antigen hotspots guide the interface, and CDR length ranges control the loop lengths sampled.
 
 Exact job name: `ppiflowantibody`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `antigen_pdb` | string | yes | file | Upload the antigen PDB structure that the antibody should bind. |
-| `framework_pdb` | string | yes | file | Upload a framework-only PDB containing the heavy and light chains; do not include the antigen. Use IMGT numbering and remove the CDR residues to redesign, keeping the original residue numbers so each removed loop leaves a numbering gap. Gaps are assigned in order: H1, H2, H3, then L1, L2, L3. This wrapper detects jumps in integer PDB residue numbers; it does not validate IMGT numbering or interpret insertion codes, so avoid unrelated gaps. |
-| `antigen_chain` | string | no / mode-dependent | value | Chain ID of the antigen in antigen_pdb. Defaults to A and must exist in the PDB. |
-| `heavy_chain` | string | no / mode-dependent | value | Chain ID of the antibody heavy-chain framework in framework_pdb. Defaults to H. |
-| `light_chain` | string | no / mode-dependent | value | Chain ID of the antibody light-chain framework in framework_pdb. Defaults to L and must differ from heavy_chain. |
-| `cdr_length` | string | no / mode-dependent | value | Desired inclusive length ranges for CDRH1, CDRH2, CDRH3, CDRL1, CDRL2, and CDRL3, written as comma-separated CDR-name,min-max pairs. Default: CDRH1,5-12,CDRH2,4-17,CDRH3,5-26,CDRL1,5-12,CDRL2,3-10,CDRL3,4-13. |
-| `samples_per_target` | integer | no / mode-dependent | value | Number of antibody designs to generate. Positive integer; default is 5. |
-| `specified_hotspots` | string | yes | value | Required antigen interface residues in comma-separated chain-plus-residue format, for example A23,A24 (no colon). Each chain must match antigen_chain. |
-| `task_name` | string | yes | value | Must be exactly "antibody" to run PPI Flow antibody design. |
+| `task_name` | string | Required | value | Workflow selector. Use antibody for paired heavy- and light-chain CDR backbone generation. |
+| `antigen_pdb` | file / mixed | Required | file | Antigen structure uploaded as a PDB file. Include the antigen chain to be targeted. |
+| `framework_pdb` | file / mixed | Required | file | Framework-only PDB containing the antibody heavy and light chains, without the antigen. Use IMGT numbering and remove the CDR residues to regenerate while preserving the original residue numbers. Numbering gaps identify H1, H2, H3, then L1, L2 and L3. Avoid unrelated gaps and insertion-code ambiguity. |
+| `antigen_chain` | string | Required | value | Identifier of the target antigen chain in antigen_pdb. The default is A; the chain must exist in the structure. |
+| `heavy_chain` | string | Required | value | Identifier of the heavy-chain framework in framework_pdb. The default is H. |
+| `light_chain` | string | Required | value | Identifier of the light-chain framework in framework_pdb. The default is L and it must differ from heavy_chain. |
+| `cdr_length` | string | Optional | value | Inclusive amino-acid length ranges for the six CDRs, written as CDR-name,min-max pairs. Default: CDRH1,5-12,CDRH2,4-17,CDRH3,5-26,CDRL1,5-12,CDRL2,3-10,CDRL3,4-13. |
+| `samples_per_target` | number | Required | value | Number of antibody backbone designs to sample for the antigen. Enter a positive integer; the default is 5. |
+| `specified_hotspots` | string | Optional | value | Antigen residues defining the desired interface, written as comma-separated chain-plus-residue identifiers such as A23,A24. Supply a non-empty selection. Every residue must exist on antigen_chain. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "antigen_pdb": {
-      "description": "Upload the antigen PDB structure that the antibody should bind.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "framework_pdb": {
-      "description": "Upload a framework-only PDB containing the heavy and light chains; do not include the antigen. Use IMGT numbering and remove the CDR residues to redesign, keeping the original residue numbers so each removed loop leaves a numbering gap. Gaps are assigned in order: H1, H2, H3, then L1, L2, L3. This wrapper detects jumps in integer PDB residue numbers; it does not validate IMGT numbering or interpret insertion codes, so avoid unrelated gaps.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "antigen_chain": {
-      "description": "Chain ID of the antigen in antigen_pdb. Defaults to A and must exist in the PDB.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "heavy_chain": {
-      "description": "Chain ID of the antibody heavy-chain framework in framework_pdb. Defaults to H.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "light_chain": {
-      "description": "Chain ID of the antibody light-chain framework in framework_pdb. Defaults to L and must differ from heavy_chain.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "cdr_length": {
-      "description": "Desired inclusive length ranges for CDRH1, CDRH2, CDRH3, CDRL1, CDRL2, and CDRL3, written as comma-separated CDR-name,min-max pairs. Default: CDRH1,5-12,CDRH2,4-17,CDRH3,5-26,CDRL1,5-12,CDRL2,3-10,CDRL3,4-13.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "samples_per_target": {
-      "description": "Number of antibody designs to generate. Positive integer; default is 5.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "specified_hotspots": {
-      "description": "Required antigen interface residues in comma-separated chain-plus-residue format, for example A23,A24 (no colon). Each chain must match antigen_chain.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "task_name": {
-      "description": "Must be exactly \"antibody\" to run PPI Flow antibody design.",
-      "type": "string",
-      "enum": [
-        "antibody"
-      ],
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "antigen_pdb",
-    "framework_pdb",
-    "specified_hotspots",
-    "task_name"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "ppiflowantibody",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "antigen_pdb": "<user value; see antigen_pdb schema>",
-    "framework_pdb": "<user value; see framework_pdb schema>",
-    "specified_hotspots": "<user value; see specified_hotspots schema>",
-    "task_name": "<user value; see task_name schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "antigen_pdb": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Uploaded antigen PDB."
-  },
-  "framework_pdb": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Uploaded antibody framework PDB."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A ZIP containing sampled antibody–antigen PDB structures and sample_metrics.csv. The generated CDR backbones require subsequent sequence design and structural evaluation.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## PX Design Infer
 
-Run PXDesign backbone inference. The full pipeline uses the separate job below.
+Generate protein-binder backbone candidates against a target structure using PXDesign inference. Supply an mmCIF target, its author chain identifier, binder length and sample count. Optional target cropping and hotspots focus the structural context used for design.
 
 Exact job name: `pxdesigninfer`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `cif_path` | string | yes | file | Uploaded target CIF path |
-| `chain` | string | yes | value | Target chain identifier |
-| `binder_length` | integer | yes | value | 10-300 |
-| `n_samples` | integer | yes | value | 1-10000 |
-| `crop` | string | no / mode-dependent | value | Optional residue range, e.g. `17-145` |
-| `hotspots` | string | no / mode-dependent | value | Comma-separated target residue numbers |
-| `task_name` | string | yes | value |  |
+| `experimentname` | string | Required | value | Name you choose for this experiment. Use a meaningful label to identify the run and its results. |
+| `task` | object | Optional | value | Workflow selection object. Its value identifies pxdesign-infer. Select the mode corresponding to this tool. For API requests, supply the selected value as the task_name string pxdesign-infer. |
+| `cif_path` | file / mixed | Required | file | Target structure uploaded in .cif or .mmcif format. A PDB file is not accepted for this field. |
+| `target_chain` | string | Required | value | Single-character author chain identifier of the target in the mmCIF file. Use the identifier present in the uploaded structure. For API requests, supply this identifier using the parameter name chain. |
+| `crop` | string | Optional | value | Optional target author-residue range to retain, written as start-end, for example 17-145. Omit or leave empty to retain the uncropped target. |
+| `hotspots` | string | Optional | value | Optional target author-residue numbers to focus the interface, written as comma-separated positive integers such as 40,99,107. The residues must belong to target_chain. |
+| `binder_length` | number | Required | value | Desired binder length in amino acids. Enter an integer from 10 through 300. |
+| `n_samples` | number | Required | value | Number of design samples to request. Enter an integer from 1 through 10000. The number of candidates passing later evaluation may be smaller. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "cif_path": {
-      "description": "Uploaded target CIF path",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "chain": {
-      "description": "Target chain identifier",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "binder_length": {
-      "description": "10-300",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "n_samples": {
-      "description": "1-10000",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "crop": {
-      "description": "Optional residue range, e.g. `17-145`",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "hotspots": {
-      "description": "Comma-separated target residue numbers",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "task_name": {
-      "description": "",
-      "type": "string",
-      "enum": [
-        "pxdesign-infer"
-      ],
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "cif_path",
-    "chain",
-    "binder_length",
-    "n_samples",
-    "task_name"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "pxdesigninfer",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "cif_path": "<user value; see cif_path schema>",
-    "chain": "<user value; see chain schema>",
-    "binder_length": "<user value; see binder_length schema>",
-    "n_samples": "<user value; see n_samples schema>",
-    "task_name": "<user value; see task_name schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "cif_path": {
-    "formats": [
-      "cif"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Uploaded target CIF path"
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Input limits
 
-```json
-{
-  "fields": {
-    "binder_length": {
-      "minimum": 10,
-      "maximum": 300
-    },
-    "n_samples": {
-      "minimum": 1,
-      "maximum": 10000
-    }
-  }
-}
-```
+Binder length: 10–300 amino acids. Sample count: 1–10000. Both values must be integers.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+An archive of generated binder structures. This mode provides backbone candidates for subsequent sequence design and evaluation.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## PPI Flow Protein
 
-Generate de novo protein binders for a target chain in a PDB structure, using either an existing binder chain or target hotspots to guide the interface.
+Generate protein-binder backbone structures against a target chain with PPIFlow. Define the target interface using an existing binder chain or selected antigen hotspots, then specify binder length bounds and the number of samples. The output provides structural candidates for downstream sequence design.
 
 Exact job name: `ppiflowprotein`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_pdb` | string | yes | file | Upload the target PDB structure. Include a binder chain if using binder_chain; otherwise identify the target interface with specified_hotspots. |
-| `target_chain` | string | no / mode-dependent | value | Chain ID of the target protein in input_pdb. Defaults to A and must exist in the PDB. |
-| `binder_chain` | string | no / mode-dependent | value | Optional chain ID of an existing binder in input_pdb. Supply this or specified_hotspots to guide the design. |
-| `samples_min_length` | integer | no / mode-dependent | value | Minimum length of each generated binder sequence, in amino acids. Positive integer; default is 50. |
-| `samples_max_length` | integer | no / mode-dependent | value | Maximum length of each generated binder sequence, in amino acids. Positive integer; default is 100 and must be at least samples_min_length. |
-| `samples_per_target` | integer | no / mode-dependent | value | Number of binder designs to generate for this target. Positive integer; default is 5. |
-| `specified_hotspots` | string | no / mode-dependent | value | Optional comma-separated target residues in chain-plus-residue format, for example A23,A24 (no colon). Use residues from target_chain; supply this or binder_chain. |
-| `task_name` | string | yes | value | Must be exactly "protein" to run PPI Flow protein-binder design. |
+| `task_name` | string | Required | value | Workflow selector. Use protein for protein-binder backbone generation. |
+| `input_pdb` | file / mixed | Required | file | Target PDB structure. Include an existing binder chain when using binder_chain; otherwise specify target interface residues with specified_hotspots. |
+| `target_chain` | string | Required | value | Identifier of the target protein chain in input_pdb. The default is A and the chain must exist in the structure. |
+| `binder_chain` | string | Optional | value | Identifier of an existing binder chain in input_pdb. Supply this or specified_hotspots to define the interface. |
+| `samples_min_length` | number | Required | value | Minimum generated binder length in amino acids. Enter a positive integer; the default is 50. |
+| `samples_max_length` | number | Required | value | Maximum generated binder length in amino acids. Enter a positive integer at least as large as samples_min_length; the default is 100. |
+| `samples_per_target` | number | Required | value | Number of binder backbones to sample for the target. Enter a positive integer; the default is 5. |
+| `specified_hotspots` | string | Optional | value | Target interface residues in comma-separated chain-plus-residue format, for example A23,A24, without colons. Residues must belong to target_chain. Supply this or binder_chain. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "input_pdb": {
-      "description": "Upload the target PDB structure. Include a binder chain if using binder_chain; otherwise identify the target interface with specified_hotspots.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "target_chain": {
-      "description": "Chain ID of the target protein in input_pdb. Defaults to A and must exist in the PDB.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "binder_chain": {
-      "description": "Optional chain ID of an existing binder in input_pdb. Supply this or specified_hotspots to guide the design.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "samples_min_length": {
-      "description": "Minimum length of each generated binder sequence, in amino acids. Positive integer; default is 50.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "samples_max_length": {
-      "description": "Maximum length of each generated binder sequence, in amino acids. Positive integer; default is 100 and must be at least samples_min_length.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "samples_per_target": {
-      "description": "Number of binder designs to generate for this target. Positive integer; default is 5.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "specified_hotspots": {
-      "description": "Optional comma-separated target residues in chain-plus-residue format, for example A23,A24 (no colon). Use residues from target_chain; supply this or binder_chain.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "task_name": {
-      "description": "Must be exactly \"protein\" to run PPI Flow protein-binder design.",
-      "type": "string",
-      "enum": [
-        "protein"
-      ],
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "input_pdb",
-    "task_name"
-  ],
-  "additionalProperties": true,
-  "anyOf": [
-    {
-      "required": [
-        "binder_chain"
-      ]
-    },
-    {
-      "required": [
-        "specified_hotspots"
-      ]
-    }
-  ]
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "ppiflowprotein",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "input_pdb": "<user value; see input_pdb schema>",
-    "task_name": "<user value; see task_name schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "input_pdb": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Upload target/complex PDB."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A ZIP of generated binder PDB structures and sample_metrics.csv. Assess the sampled interface, backbone geometry and actual output count before selecting candidates.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## PPI Flow Nanobody
 
-Design nanobody CDR loops against an antigen using an antigen PDB, a nanobody framework PDB, and specified antigen hotspots.
+Generate nanobody CDR backbone conformations against an antigen using PPIFlow. Supply the antigen structure, a heavy-chain framework with the intended CDR numbering gaps, and antigen hotspots. CDR length ranges guide the loop structures sampled within the framework.
 
 Exact job name: `ppiflownanobody`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `antigen_pdb` | string | yes | file | Upload the antigen PDB structure that the nanobody should bind. |
-| `framework_pdb` | string | yes | file | Upload a framework-only PDB containing the nanobody VH/VHH chain selected by heavy_chain; do not include the antigen or a light chain. Use IMGT numbering and remove the CDR residues to redesign, keeping the original residue numbers so each removed loop leaves a numbering gap. Gaps are assigned in order: H1, H2, H3. This wrapper detects jumps in integer PDB residue numbers; it does not validate IMGT numbering or interpret insertion codes, so avoid unrelated gaps. |
-| `antigen_chain` | string | no / mode-dependent | value | Chain ID of the antigen in antigen_pdb. Defaults to A and must exist in the PDB. |
-| `heavy_chain` | string | no / mode-dependent | value | Chain ID of the nanobody framework in framework_pdb. Defaults to H. |
-| `cdr_length` | string | no / mode-dependent | value | Desired inclusive length ranges for CDRH1, CDRH2, and CDRH3, written as comma-separated CDR-name,min-max pairs. Default: CDRH1,8-8,CDRH2,8-8,CDRH3,9-21. |
-| `samples_per_target` | integer | no / mode-dependent | value | Number of nanobody designs to generate. Positive integer; default is 5. |
-| `specified_hotspots` | string | yes | value | Required antigen interface residues in comma-separated chain-plus-residue format, for example A23,A24 (no colon). Each chain must match antigen_chain. |
-| `task_name` | string | yes | value | Must be exactly "nanobody" to run PPI Flow nanobody design. |
+| `task_name` | string | Required | value | Workflow selector. Use nanobody for heavy-chain-only CDR backbone generation. |
+| `antigen_pdb` | file / mixed | Required | file | Antigen PDB structure containing the chain to be targeted. |
+| `framework_pdb` | file / mixed | Required | file | Framework-only PDB containing the VH/VHH chain selected by heavy_chain, without antigen or a light chain. Use IMGT numbering and remove the CDR residues to regenerate while preserving residue numbers. Numbering gaps identify H1, H2 and H3 in order; avoid unrelated gaps and insertion-code ambiguity. |
+| `antigen_chain` | string | Required | value | Identifier of the antigen chain in antigen_pdb. The default is A and the chain must exist. |
+| `heavy_chain` | string | Required | value | Identifier of the nanobody framework chain in framework_pdb. The default is H. |
+| `cdr_length` | string | Optional | value | Inclusive amino-acid length ranges for CDRH1, CDRH2 and CDRH3, written as CDR-name,min-max pairs. Default: CDRH1,8-8,CDRH2,8-8,CDRH3,9-21. |
+| `samples_per_target` | number | Required | value | Number of nanobody backbone designs to sample. Enter a positive integer; the default is 5. |
+| `specified_hotspots` | string | Optional | value | Antigen interface residues in comma-separated chain-plus-number form, such as A23,A24. Supply a non-empty selection. Each residue must exist on antigen_chain. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "antigen_pdb": {
-      "description": "Upload the antigen PDB structure that the nanobody should bind.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "framework_pdb": {
-      "description": "Upload a framework-only PDB containing the nanobody VH/VHH chain selected by heavy_chain; do not include the antigen or a light chain. Use IMGT numbering and remove the CDR residues to redesign, keeping the original residue numbers so each removed loop leaves a numbering gap. Gaps are assigned in order: H1, H2, H3. This wrapper detects jumps in integer PDB residue numbers; it does not validate IMGT numbering or interpret insertion codes, so avoid unrelated gaps.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "antigen_chain": {
-      "description": "Chain ID of the antigen in antigen_pdb. Defaults to A and must exist in the PDB.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "heavy_chain": {
-      "description": "Chain ID of the nanobody framework in framework_pdb. Defaults to H.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "cdr_length": {
-      "description": "Desired inclusive length ranges for CDRH1, CDRH2, and CDRH3, written as comma-separated CDR-name,min-max pairs. Default: CDRH1,8-8,CDRH2,8-8,CDRH3,9-21.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "samples_per_target": {
-      "description": "Number of nanobody designs to generate. Positive integer; default is 5.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "specified_hotspots": {
-      "description": "Required antigen interface residues in comma-separated chain-plus-residue format, for example A23,A24 (no colon). Each chain must match antigen_chain.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "task_name": {
-      "description": "Must be exactly \"nanobody\" to run PPI Flow nanobody design.",
-      "type": "string",
-      "enum": [
-        "nanobody"
-      ],
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "antigen_pdb",
-    "framework_pdb",
-    "specified_hotspots",
-    "task_name"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "ppiflownanobody",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "antigen_pdb": "<user value; see antigen_pdb schema>",
-    "framework_pdb": "<user value; see framework_pdb schema>",
-    "specified_hotspots": "<user value; see specified_hotspots schema>",
-    "task_name": "<user value; see task_name schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "antigen_pdb": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Upload antigen PDB."
-  },
-  "framework_pdb": {
-    "formats": [
-      "pdb"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Upload nanobody framework PDB."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+A ZIP of sampled nanobody–antigen PDB structures and sample_metrics.csv. The loop backbones require subsequent sequence design and evaluation.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
 
 ## PX Design Pipeline
 
-These added mode contracts come from the public submit-job documentation and the supplied experiment notebook. Schema coverage is not a live execution or terminal-output claim. Do not guess a diagnostics collection for a new job.
+Run the PXDesign binder-design pipeline from a target mmCIF structure. Select the target chain, binder length and sample count, with optional target cropping and hotspots. This workflow continues beyond backbone inference through the configured design and evaluation stages.
 
 Exact job name: `pxdesignpipeline`.
 
 ### Inputs
 
-Fields below belong in `experiment_data`; `experiment_name` is supplied separately.
-
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `cif_path` | string | yes | file | Upload the target CIF structure. |
-| `chain` | string | yes | value | Target chain; alias `target_chain`. |
-| `binder_length` | integer | yes | value | 10-300. |
-| `n_samples` | integer | yes | value | 1-10000. |
-| `crop` | string | no / mode-dependent | value | Optional residue range, e.g. `17-145`. |
-| `hotspots` | string | no / mode-dependent | value | Optional comma-separated target residues. |
-| `task_name` | string | yes | value |  |
+| `experimentname` | string | Required | value | Name you choose for this experiment. Use a meaningful label to identify the run and its results. |
+| `task` | object | Optional | value | Workflow selection object. Its value identifies pxdesign-pipeline. Select the mode corresponding to this tool. For API requests, supply the selected value as the task_name string pxdesign-pipeline. |
+| `cif_path` | file / mixed | Required | file | Target structure uploaded in .cif or .mmcif format. A PDB file is not accepted for this field. |
+| `target_chain` | string | Required | value | Single-character author chain identifier of the target in the mmCIF file. Use the identifier present in the uploaded structure. For API requests, supply this identifier using the parameter name chain. |
+| `crop` | string | Optional | value | Optional target author-residue range to retain, written as start-end, for example 17-145. Omit or leave empty to retain the uncropped target. |
+| `hotspots` | string | Optional | value | Optional target author-residue numbers to focus the interface, written as comma-separated positive integers such as 40,99,107. The residues must belong to target_chain. |
+| `binder_length` | number | Required | value | Desired binder length in amino acids. Enter an integer from 10 through 300. |
+| `n_samples` | number | Required | value | Number of design samples to request. Enter an integer from 1 through 10000. The number of candidates passing later evaluation may be smaller. |
 
-Input kinds: `value` is inline data; `file` requires a platform file reference;
-`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
-Only local files require a new upload. Never infer input mode from a field name.
+Input kinds: `value` is a text, numeric or structured value; `file` requires an uploaded file reference. Automatically supplied values are identified in their descriptions.
 
 ### Exact request schema
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "cif_path": {
-      "description": "Upload the target CIF structure.",
-      "type": "string",
-      "x-input-kind": "file"
-    },
-    "chain": {
-      "description": "Target chain; alias `target_chain`.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "binder_length": {
-      "description": "10-300.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "n_samples": {
-      "description": "1-10000.",
-      "type": "integer",
-      "x-input-kind": "value"
-    },
-    "crop": {
-      "description": "Optional residue range, e.g. `17-145`.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "hotspots": {
-      "description": "Optional comma-separated target residues.",
-      "type": "string",
-      "x-input-kind": "value"
-    },
-    "task_name": {
-      "description": "",
-      "type": "string",
-      "enum": [
-        "pxdesign-pipeline"
-      ],
-      "x-input-kind": "value"
-    }
-  },
-  "required": [
-    "cif_path",
-    "chain",
-    "binder_length",
-    "n_samples",
-    "task_name"
-  ],
-  "additionalProperties": true
-}
-```
+For API submissions, validate serialized values against the [request requirements](../tool-contracts.v1.json) for this exact job. Use the supported field mappings and value formats when preparing the request.
 
 ### Submission envelope
 
-Shape only: replace placeholders with the user's values. This is not a runnable sample.
-```json
-{
-  "job_name": "pxdesignpipeline",
-  "experiment_name": "<confirmed experiment name>",
-  "experiment_data": {
-    "cif_path": "<user value; see cif_path schema>",
-    "chain": "<user value; see chain schema>",
-    "binder_length": "<user value; see binder_length schema>",
-    "n_samples": "<user value; see n_samples schema>",
-    "task_name": "<user value; see task_name schema>"
-  }
-}
-```
-
-For mode-dependent fields, include the fields required by the selected schema branch.
+Choose an experiment name, upload any input files and submit once using the exact job name. Supply the experiment name separately from the tool parameters. Use the returned upload references for file inputs. Account identifiers, run identifiers and authentication credentials are supplied automatically.
 
 ### File checks
 
-```json
-{
-  "cif_path": {
-    "formats": [
-      "cif"
-    ],
-    "header_case_sensitive": true,
-    "notes": "Upload the target CIF structure."
-  }
-}
-```
+Check the file formats, required columns and structure identifiers described in the input table. Referenced chains and residues must exist in the supplied structures. For archives, follow the tool's stated member-file and directory requirements.
 
 ### Results
 
-Accepted is not completed. Poll the returned job ID without resubmitting.
-Preserve every returned artifact link; download and inspect requested outputs before reporting success.
-Report actual service errors and incomplete outputs. Refresh status for expired links.
+Packaged design artifacts, including the sequences, structures and scoring outputs produced by the completed stages. Check the available metrics before selecting candidates.
+
+Retain the returned job identifier to check progress and retrieve outputs. A submission acknowledgement confirms receipt; wait for completion before interpreting the results.
