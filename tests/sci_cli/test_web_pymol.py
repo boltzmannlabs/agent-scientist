@@ -3,7 +3,10 @@ import asyncio
 import json
 import os
 from pathlib import Path
+import runpy
 import sys
+from types import ModuleType
+from unittest.mock import MagicMock
 
 import psutil
 import pytest
@@ -12,6 +15,27 @@ from starlette.testclient import TestClient
 
 from sci_cli import web_pymol, web_server
 from sci_platform.resolver.desktop_session import DesktopSession
+
+
+def test_startup_runs_in_pymol_namespace_with_bom_manifest(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / 'launch.json').write_text(
+        json.dumps({'suffix': '.pdb', 'name': 'fixture structure'}), encoding='utf-8-sig')
+    (tmp_path / 'structure.pdb').write_text('HEADER fixture\nEND\n', encoding='utf-8')
+    pymol = ModuleType('pymol')
+    pymol.cmd = MagicMock()
+    pymol.cmd.count_atoms.return_value = 7
+    pymol.cmd.get_version.return_value = ('fixture',)
+    monkeypatch.setitem(sys.modules, 'pymol', pymol)
+    monkeypatch.setattr(os, 'dup2', lambda *args: None)
+
+    runpy.run_module('sci_cli.pymol_desktop_startup', run_name='pymol')
+
+    pymol.cmd.load.assert_called_once_with(
+        str(tmp_path / 'structure.pdb'), 'structure', format='pdb')
+    assert json.loads((tmp_path / 'ready.json').read_text(encoding='utf-8-sig')) == {
+        'atoms': 7, 'version': 'fixture'}
+    assert not (tmp_path / 'ready.tmp').exists()
 
 
 def test_desktop_routes_guard_files_and_keep_profile_scopes_separate(tmp_path, monkeypatch):

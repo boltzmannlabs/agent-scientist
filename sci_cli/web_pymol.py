@@ -95,7 +95,7 @@ async def launch_desktop(request: Request, root: Path, content: bytes, suffix: s
             if time.monotonic() >= deadline:
                 raise HTTPException(504, "PyMOL did not finish starting within 30 seconds; its process was stopped.")
             await asyncio.sleep(0.1)
-        metadata = json.loads((work / "ready.json").read_text())
+        metadata = json.loads((work / "ready.json").read_text(encoding="utf-8-sig"))
         if proc.poll() is not None:
             raise HTTPException(422, "PyMOL closed before launch completed.")
         # The GUI belongs to the user after readiness, including after the HTTP request ends.
