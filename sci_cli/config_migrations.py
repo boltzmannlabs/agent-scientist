@@ -683,6 +683,41 @@ def _migrate_to_49(results: Dict[str, Any], quiet: bool) -> None:
             print("  ✓ Cleared TERMINAL_VERCEL_RUNTIME from .env (was the old default; the image is used instead)")
 
 
+def _migrate_to_50(results: Dict[str, Any], quiet: bool) -> None:
+    """Make delegation a CLI baseline once, including unstamped science-wizard configs.
+
+    Subsequent user opt-outs remain authoritative. Restricted legacy workers keep their
+    reviewed execution boundary; adding this tool is not an implicit profile conversion.
+    """
+    from sci_constants import get_sci_home
+    from sci_cli.toolset_validation import parse_platform_toolsets_value
+    from agent.skill_utils import parse_config_string_list
+
+    if (get_sci_home() / "science-profile.json").exists():
+        return
+    config = read_raw_config()
+    platforms = _dict_at(config, "platform_toolsets")
+    selected = platforms.get("cli")
+    changed = False
+    if selected is not None:
+        parsed = parse_platform_toolsets_value(selected)
+        if parsed is None:
+            raise ValueError("Invalid CLI toolsets; fix the list before enabling delegation.")
+        if "delegation" not in parsed and "sci-cli" not in parsed:
+            platforms["cli"] = [*parsed, "delegation"]
+            config["platform_toolsets"] = platforms
+            changed = True
+    agent = _dict_at(config, "agent")
+    disabled = parse_config_string_list(agent.get("disabled_toolsets"))
+    if "delegation" in disabled:
+        agent["disabled_toolsets"] = [name for name in disabled if name != "delegation"]
+        config["agent"] = agent
+        changed = True
+    if changed:
+        _commit(config, results, quiet, "enabled delegation for CLI specialists",
+                "  ✓ Delegation enabled for this profile; available in a new conversation.")
+
+
 MIGRATIONS: Tuple[Tuple[int, Callable[[Dict[str, Any], bool], None]], ...] = (
     (12, _migrate_to_12),
     (13, _migrate_to_13),
@@ -814,6 +849,7 @@ MIGRATIONS: Tuple[Tuple[int, Callable[[Dict[str, Any], bool], None]], ...] = (
     (48, _migrate_to_48),
     # 48 → 49: the seeded Vercel runtime pin is dropped so fresh sandboxes use the managed image (see _migrate_to_49).
     (49, _migrate_to_49),
+    (50, _migrate_to_50),
 )
 
 #: Steps triggered by a legacy key or identifier (a renamed or retired key, a removed plugin or
@@ -825,7 +861,9 @@ MIGRATIONS: Tuple[Tuple[int, Callable[[Dict[str, Any], bool], None]], ...] = (
 #: out: it clears OPENAI_MODEL from .env, a generic name Sci never reads but the user's tools may.
 #: v41 is left out too: it rewrites profile SOUL.md on a heading match, an artifact whose
 #: provenance the config stamp says nothing about.
-LEGACY_KEY_STEPS = frozenset({12, 14, 16, 17, 29, 33, 38, 39, 42, 43, 46})
+# v50 also applies to unstamped science-profile configs: that wizard wrote an explicit
+# baseline omitting delegation, rather than recording a user opt-out.
+LEGACY_KEY_STEPS = frozenset({12, 14, 16, 17, 29, 33, 38, 39, 42, 43, 46, 50})
 
 
 def run_migrations(

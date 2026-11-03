@@ -550,9 +550,10 @@ export const api = {
     const query = path ? `?path=${encodeURIComponent(path)}` : "";
     return fetchJSON<ManagedFilesResponse>(`/api/files${query}`);
   },
-  readFile: (path: string) =>
+  readFile: (path: string, signal?: AbortSignal) =>
     fetchJSON<ManagedFileReadResponse>(
       `/api/files/read?path=${encodeURIComponent(path)}`,
+      { signal },
     ),
   uploadFile: (path: string, file: File, overwrite = true) => {
     // Stream the raw bytes as multipart/form-data. Do NOT set Content-Type —

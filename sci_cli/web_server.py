@@ -982,6 +982,7 @@ def _get_dashboard_plugins(force_rescan: bool = False) -> list:
 # templated siblings (e.g. /api/sessions/bulk-delete before /api/sessions/{id}).
 from sci_cli.web_routers import (  # noqa: E402
     files as _files_routes,
+    structures as _structures_routes,
     git as _git_routes,
     local_models as _local_models_routes,
     status as _status_routes,
@@ -1007,6 +1008,7 @@ from sci_cli.web_routers import (  # noqa: E402
 )
 
 app.include_router(_files_routes.router)
+app.include_router(_structures_routes.router)
 app.include_router(_git_routes.router)
 app.include_router(_local_models_routes.router)
 app.include_router(_status_routes.router)
@@ -1526,6 +1528,7 @@ def start_server(
     ssh_session_token: Optional[str] = None,
     ssh_owner_nonce: Optional[str] = None,
     start_mcp_discovery_after_bind: bool = False,
+    auto_port: bool = False,
 ):
     """Start the web UI server.
 
@@ -1534,6 +1537,8 @@ def start_server(
     JSON-RPC/WS backend, no UI build, no SPA mount (``SCI_SERVE_HEADLESS``).
     ``isolated`` (``--isolated``) is recorded in the spawn ledger so attach-first
     discovery never adopts this process.
+    ``auto_port`` reserves the first free port at or above ``port``; only the
+    dashboard CLI's implicit port enables it. Explicit ports and serve stay fixed.
     ``ssh_session_token``/``ssh_owner_nonce`` are process-local Desktop SSH
     bootstrap state, never persisted or exported to children.
     ``start_mcp_discovery_after_bind`` (Desktop ``serve``) defers MCP discovery
@@ -1584,7 +1589,7 @@ def start_server(
     # indistinguishable from "backend broken". Probe first so a conflict
     # surfaces as the BACKEND_PORT_IN_USE sentinel + distinct exit code.
     # ``--port 0`` is skipped by the probe.
-    if _port_bind_conflict(host, port):
+    if not auto_port and _port_bind_conflict(host, port):
         _report_port_in_use(host, port)
         raise SystemExit(PORT_IN_USE_EXIT_CODE)
 
@@ -1610,7 +1615,10 @@ def start_server(
             config.load()
         server.lifespan = config.lifespan_class(config)
         with server.capture_signals():
-            await server.startup()
+            if bound_socket is None:
+                await server.startup()
+            else:
+                await server.startup(sockets=[bound_socket])
             if server.should_exit:
                 return
 
@@ -1632,4 +1640,9 @@ def start_server(
             if server.started:
                 await server.shutdown()
 
-    _run_serve(_serve, config, host, port)
+    from contextlib import ExitStack, closing
+    from sci_cli.web_server_lifecycle import _bind_dashboard_socket
+
+    with ExitStack() as stack:
+        bound_socket = stack.enter_context(closing(_bind_dashboard_socket(host, port))) if auto_port else None
+        _run_serve(_serve, config, host, port)

@@ -189,17 +189,7 @@ def print_fast_version_info(*, check_updates: bool = True) -> None:
     Every lazy block degrades gracefully — a broken/heavy import can never take the basic version
     output down.
     """
-    # Registry-owned banner label (includes "· upstream <sha>" for git installs); banner.py keeps
-    # rich/prompt_toolkit lazy, so this import is light.
-    try:
-        from sci_cli.banner import format_banner_version_label
-
-        print(format_banner_version_label())
-    except Exception:
-        from sci_cli import __release_date__
-        from sci_cli.version_info import get_version_info
-
-        print(f"Sci Agent v{get_version_info().derived_version} ({__release_date__})")
+    print("Sci Agent")
     print(f"Install directory: {project_root_str()}")
     # Authoritative resolver first (code-scoped stamp → managed → nix → git → pip; also self-heals
     # poisoned shared-home 'docker' stamps); cheap stdlib stamp probe only if it fails.

@@ -10,10 +10,9 @@ you are about to push:
 
 Logic (kept in sync with contributor-check.yml):
   - scans ``git log $(git merge-base origin/main HEAD)..HEAD --format=%ae``
-  - skips teknium/bot emails and ``<id>+<login>@users.noreply.github.com``
+  - skips bot emails and ``<id>+<login>@users.noreply.github.com``
     (CI auto-resolves those)
-  - everything else must have ``contributors/emails/<email>`` or a legacy
-    AUTHOR_MAP entry in scripts/releases/authors_legacy.py
+  - everything else must have a SCI mapping in ``contributors/emails/<email>``
 
 ``--fix`` resolution order for an unmapped email:
   1. bare ``<login>@users.noreply.github.com`` → ``<login>``, verified via
@@ -34,12 +33,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 SKIP_SUBSTRINGS = (
-    "teknium",
     "noreply@github.com",
     "dependabot",
     "github-actions",
-    "anthropic.com",
-    "cursor.com",
 )
 ID_NOREPLY_RE = re.compile(r"\d+\+.+@users\.noreply\.github\.com$")
 BARE_NOREPLY_RE = re.compile(r"^([A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38})@users\.noreply\.github\.com$")
@@ -68,12 +64,6 @@ def is_mapped(email: str) -> bool:
         return True
     if (REPO_ROOT / "contributors" / "emails" / email).is_file():
         return True
-    authors_py = REPO_ROOT / "scripts" / "releases" / "authors_legacy.py"
-    try:
-        if f'"{email}"' in authors_py.read_text(encoding="utf-8-sig", errors="replace"):
-            return True
-    except OSError:
-        pass
     return False
 
 

@@ -2816,6 +2816,7 @@ def cmd_dashboard(args):
     _mcp_discovery_after_bind = _dashboard_prepare_runtime(args, _headless_backend)
 
     from sci_cli.web_server import start_server
+    from sci_cli.main_dashboard import _explicit_endpoint_flags
 
     # Interactive auth setup: if this bind will engage the auth gate but no
     # provider is registered yet, offer to configure one here (TTY only)
@@ -2840,6 +2841,7 @@ def cmd_dashboard(args):
         ssh_session_token=_ssh_session_token,
         ssh_owner_nonce=_ssh_owner_nonce,
         start_mcp_discovery_after_bind=_mcp_discovery_after_bind,
+        auto_port=not _headless_backend and "port" not in _explicit_endpoint_flags(),
     )
 
 

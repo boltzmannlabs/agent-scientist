@@ -1,9 +1,8 @@
 """Tests for the conflict-free contributor mapping system.
 
 New contributor email → GitHub login mappings live as one file per email
-under contributors/emails/ (additions never merge-conflict). The legacy
-AUTHOR_MAP dict in scripts/releases/authors_legacy.py is frozen; authors.py
-merges both at import time with the directory winning on duplicates.
+under contributors/emails/ (additions never merge-conflict). Release attribution
+uses those mappings and commit identity, without an imported author dataset.
 """
 
 import subprocess
@@ -18,7 +17,7 @@ SCRIPTS_DIR = REPO_ROOT / "scripts"
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from scripts.releases import authors, authors_legacy  # noqa: E402
+from scripts.releases import authors  # noqa: E402
 from add_contributor import add_contributor, read_mapping_file  # noqa: E402
 
 
@@ -33,14 +32,25 @@ def test_loader_reads_login_from_first_noncomment_line(tmp_path):
     assert mapping == {"jane@example.com": "janedoe"}
 
 
-def test_effective_map_merges_legacy_and_directory():
-    # Invariant: every legacy entry survives into the effective map unless
-    # shadowed by a directory entry, and the directory contributes on top.
-    assert set(authors_legacy.LEGACY_AUTHOR_MAP) <= (
-        set(authors.AUTHOR_MAP) | set(authors._load_contributor_dir())
+def test_release_resolution_works_in_a_clean_repository(tmp_path):
+    scripts = tmp_path / "scripts" / "releases"
+    scripts.mkdir(parents=True)
+    (scripts / "authors.py").write_text(
+        (SCRIPTS_DIR / "releases" / "authors.py").read_text(encoding="utf-8-sig"),
+        encoding="utf-8",
     )
-    for email, login in authors._load_contributor_dir().items():
-        assert authors.AUTHOR_MAP[email] == login
+    mappings = tmp_path / "contributors" / "emails"
+    mappings.mkdir(parents=True)
+    (mappings / "reviewer@example.org").write_text("reviewer\n", encoding="utf-8")
+    proc = subprocess.run(
+        [sys.executable, "-c", "from scripts.releases.authors import resolve_author; "
+         "assert resolve_author('Reviewer', 'reviewer@example.org') == '@reviewer'; "
+         "assert resolve_author('Writer', '123+writer@users.noreply.github.com') == '@writer'; "
+         "assert resolve_author('Writer', 'writer@users.noreply.github.com') == '@writer'; "
+         "assert resolve_author('Unknown Author', 'unknown@example.org') == 'Unknown Author'"],
+        cwd=tmp_path, capture_output=True, text=True,
+    )
+    assert proc.returncode == 0, proc.stderr
 
 
 # ── add_contributor.py CLI behavior ───────────────────────────────────
@@ -64,10 +74,11 @@ def test_add_creates_mapping_file(emails_dir):
     assert "# PR #999 salvage" in path.read_text()
 
 
-def test_add_refuses_login_conflicting_with_legacy_map(emails_dir):
-    email, login = next(iter(authors_legacy.LEGACY_AUTHOR_MAP.items()))
-    assert add_contributor(email, login + "x") == 1
-    assert not (emails_dir / email).exists()
+def test_add_refuses_login_conflicting_with_existing_mapping(emails_dir):
+    email = "reviewer@example.org"
+    assert add_contributor(email, "reviewer") == 0
+    assert add_contributor(email, "different-person") == 1
+    assert read_mapping_file(emails_dir / email) == "reviewer"
 
 
 def test_add_accepts_legacy_consecutive_hyphen_login(emails_dir):
@@ -95,9 +106,6 @@ def test_cli_entrypoint_end_to_end(tmp_path):
         (scripts / name).write_text(
             (SCRIPTS_DIR / name).read_text(encoding="utf-8"), encoding="utf-8"
         )
-    # Minimal stub author map so the legacy lookup import works
-    (scripts / "releases").mkdir()
-    (scripts / "releases" / "authors_legacy.py").write_text("LEGACY_AUTHOR_MAP = {}\n")
     proc = subprocess.run(
         [sys.executable, str(scripts / "add_contributor.py"),
          "cli@example.com", "cliperson", "via subprocess"],

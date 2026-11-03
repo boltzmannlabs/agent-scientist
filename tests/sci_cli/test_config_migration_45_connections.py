@@ -20,9 +20,13 @@ class TestConnectionsToolsetMigration:
     @staticmethod
     def _run_ladder(tmp_path, current_ver=44):
         from sci_cli.config_migrations import run_migrations
+        from sci_cli.config_migrations import MIGRATIONS
 
         results = {"env_added": [], "config_added": [], "warnings": []}
-        with patch.dict(os.environ, {"SCI_HOME": str(tmp_path)}):
+        # Test this historical transition, not later intentional default changes.
+        with patch.dict(os.environ, {"SCI_HOME": str(tmp_path)}), patch(
+            'sci_cli.config_migrations.MIGRATIONS', tuple(step for step in MIGRATIONS if step[0] <= 45)
+        ):
             run_migrations(current_ver, results, quiet=True)
         return results
 

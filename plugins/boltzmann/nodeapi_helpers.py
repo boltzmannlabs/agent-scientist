@@ -642,12 +642,14 @@ def fetch_status(
         last_result = {**result, "job_name": collection_name, "doc_id": doc_id}
 
         if status in ("completed", "success", "100%completed"):
+            last_result["job_terminal_confirmed"] = True
             _log_platform_terminal(collection_name, doc_id, status, conv_id, active_token)
             return last_result
 
         if status in {"failed", "error", "cancelled", "canceled"}:
             from .results import safe_detail
             result = {**last_result, "status": status, "stage": "status",
+                      "job_terminal_confirmed": True,
                       "error": safe_detail(result, active_token) or "The service reported a terminal failure without a diagnostic.",
                       "safe_to_retry": False}
             _log_platform_terminal(collection_name, doc_id, "failed", conv_id, active_token)

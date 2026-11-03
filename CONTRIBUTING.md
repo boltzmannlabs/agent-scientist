@@ -24,11 +24,11 @@ A quick search before you build saves your time and keeps the PR queue clean —
 
 - **Search both open *and* merged PRs and issues** for your topic or error symptom — the duplicate-check in the PR template fires at review time, after you've already done the work:
   ```bash
-  # After the SCI repository is published, substitute its owner/repository:
-  gh search issues --repo "SCI-owner/SCI-repository" "<your terms>"
-  gh search prs --repo "SCI-owner/SCI-repository" --state all "<your terms>"
+  # Search the Agent Scientist repository:
+  gh search issues --repo "boltzmannlabs/agent-scientist" "<your terms>"
+  gh search prs --repo "boltzmannlabs/agent-scientist" --state all "<your terms>"
   ```
-  Until that repository is published, coordinate with the Boltzmann Labs maintainer. Do not send SCI issues or pull requests to the upstream project.
+  Use the Agent Scientist repository for SCI issues and pull requests; coordinate larger changes with the Boltzmann Labs maintainer.
 - **The issue tracker can lag the code.** Many requested features are already implemented in-tree, so also search the source (`search_files`, or your editor's grep) for the capability before proposing it.
 - **If an open PR already addresses it**, consider reviewing or improving that one instead of opening a competing duplicate.
 - **For larger work**, comment on the issue to signal you're working on it, so others don't start the same thing.
@@ -248,7 +248,7 @@ sci-agent/
 │   ├── cli_*_mixin.py            # SciCLI mixins (slash commands, display, session, ...)
 │   ├── config.py                 # Config management, migration, env var definitions
 │   ├── setup.py                  # Interactive setup wizard
-│   ├── auth.py                   # Provider resolution, OAuth, Nous Portal (facade + auth_*.py siblings)
+│   ├── auth.py                   # Provider resolution and OAuth (facade + auth_*.py siblings)
 │   ├── models.py                 # OpenRouter model selection lists
 │   ├── banner.py                 # Welcome banner, ASCII art
 │   ├── commands.py               # Central slash command registry (CommandDef), autocomplete, gateway helpers
@@ -305,7 +305,7 @@ sci-agent/
 |------|---------|
 | `~/.sci/config.yaml` | Settings (model, terminal, toolsets, compression, etc.) |
 | `~/.sci/.env` | API keys and secrets |
-| `~/.sci/auth.json` | OAuth credentials (Nous Portal) |
+| `~/.sci/auth.json` | Saved provider OAuth credentials |
 | `~/.sci/skills/` | All active skills (bundled + hub-installed + agent-created) |
 | `~/.sci/memories/` | Persistent memory (MEMORY.md, USER.md) |
 | `~/.sci/state.db` | SQLite session database |
@@ -340,7 +340,7 @@ User message → AIAgent._run_agent_loop()
 - **Toolset grouping**: Tools are grouped into toolsets (`web`, `terminal`, `file`, `browser`, etc.) that can be enabled/disabled per platform.
 - **Session persistence**: All conversations are stored in SQLite (`sci_state.py`) with full-text search and unique session titles. Automatic per-session JSON snapshots have been removed. Existing files are left untouched; use `/save json` or `sci sessions export` for an explicit export.
 - **Ephemeral injection**: System prompts and prefill messages are injected at API call time, never persisted to the database or logs.
-- **Provider abstraction**: The agent works with any OpenAI-compatible API. Provider resolution happens at init time (Nous Portal OAuth, OpenRouter API key, or custom endpoint).
+- **Provider abstraction**: The agent works with any OpenAI-compatible API. Provider resolution happens at init time (configured provider OAuth, API key, or custom endpoint).
 - **Provider routing**: When using OpenRouter, `provider_routing` in config.yaml controls provider selection (sort by throughput/latency/price, allow/ignore specific providers, data retention policies). These are injected as `extra_body.provider` in API requests.
 
 ---
@@ -999,7 +999,7 @@ test(tools): add unit tests for file_operations
 
 ## Reporting Issues
 
-- Use the SCI repository's issue tracker once published; until then contact your Boltzmann Labs maintainer.
+- Use the [Agent Scientist issue tracker](https://github.com/boltzmannlabs/agent-scientist/issues), or contact your Boltzmann Labs maintainer.
 - Include: OS, Python version, Sci version (`sci --version`), full error traceback
 - Include steps to reproduce
 - Check existing issues before creating duplicates

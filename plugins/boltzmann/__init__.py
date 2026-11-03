@@ -18,6 +18,9 @@ def _call(handler, args, **kwargs):
 
 
 def register(ctx):
+    from .receipt_cli import register_cli, receipt_command
+    ctx.register_cli_command(name="boltzmann-receipts", help="Inspect or safely clean profile-local upload receipts",
+                             setup_fn=register_cli, handler_fn=receipt_command)
     from .execution_policy import render_execution_policy
     from .onboarding import register_skills
     ctx.register_system_prompt_section("boltzmann.execution", render_execution_policy,

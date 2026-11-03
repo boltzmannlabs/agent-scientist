@@ -77,3 +77,68 @@ Existing user-installed plugins with the same name can override the bundled
 plugin. Inspect the discovered plugin location when updating an existing
 machine; do not overwrite a user's plugin automatically. Fresh installations
 without an override use this repository's bundled connector.
+
+## Upload validation receipt storage
+
+Upload evidence lives in `<SCI_HOME>/plugin-data/<Boltzmann namespace>/upload-receipts-v1/`,
+separate from the 10 MiB `state.json` settings/authorization file. The directory uses mode
+0700 and records mode 0600 on POSIX; Windows installations should keep their SCI home under
+their private user account. File writes use fsync and atomic replacement, with a shared
+thread/process lock. Profiles have separate stores; receipt content and authorization
+fingerprints are never shared by this storage layer.
+
+The explicit limit is **256 MiB of committed and reserved receipt/attempt files per profile**.
+A validated upload reserves a padded on-disk slot, sized from its complete evidence plus
+bounded response metadata, **before uploading**. A new submission reserves its job-tracking
+record before contacting the service. Concurrent requests cannot oversubscribe the quota.
+Atomic replacement temporarily needs another copy of the record being written; keep disk
+headroom (up to one additional record, bounded by the store limit). Upload reference and job-ID
+metadata are bounded to 16 KiB of JSON each. A later disk failure or invalid service response
+can still prevent finalization; this is reported as a partial/unknown outcome with the protected
+reservation ID, not as success or permission to upload/submit again.
+
+Old `upload:*` entries migrate automatically on receipt use. Every destination is durably
+written before the old keys are atomically removed under the existing plugin-state lock.
+Authorization and unrelated values remain in `state.json`. Interrupted migrations resume by
+verifying already-copied evidence; conflicts, malformed state, or quota failures stop with
+guidance and preserve the source. Never delete `state.json` to free receipt capacity.
+
+### Retention and safe maintenance
+
+- Successfully uploaded, never-submitted receipts are retained for **30 days**.
+- Submission attempts pin their input receipts before the request. Running jobs, ambiguous
+  submissions, missing job IDs, timeouts, and interrupted uploads do not expire automatically.
+- Once **all linked jobs** have confirmed terminal responses, receipts remain reusable for
+  **30 days after the last terminal observation**. Repeated terminal polls do not restart that
+  clock. Reusing a receipt for another submission pins it again. HTTP/authentication failures
+  and polling timeouts are not terminal-job evidence.
+- Migrated receipts have unknown historical job links and stay protected indefinitely. A new
+  job finishing does not prove their old jobs finished. Inspection identifies these records;
+  reconcile old or ambiguous jobs with support rather than deleting their evidence.
+- Cleanup runs on upload admission and after status bookkeeping, or explicitly using the command
+  below. There is no background service or silent network polling. It deletes only eligible
+  receipts and then unreferenced terminal-attempt records. Cleanup failure is reported; already
+  completed atomic steps are not described as rolled back. A failed cleanup does not turn a
+  retrieved job result into a failed scientific job.
+
+From the desired active profile (or with `sci -p PROFILE`):
+
+```bash
+sci boltzmann-receipts status
+sci boltzmann-receipts migrate
+sci boltzmann-receipts cleanup
+```
+
+`status` reports the directory, used/allowed bytes, migration backlog, reservation and job IDs,
+retention deadlines, and protection reasons. It does not expose credentials or validation
+inventories. These commands make **no service requests** and do not delete remote uploads.
+If the plugin's CLI command is unavailable, the source installation also supports
+`python -m plugins.boltzmann.receipt_cli status` in its managed Python environment with the
+intended `SCI_HOME`. Do not run it against another profile's directory.
+
+When full, inspect the store, poll known outstanding jobs through the normal authorized status
+tool, and clean up eligible expired records. If space is still unavailable because records are
+protected or inside retention, stop new uploads and reconcile the unresolved work; do not bypass
+validation, delete protected records, or repeatedly upload the same input. After an update,
+restart processes using the old connector before resuming work so old code cannot keep writing
+legacy receipts into `state.json`.
