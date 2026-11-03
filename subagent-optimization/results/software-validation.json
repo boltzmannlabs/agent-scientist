@@ -1,0 +1,105 @@
+{
+  "timestamp_utc": "2026-11-03T06:34:17.573437+00:00",
+  "scope": "Artificial policy/context mechanics and local structural-identity software checks",
+  "python": "3.13.7",
+  "tests_run": 32,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "successful": true,
+  "source_sha256": {
+    "policy.py": "6b5f7824714451dbaca2ff5e5dd328971375acb2b2845f291bd6d3b2ab6475ee",
+    "fixtures.py": "85842188063d6c70e6999fcd8b897cd4486faa4e1d59ae992ad3c6f40cfc3375",
+    "test_policy.py": "abf99189e88eb5e8dc9a384a86f3d9ee301256a787600c965511619790c18015",
+    "demo.py": "f68bd3a3c7b24ddf57e59e3f1441e0f08610d72de873be7f223e52d34cb0c79c",
+    "run_checks.py": "de850dc8403a00b71760338ab79fc9a28678a9d04a7901ea1f42b45fb11d0e64"
+  },
+  "demonstration": {
+    "scope": "Same IDs/counts/timing, only artificial metric values differ",
+    "scientific_gain_measured": false,
+    "favourable_history": {
+      "context_coverage": {
+        "library_id": "LIBRARY_C",
+        "reason": "context_matched_family_coverage_hypothesis",
+        "qualifying_ids": [],
+        "coverage_front": [
+          "LIBRARY_C"
+        ]
+      },
+      "round_robin": {
+        "library_id": "LIBRARY_C",
+        "reason": "fixed_untried_order",
+        "qualifying_ids": []
+      }
+    },
+    "counterexample_history": {
+      "context_coverage": {
+        "library_id": "LIBRARY_D",
+        "reason": "context_matched_family_coverage_hypothesis",
+        "qualifying_ids": [],
+        "coverage_front": [
+          "LIBRARY_D"
+        ]
+      },
+      "round_robin": {
+        "library_id": "LIBRARY_C",
+        "reason": "fixed_untried_order",
+        "qualifying_ids": []
+      }
+    }
+  },
+  "context_checks": {
+    "scope": "Artificial context/advisory-contract checks only",
+    "tests_run": 43,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "context_source_sha256": {
+    "context_contract.py": "b6622b959bae5923da58ca0a958c2a4de543f81b6e88f7e7c2677f63649e9810",
+    "fixtures.py": "68dc8e178a09335b3563228387b950ae632b667886bb8ae93afa60b97e842823",
+    "test_context_contract.py": "aa2aade75719534324f08ea4f1dd2e2c7562fa0abe7efd43ac57da97eb82afc1",
+    "check.py": "b0183d6cd85d317c0a6cb650e753a72b08188f6792ccfe338c80e84903d12d97",
+    "demo.py": "eacec5f5efe7a512e8517a1e4e58ec6990edea543b5bca260756e65c0f2bec37"
+  },
+  "library_audit_checks": {
+    "scope": "Local identity/review-binding software checks, no predictions",
+    "tests_run": 20,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "rdkit_available": true,
+    "rdkit_version": "2025.09.4"
+  },
+  "library_audit_source_sha256": {
+    "audit.py": "981e6959d87b684369f61b403d153aaf1fd091b3a24804a3ab4541c95a380765",
+    "test_audit.py": "a335225a1b9f0abf0c563171b825c13696cf649cc18c1f932a266e31b80f5233",
+    "check.py": "52e999c73e5c8a7d8ec071d0342e8b2329266f6412ff59e5ca6d0f2320be7395",
+    "inspect_assets.py": "27905609d042557cc6e21574c50aee050b0ce76dda18df0bccd67a84154da632"
+  },
+  "specialist_advisor_checks": {
+    "scope": "Artificial specialist packet/answer checks, no model or native execution",
+    "tests_run": 10,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "specialist_source_sha256": {
+    "advisor.py": "6fc0e9268ac32d29b957cf48b555885612484016886833c3237a38b224ea723d",
+    "definition.json": "0d66c15b7e9431abf6edaa2fadf5f8a70b19431aeaa3429b340af45b4552db6e",
+    "fixtures.py": "ff29d3513faa8df60e5ff9e888ca448fc2b40697522aef6dc82e2c93732f17e7",
+    "test_advisor.py": "4be96c4eee54f89062e9b972635cf7554f06433219009b771b61696a094bb451",
+    "demo.py": "377acf49494f56d104aa3b496eb3cf5f4e82b1e6ab61ff471273749edb39dc84",
+    "check.py": "81af7375e3fc71065ae4e13007695ee47416fde711d6c4e0b92c12bc5a863378",
+    "test_native.py": "46f70aed4ee9ccd907b826a8513314aed1cb9a2ac8733d5f3faba01d4de90be5"
+  },
+  "native_specialist_development_definition": true,
+  "native_profile_installed_by_this_work": false,
+  "native_canary": "separate host-runner record; not part of this suite",
+  "scientific_benefit": "not_evaluated",
+  "scientific_jobs_submitted": 0,
+  "native_inventory_note": "Native test-file hash refreshed after its separate final canary; portable test counts are unchanged."
+}

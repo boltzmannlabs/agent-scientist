@@ -1,0 +1,24 @@
+{
+  "scope": "Local durable public-source cache; no credentials, activities or model weights",
+  "cache_path": "/home/boltzmann13/.cache/smallmol-library-options/chembl37-217f8b9aa4bc",
+  "files": [
+    {
+      "file": "chembl-molecules.json",
+      "sha256": "217f8b9aa4bc9ae5acbc19497b3e546e96e8da1a895d7f1599f21feb5048aca2",
+      "bytes": 2331769
+    },
+    {
+      "file": "chembl-status.json",
+      "sha256": "29dc1fb09487a8d2962253a4d0d92c4ded0aa0d831effab42445d0c3483d4740",
+      "bytes": 212
+    },
+    {
+      "file": "acquisition.json",
+      "sha256": "bfdad011ad62b32e8f3276abae9a4b870b5dcf41302a73ea450b5e10575ad6b1",
+      "bytes": 1353
+    }
+  ],
+  "redistributed_in_source_tree": false,
+  "temporary_database_path": "/tmp/smallmol-library-options-20261103/material-v1",
+  "note": "Selected source CSV/SMI and provenance are retained in run-v1; raw API snapshot can reproduce selection."
+}

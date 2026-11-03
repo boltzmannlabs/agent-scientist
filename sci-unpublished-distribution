@@ -1,5 +1,0 @@
-Native/promoted releases and installer publication are not configured yet.
-CLI source updates are enabled for verified Git checkouts of the approved
-boltzmannlabs/Agent-Scientist repository; main follows that repository directly.
-Keep this marker until native release feeds, signing and installers are tested.
-An unrelated origin or inherited upstream is not an SCI update destination.

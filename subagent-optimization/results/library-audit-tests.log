@@ -1,0 +1,25 @@
+test_changed_asset_context_family_or_mapping_invalidates_old_review (test_audit.ReviewBindingTests.test_changed_asset_context_family_or_mapping_invalidates_old_review) ... ok
+test_matching_record_is_only_binding_not_authenticated_human_approval (test_audit.ReviewBindingTests.test_matching_record_is_only_binding_not_authenticated_human_approval) ... ok
+test_missing_immutable_subject_is_explicit (test_audit.ReviewBindingTests.test_missing_immutable_subject_is_explicit) ... ok
+test_missing_review_is_not_approval (test_audit.ReviewBindingTests.test_missing_review_is_not_approval) ... ok
+test_assigned_enantiomers_and_unspecified_stereo_remain_distinct (test_audit.StructuralAuditTests.test_assigned_enantiomers_and_unspecified_stereo_remain_distinct) ... ok
+test_csv_schema_is_explicit_and_unambiguous (test_audit.StructuralAuditTests.test_csv_schema_is_explicit_and_unambiguous) ... ok
+test_discarded_impossible_tetrahedral_tag_requires_review (test_audit.StructuralAuditTests.test_discarded_impossible_tetrahedral_tag_requires_review) ... ok
+test_empty_library_has_no_qualified_identity (test_audit.StructuralAuditTests.test_empty_library_has_no_qualified_identity) ... ok
+test_extended_stereo_is_not_qualified_under_either_global_setting (test_audit.StructuralAuditTests.test_extended_stereo_is_not_qualified_under_either_global_setting) ... ok
+test_formal_charge_and_isotopes_are_not_neutralized_or_merged (test_audit.StructuralAuditTests.test_formal_charge_and_isotopes_are_not_neutralized_or_merged) ... ok
+test_global_stereo_configuration_is_part_of_policy_identity (test_audit.StructuralAuditTests.test_global_stereo_configuration_is_part_of_policy_identity) ... ok
+test_invalid_row_prevents_clean_identity_instead_of_being_hidden (test_audit.StructuralAuditTests.test_invalid_row_prevents_clean_identity_instead_of_being_hidden) ... ok
+test_order_duplicates_metadata_and_smiles_serialization_do_not_create_new_set (test_audit.StructuralAuditTests.test_order_duplicates_metadata_and_smiles_serialization_do_not_create_new_set) ... ok
+test_partial_overlap_is_not_set_equivalence (test_audit.StructuralAuditTests.test_partial_overlap_is_not_set_equivalence) ... ok
+test_readiness_never_fabricates_review_and_structures_are_not_exported (test_audit.StructuralAuditTests.test_readiness_never_fabricates_review_and_structures_are_not_exported) ... ok
+test_salt_components_preserved_and_marked_for_review (test_audit.StructuralAuditTests.test_salt_components_preserved_and_marked_for_review) ... ok
+test_smi_is_inspectable_but_not_public_csv_ready (test_audit.StructuralAuditTests.test_smi_is_inspectable_but_not_public_csv_ready) ... ok
+test_tautomers_are_not_standardized_to_one_identity (test_audit.StructuralAuditTests.test_tautomers_are_not_standardized_to_one_identity) ... ok
+test_trailing_tokens_are_not_silently_interpreted_as_a_name (test_audit.StructuralAuditTests.test_trailing_tokens_are_not_silently_interpreted_as_a_name) ... ok
+test_unsupported_extensions_or_dummy_queries_never_get_clean_identity (test_audit.StructuralAuditTests.test_unsupported_extensions_or_dummy_queries_never_get_clean_identity) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 0.027s
+
+OK

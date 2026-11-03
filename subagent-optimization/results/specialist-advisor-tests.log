@@ -1,0 +1,15 @@
+test_abstention_requests_information_without_an_executable_action (specialist.test_advisor.AdvisorTests.test_abstention_requests_information_without_an_executable_action) ... ok
+test_advice_can_agree_with_or_deviate_from_baseline_without_claiming_science (specialist.test_advisor.AdvisorTests.test_advice_can_agree_with_or_deviate_from_baseline_without_claiming_science) ... ok
+test_changed_source_or_tampered_menu_cannot_authorize_old_advice (specialist.test_advisor.AdvisorTests.test_changed_source_or_tampered_menu_cannot_authorize_old_advice) ... ok
+test_json_wrappers_duplicates_and_nonfinite_values_rejected (specialist.test_advisor.AdvisorTests.test_json_wrappers_duplicates_and_nonfinite_values_rejected) ... ok
+test_large_context_is_blocked_without_selective_evidence_omission (specialist.test_advisor.AdvisorTests.test_large_context_is_blocked_without_selective_evidence_omission) ... ok
+test_missing_or_stale_chemical_notes_block_before_model (specialist.test_advisor.AdvisorTests.test_missing_or_stale_chemical_notes_block_before_model) ... ok
+test_packet_retains_full_supplied_cohort_rules_and_resource_unknowns (specialist.test_advisor.AdvisorTests.test_packet_retains_full_supplied_cohort_rules_and_resource_unknowns) ... ok
+test_poor_but_complete_results_can_still_receive_scientific_review (specialist.test_advisor.AdvisorTests.test_poor_but_complete_results_can_still_receive_scientific_review) ... ok
+test_terminal_success_pending_single_choice_and_unchanged_avoid_invocation (specialist.test_advisor.AdvisorTests.test_terminal_success_pending_single_choice_and_unchanged_avoid_invocation) ... ok
+test_unknown_citations_tried_assets_extra_fields_and_success_claims_rejected (specialist.test_advisor.AdvisorTests.test_unknown_citations_tried_assets_extra_fields_and_success_claims_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.049s
+
+OK

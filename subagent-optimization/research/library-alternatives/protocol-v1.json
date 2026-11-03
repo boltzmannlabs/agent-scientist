@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "scope": "Exploratory structural-material qualification, not a scientific comparison or approved policy manifest",
+  "source": "ChEMBL public molecule API",
+  "expected_release": "ChEMBL_37",
+  "acquisition": {
+    "max_records": 1000,
+    "order_by": "molecule_chembl_id",
+    "molecule_type": "Small molecule",
+    "heavy_atoms_range": [14, 26],
+    "requested_fields": ["molecule_chembl_id", "molecule_structures"],
+    "activity_or_target_queries": false
+  },
+  "source_filters": {
+    "single_component": true,
+    "formal_charge": 0,
+    "elements": ["C", "N", "O", "F", "S", "Cl", "Br"],
+    "identity_protocol": "existing strict RDKit intake audit",
+    "heteroatom_count": "N + O + S atoms, excluding halogens"
+  },
+  "cohorts": {
+    "hetero_rich_sources": "N+O+S >= 4",
+    "carbon_rich_sources": "N+O+S <= 2",
+    "matching": "Exact source heavy-atom count and RDKit ring count bins; outcome-blind SHA-256 structure ordering within each bin",
+    "source_molecules_per_focused_library_max": 20,
+    "selection": "Round-robin across sorted common bins until 20 matched pairs or no pair remains; require an even count and at least 8 per focused library",
+    "mixed_reference": "Equal-sized mixture, half selected from each focused cohort, using deterministic alternating matched-pair positions",
+    "limitations": "Source enrichment is a proxy; only actual context-replacement diagnostics can qualify the intended contrast. The mixed reference intentionally overlaps the focused source lists."
+  },
+  "material_qualification": {
+    "source": "supplied v5 CReM legacy pipeline, exact inspected working files",
+    "radii": [1, 2, 3],
+    "workers": 1,
+    "stage_timeout_seconds": 120,
+    "molecular_outcome_scores": false,
+    "candidate_generation": false,
+    "compare": ["source normalized identities and overlap", "logical database rows including frequency", "lead-applicable nonidentity replacement pairs under actual worker windows", "shared and exclusive replacements at shared lead contexts", "compact 2-6-heavy-atom single-attachment core composition stratified by size"],
+    "meaningfulness": "Both focused libraries need distinct eligible replacements in at least one shared reference context; intended fragment-level heteroatom contrast must be inspected and may fail. No thresholds will be adjusted using activity, QED or similarity outcomes."
+  },
+  "reference": "Public paper-derived DRD2 example lead, exact unspecified-stereo form; existing campaign state is untouched",
+  "approval": "candidate_only; no authenticated SME review or execution authorization implied",
+  "interpretation": "No change in target activity, QED, synthesizability or success probability is assumed. Equal source counts do not imply equal replacement opportunities or compute."
+}

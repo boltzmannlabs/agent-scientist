@@ -1,8 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "paths": {
-      "@sci/ink": ["src/types/sci-ink.d.ts"]
-    }
-  }
-}

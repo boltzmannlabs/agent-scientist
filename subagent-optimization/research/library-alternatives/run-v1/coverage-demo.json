@@ -1,0 +1,169 @@
+{
+  "scope": "Real lookup data with hypothetical prior inclusion; no scientific campaign has run",
+  "scientific_benefit": "not_evaluated",
+  "actual_candidate_evaluations": 0,
+  "comparisons": {
+    "new_coverage": {
+      "scope": "Structural lookup-coverage plan only; no invocation or execution authority",
+      "scope_id": "eb5e4f20e7a564912e89de23107c2b0b43562dc048cd35e0fd81e6a332dd14b5",
+      "strategy": "new_coverage",
+      "initially_included": [
+        "mixed_reference"
+      ],
+      "addition_allowance": 1,
+      "initial_union_lookup_count": 238,
+      "rounds": [
+        {
+          "options": [
+            {
+              "library_id": "hetero_rich_sources",
+              "total_lookup_tuples": 178,
+              "overlap_with_included": 66,
+              "additional_lookup_tuples": 112,
+              "additional_by_radius_operation": {
+                "radius1:GROW": 31,
+                "radius1:MUTATE": 59,
+                "radius2:GROW": 13,
+                "radius2:MUTATE": 3,
+                "radius3:GROW": 6
+              }
+            },
+            {
+              "library_id": "carbon_rich_sources",
+              "total_lookup_tuples": 280,
+              "overlap_with_included": 188,
+              "additional_lookup_tuples": 92,
+              "additional_by_radius_operation": {
+                "radius1:GROW": 31,
+                "radius1:MUTATE": 46,
+                "radius2:GROW": 9,
+                "radius2:MUTATE": 4,
+                "radius3:GROW": 2
+              }
+            }
+          ],
+          "selected_library": "hetero_rich_sources",
+          "additional_lookup_tuples": 112,
+          "planned_union_lookup_count": 350
+        }
+      ],
+      "selected_additions": [
+        "hetero_rich_sources"
+      ],
+      "planned_union_lookup_count": 350,
+      "stop_reason": "addition_allowance_used",
+      "scientific_benefit": "not_assessed",
+      "actual_compute": "unknown",
+      "execution": "not_performed",
+      "execution_approved": false
+    },
+    "largest_library": {
+      "scope": "Structural lookup-coverage plan only; no invocation or execution authority",
+      "scope_id": "eb5e4f20e7a564912e89de23107c2b0b43562dc048cd35e0fd81e6a332dd14b5",
+      "strategy": "largest_library",
+      "initially_included": [
+        "mixed_reference"
+      ],
+      "addition_allowance": 1,
+      "initial_union_lookup_count": 238,
+      "rounds": [
+        {
+          "options": [
+            {
+              "library_id": "hetero_rich_sources",
+              "total_lookup_tuples": 178,
+              "overlap_with_included": 66,
+              "additional_lookup_tuples": 112,
+              "additional_by_radius_operation": {
+                "radius1:GROW": 31,
+                "radius1:MUTATE": 59,
+                "radius2:GROW": 13,
+                "radius2:MUTATE": 3,
+                "radius3:GROW": 6
+              }
+            },
+            {
+              "library_id": "carbon_rich_sources",
+              "total_lookup_tuples": 280,
+              "overlap_with_included": 188,
+              "additional_lookup_tuples": 92,
+              "additional_by_radius_operation": {
+                "radius1:GROW": 31,
+                "radius1:MUTATE": 46,
+                "radius2:GROW": 9,
+                "radius2:MUTATE": 4,
+                "radius3:GROW": 2
+              }
+            }
+          ],
+          "selected_library": "carbon_rich_sources",
+          "additional_lookup_tuples": 92,
+          "planned_union_lookup_count": 330
+        }
+      ],
+      "selected_additions": [
+        "carbon_rich_sources"
+      ],
+      "planned_union_lookup_count": 330,
+      "stop_reason": "addition_allowance_used",
+      "scientific_benefit": "not_assessed",
+      "actual_compute": "unknown",
+      "execution": "not_performed",
+      "execution_approved": false
+    },
+    "fixed_order": {
+      "scope": "Structural lookup-coverage plan only; no invocation or execution authority",
+      "scope_id": "eb5e4f20e7a564912e89de23107c2b0b43562dc048cd35e0fd81e6a332dd14b5",
+      "strategy": "fixed_order",
+      "initially_included": [
+        "mixed_reference"
+      ],
+      "addition_allowance": 1,
+      "initial_union_lookup_count": 238,
+      "rounds": [
+        {
+          "options": [
+            {
+              "library_id": "hetero_rich_sources",
+              "total_lookup_tuples": 178,
+              "overlap_with_included": 66,
+              "additional_lookup_tuples": 112,
+              "additional_by_radius_operation": {
+                "radius1:GROW": 31,
+                "radius1:MUTATE": 59,
+                "radius2:GROW": 13,
+                "radius2:MUTATE": 3,
+                "radius3:GROW": 6
+              }
+            },
+            {
+              "library_id": "carbon_rich_sources",
+              "total_lookup_tuples": 280,
+              "overlap_with_included": 188,
+              "additional_lookup_tuples": 92,
+              "additional_by_radius_operation": {
+                "radius1:GROW": 31,
+                "radius1:MUTATE": 46,
+                "radius2:GROW": 9,
+                "radius2:MUTATE": 4,
+                "radius3:GROW": 2
+              }
+            }
+          ],
+          "selected_library": "hetero_rich_sources",
+          "additional_lookup_tuples": 112,
+          "planned_union_lookup_count": 350
+        }
+      ],
+      "selected_additions": [
+        "hetero_rich_sources"
+      ],
+      "planned_union_lookup_count": 350,
+      "stop_reason": "addition_allowance_used",
+      "scientific_benefit": "not_assessed",
+      "actual_compute": "unknown",
+      "execution": "not_performed",
+      "execution_approved": false
+    }
+  }
+}

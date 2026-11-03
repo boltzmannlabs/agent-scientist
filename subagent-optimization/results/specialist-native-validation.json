@@ -1,0 +1,56 @@
+{
+  "timestamp_utc": "2026-11-03T06:41:58.380603+00:00",
+  "scope": "Native named-child integration with temporary profiles and canned loopback responses; no LLM reasoning or molecular evaluation",
+  "runner": "Agent Scientist scripts/run_tests.sh, existing .venv Python 3.14.7",
+  "runner_options": {
+    "workers": 1,
+    "file_timeout_seconds": 180,
+    "file_retries": 0,
+    "faulthandler_timeout_seconds": 30
+  },
+  "tests_run": 2,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "pytest_elapsed_seconds": 4.822,
+  "xml_sha256": "1db0604114d990966d239d8234d354c0266e7bb954a20f9831650f73208d4157",
+  "source_sha256": {
+    "specialist/definition.json": "0d66c15b7e9431abf6edaa2fadf5f8a70b19431aeaa3429b340af45b4552db6e",
+    "specialist/advisor.py": "6fc0e9268ac32d29b957cf48b555885612484016886833c3237a38b224ea723d",
+    "specialist/fixtures.py": "ff29d3513faa8df60e5ff9e888ca448fc2b40697522aef6dc82e2c93732f17e7",
+    "specialist/test_native.py": "46f70aed4ee9ccd907b826a8513314aed1cb9a2ac8733d5f3faba01d4de90be5",
+    "prototype/library_policy/policy.py": "6b5f7824714451dbaca2ff5e5dd328971375acb2b2845f291bd6d3b2ab6475ee",
+    "prototype/library_policy/fixtures.py": "85842188063d6c70e6999fcd8b897cd4486faa4e1d59ae992ad3c6f40cfc3375",
+    "prototype/context_contract/context_contract.py": "b6622b959bae5923da58ca0a958c2a4de543f81b6e88f7e7c2677f63649e9810"
+  },
+  "host_source_manifest": "../research/source-inspection.json",
+  "checks": [
+    "native import disabled pending review",
+    "real named-child construction",
+    "empty child tool schemas and runtime denials",
+    "packet received and canned JSON accepted",
+    "parent cached prompt and tools retained",
+    "revocation blocks another provider request"
+  ],
+  "prior_attempts": [
+    {
+      "scope": "official runner inside restricted sandbox",
+      "result": "could not create /var/tmp test workspace; no test pass recorded"
+    },
+    {
+      "scope": "first combined native file",
+      "result": "180-second timeout after first test; not counted as a completed suite"
+    },
+    {
+      "scope": "isolated child test diagnostic",
+      "result": "passed in 25.4 seconds; does not replace combined-suite evidence"
+    }
+  ],
+  "final_harness_note": "Explicit disposable profile override, default DB pin, test isolation and no-lazy-install flags added before final combined pass; no production timeout changed and no root-cause/performance claim.",
+  "response_and_usage": "synthetic fixture; not measured model tokens or quality",
+  "external_model_inference_requests": 0,
+  "scientific_jobs_submitted": 0,
+  "real_profile_installed_or_edited_by_this_work": false,
+  "scientific_benefit": "not_evaluated",
+  "git_push_performed_for_this_increment": false
+}

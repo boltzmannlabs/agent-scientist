@@ -1,0 +1,339 @@
+{
+  "timestamp_utc": "2026-11-03T07:42:36.124553+00:00",
+  "scope": "Actual source-level fragment-database and lookup qualification; no candidate generation or scoring",
+  "rdkit_version": "2025.09.4",
+  "curation_sha256": "b8cbee6e4f0ff6f455e8505d4dc7888c495bc5ce879070fedc97e4e64e511c8f",
+  "lead": {
+    "id": "drd2-example-compound-3",
+    "representation": "N1(C(CN2CCN(CC2)CC3=CC=C(C=C3)OC)=O)C(CC4=C1C=CC=C4)C",
+    "form_id": "upstream-example-unspecified-stereo",
+    "source": "MolecularAI/transformer_rl@a0622fc2fe16812c7530bca20dcca9a9fd874513: support/example.json, parameters.curriculum_strategy.input[0]; structure visually matched to paper Figure 2 compound 3",
+    "identity_notes": "Source has an unassigned stereocenter and is retained verbatim; no specific stereoisomer or experimental sample identity is inferred."
+  },
+  "lead_file_sha256": "46b6a09d344b2bd9c69a8df152fc5bfe30006b590a3014a2333ca2a16e2ccb39",
+  "source_sha256": {
+    "crem/fragmentation.py": "574d518d29526e8dadac6bf71c438165b55f9652da9d0093629fd900b0d10469",
+    "crem/frag_to_env_mp.py": "4f08ce91cb4317a9eba81dbea527f1529d6ca16302b02b6006a6c556064e45bd",
+    "crem/import_env_to_db.py": "3dbd3a73b307a64968ba6e5afb5f9096c7b25d55dfe4fe6fb01c9e103118a185",
+    "crem/crem_sub.py": "7a72c0b646b26a14be439854fa2370dbe323f340c19876beee0459e617d2d490",
+    "crem/mol_context.py": "afc830cddd19b332c0a63095e66f174053d00f589500931fc632a6da0e3e80ff",
+    "utils/rdkit_funcs.py": "c1e750a40f80f412f5d90df458802b9f78fe909af778d3df4e831364f74a7a22"
+  },
+  "library_material": {
+    "hetero_rich_sources": {
+      "database_sha256": "39c41d311efdcf08258040af36eb6dedf9711d9defb1eff54e27f9d90e019245",
+      "logical_rows_sha256": "f1b287b377a93747ab593b7c18f36d25a8b977f8768f7278405ef69ecf6a2937",
+      "logical_row_count": 2482,
+      "per_operation": [
+        {
+          "radius": 1,
+          "mode": "GROW",
+          "database_rows": 823,
+          "matched_reference_contexts": 4,
+          "distinct_lookup_pairs": 56,
+          "lookup_parity": true
+        },
+        {
+          "radius": 1,
+          "mode": "MUTATE",
+          "database_rows": 823,
+          "matched_reference_contexts": 11,
+          "distinct_lookup_pairs": 90,
+          "lookup_parity": true
+        },
+        {
+          "radius": 2,
+          "mode": "GROW",
+          "database_rows": 825,
+          "matched_reference_contexts": 4,
+          "distinct_lookup_pairs": 20,
+          "lookup_parity": true
+        },
+        {
+          "radius": 2,
+          "mode": "MUTATE",
+          "database_rows": 825,
+          "matched_reference_contexts": 1,
+          "distinct_lookup_pairs": 4,
+          "lookup_parity": true
+        },
+        {
+          "radius": 3,
+          "mode": "GROW",
+          "database_rows": 834,
+          "matched_reference_contexts": 2,
+          "distinct_lookup_pairs": 7,
+          "lookup_parity": true
+        },
+        {
+          "radius": 3,
+          "mode": "MUTATE",
+          "database_rows": 834,
+          "matched_reference_contexts": 1,
+          "distinct_lookup_pairs": 1,
+          "lookup_parity": true
+        }
+      ],
+      "lookup_pairs_sha256": "58084767bddacccb91e28c283aee3760741d7c5400b5320e1ca73632eed51c96",
+      "lookup_pair_count": 178
+    },
+    "carbon_rich_sources": {
+      "database_sha256": "10f894f3af3c91d6366492e79361fbd1eb397b87e4d8224c033b98a6de66fce3",
+      "logical_rows_sha256": "64b52fa6038c99303f26158f51e96675f502d4de61a1b9f5a56c269a0cdc23ab",
+      "logical_row_count": 3821,
+      "per_operation": [
+        {
+          "radius": 1,
+          "mode": "GROW",
+          "database_rows": 1364,
+          "matched_reference_contexts": 4,
+          "distinct_lookup_pairs": 75,
+          "lookup_parity": true
+        },
+        {
+          "radius": 1,
+          "mode": "MUTATE",
+          "database_rows": 1364,
+          "matched_reference_contexts": 12,
+          "distinct_lookup_pairs": 161,
+          "lookup_parity": true
+        },
+        {
+          "radius": 2,
+          "mode": "GROW",
+          "database_rows": 1258,
+          "matched_reference_contexts": 4,
+          "distinct_lookup_pairs": 17,
+          "lookup_parity": true
+        },
+        {
+          "radius": 2,
+          "mode": "MUTATE",
+          "database_rows": 1258,
+          "matched_reference_contexts": 7,
+          "distinct_lookup_pairs": 20,
+          "lookup_parity": true
+        },
+        {
+          "radius": 3,
+          "mode": "GROW",
+          "database_rows": 1199,
+          "matched_reference_contexts": 1,
+          "distinct_lookup_pairs": 4,
+          "lookup_parity": true
+        },
+        {
+          "radius": 3,
+          "mode": "MUTATE",
+          "database_rows": 1199,
+          "matched_reference_contexts": 1,
+          "distinct_lookup_pairs": 3,
+          "lookup_parity": true
+        }
+      ],
+      "lookup_pairs_sha256": "76be075815a477b78ac1027153cb170d63299e0012b77fbda2e5878358b88dde",
+      "lookup_pair_count": 280
+    },
+    "mixed_reference": {
+      "database_sha256": "646438590aa0aecfd1a1725da6a8e652d0f22cf4e59d2252966eebdbd81e8cea",
+      "logical_rows_sha256": "c54e9b9c4a364867421544b64f53c7f0be22d4aabacaaddfc8d453124e3ad75c",
+      "logical_row_count": 3854,
+      "per_operation": [
+        {
+          "radius": 1,
+          "mode": "GROW",
+          "database_rows": 1368,
+          "matched_reference_contexts": 4,
+          "distinct_lookup_pairs": 63,
+          "lookup_parity": true
+        },
+        {
+          "radius": 1,
+          "mode": "MUTATE",
+          "database_rows": 1368,
+          "matched_reference_contexts": 13,
+          "distinct_lookup_pairs": 140,
+          "lookup_parity": true
+        },
+        {
+          "radius": 2,
+          "mode": "GROW",
+          "database_rows": 1272,
+          "matched_reference_contexts": 4,
+          "distinct_lookup_pairs": 14,
+          "lookup_parity": true
+        },
+        {
+          "radius": 2,
+          "mode": "MUTATE",
+          "database_rows": 1272,
+          "matched_reference_contexts": 7,
+          "distinct_lookup_pairs": 16,
+          "lookup_parity": true
+        },
+        {
+          "radius": 3,
+          "mode": "GROW",
+          "database_rows": 1214,
+          "matched_reference_contexts": 1,
+          "distinct_lookup_pairs": 2,
+          "lookup_parity": true
+        },
+        {
+          "radius": 3,
+          "mode": "MUTATE",
+          "database_rows": 1214,
+          "matched_reference_contexts": 1,
+          "distinct_lookup_pairs": 3,
+          "lookup_parity": true
+        }
+      ],
+      "lookup_pairs_sha256": "297023428ed255ad24730b4edc6e84cede9baa0ff44cd4d3799d4c042f1c5c78",
+      "lookup_pair_count": 238
+    }
+  },
+  "comparisons": [
+    {
+      "first": "hetero_rich_sources",
+      "second": "carbon_rich_sources",
+      "shared_logical_rows_including_frequency": 22,
+      "shared_lookup_pairs": 16,
+      "first_exclusive_lookup_pairs": 162,
+      "second_exclusive_lookup_pairs": 264
+    },
+    {
+      "first": "hetero_rich_sources",
+      "second": "mixed_reference",
+      "shared_logical_rows_including_frequency": 1046,
+      "shared_lookup_pairs": 66,
+      "first_exclusive_lookup_pairs": 112,
+      "second_exclusive_lookup_pairs": 172
+    },
+    {
+      "first": "carbon_rich_sources",
+      "second": "mixed_reference",
+      "shared_logical_rows_including_frequency": 2785,
+      "shared_lookup_pairs": 188,
+      "first_exclusive_lookup_pairs": 92,
+      "second_exclusive_lookup_pairs": 50
+    }
+  ],
+  "shared_compact_single_attachment_slots": 18,
+  "matched_size_hetero_vs_no_nos_contrast_slots": 10,
+  "contrast_examples": [
+    {
+      "radius": 1,
+      "mode": "GROW",
+      "context": "*:c(:*)-[*:1]",
+      "outgoing_core": "[H][*:1]",
+      "incoming_heavy_atoms": 3,
+      "attachments": 1,
+      "hetero_rich_exclusive_example": "O=C(O)[*:1]",
+      "carbon_rich_exclusive_example": "CC(C)[*:1]"
+    },
+    {
+      "radius": 1,
+      "mode": "GROW",
+      "context": "*:c(:*)-[*:1]",
+      "outgoing_core": "[H][*:1]",
+      "incoming_heavy_atoms": 4,
+      "attachments": 1,
+      "hetero_rich_exclusive_example": "[N-]=[N+]=NC[*:1]",
+      "carbon_rich_exclusive_example": "CC(C)(C)[*:1]"
+    },
+    {
+      "radius": 1,
+      "mode": "MUTATE",
+      "context": "*:c(:*)-[*:1]",
+      "outgoing_core": "CO[*:1]",
+      "incoming_heavy_atoms": 3,
+      "attachments": 1,
+      "hetero_rich_exclusive_example": "O=C(O)[*:1]",
+      "carbon_rich_exclusive_example": "CC(C)[*:1]"
+    },
+    {
+      "radius": 1,
+      "mode": "MUTATE",
+      "context": "*:c(:*)-[*:1]",
+      "outgoing_core": "CO[*:1]",
+      "incoming_heavy_atoms": 4,
+      "attachments": 1,
+      "hetero_rich_exclusive_example": "[N-]=[N+]=NC[*:1]",
+      "carbon_rich_exclusive_example": "CC(C)(C)[*:1]"
+    },
+    {
+      "radius": 2,
+      "mode": "GROW",
+      "context": "*-C(-*)-C-[*:1]",
+      "outgoing_core": "[H][*:1]",
+      "incoming_heavy_atoms": 6,
+      "attachments": 1,
+      "hetero_rich_exclusive_example": "CCNC(=O)O[*:1]",
+      "carbon_rich_exclusive_example": "c1ccc([*:1])cc1"
+    },
+    {
+      "radius": 2,
+      "mode": "GROW",
+      "context": "*:c:c(:c:*)-[*:1]",
+      "outgoing_core": "[H][*:1]",
+      "incoming_heavy_atoms": 3,
+      "attachments": 1,
+      "hetero_rich_exclusive_example": "O=C(O)[*:1]",
+      "carbon_rich_exclusive_example": "CC(C)[*:1]"
+    },
+    {
+      "radius": 2,
+      "mode": "GROW",
+      "context": "*:c:c(:c:*)-[*:1]",
+      "outgoing_core": "[H][*:1]",
+      "incoming_heavy_atoms": 4,
+      "attachments": 1,
+      "hetero_rich_exclusive_example": "[N-]=[N+]=NC[*:1]",
+      "carbon_rich_exclusive_example": "CC(C)(C)[*:1]"
+    },
+    {
+      "radius": 2,
+      "mode": "MUTATE",
+      "context": "*:c:c(:c:*)-[*:1]",
+      "outgoing_core": "CO[*:1]",
+      "incoming_heavy_atoms": 3,
+      "attachments": 1,
+      "hetero_rich_exclusive_example": "O=C(O)[*:1]",
+      "carbon_rich_exclusive_example": "CC(C)[*:1]"
+    },
+    {
+      "radius": 2,
+      "mode": "MUTATE",
+      "context": "*:c:c(:c:*)-[*:1]",
+      "outgoing_core": "CO[*:1]",
+      "incoming_heavy_atoms": 4,
+      "attachments": 1,
+      "hetero_rich_exclusive_example": "[N-]=[N+]=NC[*:1]",
+      "carbon_rich_exclusive_example": "CC(C)(C)[*:1]"
+    },
+    {
+      "radius": 3,
+      "mode": "GROW",
+      "context": "*-c1:*:c:c:c(-[*:1]):c:1",
+      "outgoing_core": "[H][*:1]",
+      "incoming_heavy_atoms": 4,
+      "attachments": 1,
+      "hetero_rich_exclusive_example": "[N-]=[N+]=NC[*:1]",
+      "carbon_rich_exclusive_example": "CC(C)(C)[*:1]"
+    }
+  ],
+  "meaningfulness_status": "structural_contrast_observed",
+  "limitations": [
+    "Lookup-eligible fragments are not validated assembled products.",
+    "A matched context can occur at multiple sites; examples do not guarantee a unique site.",
+    "Library-source enrichment is not controlled candidate chemistry or target potency.",
+    "Equal source counts do not imply equal enumerations or compute.",
+    "No guarantee of DRD2, QED, similarity, synthesis or task success.",
+    "SME chemical review and real deployment parity remain outstanding."
+  ],
+  "approved_asset_count": 0,
+  "candidate_generation": false,
+  "property_model_calls": 0,
+  "scientific_jobs_submitted": 0,
+  "specialist_launched": false
+}

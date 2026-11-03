@@ -1,0 +1,101 @@
+{
+  "inspection_date": "2026-11-03",
+  "scope": "Static source identity, not deployed service qualification",
+  "files": [
+    {
+      "source": "BOLTCHEM-FEATURES working source",
+      "path": "v5/Molecule Optimzation/crem/main.py",
+      "sha256": "c84c7aa1f81be21ba9e6b2a14cb506be7102f0fa3c1c0e1f2bba259a31be592c"
+    },
+    {
+      "source": "BOLTCHEM-FEATURES working source",
+      "path": "v5/Molecule Optimzation/crem/crem_main.py",
+      "sha256": "f3bd6492f3080cbf5058fd78e612c70e57ab7292b89426786f3f4a5210510328"
+    },
+    {
+      "source": "BOLTCHEM-FEATURES working source",
+      "path": "v5/Molecule Optimzation/crem/utils/data_processing.py",
+      "sha256": "3b2d2abec891d060387d41c3eeb1094ced73fb4b64f4b7be43be2749711d8210"
+    },
+    {
+      "source": "BOLTCHEM-FEATURES working source",
+      "path": "v5/Molecule Optimzation/Graph_GA/main.py",
+      "sha256": "06ebfa5ba08e6a8353d9ea8b192858b49ff653b63e59b165833ebd1f42f7cc3e"
+    },
+    {
+      "source": "BOLTCHEM-FEATURES working source",
+      "path": "v5/Molecule Optimzation/Graph_GA/GB_GA.py",
+      "sha256": "3f84108fe1270120e1b3f9ea5f0e7fbd18c3ac54e05107cd7acfe118a1226572"
+    },
+    {
+      "source": "BOLTCHEM-FEATURES working source",
+      "path": "v5/Molecule Optimzation/Graph_GA/scoring_funcs/score_mpo.py",
+      "sha256": "134f9a3e7fcf75c0c262eac3195f650b116f13fde0415e5b23b4d1677e883fa5"
+    },
+    {
+      "source": "Agent Scientist local working source",
+      "path": "plugins/boltzmann/skills/boltzmann-tools/references/tool-contracts.v1.json",
+      "sha256": "379043475affb384751b8b594ca755108c20bdfd80aa535ee19d7b6cd3ec7afd"
+    },
+    {
+      "source": "BOLTCHEM-FEATURES working source",
+      "path": "v5/Molecule Optimzation/crem/utils/remove_duplicates.py",
+      "sha256": "e1ee81ef979651be3fbe131812bc144d557c038bff2007d2eca5d04adacbf179"
+    },
+    {
+      "source": "BOLTCHEM-FEATURES working source",
+      "path": "v5/Molecule Optimzation/crem/csv_headers.py",
+      "sha256": "8effab9806ea4a8191f1688acdb4907e977ff4cb308e6ff34527419537f9b81e"
+    },
+    {
+      "source": "BOLTCHEM-FEATURES working source",
+      "path": "v5/Molecule Optimzation/crem/crem/create_frag_db.py",
+      "sha256": "ccaa811731a711be92053ab0ea671fe71dbaf7507c23b2c91962bfa3d0b6ce1c"
+    },
+    {
+      "source": "BOLTCHEM-FEATURES working source",
+      "path": "v5/Molecule Optimzation/crem/crem/crem_create_frag_db.sh",
+      "sha256": "62dc5fb956fbf0c63240ca4209016f05d3328442aa264d375873874010759a8d"
+    },
+    {
+      "source": "BOLTCHEM-FEATURES working source",
+      "path": "v5/Molecule Optimzation/crem/crem/frag_to_env_mp.py",
+      "sha256": "4f08ce91cb4317a9eba81dbea527f1529d6ca16302b02b6006a6c556064e45bd"
+    },
+    {
+      "source": "BOLTCHEM-FEATURES working source",
+      "path": "v5/Molecule Optimzation/crem/crem/import_env_to_db.py",
+      "sha256": "3dbd3a73b307a64968ba6e5afb5f9096c7b25d55dfe4fe6fb01c9e103118a185"
+    },
+    {
+      "source": "Agent Scientist local working source",
+      "path": "agent/specialist_store.py",
+      "sha256": "e60cf1f6f2990b121c92bc95be4de2aa4fb88d0f3432a143fa0d6353e3d62262"
+    },
+    {
+      "source": "Agent Scientist local working source",
+      "path": "agent/specialist_runtime.py",
+      "sha256": "e6dab7c881d1b1a757db946ed28d8f9557d81174a73cf9f6fa0a485f89324439"
+    },
+    {
+      "source": "Agent Scientist local working source",
+      "path": "agent/specialist_policy.py",
+      "sha256": "c7a2bafbf6f147ffa648708541a4f97226fb1e15c64df08f4ac9479b11de3e4f"
+    },
+    {
+      "source": "Agent Scientist local working source",
+      "path": "sci_cli/specialist_portability.py",
+      "sha256": "2fc0767189678299f5e914b69210eb4ac854caf317302b139fdb3c6eba8c3da1"
+    },
+    {
+      "source": "Agent Scientist local working source",
+      "path": "tools/delegate_tool.py",
+      "sha256": "1b9b711c825503d8f8af1722e4e54ab78968b4c63ea93c197a838637ebd02541"
+    },
+    {
+      "source": "Agent Scientist local working source",
+      "path": "website/docs/user-guide/features/saved-specialists.md",
+      "sha256": "ee5232f593d976efa6469080e6cf3588501c983d06ceda359432576e692ab505"
+    }
+  ]
+}

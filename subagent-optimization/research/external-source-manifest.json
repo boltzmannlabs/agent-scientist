@@ -1,0 +1,58 @@
+{
+  "retrieval_date_utc": "2026-11-01",
+  "verification": "Public git ls-remote and GitHub git commit API; no source instructions executed",
+  "files_manifest": "reference-reuse.csv",
+  "repositories": [
+    {
+      "repository": "InternScience/MolClaw",
+      "revision": "c16be3a70deef4228f19930b4495ec2748fafa38",
+      "commit_api": "https://api.github.com/repos/InternScience/MolClaw/git/commits/c16be3a70deef4228f19930b4495ec2748fafa38",
+      "api_returned_sha": "c16be3a70deef4228f19930b4495ec2748fafa38",
+      "tree_sha": "50900f34f21138a94db2aab43a170305c1601b04",
+      "commit_date": "2026-09-24T07:26:48Z",
+      "root_licence_path": "LICENSE",
+      "root_licence": "MIT",
+      "copyright": "Copyright (c) 2025 manglu097",
+      "licence_sha256": "9117c641a6cce63a994dd9d73d442b653563d60132eb8a8d2e9257ee8aa96c64"
+    },
+    {
+      "repository": "BioSymphony/small-molecules",
+      "revision": "fc1e639677572d6f95c41d4d8ca358716ce100c3",
+      "commit_api": "https://api.github.com/repos/BioSymphony/small-molecules/git/commits/fc1e639677572d6f95c41d4d8ca358716ce100c3",
+      "api_returned_sha": "fc1e639677572d6f95c41d4d8ca358716ce100c3",
+      "tree_sha": "a0eb1bf1bba7b77bfe6c09c9e57413195c5d4f68",
+      "commit_date": "2026-09-25T02:58:37Z",
+      "root_licence_path": "LICENSE",
+      "root_licence": "MIT",
+      "copyright": "Copyright (c) 2026 BioSymphony",
+      "licence_sha256": "fe4eac0619610714f5d6a5f89839350c19577d4dcb2a705477e0824bead241ac"
+    },
+    {
+      "repository": "K-Dense-AI/scientific-agents",
+      "revision": "98c7fae46648724e1a43a1f2b207b0c82fcc462e",
+      "commit_api": "https://api.github.com/repos/K-Dense-AI/scientific-agents/git/commits/98c7fae46648724e1a43a1f2b207b0c82fcc462e",
+      "api_returned_sha": "98c7fae46648724e1a43a1f2b207b0c82fcc462e",
+      "tree_sha": "1f640ddd4857950a38c9966335e7676c60659555",
+      "commit_date": "2026-10-02T16:05:55Z",
+      "root_licence_path": "LICENSE.md",
+      "root_licence": "MIT",
+      "copyright": "Copyright (c) 2026 K-Dense, Inc.",
+      "licence_sha256": null,
+      "licence_hash_note": "Licence text fetched and checked; hash not retained. Initial LICENSE path returned 404."
+    },
+    {
+      "repository": "K-Dense-AI/drug-discovery-agent-skills",
+      "revision": "d5d44a381ceb348b62149bbdec2d3043b2b41092",
+      "commit_api": "https://api.github.com/repos/K-Dense-AI/drug-discovery-agent-skills/git/commits/d5d44a381ceb348b62149bbdec2d3043b2b41092",
+      "api_returned_sha": "d5d44a381ceb348b62149bbdec2d3043b2b41092",
+      "tree_sha": "984887c9f94f548ad7989f6814abe614427739a6",
+      "commit_date": "2026-10-26T09:26:57Z",
+      "root_licence_path": "LICENSE.md",
+      "root_licence": "MIT",
+      "copyright": "Copyright (c) 2025 K-Dense Inc.",
+      "licence_sha256": "09b02a3c9df3053c55531d503357a9c7cde275970e6c3ceaa1ddf5f0e90b40c1"
+    }
+  ],
+  "licence_boundary": "Root instruction/code licences do not establish terms for external checkpoints, weights, data, software dependencies or hosted services.",
+  "source_storage": "No full source snapshots stored or installed; bounded high-level paraphrases and source attribution only."
+}

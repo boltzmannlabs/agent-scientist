@@ -1,0 +1,49 @@
+{
+  "timestamp_utc": "2026-11-03T08:58:15.330529+00:00",
+  "scope": "Structural-study artifact consistency and known maximum-coverage planning baseline; no scientific outcomes",
+  "software_tests": {
+    "command": "python3 -B -m unittest -v prototype.library_options.test_coverage",
+    "tests_run": 2,
+    "failures": 0,
+    "errors": 0,
+    "successful": true,
+    "execution_note": "Actual earlier run in this work session; not a repeat of the core/native suites"
+  },
+  "source_sha256": {
+    "prototype/library_options/curate.py": "26c42223abd0baef6df5cee0d3418dd10a0a8250eea9f0d1053a7c462d422071",
+    "prototype/library_options/material.py": "00347474be902c1dd9f43af3f3534abc99f6341f546384450b00a8d2a8285851",
+    "prototype/library_options/index_material.py": "da307647c8329810207fa657bd7025b4fc0447fa5a737d5e961138ab2fbd07b0",
+    "prototype/library_options/coverage.py": "6be032cac96a1eef45b1270b8eb7e8861678db68faff11feba91c0b6ae566154",
+    "prototype/library_options/demo.py": "05fb8bf8b966f042d13a02a5fd841cc682d55140ee869af0ce7ce25abc5302df",
+    "prototype/library_options/test_coverage.py": "b0f24b9581bd2fc9418b5003b295f2f6ba2088116f3c5910645c2d2e6fad6d83"
+  },
+  "artifact_sha256": {
+    "research/library-alternatives/protocol-v1.json": "249b36c6ceff45e94d67cd761e6c98f39172a2a579b02a1b3bb58e13639323c5",
+    "research/library-alternatives/run-v1/curation.json": "b8cbee6e4f0ff6f455e8505d4dc7888c495bc5ce879070fedc97e4e64e511c8f",
+    "research/library-alternatives/run-v1/material.json": "de9052a228e614abdc4aaa94cdd8f68c25721db6e3b9274c1829577f0da4b82c",
+    "research/library-alternatives/run-v1/lookup-index.json": "878c1163f7bb729c0af7f1dc1463d007fc2c480e7c7329fef9128147272a2a41",
+    "research/library-alternatives/run-v1/coverage-demo.json": "f918af99ef351fac6a7360efe9ab26a27b9a66bee4695b4d418bc3c432496325",
+    "research/library-alternatives/run-v1/hetero_rich_sources.csv": "5341ee432b4ab84c3e2c104fc2af11ccef26bcf812d260de4a8c29d6625fabd2",
+    "research/library-alternatives/run-v1/hetero_rich_sources.smi": "698444acb3f0f70b43e142fed57dbcc853aa4bffe2ab6c137607f25ed83467e7",
+    "research/library-alternatives/run-v1/carbon_rich_sources.csv": "23fffbb53075321412eb35f39b24beb97c7881b4b74852f9622eb68d520cf9b6",
+    "research/library-alternatives/run-v1/carbon_rich_sources.smi": "c938ace23f67017d5b500aa1748765c3b641696f6b4102305ac56652a0c6d013",
+    "research/library-alternatives/run-v1/mixed_reference.csv": "74305b33acad639b825b025956f7e91285fccdbc8a6f4671348b521ad7b073c0",
+    "research/library-alternatives/run-v1/mixed_reference.smi": "6bbc83e8209a6a7dd2fdd1406893f1281c00b36ee7ffbef155d4a649da0b2119"
+  },
+  "lookup_parity_cases": 18,
+  "lookup_union_count": 442,
+  "source_count_per_library": 20,
+  "actual_candidate_generation": false,
+  "property_model_calls": 0,
+  "scientific_jobs_submitted": 0,
+  "specialist_launched": false,
+  "initial_mixed_library_inclusion": "hypothetical planning scenario, not an executed investigation",
+  "novelty_vs_largest_example": {
+    "additional_tuples": 112,
+    "largest_library_additional_tuples": 92,
+    "fixed_order_matches": true
+  },
+  "scientific_benefit": "not_evaluated",
+  "approved_asset_count": 0,
+  "git_push_for_this_increment": false
+}

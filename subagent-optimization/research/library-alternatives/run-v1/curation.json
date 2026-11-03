@@ -1,0 +1,711 @@
+{
+  "timestamp_utc": "2026-11-03T07:38:52.058943+00:00",
+  "scope": "Actual source-molecule curation; no fragment/material or molecular-outcome qualification yet",
+  "protocol_sha256": "249b36c6ceff45e94d67cd761e6c98f39172a2a579b02a1b3bb58e13639323c5",
+  "normalization_policy_id": "strict-canonical-isomeric-no-standardization-v2@rdkit-2025.09.4;legacy-stereo=1;non-tetrahedral=1",
+  "acquisition": {
+    "retrieved_utc": "2026-11-03T07:33:16.098894+00:00",
+    "url": "https://www.ebi.ac.uk/chembl/api/data/molecule.json?molecule_type=Small+molecule&molecule_properties__heavy_atoms__gte=14&molecule_properties__heavy_atoms__lte=26&order_by=molecule_chembl_id&limit=1000&offset=0&only=molecule_chembl_id%2Cmolecule_structures",
+    "sha256": "217f8b9aa4bc9ae5acbc19497b3e546e96e8da1a895d7f1599f21feb5048aca2",
+    "bytes": 2331769,
+    "records": 1000,
+    "page_meta": {
+      "limit": 1000,
+      "next": "/chembl/api/data/molecule.json?limit=1000&offset=1000&molecule_type=Small+molecule&molecule_properties__heavy_atoms__gte=14&molecule_properties__heavy_atoms__lte=26&order_by=molecule_chembl_id&only=molecule_chembl_id%2Cmolecule_structures",
+      "offset": 0,
+      "previous": null,
+      "total_count": 830829
+    },
+    "protocol_sha256_before_acquisition": "249b36c6ceff45e94d67cd761e6c98f39172a2a579b02a1b3bb58e13639323c5",
+    "source_release_status": {
+      "activities": 24527044,
+      "chembl_db_version": "ChEMBL_37",
+      "chembl_release_date": "2026-05-01",
+      "compound_records": 3824604,
+      "disinct_compounds": 2921148,
+      "publications": 101100,
+      "status": "UP",
+      "targets": 18552
+    },
+    "data_terms": "https://chembl.gitbook.io/chembl-interface-documentation/about#data-licensing",
+    "license": "CC-BY-SA-3.0",
+    "activity_data_requested": false
+  },
+  "input_records": 1000,
+  "excluded": {
+    "charge_component_or_element_scope": 47,
+    "incomplete_or_out_of_scope_identity": 36
+  },
+  "eligible_intermediate_nos_count_3": 159,
+  "group_pool_counts": [
+    640,
+    118
+  ],
+  "libraries": [
+    {
+      "id": "hetero_rich_sources",
+      "csv": "hetero_rich_sources.csv",
+      "smi": "hetero_rich_sources.smi",
+      "source_ids": [
+        "CHEMBL100112",
+        "CHEMBL102454",
+        "CHEMBL100203",
+        "CHEMBL100293",
+        "CHEMBL101885",
+        "CHEMBL100259",
+        "CHEMBL100365",
+        "CHEMBL100267",
+        "CHEMBL102303",
+        "CHEMBL102425",
+        "CHEMBL101750",
+        "CHEMBL101490",
+        "CHEMBL101699",
+        "CHEMBL101876",
+        "CHEMBL101391",
+        "CHEMBL101085",
+        "CHEMBL101641",
+        "CHEMBL102001",
+        "CHEMBL101152",
+        "CHEMBL101910"
+      ],
+      "source_descriptor_rows": [
+        {
+          "ChEMBL_ID": "CHEMBL100112",
+          "heavy_atoms": 14,
+          "rings": 2,
+          "nos_atoms": 4
+        },
+        {
+          "ChEMBL_ID": "CHEMBL102454",
+          "heavy_atoms": 15,
+          "rings": 2,
+          "nos_atoms": 5
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100203",
+          "heavy_atoms": 15,
+          "rings": 3,
+          "nos_atoms": 4
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100293",
+          "heavy_atoms": 16,
+          "rings": 2,
+          "nos_atoms": 6
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101885",
+          "heavy_atoms": 16,
+          "rings": 3,
+          "nos_atoms": 8
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100259",
+          "heavy_atoms": 17,
+          "rings": 2,
+          "nos_atoms": 8
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100365",
+          "heavy_atoms": 17,
+          "rings": 3,
+          "nos_atoms": 4
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100267",
+          "heavy_atoms": 18,
+          "rings": 2,
+          "nos_atoms": 5
+        },
+        {
+          "ChEMBL_ID": "CHEMBL102303",
+          "heavy_atoms": 18,
+          "rings": 3,
+          "nos_atoms": 6
+        },
+        {
+          "ChEMBL_ID": "CHEMBL102425",
+          "heavy_atoms": 19,
+          "rings": 2,
+          "nos_atoms": 9
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101750",
+          "heavy_atoms": 19,
+          "rings": 3,
+          "nos_atoms": 4
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101490",
+          "heavy_atoms": 19,
+          "rings": 4,
+          "nos_atoms": 4
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101699",
+          "heavy_atoms": 20,
+          "rings": 2,
+          "nos_atoms": 8
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101876",
+          "heavy_atoms": 20,
+          "rings": 3,
+          "nos_atoms": 4
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101391",
+          "heavy_atoms": 20,
+          "rings": 4,
+          "nos_atoms": 7
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101085",
+          "heavy_atoms": 21,
+          "rings": 1,
+          "nos_atoms": 5
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101641",
+          "heavy_atoms": 21,
+          "rings": 2,
+          "nos_atoms": 4
+        },
+        {
+          "ChEMBL_ID": "CHEMBL102001",
+          "heavy_atoms": 21,
+          "rings": 3,
+          "nos_atoms": 9
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101152",
+          "heavy_atoms": 21,
+          "rings": 4,
+          "nos_atoms": 4
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101910",
+          "heavy_atoms": 22,
+          "rings": 2,
+          "nos_atoms": 7
+        }
+      ],
+      "source_bins": {
+        "(14, 2)": 1,
+        "(15, 2)": 1,
+        "(15, 3)": 1,
+        "(16, 2)": 1,
+        "(16, 3)": 1,
+        "(17, 2)": 1,
+        "(17, 3)": 1,
+        "(18, 2)": 1,
+        "(18, 3)": 1,
+        "(19, 2)": 1,
+        "(19, 3)": 1,
+        "(19, 4)": 1,
+        "(20, 2)": 1,
+        "(20, 3)": 1,
+        "(20, 4)": 1,
+        "(21, 1)": 1,
+        "(21, 2)": 1,
+        "(21, 3)": 1,
+        "(21, 4)": 1,
+        "(22, 2)": 1
+      },
+      "intake_audit": {
+        "schema_version": 1,
+        "content_sha256": "5341ee432b4ab84c3e2c104fc2af11ccef26bcf812d260de4a8c29d6625fabd2",
+        "bytes": 1043,
+        "input_format": "csv",
+        "header": [
+          "SMILES",
+          "ChEMBL_ID"
+        ],
+        "row_count": 20,
+        "canonicalized_rows": 20,
+        "canonical_unique_count": 20,
+        "duplicate_rows": 0,
+        "invalid_rows": [],
+        "unsupported_rows": [],
+        "multicomponent_rows": [],
+        "normalization_policy_id": "strict-canonical-isomeric-no-standardization-v2@rdkit-2025.09.4;legacy-stereo=1;non-tetrahedral=1",
+        "rdkit_version": "2025.09.4",
+        "parser_settings": {
+          "parseName": false,
+          "allowCXSMILES": false,
+          "canonical": true,
+          "isomericSmiles": true,
+          "sanitize": true,
+          "removeHs": true,
+          "legacy_stereo": true,
+          "allow_nontetrahedral_chirality": true
+        },
+        "normalized_identity_complete": true,
+        "normalized_input_set_sha256": "44b01b30171b70cab84391881e3d11beec96ef52dd1fbf2fbc723249f4c17ce6",
+        "normalized_sequence_sha256": "52dca07922e3eb71cdfeafb355217ef572fd989b1bf437ce9e6eb27830728221",
+        "normalized_multiset_sha256": "44b01b30171b70cab84391881e3d11beec96ef52dd1fbf2fbc723249f4c17ce6",
+        "public_input_format_ready": true,
+        "structure_scope_needs_review": false,
+        "approval_status": "not_reviewed",
+        "capability_card_reviewed": false,
+        "available_for_policy": false,
+        "fragment_material_identity": "not_calculated",
+        "scoring_or_model_execution": false
+      },
+      "scientific_review": "not_received",
+      "capability_card_reviewed": false,
+      "available_for_policy": false
+    },
+    {
+      "id": "carbon_rich_sources",
+      "csv": "carbon_rich_sources.csv",
+      "smi": "carbon_rich_sources.smi",
+      "source_ids": [
+        "CHEMBL101276",
+        "CHEMBL100611",
+        "CHEMBL102304",
+        "CHEMBL101675",
+        "CHEMBL101030",
+        "CHEMBL100863",
+        "CHEMBL100028",
+        "CHEMBL100338",
+        "CHEMBL100540",
+        "CHEMBL100128",
+        "CHEMBL101161",
+        "CHEMBL101250",
+        "CHEMBL100948",
+        "CHEMBL102215",
+        "CHEMBL101947",
+        "CHEMBL102095",
+        "CHEMBL100638",
+        "CHEMBL100116",
+        "CHEMBL101324",
+        "CHEMBL102201"
+      ],
+      "source_descriptor_rows": [
+        {
+          "ChEMBL_ID": "CHEMBL101276",
+          "heavy_atoms": 14,
+          "rings": 2,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100611",
+          "heavy_atoms": 15,
+          "rings": 2,
+          "nos_atoms": 1
+        },
+        {
+          "ChEMBL_ID": "CHEMBL102304",
+          "heavy_atoms": 15,
+          "rings": 3,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101675",
+          "heavy_atoms": 16,
+          "rings": 2,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101030",
+          "heavy_atoms": 16,
+          "rings": 3,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100863",
+          "heavy_atoms": 17,
+          "rings": 2,
+          "nos_atoms": 1
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100028",
+          "heavy_atoms": 17,
+          "rings": 3,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100338",
+          "heavy_atoms": 18,
+          "rings": 2,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100540",
+          "heavy_atoms": 18,
+          "rings": 3,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100128",
+          "heavy_atoms": 19,
+          "rings": 2,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101161",
+          "heavy_atoms": 19,
+          "rings": 3,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101250",
+          "heavy_atoms": 19,
+          "rings": 4,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100948",
+          "heavy_atoms": 20,
+          "rings": 2,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL102215",
+          "heavy_atoms": 20,
+          "rings": 3,
+          "nos_atoms": 1
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101947",
+          "heavy_atoms": 20,
+          "rings": 4,
+          "nos_atoms": 1
+        },
+        {
+          "ChEMBL_ID": "CHEMBL102095",
+          "heavy_atoms": 21,
+          "rings": 1,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100638",
+          "heavy_atoms": 21,
+          "rings": 2,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100116",
+          "heavy_atoms": 21,
+          "rings": 3,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101324",
+          "heavy_atoms": 21,
+          "rings": 4,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL102201",
+          "heavy_atoms": 22,
+          "rings": 2,
+          "nos_atoms": 2
+        }
+      ],
+      "source_bins": {
+        "(14, 2)": 1,
+        "(15, 2)": 1,
+        "(15, 3)": 1,
+        "(16, 2)": 1,
+        "(16, 3)": 1,
+        "(17, 2)": 1,
+        "(17, 3)": 1,
+        "(18, 2)": 1,
+        "(18, 3)": 1,
+        "(19, 2)": 1,
+        "(19, 3)": 1,
+        "(19, 4)": 1,
+        "(20, 2)": 1,
+        "(20, 3)": 1,
+        "(20, 4)": 1,
+        "(21, 1)": 1,
+        "(21, 2)": 1,
+        "(21, 3)": 1,
+        "(21, 4)": 1,
+        "(22, 2)": 1
+      },
+      "intake_audit": {
+        "schema_version": 1,
+        "content_sha256": "23fffbb53075321412eb35f39b24beb97c7881b4b74852f9622eb68d520cf9b6",
+        "bytes": 981,
+        "input_format": "csv",
+        "header": [
+          "SMILES",
+          "ChEMBL_ID"
+        ],
+        "row_count": 20,
+        "canonicalized_rows": 20,
+        "canonical_unique_count": 20,
+        "duplicate_rows": 0,
+        "invalid_rows": [],
+        "unsupported_rows": [],
+        "multicomponent_rows": [],
+        "normalization_policy_id": "strict-canonical-isomeric-no-standardization-v2@rdkit-2025.09.4;legacy-stereo=1;non-tetrahedral=1",
+        "rdkit_version": "2025.09.4",
+        "parser_settings": {
+          "parseName": false,
+          "allowCXSMILES": false,
+          "canonical": true,
+          "isomericSmiles": true,
+          "sanitize": true,
+          "removeHs": true,
+          "legacy_stereo": true,
+          "allow_nontetrahedral_chirality": true
+        },
+        "normalized_identity_complete": true,
+        "normalized_input_set_sha256": "aac3f549adaa64ee96f0b64b105f57ee00742db683981e959fd1eb2483e96b57",
+        "normalized_sequence_sha256": "00f5deb15d357f0da5ba7b16ade151d3abba6137741210828485d34daa629c7b",
+        "normalized_multiset_sha256": "aac3f549adaa64ee96f0b64b105f57ee00742db683981e959fd1eb2483e96b57",
+        "public_input_format_ready": true,
+        "structure_scope_needs_review": false,
+        "approval_status": "not_reviewed",
+        "capability_card_reviewed": false,
+        "available_for_policy": false,
+        "fragment_material_identity": "not_calculated",
+        "scoring_or_model_execution": false
+      },
+      "scientific_review": "not_received",
+      "capability_card_reviewed": false,
+      "available_for_policy": false
+    },
+    {
+      "id": "mixed_reference",
+      "csv": "mixed_reference.csv",
+      "smi": "mixed_reference.smi",
+      "source_ids": [
+        "CHEMBL100112",
+        "CHEMBL100611",
+        "CHEMBL100203",
+        "CHEMBL101675",
+        "CHEMBL101885",
+        "CHEMBL100863",
+        "CHEMBL100365",
+        "CHEMBL100338",
+        "CHEMBL102303",
+        "CHEMBL100128",
+        "CHEMBL101750",
+        "CHEMBL101250",
+        "CHEMBL101699",
+        "CHEMBL102215",
+        "CHEMBL101391",
+        "CHEMBL102095",
+        "CHEMBL101641",
+        "CHEMBL100116",
+        "CHEMBL101152",
+        "CHEMBL102201"
+      ],
+      "source_descriptor_rows": [
+        {
+          "ChEMBL_ID": "CHEMBL100112",
+          "heavy_atoms": 14,
+          "rings": 2,
+          "nos_atoms": 4
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100611",
+          "heavy_atoms": 15,
+          "rings": 2,
+          "nos_atoms": 1
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100203",
+          "heavy_atoms": 15,
+          "rings": 3,
+          "nos_atoms": 4
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101675",
+          "heavy_atoms": 16,
+          "rings": 2,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101885",
+          "heavy_atoms": 16,
+          "rings": 3,
+          "nos_atoms": 8
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100863",
+          "heavy_atoms": 17,
+          "rings": 2,
+          "nos_atoms": 1
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100365",
+          "heavy_atoms": 17,
+          "rings": 3,
+          "nos_atoms": 4
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100338",
+          "heavy_atoms": 18,
+          "rings": 2,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL102303",
+          "heavy_atoms": 18,
+          "rings": 3,
+          "nos_atoms": 6
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100128",
+          "heavy_atoms": 19,
+          "rings": 2,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101750",
+          "heavy_atoms": 19,
+          "rings": 3,
+          "nos_atoms": 4
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101250",
+          "heavy_atoms": 19,
+          "rings": 4,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101699",
+          "heavy_atoms": 20,
+          "rings": 2,
+          "nos_atoms": 8
+        },
+        {
+          "ChEMBL_ID": "CHEMBL102215",
+          "heavy_atoms": 20,
+          "rings": 3,
+          "nos_atoms": 1
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101391",
+          "heavy_atoms": 20,
+          "rings": 4,
+          "nos_atoms": 7
+        },
+        {
+          "ChEMBL_ID": "CHEMBL102095",
+          "heavy_atoms": 21,
+          "rings": 1,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101641",
+          "heavy_atoms": 21,
+          "rings": 2,
+          "nos_atoms": 4
+        },
+        {
+          "ChEMBL_ID": "CHEMBL100116",
+          "heavy_atoms": 21,
+          "rings": 3,
+          "nos_atoms": 2
+        },
+        {
+          "ChEMBL_ID": "CHEMBL101152",
+          "heavy_atoms": 21,
+          "rings": 4,
+          "nos_atoms": 4
+        },
+        {
+          "ChEMBL_ID": "CHEMBL102201",
+          "heavy_atoms": 22,
+          "rings": 2,
+          "nos_atoms": 2
+        }
+      ],
+      "source_bins": {
+        "(14, 2)": 1,
+        "(15, 2)": 1,
+        "(15, 3)": 1,
+        "(16, 2)": 1,
+        "(16, 3)": 1,
+        "(17, 2)": 1,
+        "(17, 3)": 1,
+        "(18, 2)": 1,
+        "(18, 3)": 1,
+        "(19, 2)": 1,
+        "(19, 3)": 1,
+        "(19, 4)": 1,
+        "(20, 2)": 1,
+        "(20, 3)": 1,
+        "(20, 4)": 1,
+        "(21, 1)": 1,
+        "(21, 2)": 1,
+        "(21, 3)": 1,
+        "(21, 4)": 1,
+        "(22, 2)": 1
+      },
+      "intake_audit": {
+        "schema_version": 1,
+        "content_sha256": "74305b33acad639b825b025956f7e91285fccdbc8a6f4671348b521ad7b073c0",
+        "bytes": 996,
+        "input_format": "csv",
+        "header": [
+          "SMILES",
+          "ChEMBL_ID"
+        ],
+        "row_count": 20,
+        "canonicalized_rows": 20,
+        "canonical_unique_count": 20,
+        "duplicate_rows": 0,
+        "invalid_rows": [],
+        "unsupported_rows": [],
+        "multicomponent_rows": [],
+        "normalization_policy_id": "strict-canonical-isomeric-no-standardization-v2@rdkit-2025.09.4;legacy-stereo=1;non-tetrahedral=1",
+        "rdkit_version": "2025.09.4",
+        "parser_settings": {
+          "parseName": false,
+          "allowCXSMILES": false,
+          "canonical": true,
+          "isomericSmiles": true,
+          "sanitize": true,
+          "removeHs": true,
+          "legacy_stereo": true,
+          "allow_nontetrahedral_chirality": true
+        },
+        "normalized_identity_complete": true,
+        "normalized_input_set_sha256": "0710885f390edec7483c531cb6cdf5d6b7240d4a6b71eb43861abbe3fe1c6450",
+        "normalized_sequence_sha256": "162815453cf486240f5554887555b0c46bc230a1db35e4cde9c1de7899a87981",
+        "normalized_multiset_sha256": "0710885f390edec7483c531cb6cdf5d6b7240d4a6b71eb43861abbe3fe1c6450",
+        "public_input_format_ready": true,
+        "structure_scope_needs_review": false,
+        "approval_status": "not_reviewed",
+        "capability_card_reviewed": false,
+        "available_for_policy": false,
+        "fragment_material_identity": "not_calculated",
+        "scoring_or_model_execution": false
+      },
+      "scientific_review": "not_received",
+      "capability_card_reviewed": false,
+      "available_for_policy": false
+    }
+  ],
+  "normalized_source_overlap": [
+    {
+      "first": "hetero_rich_sources",
+      "second": "carbon_rich_sources",
+      "intersection": 0,
+      "union": 40
+    },
+    {
+      "first": "hetero_rich_sources",
+      "second": "mixed_reference",
+      "intersection": 10,
+      "union": 30
+    },
+    {
+      "first": "carbon_rich_sources",
+      "second": "mixed_reference",
+      "intersection": 10,
+      "union": 30
+    }
+  ],
+  "approved_asset_count": 0,
+  "scientific_jobs_submitted": 0,
+  "property_model_calls": 0
+}
