@@ -21,3 +21,24 @@ connector changes are outside this migration.
 The reusable environment remains in `science-environments/BoltChem`, tracked by
 [science-environments#46](https://github.com/boltzmannlabs/science-environments/issues/46).
 This move adds no scientific validation, real-profile installation or model calls.
+
+## Migration verification
+
+The 73-file source snapshot was stable on repeat hashing. Prototype code, specialist
+configuration and dated evidence were preserved byte-for-byte; nine Markdown files
+received location/tracking updates and this record was added. All JSON parsed and
+local documentation links resolved. No credential patterns or oversized files were
+found. CSV CRLF bytes were retained to preserve their recorded source hashes.
+
+Portable checks passed: 32 policy, 43 context, 20 optional RDKit intake and 10
+advisor checks, run in a disposable copy without rewriting the dated records.
+Both coverage-planning checks also passed (107 portable checks total).
+
+A fresh native canary through the host's official test runner collected two tests:
+the disabled-definition import check passed, then the child-runtime check exceeded
+the 180-second file timeout. This is an incomplete run, not a passing suite. The
+runner's optional bytecode precompilation was separately terminated after stalling
+so targeted tests could start. The earlier two-test passing record is retained as
+historical evidence; the migration does not establish a fresh native-runtime pass.
+No implementation changes or real model/scientific requests were made to address
+this runtime issue during the repository transfer.
