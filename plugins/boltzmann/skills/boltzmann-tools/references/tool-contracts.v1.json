@@ -5679,7 +5679,7 @@
         "type": "object",
         "properties": {
           "input_path": {
-            "description": "S3 path to CSV or FASTA (upload first)",
+            "description": "Uploaded CSV storage path with the exact Sequences column. FASTA is not supported by the platform submission path.",
             "type": "string",
             "x-input-kind": "file"
           },
