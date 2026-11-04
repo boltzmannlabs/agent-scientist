@@ -46,6 +46,48 @@ same component; different candidates remain independently bound. Candidate IDs
 come from sanitized basenames, so different paths must not collide. Every
 structure/dictionary CIF must be declared; their roles must not overlap.
 
+## Recovery after a missing-ligand-dictionary failure
+
+A normal structure submission does not require a separate Docker dictionary
+probe first. If it fails, use the following bounded recovery rather than
+repeating the same input or silently falling back to protein-only validation.
+
+1. Retain the original job ID, input identity and diagnostic. Confirm that the
+   job is terminal **failed**, and that its native error specifically identifies
+   missing ligand restraints, an unrecognized ligand component or unknown ligand
+   nonbonded energy types. A generic subprocess failure is insufficient evidence.
+   Missing job IDs, unknown outcomes, pending/running jobs, authentication,
+   connectivity and credit-calculation errors do not authorize this recovery.
+2. Establish the ligand's identity, protonation/charge and exact atom mapping
+   from reviewed molecular inputs. Obtain a matching restraint CIF, or generate
+   one with an appropriate available preparation tool and validate it. Do not
+   write guessed bond orders, charges, stereochemistry or restraint targets from
+   the coordinate pose. If the necessary chemistry cannot be established, stop
+   and explain what is missing; additional-cost approval cannot supply evidence.
+3. Make a new ZIP using the existing protocol above, preserving the original
+   complete complex, coordinates, atom labels and residue numbering. Include
+   the reviewed dictionary and root manifest; check the dictionary hash, residue
+   selector, reference SMILES and atom mapping. Validate and upload the new ZIP
+   through the connector. Do not overwrite the original or merely resubmit it.
+4. When the user has explicitly pre-authorized this ligand-dictionary recovery
+   **including additional credits**, submit one corrected replacement job without
+   asking for cost approval again. Use a distinct, traceable experiment name,
+   retaining the original execution mode and any user-selected thresholds. This
+   reuses that user's approval; the contract itself grants no spending authority
+   to other users or workflows. Honor any applicable budget, stop or revocation.
+5. Record the original and replacement job IDs, error, corrected-input identity
+   and dictionary provenance. Poll only the replacement ID and inspect its real
+   outputs. If it fails again, report the new diagnostic and stop the automatic
+   recovery loop; never present attempted recovery as completed validation.
+
+Cost pre-approval does not bypass connector authorization, known-invalid inputs,
+unsupported chemistry, or independently required approval for unchecked local
+validation. Resolve those specific blockers without asking again for a cost
+approval already granted. Without explicit recovery-cost authorization, obtain
+it before creating an additional billable job. This is workflow guidance using
+existing preparation/upload/submit tools, not a new dictionary generator or a
+background retry mechanism.
+
 ## Limits and local coverage
 
 The canonical limits are under `tools.Mol_Probity.ligand_bundle` in

@@ -1906,6 +1906,7 @@ The optional ZIP-root ligand manifest shape is canonical in
 ### Execution notices
 
 - In measurement_only mode the connector ignores supplied quality_thresholds before validation/submission, matching the worker. In validation, a nonempty supported object or uploaded JSON path is required.
+- For a confirmed terminal failure specifically caused by missing ligand restraints or unknown ligand atom types, follow molprobity-ligand-bundles.md#recovery-after-a-missing-ligand-dictionary-failure. With explicit user pre-authorization covering recovery credits, prepare and validate a reviewed custom-ligand ZIP and submit one separately named replacement without asking for cost approval again. Do not retry pending/unknown outcomes, invent ligand chemistry, or bypass authorization and input-validation requirements.
 - The latest recorded reference submission was accepted but remained pending without artifacts. This is not completed validation; do not duplicate a pending job.
 
 ### Recorded payload example
