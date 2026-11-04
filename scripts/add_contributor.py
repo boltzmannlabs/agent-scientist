@@ -2,8 +2,7 @@
 """Add a contributor email → GitHub login mapping.
 
 Writes one file per email under contributors/emails/ (filename = email,
-content = login). File additions never merge-conflict, unlike the legacy
-AUTHOR_MAP dict in scripts/releases/authors_legacy.py, which is frozen — do not append to it.
+content = login). These mappings belong to SCI; additions use separate files.
 
 Usage (from the repo root):
     python3 scripts/add_contributor.py <email> <github-login> [comment...]
@@ -12,8 +11,8 @@ Usage (from the repo root):
     python3 scripts/add_contributor.py jane@example.com janedoe "PR #12345 salvage"
 
 Idempotent: if the mapping already exists with the same login, prints
-"present" and exits 0. If the email maps to a DIFFERENT login (here or in the
-legacy AUTHOR_MAP), refuses with exit 1 so a typo can't silently reassign
+"present" and exits 0. If the email maps to a DIFFERENT login, refuses with
+exit 1 so a typo can't silently reassign
 someone's commits.
 """
 
@@ -42,17 +41,6 @@ def read_mapping_file(path: Path) -> str | None:
     except OSError:
         pass
     return None
-
-
-def _legacy_login(email: str) -> str | None:
-    """Look the email up in the frozen legacy AUTHOR_MAP in scripts/releases/authors_legacy.py."""
-    try:
-        sys.path.insert(0, str(REPO_ROOT))
-        from scripts.releases.authors_legacy import LEGACY_AUTHOR_MAP  # noqa: PLC0415
-
-        return LEGACY_AUTHOR_MAP.get(email)
-    except Exception:
-        return None
 
 
 def _case_collision(email: str) -> str | None:
@@ -103,8 +91,6 @@ def add_contributor(email: str, login: str, comment: str = "") -> int:
         return 1
 
     existing = read_mapping_file(path) if path.is_file() else None
-    if existing is None:
-        existing = _legacy_login(email)
     if existing is not None:
         if existing == login:
             print("present")

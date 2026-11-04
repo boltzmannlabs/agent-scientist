@@ -13,6 +13,13 @@ a temporary child agent using SCI's existing delegation engine.
 profile.** You can also create them inside any profile. Main and each profile keep their
 own definitions and run history. A specialist is neither a new profile nor a new installation.
 
+Delegation is enabled by default in main and newly created native science profiles. Existing CLI
+configurations receive a one-time upgrade to include it, including profiles created by the older
+wizard that saved only terminal/file/skills. This enables assignment to specialists; it does not
+grant them additional scientific tools or credentials. Changes take effect in a new conversation.
+An intentional opt-out after the upgrade remains respected. Legacy restricted-worker profiles keep
+their reviewed boundaries and require their existing migration flow before using native specialists.
+
 ## Quick start
 
 Start the interactive CLI:
@@ -391,3 +398,17 @@ The development machine's installed Boltzmann code and documentation were synchr
 the repository, with a recoverable code backup. Credentials, authorization state, and configuration
 files remained byte-identical. An isolated import check verified complete connector schemas and
 that an unauthorized temporary profile stays locked, without a service request.
+
+## Delegation defaults — 29 October 2026
+
+The native science-profile baseline now includes `delegation`. Config migration v50 enables it
+once for existing CLI configurations, including unstamped wizard-created profiles, and removes an
+old delegation-only global exclusion while preserving unrelated exclusions. Later intentional
+opt-outs remain effective. Main's existing `sci-cli` composite already includes delegation.
+
+Verification: 33 tests passed across nine files using `scripts/run_tests.sh`, covering new native
+profiles, real tool-schema resolution, versioned/unversioned migration, A → B → A isolation,
+later opt-out, legacy restricted boundaries, real child execution and migration regressions.
+The local `test-del` configuration was repaired with a private backup; all 14 local main/native
+profiles resolved delegation. Nine legacy restricted profiles were preserved without conversion.
+Restart the CLI and use `/new` to obtain a fresh tool snapshot. No commit or push was performed.

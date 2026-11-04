@@ -1871,7 +1871,7 @@ Launch the web dashboard to manage configuration, API keys, and sessions. For a 
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--port` | `9119` | Port to run the web server on |
+| `--port` | `9119` | Without this flag, try `9119`, then `9120`, `9121`, etc. until a port is free. An explicit port is used exactly; `0` lets the OS choose. |
 | `--host` | `127.0.0.1` | Bind address |
 | `--no-open` | — | Don't auto-open the browser |
 | `--insecure` | off | **Deprecated / no-op.** Formerly bypassed auth on a non-loopback bind. Since the June 2026 hardening a public bind *always* requires an auth provider (password or OAuth). Bind `127.0.0.1` and tunnel to keep it local. |
@@ -1891,7 +1891,7 @@ Register this install as a self-hosted dashboard with your Nous Portal account. 
 | `--portal-url` | Override the Nous Portal base URL for registration (default: the portal you logged into). Also settable via `SCI_DASHBOARD_PORTAL_URL`. |
 
 ```bash
-# Default — opens browser to http://127.0.0.1:9119
+# Default — opens browser on 9119, or the next free port if occupied
 sci dashboard
 
 # Custom port, no browser

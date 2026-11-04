@@ -316,14 +316,22 @@ remains available there and selects the published release's source commit.
 
 `--build-commit` prints its deterministic downloads-page URL before dispatch,
 including in dry runs:
-`https://hermes-assets.nousresearch.com/releases/commit/<full-sha>/index.html`.
-`CLOUDFLARE_R2_PUBLIC_URL` overrides the public origin. After admission, the
+`<configured-public-root>/releases/commit/<full-sha>/index.html`.
+Configure `CLOUDFLARE_R2_PUBLIC_URL` with the approved SCI asset host; there is
+no built-in public host fallback. Missing configuration stops URL resolution
+with setup guidance. After admission, the
 commit summary runs even when a build or assembly job fails; it lists only
 receipt-backed existing downloads and marks missing binaries as not built.
 Missing binaries link to the workflow run under **View build run**, not to
 nonexistent downloads. Disabled platforms have no download or failure link.
 Page publication still requires working R2 access. The commit links to its source
 on GitHub; tag and channel pages link to the corresponding GitHub release tag.
+Docker build and publication workflows use the repository variable
+`SCI_CONTAINER_IMAGE` (default: `agent-scientist`). Set it to the authorized
+registry namespace before publishing. Local Docker release administration uses
+`IMAGE_NAME` with the same default, so inspection and alias promotion target the
+same image that was built. Preview Windows package identities use the
+`BoltzmannLabs` prefix, matching SCI desktop packaging.
 Commit pages also list explicit non-secret `--bundle-env` defaults and
 `--bundle-unset` clears passed to the desktop bundles, not the CI environment.
 Values are shown as JSON strings (including `""` for an empty value); clears are

@@ -410,6 +410,18 @@ def test_partial_file_preflight_upload_and_submit_with_real_profile_receipts(tmp
             assert result["status"] == "accepted" and result["validation"]["level"] == "partial"
             assert state["calls"].count("/submit") == 1
             assert state["submission"]["experimentData"] == payload
+            # Real discovery and a loopback status response retire only this job's pin.
+            assert "boltzmann-receipts" in manager._cli_commands
+            monkeypatch.setitem(module.tools.fetch_status.__globals__, "_FETCH_URL", base + "/result")
+            status = json.loads(module.tools.handle_boltzmann_status(
+                job_name="Single_Point_Energy", doc_id=result["doc_id"]))
+            assert status["job_terminal_confirmed"] is True
+            records = preflight.ReceiptStore().inspect()["records"]
+            linked = next(r for r in records if r["kind"] == "submission")
+            assert linked["doc_id"] == result["doc_id"] and linked["state"] == "terminal"
+            assert uploaded["receipt_id"] in linked["receipts"]
+            assert preflight.ReceiptStore().get(preflight._receipt_key(
+                "Single_Point_Energy", "molecule_path", uploaded["s3_path"]))
             invalid = dict(payload, spin_multiplicity=1)
             result = json.loads(module.tools.handle_boltzmann_submit(
                 job_name="Single_Point_Energy", experiment_data=invalid, experiment_name="fixture-water",
@@ -697,7 +709,7 @@ def test_enzyme_upload_enforces_headers_and_profile_scoped_current_rules(tmp_pat
             old_rule = old_store.files["Enzymes"]["files"]["dataPath"]
             old_rule.pop("columns", None)
             key = preflight._receipt_key("Enzymes", "dataPath", payload["dataPath"])
-            receipt = PluginState("boltzmann").get(key)
+            receipt = preflight.ReceiptStore().get(key)
             receipt["contract"] = preflight._contract_digest(old_store, "Enzymes")
             PluginState("boltzmann").set(key, receipt)
             stale = preflight.preflight_submission("Enzymes", payload)

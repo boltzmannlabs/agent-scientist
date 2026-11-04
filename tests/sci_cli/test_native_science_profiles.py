@@ -56,6 +56,12 @@ def test_publish_real_profiles_and_switch_a_b_a_without_leaking_state(root, tmp_
             assert profile_label() == name
             assert available() == (name == "a")
             cfg = read_user_config_raw(homes[name] / "config.yaml")
+            from sci_cli.tools_config import _get_platform_tools
+            from model_tools import get_tool_definitions
+            selected = _get_platform_tools(cfg, 'cli')
+            assert 'delegation' in selected
+            definitions = get_tool_definitions(sorted(selected), quiet_mode=True, skip_tool_search_assembly=True)
+            assert 'delegate_task' in {t['function']['name'] for t in definitions}
             assert cfg["terminal"]["cwd"] == str(homes[name] / "workspace")
             assert "PRIVATE_SERVICE_TOKEN" not in (homes[name] / ".env").read_text()
             assert (homes[name] / "skills/science/evidence/reference.md").read_text() == "A supporting reference."

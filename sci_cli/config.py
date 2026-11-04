@@ -1452,7 +1452,17 @@ def _warn_invalid_platform_toolsets(results: Dict[str, Any], quiet: bool) -> Non
         from sci_cli.toolset_validation import saved_toolset_resolver, validate_platform_toolsets
 
         config = read_raw_config()
-        for w in validate_platform_toolsets(config.get("platform_toolsets"), saved_toolset_resolver(config)):
+        toolsets = config.get("platform_toolsets")
+        warnings = validate_platform_toolsets(toolsets, saved_toolset_resolver(config))
+        if any("references unknown toolset" in warning for warning in warnings):
+            # A just-enabled plugin may be absent from the last-launch cache while
+            # background discovery is still loading it. Join discovery once before
+            # reporting a saved toolset as invalid.
+            from sci_cli.plugins import discover_plugins
+
+            discover_plugins()
+            warnings = validate_platform_toolsets(toolsets, saved_toolset_resolver(config))
+        for w in warnings:
             results["warnings"].append(w)
             if not quiet:
                 print(f"  ⚠ {w}")

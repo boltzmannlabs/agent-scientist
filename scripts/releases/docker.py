@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -15,7 +16,12 @@ GIT_SHA = re.compile(r"[a-f0-9]{40}")
 from sci_cli.update_channel import STABLE_TAG_RE
 from scripts.releases.versioning import parse_attempt_ref
 ARCHES = ("amd64", "arm64")
-IMAGE = "nousresearch/hermes-agent"
+DEFAULT_IMAGE = "agent-scientist"
+
+
+def image_name() -> str:
+    """Use the image selected by the build workflow for inspection and promotion."""
+    return os.environ.get("IMAGE_NAME") or DEFAULT_IMAGE
 
 class DockerReleaseError(ValueError):
     """Raised when a phase/manifest violates the staged-release contract."""
@@ -105,7 +111,7 @@ def _inspect(reference: str, run) -> str:
 
 
 def _version_digest(tag: str, suffix: str, run) -> str:
-    reference = f"{IMAGE}:{tag}{suffix}"
+    reference = f"{image_name()}:{tag}{suffix}"
     try:
         digest = _inspect(reference, run)
     except subprocess.CalledProcessError as exc:
@@ -124,10 +130,11 @@ def promote_stable(tag: str, digest: str, *, run=output, sleep=time.sleep) -> No
         raise DockerReleaseError("Docker versioned tag differs from the final release receipt")
     # Inspect both before moving either alias; desktop has its own registry digest.
     variants = (("", digest), ("-desktop", _version_digest(tag, "-desktop", run)))
+    image = image_name()
     for suffix, version_digest in variants:
         command = [
-            "docker", "buildx", "imagetools", "create", "-t", f"{IMAGE}:stable{suffix}",
-            "-t", f"{IMAGE}:latest{suffix}", f"{IMAGE}@{version_digest}",
+            "docker", "buildx", "imagetools", "create", "-t", f"{image}:stable{suffix}",
+            "-t", f"{image}:latest{suffix}", f"{image}@{version_digest}",
         ]
         for attempt in range(3):
             try:
@@ -139,7 +146,7 @@ def promote_stable(tag: str, digest: str, *, run=output, sleep=time.sleep) -> No
                 sleep(20)
         for alias in ("stable", "latest"):
             for attempt in range(3):
-                if _inspect(f"{IMAGE}:{alias}{suffix}", run) == version_digest:
+                if _inspect(f"{image}:{alias}{suffix}", run) == version_digest:
                     break
                 if attempt < 2:
                     sleep(20)
@@ -150,7 +157,7 @@ def promote_stable(tag: str, digest: str, *, run=output, sleep=time.sleep) -> No
 def stable_alias_digest(run=output) -> str | None:
     """The slim ``stable`` alias digest, or None when the alias does not exist yet."""
     try:
-        digest = _inspect(f"{IMAGE}:stable", run)
+        digest = _inspect(f"{image_name()}:stable", run)
     except subprocess.CalledProcessError:
         return None
     if not re.fullmatch(r"sha256:[a-f0-9]{64}", digest):

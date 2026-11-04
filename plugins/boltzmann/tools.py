@@ -17,6 +17,7 @@ from .nodeapi_helpers import (
 from .auth import current_key, require_authorized
 from .contracts import ContractStore
 from .preflight import decision, preflight_submission, validated_upload
+from .receipt_store import ReceiptStore, ReceiptStorageError, GUIDANCE
 
 # Permanently retired platform jobs. Keep this enforcement at the submission
 # boundary so stale conversations or manually supplied job names cannot invoke
@@ -154,6 +155,14 @@ def _handle_boltzmann_submit_inner(**kwargs):
     conv_id = _get_conv_id(kwargs)
     token = _get_api_key()
 
+    receipts = ReceiptStore()
+    try:
+        attempt = receipts.begin_submission(job_name, getattr(report, "upload_receipt_ids", []), experiment_name)
+    except ReceiptStorageError as exc:
+        return json.dumps({"error": str(exc), "stage": "receipt_reservation", "status": "not_started",
+                           "submitted": False, "safe_to_retry": False})
+    # Pending references are durable BEFORE the request. A timeout/crash cannot
+    # leave these uploads looking unused and therefore eligible for expiration.
     doc_id = submit_request(experiment_data, job_name, experiment_name, token=token, conv_id=conv_id)
 
     # Allow the auto-logged pending write to propagate before the next tool
@@ -162,10 +171,21 @@ def _handle_boltzmann_submit_inner(**kwargs):
 
     # submit_request now returns an error dict on auth failures instead of raising
     if isinstance(doc_id, dict) and "error" in doc_id:
-        return json.dumps(doc_id)
+        return json.dumps({**doc_id, "receipt_attempt_id": attempt})
+
+    if not isinstance(doc_id, str) or not doc_id:
+        return json.dumps({"error": "Submission did not return a valid job ID. Do not resubmit; reconcile its outcome.",
+                           "status": "unknown", "receipt_attempt_id": attempt, "safe_to_retry": False})
+    receipt_warning = None
+    try:
+        receipts.accept_submission(attempt, doc_id)
+    except ReceiptStorageError as exc:
+        receipt_warning = "Job accepted, but saving its receipt/job link failed. Do not resubmit; unresolved entries cannot be cleaned. " + str(exc)
 
     return json.dumps({"doc_id": doc_id, "job_name": job_name, "experiment_name": experiment_name,
                        "stage": "submit", "status": "accepted", "validation": report.as_dict(),
+                       "receipt_attempt_id": attempt,
+                       **({"receipt_storage_warning": receipt_warning} if receipt_warning else {}),
                        "message": "Job accepted, not completed. Poll this job; do not submit again."})
 
 
@@ -188,6 +208,13 @@ def _handle_boltzmann_status_inner(**kwargs):
     # Always refresh from the service: completed responses may contain expiring
     # signed artifact URLs. A terminal-state cache is not an artifact URL cache.
     result = fetch_status(job_name, doc_id, token=token, conv_id=conv_id, output_folder=output_folder)
+    try:
+        ReceiptStore().observe(job_name, doc_id, result)
+    except ReceiptStorageError:
+        # Keep the remote result and ID, even when local bookkeeping fails.
+        if isinstance(result, dict):
+            result = {**result, "receipt_storage_warning":
+                      "Job status was retrieved, but receipt tracking or cleanup failed. " + GUIDANCE}
 
     # Allow the auto-logged terminal write to propagate before the next tool
     # call triggers another read-modify-write (critical for multi-step workflows).

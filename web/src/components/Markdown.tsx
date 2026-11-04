@@ -1,4 +1,6 @@
 import { useMemo, type ReactNode } from "react";
+import { StructureLink } from '@/components/structure/StructurePreview';
+import { structureSourceFromLink } from '@/lib/structure-source';
 
 /**
  * Lightweight markdown renderer for LLM output.
@@ -352,6 +354,9 @@ function InlineContent({
               </em>
             );
           case "link": {
+            if (structureSourceFromLink(node.href, typeof window === 'undefined' ? undefined : window.location.origin)) {
+              return <StructureLink key={i} href={node.href}>{node.text}</StructureLink>;
+            }
             // Security: only render http(s)/mailto links. Other schemes
             // (javascript:, data:, vbscript:) are dropped to plain text so a
             // crafted link in agent/message content can't execute on click.

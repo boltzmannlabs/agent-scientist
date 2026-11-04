@@ -447,6 +447,33 @@ def _write_machine_sentinel_line(line: str) -> None:
             pass
 
 
+def _bind_dashboard_socket(host: str, port: int):
+    """Hold the first available sequential port until uvicorn takes ownership."""
+    import socket
+
+    family = socket.AF_INET6 if ":" in host else socket.AF_INET
+    candidate = port
+    while True:
+        sock = socket.socket(family, socket.SOCK_STREAM)
+        try:
+            exclusive = getattr(socket, "SO_EXCLUSIVEADDRUSE", None)
+            if sys.platform == "win32" and exclusive is not None:
+                sock.setsockopt(socket.SOL_SOCKET, exclusive, 1)
+            else:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind((host, candidate))
+            sock.listen()
+            if candidate != port:
+                print(f"  Dashboard port {port} is busy; using port {candidate}.", flush=True)
+            return sock
+        except BaseException as exc:
+            sock.close()
+            if isinstance(exc, OSError) and _is_addr_in_use_error(exc) and candidate < 65535:
+                candidate += 1
+                continue
+            raise
+
+
 def _report_port_in_use(host: str, port: int) -> None:
     """Print the machine sentinel + a human hint naming likely holders."""
     _write_machine_sentinel_line(_PORT_IN_USE_SENTINEL.format(port=port))

@@ -18,7 +18,7 @@ Hosted-mode auth uses Nous Portal OAuth; if you also want the dashboard to talk 
 sci dashboard
 ```
 
-This starts a local web server and opens `http://127.0.0.1:9119` in your browser. The dashboard runs entirely on your machine — no data leaves localhost.
+This starts a local web server and opens `http://127.0.0.1:9119` in your browser. If that port is busy, SCI tries `9120`, `9121`, and so on, then prints and opens the actual URL. A compatible SCI dashboard already running on this host is reused. An explicit `--port` stays fixed; `--port 0` lets the OS choose a free port.
 
 ### Options
 
@@ -225,6 +225,62 @@ curl -s http://VM_IP:9119/api/status | jq '.auth_required, .auth_providers'
 :::
 
 If `/api/status` shows the gate is on with the `"basic"` provider and Desktop *still* fails to connect after signing in, the issue is past basic setup — grab a fresh `desktop.log` (Settings → Gateways → Open logs) plus the dashboard's logs from the same retry window and look for the `/api/ws` close code (4403 = chat WS rejected by the request guard, e.g. Host/peer mismatch; 4401 = the WS ticket didn't authenticate).
+
+### Molecular structure previews
+
+Open **Files** and select **3D** beside a `.pdb`, `.cif`, or `.mmcif` file.
+The embedded Mol* viewer supports rotating and zooming, residue selection,
+representation controls, measurements, and image export. Existing download actions
+remain available. Supported absolute local-file links in chat also offer **View
+structure**; external website links keep their normal behavior.
+
+**Open local structure** opens a file from your own computer entirely in the
+browser, without uploading it. Server files use the dashboard's existing file
+access controls. Files are read only when you open their preview. Switching the
+management profile closes an open server-file preview.
+
+Previews accept files up to 20 MiB and require browser WebGL support. An unreadable
+file or unavailable WebGL produces an error in the preview. Visualization does not
+run a scientific tool or establish scientific correctness. The renderer is loaded
+on demand, so ordinary dashboard startup does not load Mol*.
+
+#### Open PyMOL on the server desktop
+
+For a server-side PDB/mmCIF file, choose **3D → PyMOL Desktop**. Review the
+selected server desktop, then click **Open PyMOL on server desktop**. This launches
+the separate PyMOL application on the SCI server, not inside the browser or on a
+remote laptop. Use the server's screen or a remote-desktop connection to see it;
+an SSH port-forward alone does not carry desktop windows.
+
+The optional **Install PyMOL Desktop** button uses SCI's package manager to install
+community-built `pymol-open-source-whl==3.2.0.2`, PySide6 and NumPy in an isolated,
+profile-scoped environment. Viewing the panel never installs or launches anything.
+Installation can continue after closing the panel; reopen it to check its status.
+The community wheel project is [pymol-open-source-whl](https://github.com/urban233/pymol-open-source-whl);
+[Open-Source PyMOL](https://github.com/schrodinger/pymol-open-source) provides the application.
+PyMOL is a trademark of Schrödinger, LLC.
+
+On Ubuntu/Debian, Qt may additionally require an administrator to install
+`libxcb-cursor0` (`sudo apt-get install libxcb-cursor0`). SCI does not install OS
+packages or request administrator privileges. A graphical desktop must be logged
+in as the same user running SCI. Linux discovery recognizes common GNOME, KDE,
+Xfce, MATE, Cinnamon and LXQt sessions; for another desktop, launch the dashboard
+from its graphical terminal. Multiple discovered desktops require selection.
+
+Only `.pdb`, `.cif` and `.mmcif` files up to 20 MiB are accepted. Managed-file access
+rules still apply; scripts and PyMOL session files cannot be launched through this
+action. PyMOL opens a temporary copy with user startup scripts/plugins disabled
+and without SCI's API keys. It does not modify the source structure. Save work to
+a permanent location from PyMOL before closing it. Temporary copies are removed
+on normal application exit. Abrupt process termination may leave a temporary copy.
+
+SCI waits for the structure to load before reporting success. Failed, timed-out
+or cancelled startup attempts stop their owned process. Once launched, the window
+belongs to the user and remains open when the browser panel closes. This feature
+does not change the conversation, selected model, or cached prompt.
+
+Local-browser-only previews remain in Mol*. To use a local file with server-side
+PyMOL, explicitly upload it through **Files** first.
 
 ### Config
 

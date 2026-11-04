@@ -189,8 +189,6 @@ def print_fast_version_info(*, check_updates: bool = True) -> None:
     Every lazy block degrades gracefully — a broken/heavy import can never take the basic version
     output down.
     """
-    # Registry-owned banner label (includes "· upstream <sha>" for git installs); banner.py keeps
-    # rich/prompt_toolkit lazy, so this import is light.
     try:
         from sci_cli.banner import format_banner_version_label
 

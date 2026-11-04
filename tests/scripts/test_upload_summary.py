@@ -7,12 +7,14 @@ from scripts.releases import r2, upload_summary
 from scripts.releases.r2_scope import R2Scope
 
 
-BASE = "https://hermes-assets.nousresearch.com"
+BASE = "https://assets.example.org"
 KEY = "releases/commit/" + "a" * 40 + "/SciBundled-1.2.3-win-x64.msix"
 
 
 @pytest.fixture(autouse=True)
-def clear_notes():
+def clear_notes(monkeypatch):
+    monkeypatch.setenv("CLOUDFLARE_R2_PUBLIC_URL", BASE)
+    monkeypatch.delenv("R2_DISPOSABLE_RUN", raising=False)
     upload_summary._KEYS.clear()
     upload_summary._REGISTERED = False
     yield
@@ -20,7 +22,6 @@ def clear_notes():
 
 
 def test_render_uses_the_public_asset_host(monkeypatch):
-    monkeypatch.delenv("CLOUDFLARE_R2_PUBLIC_URL", raising=False)
     monkeypatch.delenv("R2_DISPOSABLE_RUN", raising=False)
     text = upload_summary.render([KEY])
     assert f"[download]({BASE}/{KEY})" in text
@@ -40,7 +41,6 @@ def test_note_dedupes_and_flush_appends_once(tmp_path, monkeypatch):
     summary = tmp_path / "summary.md"
     summary.write_text("existing\n", encoding="utf-8")
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
-    monkeypatch.delenv("CLOUDFLARE_R2_PUBLIC_URL", raising=False)
     monkeypatch.delenv("R2_DISPOSABLE_RUN", raising=False)
     upload_summary.note(KEY)
     upload_summary.note(KEY)

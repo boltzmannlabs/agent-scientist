@@ -12,10 +12,12 @@ import argparse
 from typing import Callable
 
 
-def _add_server_runtime_args(parser) -> None:
+def _add_server_runtime_args(parser, *, auto_port: bool = False) -> None:
     """Runtime flags shared by ``dashboard`` and ``serve`` (same ``web_server.start_server``)."""
     parser.add_argument(
-        "--port", type=int, default=9119, help="Port (default 9119, 0 for auto-assign by OS)")
+        "--port", type=int, default=9119,
+        help=("Fixed port (default: try 9119, then the next free port; 0 for OS assignment)"
+              if auto_port else "Port (default 9119, 0 for auto-assign by OS)"))
     parser.add_argument("--host", default="127.0.0.1", help="Host (default 127.0.0.1)")
     parser.add_argument(
         "--insecure", action="store_true",
@@ -80,7 +82,7 @@ def build_dashboard_parser(
         "dashboard", help="Start the web UI dashboard",
         description="Launch the Sci Agent web dashboard for managing config, API keys, and sessions",
     )
-    _add_server_runtime_args(dashboard_parser)
+    _add_server_runtime_args(dashboard_parser, auto_port=True)
     dashboard_parser.add_argument(
         "--no-open", action="store_true", help="Don't open browser automatically")
     # Compat shim: desktop shells <= 0.15.x spawn `sci dashboard --no-open --tui ...`;

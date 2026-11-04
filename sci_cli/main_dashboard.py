@@ -973,9 +973,12 @@ def _route_named_profile_dashboard(
         # Preserve the lean serve path so a named-profile `serve` doesn't
         # silently rebuild the UI as `dashboard`.
         "serve" if _headless_backend else "dashboard",
-        "--port", str(args.port),
         "--host", args.host,
         "--open-profile", _launch_profile]
+    # Keep an implicit dashboard port implicit through the profile re-exec so
+    # the machine dashboard can move past occupied ports as a direct launch does.
+    if _headless_backend or "port" in _explicit_endpoint_flags():
+        reexec_argv.extend(["--port", str(args.port)])
     for enabled, extra in (
         (_ssh_owner_nonce, ["--ssh-owner-nonce", _ssh_owner_nonce]),
         (_token_file, ["--ssh-session-token-file", _token_file]),

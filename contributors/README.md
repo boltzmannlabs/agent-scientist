@@ -1,38 +1,25 @@
-# Contributor email → GitHub login mappings
+# SCI contributor mappings
 
-This directory replaces appending entries to `AUTHOR_MAP` in
-`scripts/releases/authors_legacy.py`. The old dict caused constant merge conflicts when
-several salvage PRs landed at once — every PR edited the same lines of the
-same file. Here, **each mapping is its own file**, and file additions never
-conflict.
+This directory holds verified commit-author email → GitHub login mappings for
+Agent Scientist contributors. It is not a contributor roster. Git commit history
+remains the record of authorship; release notes use these mappings when an email
+does not already identify a GitHub account.
 
 ## Adding a mapping
 
-One file per commit-author email, under `emails/`:
+Run from the repository root:
 
 ```bash
 python3 scripts/add_contributor.py <email> <github-login>
-# or by hand:
-echo "<github-login>" > contributors/emails/<email>
 ```
 
-- File **name** = the exact commit-author email (as shown by `git log --format='%ae'`).
-- File **content** = the GitHub login on the first non-comment line.
-  Lines starting with `#` are comments (use them for the PR reference).
+The command writes `emails/<email>` with the GitHub login on the first
+non-comment line. It rejects conflicting logins and filename case collisions.
+Verify that the account belongs to the contributor before adding a mapping.
 
-Example — `contributors/emails/jane.doe@example.com`:
+GitHub noreply addresses resolve directly in release notes. Unmapped authors
+retain their Git commit name. There are no person- or company-specific exemptions
+in the attribution check; common automation identities are skipped.
 
-```
-janedoe
-# PR #12345 salvage (gateway: fix session key routing)
-```
-
-## Rules
-
-- Do NOT add new entries to `AUTHOR_MAP` in `scripts/releases/authors_legacy.py`. That dict
-  is frozen legacy data; the release tooling merges it with this directory
-  (directory entries win on duplicates).
-- GitHub noreply emails (`<id>+<login>@users.noreply.github.com` and
-  `<login>@users.noreply.github.com`) auto-resolve — no file needed.
-- The `Contributor Attribution Check` CI job fails a PR whose commits carry
-  an unmapped email; the failure message prints the exact command to run.
+Use `python3 scripts/audit_pr_attribution.py` to inspect the current branch.
+Its optional `--fix` mode queries GitHub and creates mapping files for review.

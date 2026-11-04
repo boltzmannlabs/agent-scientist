@@ -55,6 +55,7 @@ jobs:
       - name: Reconcile stable drafts and protected heads
         run: python -m scripts.releases.sequencer
         env:
+          IMAGE_NAME: ${{ vars.SCI_CONTAINER_IMAGE || 'agent-scientist' }}
           GH_TOKEN: ${{ github.token }}
           REQUESTED_VERSION: ${{ inputs.version || '' }}
           CLOUDFLARE_R2_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_R2_ACCOUNT_ID }}

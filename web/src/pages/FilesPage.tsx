@@ -37,6 +37,8 @@ import { api } from "@/lib/api";
 import type { ManagedFileEntry, ManagedFilesResponse } from "@/lib/api";
 import { PluginSlot } from "@/plugins";
 import { errorMessage } from "@/lib/api-error";
+import { OpenLocalStructure, StructureButton } from '@/components/structure/StructurePreview';
+import { structureFormat } from '@/lib/structure-source';
 
 const DATE_FORMAT = new Intl.DateTimeFormat(undefined, {
   dateStyle: "medium",
@@ -299,6 +301,7 @@ export default function FilesPage() {
           </div>
         )}
         <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <OpenLocalStructure />
           <Button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -365,7 +368,7 @@ export default function FilesPage() {
             </div>
           )}
 
-          <div className="grid min-w-[42rem] grid-cols-[minmax(12rem,1fr)_7rem_10rem_5.5rem] items-center gap-3 border-b border-border px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+          <div className="grid min-w-[42rem] grid-cols-[minmax(12rem,1fr)_7rem_10rem_9rem] items-center gap-3 border-b border-border px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-text-tertiary">
             <span>Name</span>
             <span>Size</span>
             <span>Modified</span>
@@ -376,7 +379,7 @@ export default function FilesPage() {
             <button
               type="button"
               onClick={() => setCurrentPath(listing.parent ?? undefined)}
-              className="grid w-full min-w-[42rem] grid-cols-[minmax(12rem,1fr)_7rem_10rem_5.5rem] items-center gap-3 border-b border-border/60 px-4 py-2 text-left text-sm transition hover:bg-background/40"
+              className="grid w-full min-w-[42rem] grid-cols-[minmax(12rem,1fr)_7rem_10rem_9rem] items-center gap-3 border-b border-border/60 px-4 py-2 text-left text-sm transition hover:bg-background/40"
             >
               <span className="flex min-w-0 items-center gap-2 font-mono text-text-secondary">
                 <ArrowUp className="h-4 w-4 shrink-0 text-text-tertiary" />
@@ -399,7 +402,7 @@ export default function FilesPage() {
             listing?.entries.map((entry) => (
               <div
                 key={entry.path}
-                className="grid min-w-[42rem] grid-cols-[minmax(12rem,1fr)_7rem_10rem_5.5rem] items-center gap-3 border-b border-border/60 px-4 py-2 text-sm last:border-b-0 hover:bg-background/35"
+                className="grid min-w-[42rem] grid-cols-[minmax(12rem,1fr)_7rem_10rem_9rem] items-center gap-3 border-b border-border/60 px-4 py-2 text-sm last:border-b-0 hover:bg-background/35"
               >
                 <button
                   type="button"
@@ -439,6 +442,7 @@ export default function FilesPage() {
                       <Download />
                     </Button>
                   )}
+                  {!entry.is_directory && structureFormat(entry.name) && <StructureButton source={{ name: entry.name, path: entry.path }} label="3D" />}
                   <Button
                     ghost
                     size="icon"

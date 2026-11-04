@@ -1,15 +1,12 @@
 """Map commit authors to GitHub logins for release notes and attribution checks.
 
-``AUTHOR_MAP`` merges the frozen ``LEGACY_AUTHOR_MAP`` (authors_legacy.py) with
-the one-file-per-email entries under ``contributors/emails/``; the directory
-wins on duplicates.
+SCI-specific mappings live as one file per email under ``contributors/emails/``.
+GitHub noreply identities resolve directly; unknown authors retain their git name.
 """
 from __future__ import annotations
 
 import re
 from pathlib import Path
-
-from scripts.releases.authors_legacy import LEGACY_AUTHOR_MAP
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -23,8 +20,7 @@ def _load_contributor_dir(directory: "Path | None" = None) -> dict:
     """Load one-file-per-email mappings from contributors/emails/.
 
     Filename = commit-author email, first non-comment line = GitHub login.
-    Additions never merge-conflict (each mapping is a distinct file), which
-    is why new entries go here instead of the frozen LEGACY_AUTHOR_MAP.
+    Each mapping is a distinct file so additions do not conflict.
     """
     directory = directory or CONTRIBUTORS_EMAILS_DIR
     mapping = {}
@@ -44,8 +40,8 @@ def _load_contributor_dir(directory: "Path | None" = None) -> dict:
     return mapping
 
 
-# Effective map: frozen legacy dict + directory entries (directory wins).
-AUTHOR_MAP = {**LEGACY_AUTHOR_MAP, **_load_contributor_dir()}
+# SCI contributor mappings; commit identity remains the fallback.
+AUTHOR_MAP = _load_contributor_dir()
 
 
 def resolve_author(name: str, email: str) -> str:

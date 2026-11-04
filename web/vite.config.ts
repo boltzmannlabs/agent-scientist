@@ -127,6 +127,11 @@ export default defineConfig({
           minSize: 20_000,
           groups: [
             {
+              name: "structure-viewer",
+              test: /node_modules[\\/](molstar|rxjs|io-ts|immutable|mutative)([\\/]|$)/,
+              includeDependenciesRecursively: false,
+            },
+            {
               name: "react-vendor",
               test: /node_modules[\\/](react|react-dom|scheduler|react-router|react-router)([\\/]|$)/,
             },

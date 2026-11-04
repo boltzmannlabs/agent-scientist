@@ -627,6 +627,7 @@ jobs:
       - name: Reconcile ordered stable publication
         run: python -m scripts.releases.sequencer
         env:
+          IMAGE_NAME: ${{ vars.SCI_CONTAINER_IMAGE || 'agent-scientist' }}
           GH_TOKEN: ${{ github.token }}
           REQUESTED_VERSION: ''
           CLOUDFLARE_R2_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_R2_ACCOUNT_ID }}

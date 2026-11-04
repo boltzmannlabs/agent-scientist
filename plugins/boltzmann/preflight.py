@@ -5,11 +5,10 @@ import json
 from pathlib import Path
 import tempfile
 
-from sci_cli.plugins_state import PluginState
-
 from .auth import current_key, fingerprint
 from .contracts import ContractStore, ValidationReport
 from .file_validation import MAX_FILE_BYTES, validate_file
+from .receipt_store import ReceiptStore, ReceiptStorageError, GUIDANCE
 
 VALIDATOR_VERSION = "enzyme-inputs-v2"
 
@@ -102,11 +101,26 @@ def validated_upload(local_path, job, field, payload, approved, upload):
         if blocked:
             return blocked
         digest = hashlib.sha256(snapshot.read_bytes()).hexdigest()
-        storage = upload(str(snapshot))
+        receipt = {"authorization": fingerprint(current_key()), "sha256": digest,
+                   "contract": _contract_digest(store, job, field), "context": _context(rule, payload),
+                   "validation": report.as_dict(), "inventory": report.inventory}
+        receipts = ReceiptStore()
+        try:
+            reservation = receipts.reserve_upload(receipt)
+        except ReceiptStorageError as exc:
+            return {"error": str(exc), "stage": "receipt_reservation", "status": "not_started",
+                    "uploaded": False, "submitted": False, "safe_to_retry": False}
+        try:
+            storage = upload(str(snapshot))
+        except Exception:
+            return {"error": "Upload outcome is unknown; its receipt reservation is retained. " + GUIDANCE,
+                    "stage": "upload", "status": "unknown", "receipt_id": reservation, "safe_to_retry": False}
     if isinstance(storage, dict):
-        return storage
+        return {**storage, "receipt_id": reservation,
+                "receipt_storage_note": "Upload reservation retained because its outcome is unresolved. " + GUIDANCE}
     if not isinstance(storage, str) or not storage:
-        return {"error": "Upload response omitted its storage reference.", "stage": "upload", "status": "unknown"}
+        return {"error": "Upload response omitted its storage reference. " + GUIDANCE,
+                "stage": "upload", "status": "unknown", "receipt_id": reservation, "safe_to_retry": False}
     try:
         if report.inventory.get("kind") == "structure" and not storage.lower().endswith(".zip"):
             # Workers derive single-candidate IDs from the downloaded object name,
@@ -115,16 +129,13 @@ def validated_upload(local_path, job, field, payload, approved, upload):
             summary = report.inventory["data"]
             if len(summary.get("candidates", [])) == 1:
                 summary["candidates"][0]["candidate_id"] = _candidate_id(storage, rule["structure_profile"])
-        receipt = {"authorization": fingerprint(current_key()), "sha256": digest,
-                   "contract": _contract_digest(store, job, field), "context": _context(rule, payload),
-                   "validation": report.as_dict(), "inventory": report.inventory}
-        PluginState("boltzmann").set(_receipt_key(job, field, storage), receipt)
+        receipts.complete_upload(reservation, _receipt_key(job, field, storage), storage, receipt)
     except (OSError, ValueError, RuntimeError):
-        return {"error": "File uploaded, but its validation receipt could not be saved. No job was submitted.",
+        return {"error": "File uploaded, but finalizing its reserved receipt failed. No job was submitted. " + GUIDANCE,
                 "stage": "upload", "status": "partial", "s3_path": storage,
-                "uploaded": True, "safe_to_retry": False}
+                "uploaded": True, "receipt_id": reservation, "safe_to_retry": False}
     return {"s3_path": storage, "stage": "upload", "status": "uploaded", "sha256": digest,
-            "validation": report.as_dict()}
+            "receipt_id": reservation, "validation": report.as_dict()}
 
 
 def preflight_submission(job, payload):
@@ -133,6 +144,8 @@ def preflight_submission(job, payload):
         payload = prepare_molprobity_payload(payload)
     store = ContractStore()
     report = store.validate_payload(job, payload)
+    # Internal only: not included in ValidationReport.as_dict() or model prompts.
+    report.upload_receipt_ids = []
     if report.errors:
         return report
     inventories = {}
@@ -153,7 +166,15 @@ def preflight_submission(job, payload):
         if storage.startswith(("/", "~/", "file:")):
             report.errors.append(f"{field}: upload the local file before submitting; local paths are not platform references.")
             continue
-        receipt = PluginState("boltzmann").get(_receipt_key(job, field, storage))
+        try:
+            receipt, identity = ReceiptStore().find(_receipt_key(job, field, storage))
+        except ReceiptStorageError as exc:
+            report.errors.append(str(exc))
+            continue
+        if receipt and identity:
+            # Retention is not an authorization grant. If the user approves
+            # best-effort reuse after a key change, still track the referenced evidence.
+            report.upload_receipt_ids.append(identity)
         if prop["x-input-kind"] == "file_or_value" and not receipt:
             # Inline values are an explicitly documented mode, not inferred from
             # the field's name or filename extension. Uploaded references retain receipts.

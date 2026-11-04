@@ -25,6 +25,11 @@ BASE = "https://releases.example"
 ROOT = Path(__file__).resolve().parents[2]
 
 
+@pytest.fixture(autouse=True)
+def configured_image(monkeypatch):
+    monkeypatch.setenv("IMAGE_NAME", "registry.example.org/sci/agent-scientist")
+
+
 def candidates(tag, commit, digest, archive=None):
     """A desktop candidate manifest. `archive` is the R2 prefix ref the
     manifest itself names; the payload `tag` stays plain vX.Y.Z."""
@@ -555,8 +560,8 @@ def test_publish_attempt_writes_the_receipt_retargets_and_copies_no_bytes(tmp_pa
         if argv[:3] == ["docker", "buildx", "imagetools"]:
             inspected_images.append(argv[4])
             assert argv[4] in {
-                "nousresearch/hermes-agent:rc.2-v1.2.3",
-                "nousresearch/hermes-agent:rc.2-v1.2.3-desktop",
+                "registry.example.org/sci/agent-scientist:rc.2-v1.2.3",
+                "registry.example.org/sci/agent-scientist:rc.2-v1.2.3-desktop",
             }
             return json.dumps(docker_desktop_digest if argv[4].endswith("-desktop") else docker_digest)
         if argv[:3] == ["gh", "api", "--method"]:
@@ -594,8 +599,8 @@ def test_publish_attempt_writes_the_receipt_retargets_and_copies_no_bytes(tmp_pa
     assert receipt["candidateManifestSha256"] == manifest_digest
     assert receipt["dockerManifestDigest"] == docker_digest
     assert inspected_images == [
-        "nousresearch/hermes-agent:rc.2-v1.2.3",
-        "nousresearch/hermes-agent:rc.2-v1.2.3-desktop",
+        "registry.example.org/sci/agent-scientist:rc.2-v1.2.3",
+        "registry.example.org/sci/agent-scientist:rc.2-v1.2.3-desktop",
     ]
     assert receipt["releaseId"] == 42
     remote = subprocess.check_output(
