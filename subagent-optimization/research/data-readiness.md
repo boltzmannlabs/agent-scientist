@@ -36,7 +36,14 @@ structures and order, despite different file bytes. The ZINC-named file has 1,00
 unique parsed structures. None of the three has invalid or unsupported rows in
 this audit. These counts establish parsing results, not suitability for the task.
 
-## Information needed from the SMEs
+## Internal checks for the contextual-edit study
+
+We will perform these checks computationally with the user; external SME input
+is not a dependency. Review records must say who actually checked what. The new
+[conditional pilot](../pilot/PROTOCOL.md) can instead reason from complete scored
+batches without claiming isolated edit effects. Its three source cohorts are
+admitted for internal development only. That does not change the historical
+approval flags or qualify the earlier annotation-dependent policy.
 
 For one small, feasible comparison, provide:
 
@@ -55,7 +62,8 @@ For one small, feasible comparison, provide:
    cannot guarantee an attachment site, retained scaffold or specific edit.
 
 These inputs can be small. Establish a defensible first case before curating a
-large ontology or library portfolio. Agent-written hypotheses are not SME reviews.
+large ontology or library portfolio. Agent-written hypotheses are not verified
+chemical annotations or expert endorsements.
 
 ## What the AI implementation owns
 

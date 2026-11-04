@@ -1,5 +1,12 @@
 # Validation evidence
 
+- [Property-pilot publication check](pilot-property-validation-20261104.json):
+  27 portable checks repeated on 4 November against the implementation developed
+  on 3 November; current source hashes and separately dated native canary evidence.
+- [3 November progress](../research/progress-2026-11-03.md): final daily summary,
+  actual connector qualifications and remaining scientific/runtime limitations.
+- [Initial pilot record](pilot-validation.json) and [smoke record](pilot-smoke.json):
+  historical early-day snapshots; their counts/hashes predate the final property pilot.
 - [Software record](software-validation.json): reproducible artificial tests,
   code hashes and controlled demonstration.
 - [Policy test log](policy-tests.log): 32 behavioral checks.
@@ -30,7 +37,9 @@ cd subagent-optimization/prototype/library_policy
 python3 -B run_checks.py
 ```
 
-These are software-mechanics and local structure-intake results. No candidate generator, property predictor,
-scientific service or benchmark campaign ran in the combined checks. Native
+The earlier combined checks are software-mechanics and local structure-intake
+results. No candidate generator, property predictor, scientific service or benchmark
+campaign ran in those combined checks. Later live qualifications are described
+separately in the dated progress summary. Native
 integration uses a separate loopback fixture; actual LLM reasoning is not tested.
 Artificial outcomes do not establish molecular-discovery performance.

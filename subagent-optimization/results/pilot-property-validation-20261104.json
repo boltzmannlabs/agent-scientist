@@ -1,0 +1,60 @@
+{
+  "verified_at_utc": "2026-11-04T04:58:45.951416+00:00",
+  "work_date": "2026-11-03",
+  "scope": "Publication verification of the small-molecule conditional pilot; engineering evidence, not specialist scientific gain",
+  "portable_checks": {
+    "command": "python3 -B -W error::ResourceWarning -m unittest -v pilot.test_runner pilot.test_bridge pilot.test_assessment pilot.test_context pilot.test_property_assessment",
+    "tests_run": 27,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "elapsed_seconds": 1.473,
+    "run_date": "2026-11-04",
+    "scientific_submissions": 0,
+    "real_reasoning_model_calls": 0
+  },
+  "historical_native_canary": {
+    "xml": "pilot-property-native-tests.xml",
+    "timestamp": "2026-11-03T13:11:07.961179+00:00",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "evidence": "Actual SDK main/named-child routing with canned loopback responses and temporary profile; no real LLM reasoning",
+    "rerun_for_this_publication_check": false,
+    "current_source_hashes_are_publication_manifest_not_retroactive_native_execution_attestation": true
+  },
+  "frozen_private_pilot_implementation_still_matches": true,
+  "implementation_sha256": {
+    "pilot/assessment.py": "9d7565893b81ef2c70559ef3773cebf02c501ee67e2bd6f618abcd6e28dd09df",
+    "pilot/bridge.py": "3ba85f391e43d79c72fa86e0d425c8966abb49bdf914ae49c72440c9784e9866",
+    "pilot/context.py": "63ff076ee7590e560dbd7676a70899e6eaf55887918c93b3c5a4f887d3b1c0cc",
+    "pilot/native.py": "521c74bb67015cffce55e1252d0f58ca93025f45e6a9d524f9032c0d18129e63",
+    "pilot/property_assessment.py": "4fa970f63fa941bc720e81ffd095b6468e1ebd3f314b00ab288b4cffff8aa0fb",
+    "pilot/property_protocol.py": "ed1d3e9d21265ce50328c37bfb0c023458c52a663fbf1abb0ecdfebd9f2d780f",
+    "pilot/protocol.py": "6cc5c7f9a2eab053850d681252c15c1f9443381b9f74645172470230097c9b68",
+    "pilot/runner.py": "6086376234f2bfcdd4557a0c513d485281b0778899fb0bb1a05ca98feb126007",
+    "pilot/test_assessment.py": "3d55b8b1bf1aa38db8bc1dc5c37524507cfe4f9d3a264ba7de50de4d76172730",
+    "pilot/test_bridge.py": "02a2113fdb573360d3850175d642a5e505fd75c5895d9f438db67a914f7fad76",
+    "pilot/test_context.py": "8b42cb67730df18bce103d3cd8a8b781ec546b6891140d1517a4f216249ded3d",
+    "pilot/test_native_driver.py": "02b0827743bc024f4460400a45a8b113ae48953b2200de5503a3c5cf85f519b9",
+    "pilot/test_property_assessment.py": "a3e3200168a2b2d59694850327cc48ed4b718fa12ed81139ab4a4da84c7e12e3",
+    "pilot/test_runner.py": "4861055913cd2b236d4f59cbe17fcf8f2ba532fd66a7bb4c97b01945bf2da6c0"
+  },
+  "specialist_definition_sha256": "0d66c15b7e9431abf6edaa2fadf5f8a70b19431aeaa3429b340af45b4552db6e",
+  "progress_summary": "../research/progress-2026-11-03.md",
+  "historical_reports": [
+    "pilot-validation.json",
+    "pilot-live-preflight-20261103.json",
+    "pilot-live-attempt-20261103.json",
+    "pilot-smoke.json"
+  ],
+  "limits": [
+    "No actual agent decision comparison or scientific improvement established",
+    "Native startup failure remains unresolved",
+    "Native Success/completed completion-label mismatch remains in frozen runner; preserve raw receipts and use honest imported-artifact evidence",
+    "Physical units and exact property-model checkpoint unverified",
+    "No numerical token, credit or evaluation caps enforced",
+    "No protected holdout or complete compute accounting"
+  ],
+  "publication_boundary": "No credentials, private generated molecule outputs, job receipts, signed URLs, agent traces or copied profile configuration"
+}

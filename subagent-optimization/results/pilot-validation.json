@@ -1,0 +1,55 @@
+{
+  "date_utc": "2026-11-03T10:33:31.788290+00:00",
+  "scope": "Local engineering qualification of a bounded conditional library-decision pilot; not a scientific gain benchmark",
+  "portable_checks": {
+    "command": "python3 -B -W error::ResourceWarning -m unittest -v pilot.test_runner pilot.test_bridge pilot.test_assessment pilot.test_context",
+    "tests_run": 18,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0
+  },
+  "native_canary": {
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "evidence": "actual SDK main/child routing with canned loopback responses, disposable profile, zero real model inference",
+    "runner": "existing host scripts/run_tests.sh; -j 1; --file-timeout 180; --file-retries 0",
+    "xml": "pilot-native-tests.xml",
+    "host_checkout_observed_head_after_checks": "4885e4aa3b43f675116c2074b41c071a27f88955",
+    "host_checkout_frozen_for_test": false
+  },
+  "smoke_record": "pilot-smoke.json",
+  "independent_review": "No critical blocker found in request binding, recovery, compact context or role deduplication under pinned assessor contract; read-only AI subagent review, not scientific expert endorsement",
+  "implementation_sha256": {
+    "pilot/assessment.py": "9d7565893b81ef2c70559ef3773cebf02c501ee67e2bd6f618abcd6e28dd09df",
+    "pilot/bridge.py": "f35f837428ccf65f33fe9033505d0ce8c5f0185e058bf1f1f74403696b4d5e18",
+    "pilot/context.py": "63ff076ee7590e560dbd7676a70899e6eaf55887918c93b3c5a4f887d3b1c0cc",
+    "pilot/native.py": "90301028ebf516486a0850ffd556aa03b1896cf454ad6ab86da4a6d54c40d9fb",
+    "pilot/protocol.py": "e1732bc2a91ddc537d7dc79288d9a19b6f38aa2f339b49aee3f5c4d807ef895b",
+    "pilot/runner.py": "595b8cd0da8527446ec4a09facb2c95a77e2df88c9559fe70d47dfc97bfc47eb",
+    "pilot/test_assessment.py": "3d55b8b1bf1aa38db8bc1dc5c37524507cfe4f9d3a264ba7de50de4d76172730",
+    "pilot/test_bridge.py": "e75082126b5f428d96a5695e9b105f599dc5035a3fda22d014a5830cce57e308",
+    "pilot/test_context.py": "8b42cb67730df18bce103d3cd8a8b781ec546b6891140d1517a4f216249ded3d",
+    "pilot/test_native_driver.py": "e75c08029cfb7fcf34a3605e6fc14b65426a632c7c11c4164e6368c621de02c1",
+    "pilot/test_runner.py": "384f2480ad9e03bb97a6b5d54d2d97376244248c6257830fc6904e75d6522d50",
+    "pilot/PROTOCOL.md": "3256a3a0cd8bd946954dce63b543339e14e11d0020dcd7b9f45553cc94770efa",
+    "pilot/README.md": "f09c6d209e742b72b8b3d87b15f0a8bb3ee8ec3f06f9ab3be93291a64b5b1792",
+    "specialist/definition.json": "0d66c15b7e9431abf6edaa2fadf5f8a70b19431aeaa3429b340af45b4552db6e"
+  },
+  "limits": [
+    "No actual CReM scientific submission or generated-output campaign",
+    "No real model-inference decision comparison or scientific improvement shown",
+    "Named-child route forced in pilot; natural-prompt routing recall not tested",
+    "Inference-setting and fresh-session equivalence and complete compute accounting unverified",
+    "No numerical resource caps enforced; one-followup horizon is not a budget guarantee",
+    "24,000-character assignment-data guard blocks oversized context without truncation",
+    "No real-profile definition installation; enabled-state lifecycle still owned by existing host",
+    "Source dependencies use local qualified paths; separate host SDK checkout required",
+    "Known public task/cohort do not establish holdout performance or training independence"
+  ],
+  "git_actions": {
+    "commit": false,
+    "push": false,
+    "pull": false
+  }
+}

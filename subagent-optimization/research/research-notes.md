@@ -101,8 +101,9 @@ Scientific improvement remains untested.
   choice, so no agent, molecular-quality or broad policy advantage is shown.
 
 **Next**
-- Qualify real library assets, actual fragment-material identities and
-  reviewed parent/site/context/family annotations with SME input.
+- Qualify real library assets and fragment-material identities with internal
+  computational checks. Check parent/site/context/family annotations only for
+  policies that rely on them; the conditional pilot keeps attribution unknown.
 - Confirm actual model-bundle/units and service limits; distinguish native
   fixture checks from actual provider/scientific qualification.
 - Test evidence-linked specialist reasoning against this baseline and equally
@@ -113,3 +114,54 @@ Scientific improvement remains untested.
 - Does contextual scientific reasoning improve over the simple transfer heuristic?
 - Does separate delegation help enough to justify its reasoning/context overhead?
 - How should internal generation/model work be measured fairly across library actions?
+
+### 2026-11-03 — conditional pilot implementation
+
+**Completed locally**
+- Added a fresh-run protocol, persistent stage/receipt state, complete-output
+  ingestion, per-arm assessment caches and local recovery without resubmission.
+- Reused the existing NodeAPI tools through a thin host adapter; no second
+  scientific HTTP client or tool implementation was added.
+- Added fixed DRD2/QED/original-lead-similarity assessment with exact source/model
+  hashes. Reproduced the reference scores; this is not a generated-candidate run.
+- Added recorded native named-child routing for the specialist treatment.
+  Imported advice cannot count as proof that delegation occurred.
+- Separated fixture, imported-artifact, native reasoning and connector execution
+  evidence. Sampling equivalence and complete compute accounting remain unverified.
+
+**Next**
+- Qualify one actual CReM output handoff and run the fixed assessor over all rows.
+- If the shared initial batch already solves the task, stop and report that the
+  conditional decision comparison was not exercised.
+- Otherwise compare the task-guided main policy, coverage-assisted main policy
+  and coverage-assisted specialist policy on the same frozen observations.
+- Evaluate natural-prompt routing separately after establishing scientific utility.
+
+At this stage work remained local on `agent-scientist/subagent-optimization`;
+no push had been performed. On 4 November the user requested publication of
+the previous day's work using Ankith116's credentials. Historical validation
+records above remain dated evidence.
+
+### 2026-11-03 — live input correction and task change
+
+- The approved library upload succeeded. The one remote submission returned
+  `attribute is required` without a document ID; it remains unconfirmed and has
+  not been repeated.
+- The original plan incorrectly assumed model-free CReM generation could be
+  driven by the separate DRD2/QED assessment. The user clarified that platform
+  optimization requires a property-model selection. External assessment does
+  not supply that tool input.
+- New development runs and adapter upload/submit now require a nonempty
+  `global_models` or `custom_models` selection. Original model identifiers and
+  bounds are preserved; no empty worker `attribute` workaround is used.
+- The user selected a supported property objective for the next task. DRD2/QED
+  are absent from the current global-model enum. A new objective must have a
+  matching predictor, units, direction, baseline and evaluator before execution;
+  the old DRD2 success rules cannot be reused to claim its improvement.
+- The read-only projects lookup returned projects, with no exact original
+  experiment match. That endpoint does not provide an exhaustive job lookup;
+  this does not establish that the original submission created no job.
+
+The later model-selected pilot, completed implementation and remaining limits
+are recorded in the [3 November work summary](progress-2026-11-03.md). Earlier
+18/19-test reports are historical snapshots, not the final source manifest.

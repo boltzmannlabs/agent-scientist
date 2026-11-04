@@ -1,0 +1,48 @@
+{
+  "date_utc": "2026-11-03T10:33:31.787130+00:00",
+  "cli_smoke": {
+    "init_phase": "common_observations",
+    "next_matches_init_request": true,
+    "stage_status": "ready",
+    "native_decision_comparison_exercised": false,
+    "complete_scientific_comparison": false,
+    "qualified_causal_comparison": false,
+    "private_protocol_digest": "5f87012496af15657f34b963aee1b0c857d9a5d351c061541af99df461c2d32d",
+    "scientific_submissions": 0,
+    "model_inference_calls": 0
+  },
+  "baseline_smoke": {
+    "values": {
+      "drd2_p_active": 0.7190727026540751,
+      "qed": 0.800452829768805,
+      "lead_similarity": 1.0,
+      "lead_similarity_gt_0_7": 1
+    },
+    "baseline_model_evaluations": 1,
+    "new_unique_candidate_evaluations": 0,
+    "model_sha256": "0878479f24da0c09ad85a6fc4b992faeb02ec426465c7f79008e969da4e40f76",
+    "method_version": "drd2-task-assessment-v1;rdkit=2025.09.4;numpy=2.2.4"
+  },
+  "context_sizing": {
+    "base": {
+      "packet_chars": 14962,
+      "transmitted_assignment_chars": 9969,
+      "example_kind": "one duplicate public reference in a fixture artifact; not generated candidates"
+    },
+    "base_algorithm": {
+      "packet_chars": 16129,
+      "transmitted_assignment_chars": 11136,
+      "example_kind": "one duplicate public reference in a fixture artifact; not generated candidates"
+    },
+    "base_algorithm_specialist": {
+      "packet_chars": 16129,
+      "transmitted_assignment_chars": 11136,
+      "example_kind": "one duplicate public reference in a fixture artifact; not generated candidates"
+    }
+  },
+  "protocol_build": {
+    "libraries": 3,
+    "specialist_max_iterations": 4,
+    "specialist_timeout_seconds": 180
+  }
+}

@@ -116,7 +116,8 @@ the simpler implementation. Separate delegation is an experimental choice.
 
 ## Dependencies before scientific use
 
-- SME-reviewed actual transformation annotations and library capability cards;
+- Internally checked actual transformation annotations and library capability cards
+  when the selected policy makes edit-specific claims;
   numerical support thresholds, if used, must be prospectively agreed.
 - Real approved, versioned library CSVs and normalized/material identities;
   input-to-fragment coverage and actual product enrichment need checking.
@@ -126,3 +127,18 @@ the simpler implementation. Separate delegation is an experimental choice.
 The local bundle adds a saved-specialist definition and host-side handoff checks.
 It does not establish scientific model improvements, successful training, a
 completed molecular benchmark or meaningful use across arbitrary targets.
+
+## First executable study
+
+The [conditional pilot](../pilot/PROTOCOL.md) starts with one common CReM library
+and one optional follow-up library decision per arm. It uses complete fixed-assessor
+observations and keeps edit attribution unknown unless separately established.
+It therefore does not require invented pair annotations to run. We perform the
+internal development checks with the user; no external SME dependency is imposed.
+
+The initial capability is choosing the next informative library after an
+unfinished lead-optimization attempt. Later capabilities can include deciding
+which candidate region to investigate or when evidence warrants stopping, but
+each needs a measurable decision and a comparison first. De novo generation
+would need its own task contract and policy; it is not implemented by renaming
+this lead-optimization workflow.

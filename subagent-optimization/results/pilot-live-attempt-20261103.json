@@ -1,0 +1,60 @@
+{
+  "date_utc": "2026-11-03T11:38:59.908340+00:00",
+  "run_name": "live-approved-20261103T113129343625Z",
+  "scope": "Actual live connector attempt, not a completed molecular optimization or agent comparison",
+  "user_approval": {
+    "specific_generic_csv_smiles_warning": true,
+    "scientific_rules_changed": false
+  },
+  "stage": "common",
+  "library": "mixed_reference",
+  "upload_status": "uploaded",
+  "submission_attempts": 1,
+  "submission_state": "submit_unknown",
+  "confirmed_accepted_jobs": 0,
+  "actual_created_jobs": "unconfirmed; no job ID returned",
+  "service_diagnostic": {
+    "message": "Schema validation failed",
+    "errors": [
+      "attribute is required"
+    ],
+    "error": "Schema validation failed",
+    "stage": "submit",
+    "status": "unknown",
+    "service_status": "failed",
+    "safe_to_retry": false
+  },
+  "scientific_outcomes": {
+    "generated_output_retrieved": false,
+    "generated_candidates_evaluated": 0,
+    "native_reasoning_calls": 0,
+    "agent_comparison_exercised": false,
+    "credits_and_internal_compute": "unknown"
+  },
+  "contract_gap": {
+    "local_public_contract_required_fields": [
+      "ref_mol",
+      "library_path"
+    ],
+    "local_public_model_fields": [
+      "global_models",
+      "custom_models"
+    ],
+    "actual_service_error": [
+      "attribute is required"
+    ],
+    "generation_parameters_sent": {},
+    "supplied_worker_reads": "user_input[attribute]",
+    "verified_fix": false,
+    "limit": "The worker example and analogous Graph GA failure suggest model-free input translation needs qualification; neither proves the deployed API accepts attribute=[]."
+  },
+  "original_attempt_preserved": true,
+  "scientific_resubmissions": 0,
+  "monitoring": "No job ID was returned, so neither status polling nor durable-log lookup was called with an invented ID.",
+  "next_requirement": "Reconcile the original attempt and verify the service generation/model-selection contract before a new submission.",
+  "git_actions": {
+    "commit": false,
+    "push": false,
+    "pull": false
+  }
+}

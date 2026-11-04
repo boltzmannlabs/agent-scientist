@@ -1,0 +1,106 @@
+{
+  "date_utc": "2026-11-03T11:23:37.720448+00:00",
+  "run_name": "live-20261103T111741617195Z",
+  "status": "awaiting_explicit_best_effort_approval",
+  "actual_connector_attempt": {
+    "stage": "common",
+    "library_id": "mixed_reference",
+    "status": "upload_blocked",
+    "validation": {
+      "level": "partial",
+      "errors": [],
+      "warnings": [
+        "SMILES: smiles semantics are not verified by the generic CSV parser."
+      ]
+    },
+    "remote_uploads": 0,
+    "scientific_submissions": 0,
+    "generated_candidate_evaluations": 0,
+    "real_model_inference_calls": 0
+  },
+  "access_checks": {
+    "profile": "main (default)",
+    "local_boltzmann_authorization": true,
+    "remote_service_authorization": true,
+    "reasoning_provider": "openai-codex",
+    "reasoning_model": "gpt-6.1-sol",
+    "reasoning_credentials_resolved": true
+  },
+  "independent_input_checks": {
+    "scope": "Separate pinned-RDKit checks, not connector best-effort approval",
+    "libraries": [
+      {
+        "library_id": "hetero_rich_sources",
+        "source_sha256": "5341ee432b4ab84c3e2c104fc2af11ccef26bcf812d260de4a8c29d6625fabd2",
+        "row_count": 20,
+        "canonical_unique_count": 20,
+        "invalid_rows": [],
+        "unsupported_rows": [],
+        "multicomponent_rows": [],
+        "identity_complete": true,
+        "normalization_policy": "strict-canonical-isomeric-no-standardization-v2@rdkit-2025.09.4;legacy-stereo=1;non-tetrahedral=1"
+      },
+      {
+        "library_id": "carbon_rich_sources",
+        "source_sha256": "23fffbb53075321412eb35f39b24beb97c7881b4b74852f9622eb68d520cf9b6",
+        "row_count": 20,
+        "canonical_unique_count": 20,
+        "invalid_rows": [],
+        "unsupported_rows": [],
+        "multicomponent_rows": [],
+        "identity_complete": true,
+        "normalization_policy": "strict-canonical-isomeric-no-standardization-v2@rdkit-2025.09.4;legacy-stereo=1;non-tetrahedral=1"
+      },
+      {
+        "library_id": "mixed_reference",
+        "source_sha256": "74305b33acad639b825b025956f7e91285fccdbc8a6f4671348b521ad7b073c0",
+        "row_count": 20,
+        "canonical_unique_count": 20,
+        "invalid_rows": [],
+        "unsupported_rows": [],
+        "multicomponent_rows": [],
+        "identity_complete": true,
+        "normalization_policy": "strict-canonical-isomeric-no-standardization-v2@rdkit-2025.09.4;legacy-stereo=1;non-tetrahedral=1"
+      }
+    ]
+  },
+  "approval_requirement": {
+    "origin": "Existing Boltzmann connector preflight.py decision(), not an automatic approval-review rejection",
+    "instruction": "Review the unchecked aspects and ask for explicit best-effort approval.",
+    "scope": "Only the recorded generic-CSV SMILES-semantic warning for the exact independently checked pilot library files; no scientific threshold changes",
+    "approval_obtained": false,
+    "partial_validation_enabled_for_live_attempt": false
+  },
+  "prepared_adapter_change": {
+    "ordinary_connector_option": "allow_partial_validation",
+    "default": false,
+    "requires_explicit_user_approval": true,
+    "scientific_inputs_unchanged": true,
+    "native_validation_still_runs": true
+  },
+  "verification": {
+    "portable_tests": 19,
+    "failures": 0,
+    "errors": 0,
+    "command": "python3 -B -W error::ResourceWarning -m unittest -v pilot.test_runner pilot.test_bridge pilot.test_assessment pilot.test_context"
+  },
+  "implementation_sha256": {
+    "pilot/assessment.py": "9d7565893b81ef2c70559ef3773cebf02c501ee67e2bd6f618abcd6e28dd09df",
+    "pilot/bridge.py": "32b83e8f140e8fc9da266b460f0751c349f65d4187a8096b123edd918787fa12",
+    "pilot/context.py": "63ff076ee7590e560dbd7676a70899e6eaf55887918c93b3c5a4f887d3b1c0cc",
+    "pilot/native.py": "90301028ebf516486a0850ffd556aa03b1896cf454ad6ab86da4a6d54c40d9fb",
+    "pilot/protocol.py": "e1732bc2a91ddc537d7dc79288d9a19b6f38aa2f339b49aee3f5c4d807ef895b",
+    "pilot/runner.py": "595b8cd0da8527446ec4a09facb2c95a77e2df88c9559fe70d47dfc97bfc47eb",
+    "pilot/test_assessment.py": "3d55b8b1bf1aa38db8bc1dc5c37524507cfe4f9d3a264ba7de50de4d76172730",
+    "pilot/test_bridge.py": "fe565aa86b6fa13e4d77585418d3282c2514098ae48fff08d8d4af7a5345dcf0",
+    "pilot/test_context.py": "8b42cb67730df18bce103d3cd8a8b781ec546b6891140d1517a4f216249ded3d",
+    "pilot/test_native_driver.py": "e75c08029cfb7fcf34a3605e6fc14b65426a632c7c11c4164e6368c621de02c1",
+    "pilot/test_runner.py": "384f2480ad9e03bb97a6b5d54d2d97376244248c6257830fc6904e75d6522d50"
+  },
+  "next_after_approval": "Freeze a fresh run against the updated implementation; retain this blocked attempt, which created no upload or job. Use the existing connector, assess complete real output, and exercise comparison arms only if a meaningful decision remains.",
+  "git_actions": {
+    "commit": false,
+    "push": false,
+    "pull": false
+  }
+}
