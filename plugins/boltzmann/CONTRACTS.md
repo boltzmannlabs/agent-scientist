@@ -137,7 +137,7 @@ scientific generator, runtime registry or protein-only fallback was added.
 Optional dictionary-provenance outputs must be retained with the original ZIP.
 
 - `kcat_km`: before preflight, prepare a private payload copy and fill a missing
-  worker `job_name` from the confirmed `experiment_name`. Preserve explicit
+  worker `job_name` from the supplied or connector-generated `experiment_name`. Preserve explicit
   values and reject invalid labels (1–100 characters) rather than silently
   repairing them. The outer routing name remains `kcat_km`. The same prepared
   payload is validated and sent; credentials and runtime IDs are not synthesized.

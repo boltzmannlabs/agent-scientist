@@ -3,8 +3,11 @@
 
 import json
 import os
+import re
 import time
+import uuid
 from copy import deepcopy
+from datetime import datetime, timezone
 from agent.memory_provider import spawn_context_thread
 
 from .nodeapi_helpers import (
@@ -99,6 +102,27 @@ def _get_conv_id(kwargs):
     return kwargs.get("conv_id") or ""
 
 
+def _generated_experiment_name(job_name, experiment_data):
+    """Build a readable, unique platform label without asking the user for one."""
+    display_name = str(job_name).replace("_", " ").strip()
+    try:
+        display_name = ContractStore().tool(job_name).get("display_name") or display_name
+    except (ValueError, OSError):
+        pass
+    context = ""
+    if isinstance(experiment_data, dict):
+        for key in ("ec_number", "gene_id", "target_name", "protein_id", "project"):
+            value = experiment_data.get(key)
+            if isinstance(value, str) and value.strip():
+                context = re.sub(r"[\x00-\x1f\x7f]+", " ", value).strip()[:40]
+                if context:
+                    break
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%SZ")
+    suffix = f"{timestamp} - {uuid.uuid4().hex[:6]}"
+    label = re.sub(r"\s+", " ", " - ".join(part for part in (display_name, context) if part))
+    return f"{label[:120 - len(suffix) - 3].rstrip()} - {suffix}"
+
+
 # ───────────────────────────────────────────────
 # Boltzmann platform tools (from sci-service, with server-side logging)
 # ───────────────────────────────────────────────
@@ -115,19 +139,25 @@ def _handle_boltzmann_submit_inner(**kwargs):
         except json.JSONDecodeError:
             return json.dumps({"error": "experiment_data must be an object, not a JSON string"})
 
-    if isinstance(experiment_data, dict) and not experiment_name:
+    if isinstance(experiment_data, dict) and "experiment_name" in experiment_data:
         experiment_data = dict(experiment_data)
-        experiment_name = experiment_data.pop("experiment_name", None)
+        embedded_name = experiment_data.pop("experiment_name", None)
+        if not experiment_name:
+            experiment_name = embedded_name
+
+    if isinstance(experiment_name, str):
+        experiment_name = experiment_name.strip() or None
 
     missing = []
     if not job_name:
         missing.append("job_name")
     if not experiment_data:
         missing.append("experiment_data")
-    if not experiment_name:
-        missing.append("experiment_name")
     if missing:
         return json.dumps({"error": f"Missing required arguments: {', '.join(missing)}"})
+
+    if not experiment_name:
+        experiment_name = _generated_experiment_name(job_name, experiment_data)
 
     if job_name in _RETIRED_JOB_NAMES:
         return json.dumps({
@@ -150,6 +180,8 @@ def _handle_boltzmann_submit_inner(**kwargs):
     report = preflight_submission(job_name, experiment_data)
     blocked = decision(report, kwargs.get("allow_partial_validation"))
     if blocked:
+        if isinstance(blocked, dict):
+            blocked["experiment_name"] = experiment_name
         return json.dumps(blocked)
 
     conv_id = _get_conv_id(kwargs)
@@ -160,7 +192,8 @@ def _handle_boltzmann_submit_inner(**kwargs):
         attempt = receipts.begin_submission(job_name, getattr(report, "upload_receipt_ids", []), experiment_name)
     except ReceiptStorageError as exc:
         return json.dumps({"error": str(exc), "stage": "receipt_reservation", "status": "not_started",
-                           "submitted": False, "safe_to_retry": False})
+                           "submitted": False, "safe_to_retry": False,
+                           "experiment_name": experiment_name})
     # Pending references are durable BEFORE the request. A timeout/crash cannot
     # leave these uploads looking unused and therefore eligible for expiration.
     doc_id = submit_request(experiment_data, job_name, experiment_name, token=token, conv_id=conv_id)
@@ -171,11 +204,13 @@ def _handle_boltzmann_submit_inner(**kwargs):
 
     # submit_request now returns an error dict on auth failures instead of raising
     if isinstance(doc_id, dict) and "error" in doc_id:
-        return json.dumps({**doc_id, "receipt_attempt_id": attempt})
+        return json.dumps({**doc_id, "receipt_attempt_id": attempt,
+                           "experiment_name": experiment_name})
 
     if not isinstance(doc_id, str) or not doc_id:
         return json.dumps({"error": "Submission did not return a valid job ID. Do not resubmit; reconcile its outcome.",
-                           "status": "unknown", "receipt_attempt_id": attempt, "safe_to_retry": False})
+                           "status": "unknown", "receipt_attempt_id": attempt, "safe_to_retry": False,
+                           "experiment_name": experiment_name})
     receipt_warning = None
     try:
         receipts.accept_submission(attempt, doc_id)

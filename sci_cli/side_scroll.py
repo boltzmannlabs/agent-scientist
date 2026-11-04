@@ -5,8 +5,10 @@ from functools import lru_cache
 from types import SimpleNamespace
 
 from prompt_toolkit.layout import HSplit, Window
+from prompt_toolkit.layout.controls import BufferControl
 from prompt_toolkit.layout.margins import ScrollbarMargin
 from prompt_toolkit.mouse_events import MouseButton, MouseEventType
+from prompt_toolkit.selection import SelectionState
 from prompt_toolkit.utils import get_cwidth
 
 
@@ -22,6 +24,43 @@ def _wrapped_height(text, width):
             column = 0
         column += cells
     return rows
+
+
+class TranscriptControl(BufferControl):
+    """Select read-only output without taking keyboard focus from the composer."""
+
+    def __init__(self, view, buffer, lexer):
+        super().__init__(buffer=buffer, lexer=lexer, focusable=False)
+        self.view = view
+        self.anchor = None
+
+    def mouse_handler(self, event):
+        if event.button != MouseButton.LEFT or event.event_type not in (
+            MouseEventType.MOUSE_DOWN, MouseEventType.MOUSE_MOVE, MouseEventType.MOUSE_UP
+        ):
+            return NotImplemented
+        if self._last_get_processed_line is None:
+            return NotImplemented
+        column = self._last_get_processed_line(event.position.y).display_to_source(event.position.x)
+        index = self.buffer.document.translate_row_col_to_index(event.position.y, column)
+        if event.event_type == MouseEventType.MOUSE_DOWN:
+            self.anchor = index
+            self.view.follow = False
+            self.view.copy_status = ""
+            self.buffer.exit_selection()
+            self.buffer.cursor_position = index
+        elif self.anchor is not None:
+            self.buffer.cursor_position = index
+            self.buffer.selection_state = SelectionState(original_cursor_position=self.anchor)
+            if event.event_type == MouseEventType.MOUSE_UP:
+                start, end = sorted((self.anchor, index))
+                self.anchor = None
+                if start != end:
+                    self.view.copy_text(self.buffer.text[start:end + 1])
+                else:
+                    self.buffer.exit_selection()
+        self.view.cli._app.invalidate()
+        return None
 
 
 class TranscriptWindow(Window):
@@ -53,6 +92,9 @@ class TranscriptWindow(Window):
         self.vertical_scroll_2 = self.top - self.row_offsets[self.vertical_scroll]
 
     def move(self, direction, amount=None, *, fraction=None):
+        # Scrolling ends a text drag; a later release must not copy a stale range.
+        self.content.anchor = None
+        self.view.transcript.buffer.exit_selection()
         info = self.render_info
         size = self.view.cli._app.output.get_size()
         width = info.window_width if info else max(1, size.columns - 1)

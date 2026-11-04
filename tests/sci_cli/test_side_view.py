@@ -5,9 +5,95 @@ from threading import Event
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+import pytest
+
 from prompt_toolkit.application import Application, set_app
+from prompt_toolkit.data_structures import Point
 from prompt_toolkit.input import create_pipe_input
+from prompt_toolkit.key_binding.key_processor import KeyPress
+from prompt_toolkit.keys import Keys
+from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.output import DummyOutput
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('running,copy_fails', [(False, False), (True, False), (True, True)])
+async def test_ctrl_c_copies_selected_side_text_before_any_cancel_or_exit(monkeypatch, running, copy_fails):
+    import cli as cli_module
+    from sci_cli import clipboard
+    from sci_constants import sci_home_key
+
+    monkeypatch.setenv('SCI_DEFER_AGENT_STARTUP', '1')
+    native = Mock(side_effect=PermissionError('fixture clipboard denied') if copy_fails else None,
+                  return_value=True)
+    monkeypatch.setattr(clipboard, 'is_remote_shell_session', lambda: False)
+    monkeypatch.setattr(clipboard, 'write_clipboard_text', native)
+    owner = cli_module.SciCLI(model='fixture', provider='openai-compat', api_key='fixture',
+                              base_url='http://127.0.0.1:1/v1')
+    owner._tui_init_run_state()
+    kb = owner._tui_build_key_bindings()
+    layout, _ = owner._tui_build_layout(kb)
+    view = owner._side_view
+    owner.agent = SimpleNamespace(interrupt=Mock())
+    owner._agent_running = running
+    controller = SimpleNamespace(owner=(sci_home_key(), owner.session_id), active=True,
+                                 running=running, conversation=SimpleNamespace(closed=Event()), close=Mock())
+    owner._side_controller = controller
+    with create_pipe_input() as pipe:
+        app = Application(layout=layout, key_bindings=kb, input=pipe, output=DummyOutput())
+        owner._app = view.surface._app = app
+        app._sci_side_view = view
+        with set_app(app):
+            owner._input_area.buffer.text = 'main draft'
+            view.select(True)
+            view.side_buffer.text = 'side draft'
+            view.append('copy this response')
+            view.transcript.control.create_content(80, 10)
+            for kind, column in ((MouseEventType.MOUSE_DOWN, 0), (MouseEventType.MOUSE_UP, 8)):
+                view.transcript.control.mouse_handler(MouseEvent(
+                    Point(column, 0), kind, MouseButton.LEFT, frozenset()))
+            native.reset_mock()
+            for _ in range(2):
+                app.key_processor.feed(KeyPress(Keys.ControlC, '\x03'))
+                app.key_processor.process_keys()
+            assert native.call_count == 2
+            native.assert_called_with('copy this')
+            assert view.visible and not controller.conversation.closed.is_set()
+            controller.close.assert_not_called()
+            owner.agent.interrupt.assert_not_called()
+            assert owner._input_area.buffer.text == 'main draft'
+            assert view.side_buffer.text == 'side draft'
+            if copy_fails:
+                assert view.copy_status.startswith('Copy failed')
+            # With selection cleared, the ordinary Ctrl+C close path still works.
+            view.transcript.buffer.exit_selection()
+            app.key_processor.feed(KeyPress(Keys.ControlC, '\x03'))
+            app.key_processor.process_keys()
+            controller.close.assert_called_once()
+            owner.agent.interrupt.assert_not_called()
+
+
+@pytest.mark.parametrize('remote,native_ok', [(False, True), (False, False), (True, True)])
+def test_side_copy_uses_local_clipboard_or_user_terminal(monkeypatch, remote, native_ok):
+    from sci_cli import clipboard
+    from sci_cli.side_view import SideView
+
+    native = Mock(return_value=native_ok)
+    monkeypatch.setattr(clipboard, 'is_remote_shell_session', lambda: remote)
+    monkeypatch.setattr(clipboard, 'write_clipboard_text', native)
+    view = SideView.__new__(SideView)
+    view.cli = SimpleNamespace(_write_osc52_clipboard=Mock())
+    view.copy_text('selected side text')
+    if remote or not native_ok:
+        view.cli._write_osc52_clipboard.assert_called_once_with('selected side text')
+        assert view.copy_status == 'Copy sent to terminal'
+    else:
+        view.cli._write_osc52_clipboard.assert_not_called()
+        assert view.copy_status == 'Copied'
+    if remote:
+        native.assert_not_called()
+    else:
+        native.assert_called_once_with('selected side text')
 
 
 def test_view_preserves_composers_scroll_and_defers_parent_output(monkeypatch):

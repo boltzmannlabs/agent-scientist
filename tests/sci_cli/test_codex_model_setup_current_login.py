@@ -110,7 +110,7 @@ def test_model_setup_links_current_login_for_all_profiles_and_follows_rotation(s
     assert "verified" in capsys.readouterr().out.lower()
 
 
-@pytest.mark.parametrize("case", ["expired", "rejected", "unreachable", "keyring", "malformed", "account-changed"])
+@pytest.mark.parametrize("case", ["expired", "rejected", "unreachable", "keyring", "malformed"])
 def test_invalid_current_login_stops_without_fresh_auth_or_partial_save(setup, monkeypatch, capsys, case):
     from sci_cli.model_setup_flows import _model_flow_openai_codex
     from sci_cli.native_profile_creation import profile_scope
@@ -127,11 +127,6 @@ def test_invalid_current_login_stops_without_fresh_auth_or_partial_save(setup, m
         (external / "config.toml").write_text('cli_auth_credentials_store = "keyring"\n')
     if case == "malformed":
         (external / "auth.json").write_text("{broken")
-    if case == "account-changed":
-        store = json.loads((main / "auth.json").read_text())
-        store["providers"]["openai-codex"] = {
-            "external_codex_home": str(external), "external_codex_identity": ["different-account", "different-user"]}
-        (main / "auth.json").write_text(json.dumps(store))
     before = {p: p.read_bytes() for h in homes for p in h.iterdir() if p.is_file()}
     monkeypatch.setattr("sci_cli.codex_models.get_codex_model_ids", lambda **kw: pytest.fail("Unverified catalog"))
     with profile_scope(a):
@@ -140,4 +135,86 @@ def test_invalid_current_login_stops_without_fresh_auth_or_partial_save(setup, m
     assert len(requests) == (1 if case in {"rejected", "unreachable"} else 0)
     output = capsys.readouterr().out
     assert "Codex login check failed:" in output
+    assert "verified" not in output.lower()
+
+
+@pytest.mark.parametrize("choice", ["current", "separate"])
+def test_changed_account_setup_reviews_login_and_shares_only_approved_credentials(setup, monkeypatch, choice):
+    from sci_cli import auth, auth_codex
+    from sci_cli.auth_codex_shared import external_credentials
+    from sci_cli.model_setup_flows import _model_flow_openai_codex
+    from sci_cli.native_profile_creation import profile_scope
+    from sci_cli.runtime_provider import resolve_runtime_provider
+
+    homes, external, requests, _ = setup
+    main, a, b = homes
+    current, separate = _token("current-account"), _token("separate-login")
+    (external / "auth.json").write_text(json.dumps({"tokens": {"access_token": current}}))
+    store = json.loads((main / "auth.json").read_text())
+    store["providers"]["openai-codex"] = {
+        "external_codex_home": str(external), "external_codex_identity": ["previous-account", "previous-user"]}
+    (main / "auth.json").write_text(json.dumps(store))
+    before = {p: p.read_bytes() for h in homes for p in (h / "config.yaml", h / ".env")}
+    source_before = (external / "auth.json").read_bytes()
+    prompts, catalogs = [], []
+
+    def approve(question, **kwargs):
+        # Runtime discovery must still refuse the changed identity until this explicit choice.
+        with pytest.raises(auth.AuthError, match="another account/workspace"):
+            external_credentials(read_only=True)
+        prompts.append(question)
+        return choice == "current"
+
+    monkeypatch.setattr(auth, "_prompt_yes_no", approve)
+    monkeypatch.setattr(auth, "_login_openai_codex", auth_codex._login_openai_codex)
+    monkeypatch.setattr("sci_cli.auth_codex_browser.codex_oauth_login", lambda args: {
+        "tokens": {"access_token": separate, "refresh_token": "separate-fixture-refresh"}})
+    monkeypatch.setattr("sci_cli.codex_models.get_codex_model_ids",
+                        lambda **kw: catalogs.append(kw) or ["fixture-model"])
+    monkeypatch.setattr(auth, "_prompt_model_selection", lambda *args, **kwargs: None)
+    with profile_scope(a):
+        _model_flow_openai_codex({}, current_model="kept-a")
+    expected = current if choice == "current" else separate
+    assert len(prompts) == 1 and "current Codex login" in prompts[0]
+    assert catalogs[0]["access_token"] == expected
+    assert [authorization for _, authorization in requests] == ["Bearer " + expected]
+    for home in (main, a, b, a):
+        with profile_scope(home):
+            assert resolve_runtime_provider(requested="openai-codex")["api_key"] == expected
+    if choice == "current":
+        assert current not in (main / "auth.json").read_text()
+    assert (external / "auth.json").read_bytes() == source_before
+    assert all(p.read_bytes() == value for p, value in before.items())
+
+
+@pytest.mark.parametrize("outcome", ["cancel", "rejected"])
+def test_changed_account_setup_failure_preserves_previous_state(setup, monkeypatch, capsys, outcome):
+    from sci_cli import auth, auth_codex
+    from sci_cli.model_setup_flows import _model_flow_openai_codex
+    from sci_cli.native_profile_creation import profile_scope
+
+    homes, external, requests, response = setup
+    main, a, _ = homes
+    (external / "auth.json").write_text(json.dumps({"tokens": {"access_token": _token("new")}}))
+    store = json.loads((main / "auth.json").read_text())
+    store["providers"]["openai-codex"] = {
+        "external_codex_home": str(external), "external_codex_identity": ["previous-account", "previous-user"]}
+    (main / "auth.json").write_text(json.dumps(store))
+    before = {p: p.read_bytes() for h in (*homes, external) for p in h.iterdir() if p.is_file()}
+
+    def choose(*args, **kwargs):
+        if outcome == "cancel":
+            raise KeyboardInterrupt
+        return True
+
+    response["status"] = 401
+    monkeypatch.setattr(auth, "_prompt_yes_no", choose)
+    monkeypatch.setattr(auth, "_login_openai_codex", auth_codex._login_openai_codex)
+    monkeypatch.setattr("sci_cli.codex_models.get_codex_model_ids", lambda **kw: pytest.fail("Unverified catalog"))
+    with profile_scope(a):
+        _model_flow_openai_codex({})
+    assert all(p.read_bytes() == value for p, value in before.items())
+    assert len(requests) == (1 if outcome == "rejected" else 0)
+    output = capsys.readouterr().out
+    assert ("cancelled" if outcome == "cancel" else "Codex login check failed:") in output
     assert "verified" not in output.lower()

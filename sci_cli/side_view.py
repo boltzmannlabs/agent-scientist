@@ -9,7 +9,7 @@ from prompt_toolkit.layout import DynamicContainer, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.lexers import Lexer
 from prompt_toolkit.keys import Keys
-from sci_cli.side_scroll import SideScrollFrame, TranscriptWindow
+from sci_cli.side_scroll import SideScrollFrame, TranscriptControl, TranscriptWindow
 from sci_cli.side_surface import create_surface, output_scope
 from prompt_toolkit.widgets import TextArea
 
@@ -41,7 +41,9 @@ class SideView:
         self.side_buffer = self.side_composer.buffer
         self.lexer = _TranscriptLexer()
         self.transcript = TextArea(read_only=True, focusable=False, scrollbar=True, wrap_lines=True, lexer=self.lexer)
+        self.transcript.control = TranscriptControl(self, self.transcript.buffer, self.lexer)
         self.transcript.window = TranscriptWindow(self, self.transcript.control)
+        self.copy_status = ""
         self._ansi = ""
         self.follow = True
         self.container = SideScrollFrame(self, [
@@ -59,7 +61,33 @@ class SideView:
 
     def heading(self):
         from sci_cli.side_commands import label
-        return label(self.cli) + " · PgUp/PgDn or wheel: scroll"
+        return label(self.cli) + " · PgUp/PgDn or wheel: scroll · Drag text: copy" + (
+            f" · {self.copy_status}" if self.copy_status else "")
+
+    def copy_text(self, text):
+        from sci_cli.clipboard import is_remote_shell_session, write_clipboard_text
+
+        try:
+            if is_remote_shell_session() or not write_clipboard_text(text):
+                self.cli._write_osc52_clipboard(text)
+                self.copy_status = "Copy sent to terminal"
+            else:
+                self.copy_status = "Copied"
+        except Exception:
+            self.copy_status = "Copy failed; try Shift+drag and terminal copy"
+
+    def selected_text(self):
+        buffer = self.transcript.buffer
+        selection = buffer.selection_state
+        if selection is None:
+            return ""
+        # prompt_toolkit highlights both endpoints of the selection.
+        start, end = buffer.document.selection_range()
+        return buffer.text[start:end + 1]
+
+    def copy_selection(self):
+        self.copy_text(self.selected_text())
+        self.cli._app.invalidate()
 
     def dispatch(self, fn):
         app = self.cli._app
@@ -85,8 +113,10 @@ class SideView:
             self.lexer.lines = lines
             content = "\n".join("".join(part for _, part in line) for line in lines)
             buf = self.transcript.buffer
+            selection = buf.selection_state
             cursor = len(content) if self.follow else buf.cursor_position
             buf.set_document(Document(content, cursor), bypass_readonly=True)
+            buf.selection_state = selection
             self.cli._app.invalidate()
         self.dispatch(update)
 
@@ -127,6 +157,8 @@ class SideView:
             self.side_buffer.reset()
             self.surface._attached_images.clear()
             self.transcript.buffer.set_document(Document(""), bypass_readonly=True)
+            self.transcript.control.anchor = None
+            self.copy_status = ""
             self.follow = True
         self.dispatch(reset)
 
@@ -146,6 +178,10 @@ def bind_keys(cli, kb):
     kb.add("c-_", eager=True)(lambda event: toggle(cli))
     owner = getattr(cli, "_side_owner", cli)
     visible = Condition(lambda: bool(getattr(owner, "_side_view", None) and owner._side_view.visible))
+    selected = Condition(lambda: bool(owner._side_view.selected_text()))
+    # Copy owns Ctrl+C while text is selected, before either conversation's
+    # cancellation/exit handlers. Keep selection so another press is also safe.
+    kb.add("c-c", filter=visible & selected, eager=True)(lambda event: owner._side_view.copy_selection())
     kb.add("pageup", filter=visible)(lambda event: owner._side_view.scroll(-1))
     kb.add("pagedown", filter=visible)(lambda event: owner._side_view.scroll(1))
     kb.add(Keys.ScrollUp, filter=visible)(lambda event: owner._side_view.scroll(-1, amount=3))

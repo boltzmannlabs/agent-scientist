@@ -30,10 +30,10 @@ mcp = MCPServer(
 def boltzmann_submit(
     job_name: str,
     experiment_data: dict[str, Any],
-    experiment_name: str,
+    experiment_name: str = "",
     allow_partial_validation: bool = False,
 ) -> str:
-    """Submit one fully specified Boltzmann platform-tools job."""
+    """Submit one specified job; omit experiment_name for a generated platform label."""
     return handle_boltzmann_submit(
         job_name=job_name,
         experiment_data=experiment_data,

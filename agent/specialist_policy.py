@@ -20,6 +20,7 @@ class SpecialistPolicy:
     ancestry: tuple[str, ...]
     deadline: float
     unavailable_tools: frozenset[str] = frozenset()
+    read_paths: tuple[str, ...] | None = None
 
 
 @contextmanager
@@ -53,4 +54,5 @@ def check_call(name, args):
         return f"Tool {name} is not approved for specialist {policy.name}. Return the requirement to the parent."
     if name == "skill_view" and args.get("name") not in policy.skills:
         return "This skill is not selected for the specialist. Ask the parent to review it."
-    return None
+    from agent.specialist_inputs import check_read
+    return check_read(policy, name, args)

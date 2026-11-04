@@ -2324,6 +2324,7 @@ _USAGE_STATE: Dict[str, Any] = {
     "session_completion_tokens": 0,
     "session_total_tokens": 0,
     "session_api_calls": 0,
+    "session_usage_reported_calls": 0,
     "session_input_tokens": 0,
     "session_output_tokens": 0,
     "session_cache_read_tokens": 0,

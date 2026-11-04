@@ -3,6 +3,7 @@ Schema, validation and a thin dispatcher; the UI lives in a platform-provided
 callback (cli.py, gateway/run.py, tui_gateway)."""
 
 import json
+import re
 from typing import Callable, Dict, List, Optional
 
 MAX_CHOICES = 4  # the UI always appends an "Other (type your answer)" row
@@ -14,6 +15,29 @@ MAX_CHOICE_CHARS = 8000
 RECOMMENDED_LABEL = "(Recommended)"
 _UNAVAILABLE = "Clarify tool is not available in this execution context."
 _SHAPE = "Pass questions=[{question, choices?, multi_select?}]; a single question is a one-entry array."
+_EXPERIMENT_NAMING_RE = re.compile(
+    r"(?:"
+    r"(?:please\s+)?(?:enter|provide|choose|select|confirm)\s+(?:a|the|your)?\s*(?:new\s+)?(?:experiment|job|run)\s+name"
+    r"|(?:what|which)\s+(?:experiment|job|run)\s+name(?:\s+should\s+(?:i|we)\s+use)?"
+    r"|what\s+(?:should|would)\s+(?:i|we|you)\s+(?:name|call)\s+(?:this|the|your)\s+(?:experiment|job|run)"
+    r"|(?:new\s+)?(?:experiment|job|run)\s+name"
+    r")[?!.:\s]*",
+    re.IGNORECASE,
+)
+_SUBSTANTIVE_CHOICE_RE = re.compile(
+    r"\b(?:approve|authorize|consent|submit|execute|upload|credit|cost|pay|spend|delete|overwrite|samples?)\b",
+    re.IGNORECASE,
+)
+_EXISTING_RUN_LOOKUP_RE = re.compile(
+    r"\b(?:existing|previous|earlier|past|historical|already\s+(?:ran|submitted)|"
+    r"recover|find|lookup|search|status|dashboard|resume)\b",
+    re.IGNORECASE,
+)
+_AUTO_EXPERIMENT_NAME_ANSWER = (
+    "Use an Agent Scientist-generated experiment name. Preserve an exact name "
+    "the user already supplied; otherwise generate one and continue without asking. "
+    "This does not approve any separate scientific or submission decision."
+)
 
 
 def mark_recommended(choices: List[str]) -> List[str]:
@@ -92,6 +116,14 @@ def _response_status(qid: str, answers: dict, multi: bool) -> tuple:
     return ("skipped" if qid in answers else "unanswered"), None
 
 
+def _is_experiment_name_choice(entry: dict) -> bool:
+    """Recognize a clarification that asks the user to name a new run."""
+    text = " ".join([entry["question"], *(entry.get("choices_offered") or [])])
+    return bool(_EXPERIMENT_NAMING_RE.fullmatch(entry["question"])
+                and not _EXISTING_RUN_LOOKUP_RE.search(text)
+                and not _SUBSTANTIVE_CHOICE_RE.search(text))
+
+
 def _result(normalized: List[dict], reply: dict) -> str:
     """Result JSON from a callback reply ``{"answers": {qid: raw | None}, "outcome", "notice"?}``:
     every response carries ``status`` and ``user_response`` (null unless answered); ``outcome``
@@ -114,10 +146,25 @@ def clarify_tool(questions, callback: Optional[Callable] = None) -> str:
     normalized, error = _normalize_questions(questions)
     if error:
         return tool_error(error)
+    # A run label is metadata, not a user decision. Resolve that question in
+    # the tool boundary so a model or stale skill cannot put it in a UI modal.
+    auto_answers = {}
+    interactive = []
+    for entry in normalized:
+        if _is_experiment_name_choice(entry):
+            auto_answers[entry["qid"]] = _AUTO_EXPERIMENT_NAME_ANSWER
+        else:
+            interactive.append(entry)
+    if not interactive:
+        return _result(normalized, {"answers": auto_answers, "outcome": "submitted"})
     if callback is None:
         return tool_error(_UNAVAILABLE)
     try:
-        return _result(normalized, callback(normalized))
+        reply = callback(interactive)
+        answers = dict(reply.get("answers") or {})
+        answers.update(auto_answers)
+        reply["answers"] = answers
+        return _result(normalized, reply)
     except Exception as exc:
         return tool_error(f"Failed to get user input: {exc}")
 
@@ -148,7 +195,10 @@ CLARIFY_SCHEMA = {
         "cancelled, timed_out or undelivered, with a notice saying why "
         "when the wait ended without a submit. Prefer deciding "
         "low-stakes questions yourself; don't use this for dangerous-command "
-        "confirmation (the terminal tool handles that)."
+        "confirmation (the terminal tool handles that). Never ask the user to "
+        "name or confirm a new experiment/run; preserve a name explicitly "
+        "supplied in their request, otherwise generate it and continue. "
+        "Questions that only request a new run name are resolved automatically."
     ),
     "parameters": {
         "type": "object",

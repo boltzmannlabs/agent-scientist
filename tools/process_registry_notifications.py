@@ -377,8 +377,11 @@ class TimelineNotification(str):
     @classmethod
     def for_delegation(cls, text: str, event: dict) -> "TimelineNotification":
         from agent.notification_presentation import diagnostic_process_event
-        return cls(text, async_delegation_display_text(event), "async_delegation_complete",
-                   "diagnostic" if diagnostic_process_event(event) else "result")
+        instance = cls(text, async_delegation_display_text(event), "async_delegation_complete",
+                       "diagnostic" if diagnostic_process_event(event) else "result")
+        from agent.specialist_delivery import report_from_event
+        instance.specialist_report = report_from_event(event)
+        return instance
 
 
 def _delegation_attribution_line(evt: dict) -> "str | None":

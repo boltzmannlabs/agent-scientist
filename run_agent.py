@@ -421,6 +421,7 @@ class AIAgent(
             "session_total_tokens", "session_input_tokens", "session_output_tokens", "session_prompt_tokens",
             "session_completion_tokens", "session_cache_read_tokens", "session_cache_write_tokens",
             "session_reasoning_tokens", "session_api_calls",
+            "session_usage_reported_calls",
         ):
             setattr(self, counter, 0)
         self.session_estimated_cost_usd = 0.0

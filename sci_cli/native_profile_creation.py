@@ -190,7 +190,7 @@ def create_native(name, source_home, skills, services, sources, terminal, person
         config.update({"terminal": deepcopy(terminal), "plugins": {"enabled": [], "entries": {}},
                        "mcp_servers": {}, "skills": {"disabled": [], "external_dirs": [],
                        "trusted_project_dirs": [], "inline_shell": False, "template_vars": False},
-                       "platform_toolsets": {"cli": ["terminal", "file", "skills", "delegation"]}})
+                       "platform_toolsets": {"cli": ["terminal", "file", "skills", "delegation", "code_execution"]}})
         (staging / "workspace").mkdir(exist_ok=True)
         prompt_sources = deepcopy(sources)
         if terminal.get("backend") == "docker":

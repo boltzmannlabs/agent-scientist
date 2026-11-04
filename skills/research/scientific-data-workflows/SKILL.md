@@ -48,6 +48,7 @@ Confirm the requested input, output, available tools, and prerequisites before f
 
 ### Standing reporting rules
 
+- For Boltzmann jobs, never ask, confirm, or offer a choice about `experiment_name`. Preserve an exact name only when the user supplied one; otherwise omit the field so the connector generates a readable unique label, then report the returned name. Ask separately only for missing scientific inputs, substantive choices, validation gaps, or required execution authorization.
 - Treat synthetic fixtures as deterministic tests, not antibodies or biological records. For live databases, validate field presence and identity rather than assuming permanent exact result lists.
 - Preserve tool precision and units. Distinguish documented unit conventions from explicit returned unit fields; report absent units honestly.
 - Never infer binding affinity from structure metadata or sequence calculations.

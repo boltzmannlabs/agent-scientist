@@ -502,7 +502,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "act_seek",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -557,7 +557,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Antibody_Backbone_to_Sequence_Generation",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -622,7 +622,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Antibody_Numbering",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -711,7 +711,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Antibody_Prediction",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -774,7 +774,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "agcdr_diff",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -825,7 +825,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "atom_mapping",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -905,7 +905,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Custom_Property_Model_DL",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -1010,7 +1010,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Custom_Property_Model_Automl",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -1065,7 +1065,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Backbone_Generation",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -1111,7 +1111,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Binding_Site_Prediction",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -1157,7 +1157,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "BiomambaRna",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -1241,7 +1241,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Boltz2",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -1429,7 +1429,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "boltzgen",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -1520,7 +1520,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Butina_Clustering",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -1567,7 +1567,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Cat_Pred",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -1656,7 +1656,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "CDR_Generator",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -1722,7 +1722,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "CodonRLBERTPropPred",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -1789,7 +1789,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "CircRNA",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -1866,7 +1866,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "CircRNAEvaluate",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -1911,7 +1911,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Clean",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -1963,7 +1963,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "CodonRLBERT",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -2027,7 +2027,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "condition_recommendation",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -2094,7 +2094,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "dataset_creation",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -2152,7 +2152,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "crispr_base_editing",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -2233,7 +2233,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "BE_bystander_prediction",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -2294,7 +2294,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "BE_efficacy_pred",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -2330,7 +2330,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "gRNA_design",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -2403,7 +2403,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "crispr_fs_score",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -2476,7 +2476,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "crispr_score",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -2547,7 +2547,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "cyclic_binder",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -2612,7 +2612,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Insilico_Directed_Evolution",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -2675,7 +2675,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Enzymes",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -2750,7 +2750,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Evobind",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -2790,7 +2790,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "forward_reaction",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -2966,7 +2966,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Fragment_Based_Optimization",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -3016,7 +3016,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Function_Based_Enzyme_Generation",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -3085,7 +3085,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Genzyme_Generation",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -3259,7 +3259,7 @@
       ],
       "submission": {
         "wire_job_name": "Geometry_Optimization",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -3320,7 +3320,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "global_binding_affinity",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [],
@@ -3363,7 +3363,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "global_ic50",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -3546,7 +3546,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Lead_Generation_Graph_GA",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -3669,7 +3669,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Reactivity_Descriptors_Combined",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -3704,7 +3704,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "igdesign",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -3755,7 +3755,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "impurity_prediction",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -3827,7 +3827,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "K_Means_Clustering",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -3872,7 +3872,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "kcatnet",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -3934,7 +3934,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "kcat_km",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -4146,7 +4146,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Lead_Generation_Augmented",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -4355,7 +4355,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Lead_Generation_Reinvent",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -4532,7 +4532,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Lead_Optimization_Mcts",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -4704,7 +4704,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Lead_Generation_Mars_Plus",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -4745,7 +4745,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Ligand_MPNN",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -4796,7 +4796,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "MegaDock",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -4902,7 +4902,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Vina_basic_docking",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [],
@@ -5028,7 +5028,7 @@
       ],
       "submission": {
         "wire_job_name": "Vina_Flexible_Docking",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -5141,7 +5141,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Vina_Score_only_docking",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -5217,7 +5217,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Diffdock",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -5344,7 +5344,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "MDS_openMM",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -5448,7 +5448,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "MDS_Gromacs",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -5491,7 +5491,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Protein_Structure_Prediction",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -5566,7 +5566,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Motiff_Scaffolding",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -5612,7 +5612,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "rna_property_calculation",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -5647,7 +5647,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Multimer_Structure_Prediction",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -5703,7 +5703,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Netsolp",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -5777,7 +5777,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Novelty",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -5821,7 +5821,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Pep_Patch",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -5890,7 +5890,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Peptide_Property_Prediction",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -5946,7 +5946,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "peptiverse",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -6065,7 +6065,7 @@
       ],
       "submission": {
         "wire_job_name": "ligand_pharmacophore",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -6137,7 +6137,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Pharmacophore_Hypothesis",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -6194,7 +6194,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Pharmacophore_Screening",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -6240,7 +6240,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Pharmacophore_Based_Generator",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -6315,7 +6315,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Placer",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -6421,7 +6421,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "ppiflowmonomer",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -6512,7 +6512,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "ppiflowantibody",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -6566,7 +6566,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Prodigy",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -6716,7 +6716,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Property_Prediction",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -6767,7 +6767,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Rna_Inter_Pred",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -6862,7 +6862,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "pxdesigninfer",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -7015,7 +7015,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "QSPR_Screening",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -7128,7 +7128,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Molecule_Enumeration",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -7185,7 +7185,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Random_Antibody_Generation",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -7384,7 +7384,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Random_based_generation_training",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -7461,7 +7461,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Random_Controlled_Mutagenesis",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -7643,7 +7643,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Random_based_generation_nontrans",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -7843,7 +7843,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Random_based_generation_Inference_transvaegen",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -7888,7 +7888,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "RC_Plot",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -7938,7 +7938,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "retrosynthesis",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8005,7 +8005,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "rfdiffusion_proteinmpnn",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8068,7 +8068,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "rna_inverse_fold",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8137,7 +8137,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "rnagen_3utr",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8193,7 +8193,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "rnagen_5utr",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8244,7 +8244,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "rnagen_cds",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8318,7 +8318,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "rnagen_cds_mrna-gen",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8369,7 +8369,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "rna_pocket_pred",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8427,7 +8427,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "rna_property_prediction_incell_stabilty",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8472,7 +8472,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "rna_property_prediction_mean_ribosomal_load",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8517,7 +8517,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "TertiaryFolding",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8575,7 +8575,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "rna_structure_prediction",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8626,7 +8626,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "RNA_Translation",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8695,7 +8695,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "transla_score",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8759,7 +8759,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "rna_bind_specificity_pred",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8817,7 +8817,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "sec_struct_pred",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8877,7 +8877,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Sequence_based_peptide_generation",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -8939,7 +8939,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Similarity_Screening",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -9058,7 +9058,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Single_Point_Energy",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -9110,7 +9110,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "rna_siRNA_efficacy_pred",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -9159,7 +9159,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "rna_siRNA_gen",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -9220,7 +9220,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "siRNA_obj_pred",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -9306,7 +9306,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Solublempnn",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -9483,7 +9483,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Structure_Based_Generator",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -9534,7 +9534,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Structure_based_peptide_generation",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -9664,7 +9664,7 @@
       ],
       "submission": {
         "wire_job_name": "Substructure_Screening",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -9817,7 +9817,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "epitope_abgen",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -9872,7 +9872,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Thermal_MPNN",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -9925,7 +9925,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "tm_align",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -9981,7 +9981,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Uncondtional_Sampling",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -10056,7 +10056,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "Vaccines",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -10126,7 +10126,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "AntiBMPNN",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -10194,7 +10194,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "ipsae-protein",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -10290,7 +10290,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "ppiflowprotein",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -10366,7 +10366,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "ppiflownanobody",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -10438,7 +10438,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "pxdesignpipeline",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": []
@@ -10505,7 +10505,7 @@
       "examples": [],
       "submission": {
         "wire_job_name": "stability-binding-ddg",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -10580,7 +10580,7 @@
       ],
       "submission": {
         "wire_job_name": "deepallo",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -10684,7 +10684,7 @@
       ],
       "submission": {
         "wire_job_name": "enzycontrol",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -10798,7 +10798,7 @@
       ],
       "submission": {
         "wire_job_name": "Catalytic_Geometry",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -10979,7 +10979,7 @@
       ],
       "submission": {
         "wire_job_name": "Mol_Probity",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [
@@ -11581,7 +11581,7 @@
       ],
       "submission": {
         "wire_job_name": "Enzyme_RFD3",
-        "experiment_name_required": true,
+        "experiment_name_required": false,
         "payload_field": "experimentData"
       },
       "diagnostics": [

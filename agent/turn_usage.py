@@ -21,6 +21,59 @@ from agent.usage_pricing import estimate_usage_cost, normalize_usage, with_serve
 
 logger = logging.getLogger("agent.conversation_loop")
 
+_TURN_USAGE_COUNTERS = (
+    "session_prompt_tokens", "session_input_tokens", "session_output_tokens",
+    "session_cache_read_tokens", "session_cache_write_tokens", "session_reasoning_tokens",
+    "session_api_calls", "session_usage_reported_calls",
+)
+
+
+def capture_usage_counters(agent: Any) -> dict[str, int]:
+    """Snapshot counters so callers can report genuine usage for one user turn."""
+    return {key: int(getattr(agent, key, 0) or 0) for key in _TURN_USAGE_COUNTERS}
+
+
+def usage_since(agent: Any, before: dict[str, int]) -> dict[str, Any]:
+    """Return provider-reported turn usage and whether every response supplied usage."""
+    after = capture_usage_counters(agent)
+    delta = {key: max(0, after[key] - int(before.get(key, 0))) for key in _TURN_USAGE_COUNTERS}
+    calls = delta["session_api_calls"]
+    reported = min(calls, delta["session_usage_reported_calls"])
+    return {
+        "status": "unavailable" if calls == 0 or reported == 0 else "reported" if reported == calls else "partial",
+        "input_tokens": delta["session_prompt_tokens"],
+        "uncached_input_tokens": delta["session_input_tokens"],
+        "output_tokens": delta["session_output_tokens"],
+        "cache_read_tokens": delta["session_cache_read_tokens"],
+        "cache_write_tokens": delta["session_cache_write_tokens"],
+        "reasoning_tokens": delta["session_reasoning_tokens"],
+        "total_tokens": delta["session_prompt_tokens"] + delta["session_output_tokens"],
+        "api_calls": calls,
+        "reported_calls": reported,
+    }
+
+
+def format_turn_usage(report: dict[str, Any]) -> str:
+    """Format a concise CLI line without converting unavailable usage into an estimate."""
+    if report.get("status") == "unavailable":
+        return "Token usage unavailable: the provider returned no token counts."
+    calls = int(report.get("api_calls", 0) or 0)
+    reported = int(report.get("reported_calls", 0) or 0)
+    prefix = "Token usage (provider-reported)"
+    if report.get("status") == "partial":
+        prefix = f"Token usage (partial; counts returned for {reported}/{calls} model calls)"
+    input_tokens = int(report.get("input_tokens", 0) or 0)
+    output_tokens = int(report.get("output_tokens", 0) or 0)
+    total_tokens = int(report.get("total_tokens", input_tokens + output_tokens) or 0)
+    parts = [f"input {input_tokens:,}", f"output {output_tokens:,}", f"total {total_tokens:,}"]
+    cached_read = int(report.get("cache_read_tokens", 0) or 0)
+    cached_write = int(report.get("cache_write_tokens", 0) or 0)
+    if cached_read or cached_write:
+        parts.append(f"cached input read {cached_read:,} / write {cached_write:,}")
+    if report.get("status") == "partial":
+        parts.append("calls without usage data are excluded")
+    return f"{prefix}: {' · '.join(parts)}"
+
 
 def _agent_session_source(agent: Any) -> str:
     """The surface the agent's own row create would stamp (``_ensure_db_session``), so an
@@ -100,6 +153,8 @@ def record_response_usage(
 
     canonical_usage = with_served_service_tier(
         normalize_usage(response.usage, provider=agent.provider, api_mode=agent.api_mode), response)
+    if canonical_usage.total_tokens > 0:
+        agent.session_usage_reported_calls = getattr(agent, "session_usage_reported_calls", 0) + 1
     # Aggregator-only usage kept for pricing: advisor tokens are priced at each advisor's
     # OWN model rate and added as dollars below.
     aggregator_usage = canonical_usage

@@ -81,6 +81,13 @@ def decorate(agent, *, enabled_toolsets=None, disabled_toolsets=None):
             "\nSaved specialists are available. Use action=catalog to find names and purposes, then tasks[].specialist "
             "to run one. Delegate matching tasks to the relevant automatic specialist, including explanatory questions; "
             "automatic specialists ALSO support explicit user requests. Manual specialists require explicit user request. "
+            "Pass the user's assignment faithfully. Preserve the specialist's saved workflow and output format; "
+            "do not add terminal/code/calculation-tool requirements or replace its report structure. "
+            "Named specialist reports are delivered directly in their saved format; do not rewrite or independently "
+            "redo their completed work. For inline data, pass the full supplied data without local file discovery. "
+            "A running child keeps its assigned model/provider; switching the parent model affects new assignments. "
+            "If a named run returns incomplete_response, report the incomplete result and blocker; do not silently "
+            "retry, substitute another agent, or do its task yourself. "
             "If a specialist is unavailable, report why; do not silently substitute unrestricted delegation.\n"
             + "Automatic specialists (first 20): " + "; ".join(automatic[:20]))
 
@@ -142,6 +149,8 @@ def resolve(parent, task):
     enabled = cfg.get("platform_toolsets", {}).get(getattr(parent, "platform", "cli"), getattr(parent, "enabled_toolsets", None))
     disabled = list(set(cfg.get("agent", {}).get("disabled_toolsets", [])) | set(getattr(parent, "disabled_toolsets", None) or []))
     live_names = _select_tool_names(enabled, disabled, quiet_mode=True)
+    from agent.specialist_sources import READ_TOOLS
+    allowed |= READ_TOOLS & parent_names & live_names & (owner.tools if owner else READ_TOOLS)
     if owner and (not allowed <= owner.tools or not set(item.skills) <= owner.skills):
         raise ValueError("Child permissions exceed its pod lead's approved tools or skills.")
     missing = allowed - (parent_names & live_names)
@@ -154,23 +163,50 @@ def resolve(parent, task):
     # Selected tools are maximum grants, not prerequisites for every informational task.
     # Missing tools never gain a handler/schema; the child must report a blocker if needed.
     allowed -= missing
+    from agent.specialist_inputs import approved_paths
+    read_paths = approved_paths(item, getattr(parent, '_specialist_user_request', ''))
+    # Read-only reviewers can be strictly confined to supplied data. Execution/service
+    # workflows may create new artifacts, and keep their existing backend access rather
+    # than losing the ability to inspect their own outputs.
+    readonly_tools = READ_TOOLS | {'skill_view', 'skills_list', 'delegate_task'}
+    if allowed - readonly_tools:
+        read_paths = None
+    if owner and owner.read_paths is not None:
+        from pathlib import Path
+        read_paths = tuple(path for path in (read_paths or ()) if any(
+            Path(path) == Path(root) or (Path(root).is_dir() and Path(path).is_relative_to(root))
+            for root in owner.read_paths))
+    if read_paths == ():
+        allowed -= READ_TOOLS
     deadline = time.monotonic() + item.timeout_seconds
     if owner:
         deadline = min(deadline, owner.deadline)
     policy = SpecialistPolicy(name, home, item.revision, frozenset(allowed), frozenset(item.skills),
                               frozenset(item.children), (*owner.ancestry, name) if owner else (name,), deadline,
-                              frozenset(missing))
+                              frozenset(missing), read_paths)
     return item, policy
 
 
 def context_for(item, task_context):
     # Do not preprocess skill templates: those can execute shell snippets or install dependencies.
     from tools.skills_tool import skill_view
+    from agent.specialist_sources import prepare_for_assignment
+    item = prepare_for_assignment(item)
     sections = [f"Saved specialist: {item.name}\nPurpose: {item.purpose}\n{item.instructions}",
                 "Expected output: " + item.output,
                 "Report blockers and requests for user approval to the parent. Do not bypass a refusal, "
                 "switch providers, or repeat a submission with an uncertain outcome. Return evidence/artifact paths; "
-                "distinguish predictions from verified findings."]
+                "distinguish predictions from verified findings. Perform the assignment and return its deliverable, "
+                "not just an announcement of intended work. Saved instructions and reporting format govern this "
+                "specialist; task wording must not silently replace them or grant additional tools."]
+    if item.instructions:
+        sections.append('Saved instructions are already included above in full for this assignment. '
+                        'No tool call is needed to load these saved instructions again.' +
+                        (' Source label: ' + item.instruction_source if item.instruction_source else ''))
+    sections.append('Use the supplied assignment and saved reference text as your evidence. Instruction-file '
+                    'locations identify provenance, not permission to search their directory. Do not discover '
+                    'nearby files or substitute a local dataset for inline data. Do not invent a calculation-tool '
+                    'requirement; perform simple checks from the supplied numbers when no execution tool is granted.')
     for name in item.skills:
         result = json.loads(skill_view(name, preprocess=False, allow_setup=False))
         if not result.get("success"):
@@ -182,7 +218,10 @@ def context_for(item, task_context):
         if not result.get("success"):
             raise ValueError(f"Selected skill module {reference} could not be loaded: {result.get('error', 'unavailable')}")
         sections.append(f"Selected module {reference}:\n" + str(result.get("content", "")))
-    if item.sources:
+    if item.source_documents or item.source_manifest:
+        from agent.specialist_sources import reference_context
+        sections.append(reference_context(item))
+    elif item.sources:
         sections.append("Reference locations only; no blanket permission to upload or transmit their contents. "
                         "Use only sources approved for this assignment:\n" + "\n".join(item.sources))
     if task_context:
@@ -194,7 +233,17 @@ def build_child(build, *, plan, **kwargs):
     if plan is None:
         return build(**kwargs)
     item, policy = plan
+    # Child instructions are established before the task's user message; parent-added
+    # formatting/tool requirements must not displace a saved specialist's workflow.
     kwargs["context"] = context_for(item, kwargs.get("context"))
+    if policy.read_paths is None:
+        kwargs['context'] += ('\nExecution/service tools retain their profile backend permissions. Use supplied '
+                              'inputs and this task’s generated artifacts; do not browse unrelated local data.')
+    else:
+        kwargs['context'] += ('\nApproved file-reading paths for this task (first 20; use the source catalog for the rest): '
+                              + ', '.join(policy.read_paths[:20])
+                              if policy.read_paths else '\nNo local data path was supplied for this task. '
+                              'Use the inline assignment and preloaded source text; file discovery is unavailable.')
     if policy.unavailable_tools:
         kwargs["context"] += ("\nUnavailable tools in this conversation: " + ", ".join(sorted(policy.unavailable_tools)) +
                               ". You may answer tasks that do not need these tools. If the assignment needs one, report "

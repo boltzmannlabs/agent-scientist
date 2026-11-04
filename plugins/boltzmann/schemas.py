@@ -21,14 +21,14 @@ SCHEMAS = [
                 },
                 "experiment_name": {
                     "type": "string",
-                    "description": "User-supplied or explicitly confirmed experiment name.",
+                    "description": "Optional platform label. Omit it for an automatically generated readable name, or pass the exact name requested by the user.",
                 },
                 "allow_partial_validation": {
                     "type": "boolean", "default": False,
                     "description": "Set true only after the user explicitly approves the reported unchecked aspects and possible service charges. Never overrides invalid inputs or authorization.",
                 },
             },
-            "required": ["job_name", "experiment_data", "experiment_name"],
+            "required": ["job_name", "experiment_data"],
             "additionalProperties": False,
         },
     },

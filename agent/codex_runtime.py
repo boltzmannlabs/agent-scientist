@@ -180,6 +180,8 @@ def _record_codex_app_server_usage(agent, turn, messages=None) -> dict[str, Any]
     )
     prompt_tokens = canonical_usage.prompt_tokens
     total_tokens = _coerce_usage_int(usage.get("totalTokens")) or canonical_usage.total_tokens
+    if total_tokens > 0:
+        agent.session_usage_reported_calls = getattr(agent, "session_usage_reported_calls", 0) + 1
     token_counts = {f: getattr(canonical_usage, f) for f in
                     ("input_tokens", "output_tokens", "cache_read_tokens", "cache_write_tokens", "reasoning_tokens")}
     usage_dict = {"prompt_tokens": prompt_tokens, "completion_tokens": canonical_usage.output_tokens,

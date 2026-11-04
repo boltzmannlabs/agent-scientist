@@ -14,11 +14,13 @@ from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.output import DummyOutput
 from prompt_toolkit.widgets import TextArea
 
-from sci_cli.side_scroll import SideScrollFrame, TranscriptWindow
+from sci_cli.side_scroll import SideScrollFrame, TranscriptControl, TranscriptWindow
 
 
 def build_view(text):
     view = SimpleNamespace(follow=True, transcript=TextArea(text=text, read_only=True, focusable=False))
+    view.transcript.control = TranscriptControl(view, view.transcript.buffer, view.transcript.lexer)
+    view.copy_text = Mock()
     view.transcript.window = TranscriptWindow(view, view.transcript.control)
     view.scroll = lambda direction, amount=None: view.transcript.window.move(direction, amount)
     composer = TextArea(text='keep my draft', height=1)
@@ -82,3 +84,30 @@ async def test_wheel_over_composer_and_scrollbar_drag_do_not_edit_or_focus_trans
         last, _ = render(frame)
         assert 'entry 79' in last and view.follow
         assert composer.text == 'keep my draft' and app.layout.current_buffer is composer.buffer
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('reverse', [False, True])
+async def test_drag_copies_wrapped_unicode_output_without_changing_composer(reverse):
+    text = '0123456789世界ABCDEFGHIJ\nsecond line'
+    view, composer, app, frame = build_view(text)
+    with set_app(app):
+        app.layout.update_parents_relations()
+        _, mouse = render(frame, width=12)
+        start, end = Point(2, 1), Point(6, 2)
+        if reverse:
+            start, end = end, start
+        for kind, point in ((MouseEventType.MOUSE_DOWN, start),
+                            (MouseEventType.MOUSE_MOVE, end),
+                            (MouseEventType.MOUSE_UP, end)):
+            mouse.mouse_handlers[point.y][point.x](MouseEvent(point, kind, MouseButton.LEFT, frozenset()))
+        view.copy_text.assert_called_once_with('23456789世界ABC')
+        from sci_cli.side_view import SideView
+        assert SideView.selected_text(view) == '23456789世界ABC'
+        assert view.transcript.buffer.selection_state is not None
+        assert not view.follow
+        assert composer.text == 'keep my draft' and app.layout.current_buffer is composer.buffer
+        assert view.transcript.text == text
+        view.scroll(-1)
+        mouse.mouse_handlers[end.y][end.x](MouseEvent(end, MouseEventType.MOUSE_UP, MouseButton.LEFT, frozenset()))
+        assert view.copy_text.call_count == 1

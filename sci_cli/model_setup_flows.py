@@ -373,7 +373,15 @@ def _model_flow_openai_codex(config, current_model=""):
     from sci_cli.auth_codex_shared import reuse_current_login, validate
     from sci_cli.codex_models import get_codex_model_ids
     try:
-        creds = reuse_current_login()
+        try:
+            creds = reuse_current_login()
+        except AuthError as exc:
+            if exc.code != "codex_external_identity_changed":
+                raise
+            print("The linked Codex account/workspace changed. Choose the current Codex login "
+                  "or a separate SCI sign-in. Press Ctrl+C to cancel.")
+            _login_openai_codex(argparse.Namespace(), PROVIDER_REGISTRY["openai-codex"], configure_model=False)
+            creds = resolve_codex_runtime_credentials(read_only=True)
         if creds is None:
             if not _oauth_gate(
                 bool(get_codex_auth_status().get("logged_in")), "OpenAI Codex", _login_openai_codex, argparse.Namespace(),
@@ -383,6 +391,9 @@ def _model_flow_openai_codex(config, current_model=""):
             # Resolve for use here; keep the credential paired with its own route.
             creds = resolve_codex_runtime_credentials()
             validate(creds.get("api_key") or "", creds.get("base_url") or DEFAULT_CODEX_BASE_URL)
+    except (KeyboardInterrupt, EOFError):
+        print("Codex setup cancelled. No model selection was changed.")
+        return
     except (AuthError, ValueError) as exc:
         print("Codex login check failed: " + format_auth_error(exc))
         print("Use sci auth add openai-codex --type oauth to choose the current Codex login or sign in again.")
