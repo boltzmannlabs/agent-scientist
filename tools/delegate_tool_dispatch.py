@@ -214,6 +214,9 @@ def _execute_and_aggregate(batch: _Batch, *, honor_parent_interrupt: bool = True
                 entry["live_transcript"] = batch.live_paths[_idx]
     update_manifest_statuses(batch.live_deleg_id, results)
     finish_delegation_unit(batch.task_list, results, background=not honor_parent_interrupt)
+    if honor_parent_interrupt:
+        from agent.specialist_delivery import stage_sync
+        stage_sync(batch.parent_agent, results)
 
     combined: Dict[str, Any] = {"results": results, "total_duration_seconds": total_duration}
     # Runtime truth about children's background processes, as prose the parent can't miss inside the JSON.

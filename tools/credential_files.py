@@ -249,6 +249,8 @@ _CACHE_DIRS: list[tuple[str, str]] = [
     ("cache/screenshots", "browser_screenshots"),
     ("cache/web", "web_cache"),
     ("cache/delegation", "delegation_cache"),
+    # Reviewed specialist source snapshots; mounted/synced through the existing backend path bridge.
+    ("subagent-sources", "subagent-sources"),
     ("cache/spillover", "cache/spillover"),  # oversized tool results; host side is canonical
     # Flat top-level desktop staging dirs (tui_gateway attach RPCs; no legacy alias),
     # mounted so vision/file tools in sandboxes reach uploads and dropped files.

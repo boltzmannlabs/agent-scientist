@@ -515,6 +515,9 @@ def finalize_turn(
     """Run the post-loop finalization and return the turn ``result`` dict."""
     from agent.conversation_loop import logger
 
+    from agent.specialist_delivery import VerbatimReport
+    verbatim_specialist = isinstance(final_response, VerbatimReport)
+
     final_response, _turn_exit_reason, preserved_verification_fallback, interrupted = _resolve_budget_fallback(
         agent, final_response=final_response, api_call_count=api_call_count,
         interrupted=interrupted, failed=failed, messages=messages,
@@ -611,7 +614,7 @@ def finalize_turn(
         # earlier seam transformed; the normal text turn already did this before its flush and
         # gets the recorded outcome back. Either way the tail close below writes the text the
         # user will see, never the raw model text (#44239).
-        if final_response and not interrupted:
+        if final_response and not interrupted and not verbatim_specialist:
             final_response, _, _ = apply_llm_output_transform(agent, final_response, turn_id=turn_id, logger=logger)
         _close_transcript_tail(agent, messages, final_response, interrupted, _recovered_from_stream)
         if not interrupted and not failed:
@@ -638,7 +641,7 @@ def finalize_turn(
     _platform = getattr(agent, "platform", None) or ""
     _response_transformed = False
     _pre_transform_response = None
-    if final_response and not interrupted:
+    if final_response and not interrupted and not verbatim_specialist:
         final_response, _response_transformed, _pre_transform_response = _apply_output_hooks(
             agent, final_response, logger, platform=_platform, effective_task_id=effective_task_id,
             turn_id=turn_id, original_user_message=original_user_message, messages=messages,

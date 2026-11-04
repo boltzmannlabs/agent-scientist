@@ -95,6 +95,8 @@ class TurnFacadeMixin:
                 return admission.early_result
             lease = admission.lease
             conversation_history = admission.conversation_history
+            from agent.turn_usage import capture_usage_counters, usage_since
+            usage_baseline = capture_usage_counters(self)
 
             relay_session_cwd, relay_turn_cwd = resolve_relay_scope_cwds(
                 self,
@@ -162,6 +164,8 @@ class TurnFacadeMixin:
                     # the interrupt clear itself waits for the thread join in the outer finally.
                     if lease is not None:
                         lease.stop_refresher()
+            if isinstance(result, dict):
+                result["token_usage"] = usage_since(self, usage_baseline)
             terminal = result if isinstance(result, dict) else {}
             relay_outcome = (
                 "cancelled" if terminal.get("interrupted") is True

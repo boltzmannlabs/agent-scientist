@@ -241,6 +241,9 @@ class CLIChatTurnMixin:
                 staged_user_message.update(content=str(message), display_kind=message.display_kind,
                                            display_metadata={"display_text": message.display_text,
                                                              "notification_category": message.notification_category})
+                report = getattr(message, 'specialist_report', None)
+                if isinstance(report, str) and report:
+                    staged_user_message['display_metadata']['specialist_report'] = report
             agent._pending_cli_user_message = staged_user_message
             self.conversation_history.append(staged_user_message)
 
@@ -712,3 +715,14 @@ class CLIChatTurnMixin:
                     ))
                 except Exception:
                     pass
+
+        self._chat_print_token_usage(turn.result)
+
+    def _chat_print_token_usage(self, result):
+        """Print exact provider-reported usage for this response, never a token estimate."""
+        from cli import _DIM, _RST, _cprint
+        usage = result.get("token_usage") if isinstance(result, dict) else None
+        if not isinstance(usage, dict):
+            return
+        from agent.turn_usage import format_turn_usage
+        _cprint(f"  {_DIM}{format_turn_usage(usage)}{_RST}")

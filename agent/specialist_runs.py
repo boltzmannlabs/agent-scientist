@@ -23,6 +23,9 @@ def record(child, goal, result=None):
         row = {"run_id": run_id, "specialist": policy.name, "revision": policy.revision,
                "goal": goal, "status": "queued", "started_at": time.time(), "pid": os.getpid(),
                "session_id": getattr(child, "session_id", None),
+               "model": str(getattr(child, 'model', '') or ''),
+               "provider": str(getattr(child, 'provider', '') or ''),
+               "model_note": "This run keeps its assigned model/provider; parent model switches apply to new assignments.",
                "parent_session_id": getattr(child, "_parent_session_id", None),
                "transcript": getattr(child, "_live_transcript_path", None)}
     else:

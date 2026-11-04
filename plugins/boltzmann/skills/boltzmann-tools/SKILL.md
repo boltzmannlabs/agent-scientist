@@ -71,8 +71,11 @@ of persisting a permanent tool limitation in a learned skill.
 ## Resolve and review the request
 
 1. Load the matching module and canonical request. Preserve user inputs.
-2. Ask for missing required fields and a confirmed experiment name. Do not
-   invent scientific defaults, backend names, units, IDs or conditional inputs.
+2. Ask for missing scientific fields. Never ask, confirm, or offer a choice about
+   the experiment name. Preserve a name only when the user explicitly provides
+   one; otherwise omit `experiment_name` and let the connector generate a
+   readable, unique label. Report that label from the tool result. Do not invent
+   scientific defaults, backend names, units, IDs or conditional inputs.
 3. Examples are historical illustrations, not current files, authorization,
    default parameters or verified results. Never reuse their upload references.
 4. Review relevant file rules and limits. If exact request details conflict or
@@ -116,9 +119,11 @@ approval; never invent or borrow another user's storage reference.
 
 ## Submit, track and report
 
-Use `boltzmann_submit(job_name, experiment_data, experiment_name)` with the
-reviewed payload and upload references. `experiment_name` belongs to the helper
-envelope, not the scientific payload unless separately documented there.
+Use `boltzmann_submit(job_name, experiment_data)` with the reviewed payload and
+upload references. Pass `experiment_name` only when the user explicitly gave a
+name; otherwise omit it and report the generated name returned by the connector.
+`experiment_name` belongs to the helper envelope, not the scientific payload
+unless separately documented there.
 Use `allow_partial_validation=true` only for approved partial checks above.
 
 Submission returns **accepted**, not completed. Retain its job name and document

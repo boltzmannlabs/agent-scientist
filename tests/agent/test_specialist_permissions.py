@@ -22,8 +22,8 @@ def parent_for(item):
     return parent
 
 
-def test_manual_snapshot_revocation_and_no_privilege_escalation():
-    item = save(Specialist('reviewer', 'Review', tools=('read_file',)))
+def test_manual_snapshot_revocation_and_no_privilege_escalation(tmp_path):
+    item = save(Specialist('reviewer', 'Review', tools=('read_file',), sources=(str(tmp_path),)))
     parent = parent_for(item)
     before = json.dumps(parent.tools, sort_keys=True)
     with pytest.raises(ValueError, match='explicit'):

@@ -14,7 +14,7 @@ def export_definition(cli, ui, args):
     ui.show(f'Export to {path}. Instructions and capability names only; credentials, references, child grants and history are excluded. '
             'Review instructions for private content before sharing.')
     ui.choose('Export this definition?', ['Export', 'Cancel'])
-    item = replace(item, sources=(), children=(), enabled=False, needs_review=True)
+    item = replace(item, sources=(), source_documents=(), source_manifest='', instruction_source='', children=(), enabled=False, needs_review=True)
     # Exclusive creation: never overwrite a file or follow a destination symlink.
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(fd, 'w', encoding='utf-8') as stream:
@@ -31,7 +31,7 @@ def import_definition(cli, ui, args):
     if len(payload) > _MAX_BYTES:
         raise ValueError('Definition exceeds 256 KB.')
     item = Specialist.parse(json.loads(payload))
-    item = replace(item, name=args[1] if len(args) == 2 else item.name, sources=(), children=(),
+    item = replace(item, name=args[1] if len(args) == 2 else item.name, sources=(), source_documents=(), source_manifest='', instruction_source='', children=(),
                    enabled=False, needs_review=True)
     ui.show(f'Import {item.name} from {path} into the current profile as a disabled definition. '
             'No code runs and no credentials or source grants are imported.')

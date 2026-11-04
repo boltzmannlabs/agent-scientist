@@ -718,6 +718,17 @@ def _migrate_to_50(results: Dict[str, Any], quiet: bool) -> None:
                 "  ✓ Delegation enabled for this profile; available in a new conversation.")
 
 
+def _migrate_to_51(results: Dict[str, Any], quiet: bool) -> None:
+    from sci_constants import get_sci_home
+    from sci_cli.specialist_defaults import enable_baseline
+    if (get_sci_home() / 'science-profile.json').exists():
+        return
+    config = read_raw_config()
+    if enable_baseline(config):
+        _commit(config, results, quiet, 'enabled standard CLI specialist tools',
+                '  ✓ File operations, terminal, Python execution and delegation enabled for new CLI conversations.')
+
+
 MIGRATIONS: Tuple[Tuple[int, Callable[[Dict[str, Any], bool], None]], ...] = (
     (12, _migrate_to_12),
     (13, _migrate_to_13),
@@ -850,6 +861,7 @@ MIGRATIONS: Tuple[Tuple[int, Callable[[Dict[str, Any], bool], None]], ...] = (
     # 48 → 49: the seeded Vercel runtime pin is dropped so fresh sandboxes use the managed image (see _migrate_to_49).
     (49, _migrate_to_49),
     (50, _migrate_to_50),
+    (51, _migrate_to_51),
 )
 
 #: Steps triggered by a legacy key or identifier (a renamed or retired key, a removed plugin or
@@ -863,7 +875,7 @@ MIGRATIONS: Tuple[Tuple[int, Callable[[Dict[str, Any], bool], None]], ...] = (
 #: provenance the config stamp says nothing about.
 # v50 also applies to unstamped science-profile configs: that wizard wrote an explicit
 # baseline omitting delegation, rather than recording a user opt-out.
-LEGACY_KEY_STEPS = frozenset({12, 14, 16, 17, 29, 33, 38, 39, 42, 43, 46, 50})
+LEGACY_KEY_STEPS = frozenset({12, 14, 16, 17, 29, 33, 38, 39, 42, 43, 46, 50, 51})
 
 
 def run_migrations(

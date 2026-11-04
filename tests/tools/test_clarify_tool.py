@@ -366,6 +366,35 @@ class TestClarifyBatchDispatch:
         assert "notice" not in result
 
 
+def test_automatic_run_naming_does_not_answer_execution_or_scientific_choices():
+    for question, choices in [
+        ("Confirm experiment name and approve spending 25 credits?", ["Approve", "Cancel"]),
+        ("Choose an experiment name", ["Submit 20 samples as pilot", "Cancel"]),
+        ("What is the name of the existing experiment?", None),
+    ]:
+        seen = []
+        def callback(questions):
+            seen.extend(questions)
+            return _reply({"q0": None}, outcome="cancelled")
+        result = _ask(callback, [{"question": question, "choices": choices}])
+        assert seen and result["outcome"] == "cancelled"
+        assert result["responses"][0]["user_response"] is None
+
+
+def test_pure_run_name_is_automatic_while_other_questions_keep_explicit_consent():
+    from tools.clarify_tool import clarify_tool
+    pure = json.loads(clarify_tool([{"question": "What experiment name should I use?"}]))
+    assert pure["responses"][0]["status"] == "answered"
+    seen = []
+    def callback(questions):
+        seen.extend(questions)
+        return _reply({"q1": "No"})
+    result = _ask(callback, [{"question": "Experiment name?"},
+                             {"question": "Approve the paid submission?", "choices": ["Yes", "No"]}])
+    assert [row["qid"] for row in seen] == ["q1"]
+    assert result["responses"][1]["user_response"] == "No"
+
+
 class TestRegistryBatchPassThrough:
     """The registered handler forwards `questions` from tool args."""
 

@@ -646,7 +646,8 @@ def _build_result_entry(
         entry["missed_steer"] = _missed_steer
         _miss_note = ("[steer did not land — the subagent finished before it could " f"be delivered: {_missed_steer}]")
         entry["summary"] = f"{summary}\n\n{_miss_note}" if summary else _miss_note
-    return entry
+    from agent.specialist_results import assess
+    return assess(child, entry)
 
 
 def _is_image_url(ref: str) -> bool:

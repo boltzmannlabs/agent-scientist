@@ -20,11 +20,14 @@ class Specialist:
     name: str
     purpose: str
     instructions: str = ""
+    instruction_source: str = ""
     output: str = "A concise answer with evidence, limitations and output artifact paths."
     tools: tuple[str, ...] = ()
     skills: tuple[str, ...] = ()
     skill_files: tuple[str, ...] = ()
     sources: tuple[str, ...] = ()
+    source_documents: tuple[dict, ...] = ()
+    source_manifest: str = ''
     children: tuple[str, ...] = ()
     automatic: bool = False
     enabled: bool = True
@@ -39,6 +42,13 @@ class Specialist:
         if not isinstance(raw, dict) or set(raw) - set(cls.__dataclass_fields__):
             raise ValueError("Invalid specialist definition: unknown fields or non-object input.")
         data = dict(raw)
+        docs = data.get('source_documents', [])
+        if not isinstance(docs, (list, tuple)) or any(
+            not isinstance(doc, dict) or set(doc) != {'source', 'label', 'text'} or
+            any(not isinstance(doc[key], str) or not doc[key].strip() for key in doc) for doc in docs
+        ):
+            raise ValueError('Reference snapshots need source, label and readable text.')
+        data['source_documents'] = tuple(dict(doc) for doc in docs)
         for key in ("tools", "skills", "skill_files", "sources", "children"):
             values = data.get(key, [])
             if not isinstance(values, (list, tuple)) or any(not isinstance(v, str) or not v.strip() for v in values):
@@ -49,6 +59,12 @@ class Specialist:
         except TypeError as exc:
             raise ValueError("A specialist needs a name and purpose.") from exc
         validate_name(item.name)
+        if not isinstance(item.instruction_source, str):
+            raise ValueError('Instruction source must be a path label.')
+        if not isinstance(item.source_manifest, str):
+            raise ValueError('Source manifest must be a path label.')
+        if any(doc['source'] not in item.sources for doc in item.source_documents):
+            raise ValueError('Reference snapshots must belong to the selected sources.')
         for reference in item.skill_files:
             skill, sep, path = reference.partition("#")
             parts = path.replace("\\", "/").split("/")
@@ -63,6 +79,8 @@ class Specialist:
         for key in ("automatic", "enabled", "needs_review"):
             if type(getattr(item, key)) is not bool:
                 raise ValueError(f"{key} must be true or false.")
+        if sum(len(doc['text']) for doc in item.source_documents) + len(item.instructions) > 100_000:
+            raise ValueError('Combined instruction/reference text exceeds 100,000 characters; select smaller sources.')
         for key in ("max_iterations", "timeout_seconds"):
             if type(getattr(item, key)) is not int or getattr(item, key) < 1:
                 raise ValueError(f"{key} must be a positive whole number.")
@@ -148,5 +166,5 @@ def delete(name, home=None, *, expected_revision):
 
 def copy_to(item, destination_home, name=None):
     # Destination review resolves capabilities in THAT profile. Never copy private source grants or children.
-    return save(replace(item, name=name or item.name, sources=(), children=(), automatic=False,
+    return save(replace(item, name=name or item.name, sources=(), source_documents=(), source_manifest='', instruction_source='', children=(), automatic=False,
                         enabled=False, needs_review=True), destination_home)

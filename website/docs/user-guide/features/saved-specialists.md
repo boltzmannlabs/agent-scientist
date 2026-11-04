@@ -38,6 +38,20 @@ The wizard asks only for a name, purpose, skills/modules, tools/packages and exp
 The review offers additional instructions and optional reference locations. New specialists support
 **both explicit requests and automatic matching**; there is no separate mode question.
 
+New specialists include available file operations (read/search/write/patch), terminal, Python execution
+and process management from the owning profile. The final review displays these grants. Setup does
+not execute source files. Assignments may use these tools when their instructions/task require them;
+existing execution approval and backend rules remain effective. Older specialists keep their saved
+selections; **Use standard tools** in review adds the available defaults before saving. Scientific
+services still require their own credentials and authorization.
+
+For purpose, enter ordinary text **or a local `.md`, `.markdown` or `.txt` path**. Setup reads
+the complete instruction file, derives a short routing description and shows the full instructions
+in review. The reviewed text is saved with the definition and supplied before the child's first
+model request. Adding the same file under References or manually selecting `read_file` is unnecessary.
+Additional instructions also accepts an instruction-file path. Invalid paths ask again without
+discarding earlier answers. Updating an older bare-path definition imports its contents for review.
+
 Searchable selectors have Select all, Clear selection and Done. When a search is active,
 **Select matching / Clear matching** affect only the matching results. Unfiltered Select all
 covers the entire section. You can deselect individual entries afterward.
@@ -134,6 +148,8 @@ never overwrite definitions; provide a new name or edit the existing definition 
 A specialist uses the owning profile's existing delegation model configuration and authentication;
 without a delegation override, it inherits the parent's model. There is no separate LLM login.
 Research-service credentials stay with the profile and are never stored in a specialist definition.
+An already-running child retains its assigned model/provider when the parent model changes. Run
+receipts show the actual model/provider; cancel and start a new assignment to use a different route.
 
 To move a specialist to another server:
 
@@ -202,16 +218,60 @@ an unavailable tool must return the blocker rather than claim execution. This do
 Boltzmann authorization, scientific-workflow restrictions, file validation, or job/upload approvals.
 No research-service plugin is copied or rewritten by this feature.
 
-Terminal and code-execution access require a specific review during setup. These capabilities
+Terminal and code-execution access are shown in the final capability review. These capabilities
 can use the configured execution environment: **a specialist tool allowlist is not an OS-level
 filesystem or network sandbox**. Filesystem/network isolation still belongs to the profile's
 execution backend. Configuration/credential management, skill authoring, memory writes,
 scheduling and cross-platform messaging are not specialist grants.
 
-Optional file/folder/HTTPS locations are references only. Saving them does not read, index,
-download or upload their contents, nor grant source-specific access. Approve the material to be
-used for the particular assignment. Do not put secrets or private sample contents into reusable
-instructions. A selected file-reading tool is not restricted to those reference paths.
+Adding a reference file, folder or public HTTPS URL reads its supported text during setup and
+saves a snapshot. Selecting the source authorizes including that saved text in future assignments
+to this profile's selected model; it does not authorize uploads to scientific services. References
+are supplied automatically as source data, separate from the specialist's instructions. Folder
+loading includes supported text/code files recursively, including Python, R, shell, JavaScript,
+TypeScript, notebooks as JSON and common compiled-language source files. Hidden files, empty files,
+dependency directories and unsupported binaries are excluded; skipped-file counts are reported.
+Symlinks are rejected. Public URLs use the existing guarded
+download path. Text-based PDFs use existing local extraction; missing dependencies are reported
+without automatic installation. Inaccessible sources give a recoverable error.
+
+Multiple files, folders and URLs can be added one at a time. Adding appends rather than replacing;
+exact repeated sources are not duplicated. **Remove a reference** removes one selected source;
+**Clear references** removes all. Saving an update retains unchanged snapshots.
+
+Limits are 8 MiB per source file/download, 10,000 folder entries/documents and 256 MiB combined text
+snapshots per collection. Instructions retain their 100,000-character bound and definitions retain
+their 256 KB metadata limit. These are resource bounds, not a one-file restriction. Oversized inputs
+are rejected without silently truncating them. Choose smaller sources when a limit is exceeded.
+Small collections are preloaded. Collections above 40,000 characters or 20 documents live in a
+private profile-local `subagent-sources/` library. The prompt contains a bounded catalog preview and
+the complete catalog path; existing read/search tools retrieve relevant full snapshots as needed.
+The collection does not occupy every request's context. Source paths are mapped through the existing
+backend mount/sync bridge; dependencies and data formats still need to be supported by that backend.
+**References → Refresh saved
+contents** explicitly replaces snapshots for the next conversation. Changing or deleting original
+files does not silently change reviewed snapshots. Earlier path-only definitions load their sources
+before inference on assignment; review and save them to persist stable snapshots.
+
+File reading and search are included automatically when available to the parent/profile and needed
+for supplied paths. Read-only reviewers are limited to selected references and file/folder paths
+in the user's assignment. Instruction-file provenance does not grant directory access. With inline
+data and no approved paths, file-reading/search tools are withheld. Parent-invented file locations
+do not broaden access. Terminal, file writing and scientific-service tools remain separate grants.
+Execution/service workflows retain their existing backend access so they can inspect generated
+artifacts; these restrictions are not an OS sandbox. Copy/export excludes reference snapshots and private source
+locations, while preserving reviewed instruction text; destination review is still required.
+
+Adding a `.py` file reads its source without importing or running it. If the user assigns execution,
+the specialist can run the original project or reviewed snapshot using its granted tools. A project's
+relative imports/data layout may require running from the original folder. Missing third-party
+packages must be reported with actionable guidance; this feature does not install arbitrary script
+dependencies into SCI. A public webpage/repository URL supplies readable page content, not an automatic
+repository installation. Use a raw source URL or a prepared local project for executable code.
+Binary spreadsheets, images, model weights and arbitrary binary datasets are not automatically
+converted into text: use an available appropriate tool/reader or a supported export. Old immutable
+snapshots may remain on disk for existing conversations after source removal; removal changes the
+definition's future access, not an immediate erasure of historical data.
 
 Children cannot open user clarification dialogs. They must return missing inputs or approval
 requirements to the parent. Existing execution approval rules still apply; this feature does
@@ -412,3 +472,113 @@ later opt-out, legacy restricted boundaries, real child execution and migration 
 The local `test-del` configuration was repaired with a private backup; all 14 local main/native
 profiles resolved delegation. Nine legacy restricted profiles were preserved without conversion.
 Restart the CLI and use `/new` to obtain a fresh tool snapshot. No commit or push was performed.
+
+## Instruction/source loading fixes — 4 November 2026
+
+The CLI now accepts a bare Markdown/text path for purpose or additional instructions. It loads
+and reviews complete instructions during setup and stores their contents with a routing summary.
+Reference files, supported folder contents and guarded public URLs are saved as bounded text
+snapshots, then supplied as source data before inference. File reading/search are included from
+available parent/profile grants. Existing path-only definitions load before inference without
+rewriting a live parent prompt; review/save once to persist their snapshots.
+
+Delegation hints now preserve a named specialist's workflow/report format rather than adding
+conflicting terminal or output-format requirements. Short, single-sentence promises of future
+work with zero tool activity are conservatively marked `failed / incomplete_response`, preserving
+raw output. This narrow check is not a general semantic correctness verifier. The runtime does not
+silently retry or replace such a child. Receipts identify its assigned model/provider and explain
+that parent model switches affect new assignments rather than already-running children.
+
+Verification through `scripts/run_tests.sh`: 87 tests passed across nine files, including 69 general
+delegation tests. After final legacy-loading and receipt checks, an overlapping 18-test focused
+recheck passed across eight files. Controlled tests covered path-only creation, recoverable missing
+files, source snapshots, empty folder files, guarded URL extraction, size limits, copying without
+private references, main → A → B → A isolation, and unchanged parent prompt/tool state. A real
+child used the existing provider adapter against loopback HTTP/SSE responses: its first request
+contained reviewed instruction/reference text even after original files were deleted. A separate
+fixture response containing only a plan was reported incomplete, with one request and no retry.
+No production model endpoint or scientific service was contacted. Ruff F checks and diff whitespace
+checks passed. External provider reachability and arbitrary model instruction-following are not
+certified by fixture tests. No commit or push was performed.
+
+## Preserve specialist reports — 4 November 2026
+
+When a saved specialist completes in the interactive CLI, its original report is delivered directly
+through the normal response/persistence path, without a parent-model rewriting call. Its requested
+headings, protocol markers, tables and wording survive. Completed batches consisting entirely of
+saved specialists show each full report separately. A pod lead still finishes its own assignment;
+ordinary temporary delegation retains its synthesis behavior. A later explicit user request can
+ask SCI to summarize or reformat an already delivered report.
+
+Full output is recovered from the owning profile's run receipt if the model-facing delegation
+summary was shortened for context limits. Missing full output, failures and truncated work are
+identified as incomplete rather than silently presented as a complete report. Response-rewriting
+hooks are skipped for these already-final reports. Transcript persistence and prompt caching
+continue through the existing turn finalizer.
+
+Read-only specialists use inline data directly and cannot discover neighboring fixtures from the
+instruction file's location. Reading/search dispatch validates task/reference paths, including
+normalized traversal and scope boundaries. Explicit execution/service permissions retain backend
+access for generated artifacts; this is not a new filesystem sandbox. Saved instructions and
+expected output remain the specialist's reporting contract; parent delegation hints forbid adding
+unnecessary calculation-tool requirements or independently redoing completed specialist work.
+
+Verification for report preservation: 49 delivery/finalization/notification tests and 83
+specialist/general-delegation regression tests passed across 18 distinct files using
+`scripts/run_tests.sh`. After refining the read-only boundary, an overlapping 12-test final
+recheck passed. The loopback model canary exercised the real child runtime, production CLI
+notification carrier/staging and parent turn finalizer: delivery made zero parent inference
+requests, and the returned/persisted assistant report exactly matched the child's saved text.
+Long-report tests recovered complete text across summary trimming and profile A → B → A;
+ordinary/nested delegation and turn ownership retained their existing behavior. Scope tests
+covered inline-only denial, explicit file access, adjacent-file/search denial and selected-folder
+access. Execution workflows retained generated-artifact access. Prompt/tool snapshots remained
+unchanged. No production provider or scientific service was contacted. Ruff F and whitespace
+checks passed. No commit or push was performed. Restart/reload the CLI worker and start `/new`
+before retesting; existing conversations keep their cached setup.
+
+## Code references, source libraries and execution defaults — 4 November 2026
+
+References now accept common code formats, including Python, alongside the existing text/data
+formats. Each addition appends; updates preserve earlier files/folders/URLs. The reference menu
+supports removing one source, clearing all, and refreshing saved versions. Folder inspection
+reports skipped unsupported/hidden files. Inspection never imports or executes source code.
+
+Small sources remain preloaded. Larger collections use immutable private snapshots and a complete
+catalog under the owning profile's `subagent-sources/`, outside the definition and model prompt.
+Read/search can retrieve relevant documents through the existing tool dispatch. Limits are
+8 MiB per file/download, 10,000 folder entries/documents and 256 MiB saved collection text.
+Instruction and definition-size bounds remain. Copy/export strips the source library and private
+references; destination review is still required. Retained snapshots support existing conversations.
+The library participates in the existing backend mount/sync and agent-visible path mapping.
+
+New native science profiles now include code execution in addition to file/terminal/skills/delegation.
+Config migration v51 upgrades existing native/main CLI lists once and removes old exclusions for
+those baseline toolsets, preserving unrelated settings and later deliberate opt-outs. New
+specialists receive available read/search/write/patch, terminal, Python and process tools in final
+review. Existing specialists keep their selections; Use standard tools adds defaults through review
+and explicit save. Research services retain their key/authorization checks. Legacy restricted
+profiles retain isolation and are not silently converted. Project-specific libraries are not
+installed automatically; an unavailable runtime/dependency must be reported honestly.
+
+Verification using scripts/run_tests.sh:
+- 74 tests passed across 12 files, covering source management, real Python execution, new/native
+  profile creation, A→B→A scope, configuration migration, child execution and cache mounts.
+- An overlapping 22-test migration/library run and a 12-test capability/permission recheck passed.
+- After adding real snapshot retrieval through the production read_file dispatch, both library
+  tests passed again. The fixture .py file did not run on import/inspection; explicit execute_code
+  ran it in the real kernel, returned RESULT 42 and produced its expected local artifact.
+- Large-reference tests verified bounded context, append without replacement, source removal,
+  refresh, duplicate protection, guarded URL loading, skipped binaries, profile-copy stripping,
+  profile ownership, snapshot integrity and backend path mapping.
+- Installed-runtime import checks loaded the changed modules from this checkout and confirmed
+  Python-execution prerequisites available. Ruff F and whitespace checks passed.
+
+On this machine, all 15 main/native profile tool schemas were checked. Fourteen configurations
+needed the code-execution baseline update and have private backups under
+/home/boltzmann20/.sci/backups/specialist-tool-defaults-20261104T100150052004.
+Nine legacy restricted profiles were preserved. No scientific jobs, production model requests or
+arbitrary dependency installs were used for testing. Remote path/mount contracts were tested;
+this does not certify a live Docker/SSH/cloud backend or every third-party package. Restart/reload
+SCI and use /new. For an existing specialist, review Use standard tools, save, then start /new.
+No commit or push was performed.

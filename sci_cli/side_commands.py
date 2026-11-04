@@ -204,7 +204,7 @@ def label(cli):
         "running" if getattr(cli, "_agent_running", False) else "idle")
     if not controller.active:
         return "Ctrl+/ side"
-    return f"Side · main {parent} · Ctrl+/ switch · Ctrl+C close"
+    return f"Side · main {parent} · Ctrl+/ switch · Ctrl+C copy/close"
 
 
 def cancel_from_keyboard(cli, event):

@@ -31,3 +31,7 @@ def test_mcp_discovery_and_argument_forwarding_match_native_schemas(monkeypatch)
         result = getattr(adapter, name)(**args)
         assert json.loads(result) == {"fixture": True}
         assert captured == [args]
+        if name == 'boltzmann_submit':
+            without_name = {key: value for key, value in args.items() if key != 'experiment_name'}
+            assert json.loads(getattr(adapter, name)(**without_name)) == {'fixture': True}
+            assert captured[-1] == {**without_name, 'experiment_name': ''}

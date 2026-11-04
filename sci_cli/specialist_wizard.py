@@ -8,6 +8,7 @@ from agent.specialist_runtime import EXECUTION_TOOLS
 from sci_cli.science_profiles_catalog import select_science_items, BOLTZMANN_WORKFLOW_TOOLS
 from sci_cli.specialist_capabilities import choices, skill_menu, tool_menu, expand_tools, BOLTZMANN_PACKAGE
 from sci_cli.specialist_editor_state import drafts, remember, additional_setup
+from sci_cli.specialist_source_setup import purpose_fields, prepare_references
 
 
 def pick(ui, title, options, selected=()):
@@ -37,15 +38,34 @@ def _name(ui, initial=None):
 
 
 def _sources(cli, ui, item, existing):
-    result = list(item.sources)
     while True:
-        action = ui.choose(f'References: {len(result)}. Contents are not read or uploaded.',
-                           ['Done', 'Add file/folder/URL', 'Clear references', 'Cancel'])
+        action = ui.choose(f'References: {len(item.sources)}. Saved text is automatically available to assignments.',
+                           ['Done', 'Add file/folder/URL', 'Remove a reference', 'Refresh saved contents', 'Clear references', 'Cancel'])
         if action == 'Done':
-            return tuple(result)
+            return item
         if action == 'Clear references':
-            result = []
-            remember(cli, replace(item, sources=()), existing)
+            item = replace(item, sources=(), source_documents=(), source_manifest='')
+            remember(cli, item, existing)
+            continue
+        if action == 'Remove a reference':
+            if not item.sources:
+                ui.show('No references to remove.')
+                continue
+            source = ui.choose('Remove which source? Other references remain saved.', [*item.sources, 'Back', 'Cancel'])
+            if source != 'Back':
+                try:
+                    item = prepare_references(replace(item, sources=tuple(s for s in item.sources if s != source)), ui)
+                    remember(cli, item, existing)
+                    ui.show('Reference removed from this draft. Existing conversations may still retain prior snapshots.')
+                except (ValueError, OSError, UnicodeError) as exc:
+                    ui.show(f'Could not remove source: {exc}. Draft retained.')
+            continue
+        if action == 'Refresh saved contents':
+            try:
+                item = prepare_references(item, ui, refresh=True)
+                remember(cli, item, existing)
+            except (ValueError, OSError, UnicodeError) as exc:
+                ui.show(f'Could not refresh: {exc}. Existing snapshots and draft retained.')
             continue
         while True:
             value = ui.ask('Local path or public HTTPS URL (none/skip or blank to skip):', allow_blank=True).strip('"\'')
@@ -58,11 +78,11 @@ def _sources(cli, ui, item, existing):
                         raise ValueError('Use public HTTPS without credentials, query parameters or fragment.')
                 else:
                     value = str(Path(value).expanduser().resolve(strict=True))
-                if value not in result:
-                    result.append(value)
-                    remember(cli, replace(item, sources=tuple(result)), existing)
+                if value not in item.sources:
+                    item = prepare_references(replace(item, sources=(*item.sources, value)), ui)
+                    remember(cli, item, existing)
                 break
-            except (ValueError, OSError) as exc:
+            except (ValueError, OSError, UnicodeError) as exc:
                 ui.show(f'Could not use that reference: {exc}. Try again or type skip. Your draft is unchanged.')
 
 
@@ -78,8 +98,12 @@ def review_text(item):
             f'Use: {use}.{children}\n'
             f'References: {", ".join(item.sources) or "none"}\n'
             f'Additional instructions: {item.instructions or "none"}\n'
+            f'Instruction file: {item.instruction_source or "none"}; saved reference documents: {len(item.source_documents)}'
+            f'; external source library: {"yes" if item.source_manifest else "none"}\n'
             'Uses this profile’s model, credentials and execution limits. A skill is guidance, not permission. '
-            'Boltzmann requires this profile’s configured key and authorization. References are not upload grants.')
+            'File reading/search are included when this profile permits them. '
+            'Boltzmann requires this profile’s configured key and authorization. '
+            'Saved reference text is supplied automatically to the selected model; service uploads are separate.')
 
 
 def _capabilities(cli, ui, item, existing=None):
@@ -96,10 +120,18 @@ def _capabilities(cli, ui, item, existing=None):
         prior_tools = tuple(set(prior_tools) | set(BOLTZMANN_WORKFLOW_TOOLS))
         ui.show('Boltzmann job tools are preselected for review as one complete package.')
     options, selected = tool_menu(tools, prior_tools)
+    from agent.specialist_sources import READ_TOOLS, DEFAULT_TOOLS
+    defaults = DEFAULT_TOOLS & set(tools) if existing is None else READ_TOOLS & set(tools)
+    options = {name: description for name, description in options.items() if name not in defaults}
+    selected = [name for name in selected if name not in defaults]
+    if defaults:
+        ui.show('Default tools included from this profile: ' + ', '.join(sorted(defaults)) + '. '
+                'Execution still follows the task and backend approval rules; reference code is not run during setup.')
     if BOLTZMANN_PACKAGE not in options:
         ui.show('Boltzmann job access is not configured here. Use Add capabilities → Configure Boltzmann if needed.')
     selected_tools = expand_tools(pick(ui, 'Tools / integration packages', options, selected))
-    if set(selected_tools) & EXECUTION_TOOLS:
+    selected_tools = tuple(sorted(set(selected_tools) | defaults))
+    if set(selected_tools) & EXECUTION_TOOLS and existing is not None:
         ui.choose('Terminal/code access can use the execution environment; a tool list is not a filesystem/network sandbox.',
                   ['Approve selected execution access', 'Cancel'])
     return replace(item, skills=tuple(sorted(selected_skills)), skill_files=selected_files, tools=selected_tools)
@@ -119,22 +151,25 @@ def edit(cli, ui, *, name=None, existing=None):
     if item is None:
         if existing is None:
             name = _name(ui, name)
-            item = Specialist(name, ui.ask('What should this specialist do, and when should it be used?'), automatic=True)
+            item = Specialist(name, automatic=True, **purpose_fields(ui))
             remember(cli, item, existing)
             item = _capabilities(cli, ui, item)
             remember(cli, item, existing)
             item = replace(item, output=ui.ask('What should the specialist return? (Example: cited comparison with limitations)'))
         else:
             item = existing  # Editing opens review immediately; no repeated questionnaire.
+            # Upgrade a previously stored bare path before review, without requiring a duplicate reference.
+            item = replace(item, **purpose_fields(ui, initial=item.purpose))
     item = replace(item, automatic=True, enabled=True, needs_review=False)
     while True:
         remember(cli, item, existing)
         ui.show(review_text(item))
         action = ui.choose('Review specialist', ['Save and enable for the next conversation', 'Edit purpose/output',
-                          'Edit skills/tools', 'Additional instructions', 'References', 'Add capabilities',
+                          'Edit skills/tools', 'Use standard tools', 'Additional instructions', 'References', 'Add capabilities',
                           'Rename', 'Discard draft', 'Cancel'])
         if action == 'Save and enable for the next conversation':
             try:
+                item = prepare_references(item, ui)
                 saved = save(item, expected_revision=existing.revision if existing else None)
             except (ValueError, OSError) as exc:
                 ui.show(f'Could not save: {exc}. Draft retained. Review, rename, or cancel; nothing was overwritten.')
@@ -149,12 +184,25 @@ def edit(cli, ui, *, name=None, existing=None):
             ui.show('Draft discarded. Previously saved specialists are unchanged.')
             return
         if action == 'References':
-            item = replace(item, sources=_sources(cli, ui, item, existing))
+            item = _sources(cli, ui, item, existing)
         elif action == 'Edit skills/tools':
             item = _capabilities(cli, ui, item, existing)
+        elif action == 'Use standard tools':
+            from agent.specialist_sources import DEFAULT_TOOLS
+            _, available = choices(cli)
+            item = replace(item, tools=tuple(sorted(set(item.tools) | (DEFAULT_TOOLS & set(available)))))
+            ui.show('Available standard file, terminal, Python and process tools added to this review. '
+                    'Save to approve them for the next conversation. No code has run.')
         elif action == 'Additional instructions':
             value = _text(ui, 'Additional instructions/limitations; type none to clear', item.instructions)
-            item = replace(item, instructions='' if value.lower() == 'none' else value)
+            from agent.specialist_sources import instruction_path
+            if instruction_path(value):
+                fields = purpose_fields(ui, initial=value)
+                item = replace(item, instructions=fields.get('instructions', fields['purpose']),
+                               instruction_source=fields.get('instruction_source', ''))
+            else:
+                item = replace(item, instructions='' if value.lower() == 'none' else value,
+                               instruction_source='')
         elif action == 'Add capabilities':
             if additional_setup(cli, ui):
                 return
@@ -163,5 +211,6 @@ def edit(cli, ui, *, name=None, existing=None):
             pending.pop(item.name, None)
             item, existing = replace(item, name=new_name), None
         else:
-            item = replace(item, purpose=_text(ui, 'Purpose / when to use:', item.purpose),
+            item = replace(item, **purpose_fields(ui, current=item.purpose))
+            item = replace(item,
                            output=_text(ui, 'Expected output:', item.output))

@@ -1619,7 +1619,9 @@ def _run_conversation_turn(
     )
     # Opt-in runtime: api_mode == codex_app_server hands the whole turn to the codex
     # app-server subprocess (see agent/transports/codex_app_server_session.py).
-    if agent.api_mode == "codex_app_server":
+    from agent.specialist_delivery import stage_delivery
+    direct_specialist_report = stage_delivery(agent, s)
+    if not direct_specialist_report and agent.api_mode == "codex_app_server":
         codex_result = agent._run_codex_app_server_turn(
             user_message=s.user_message, original_user_message=s.original_user_message,
             messages=s.messages, effective_task_id=s.effective_task_id,
@@ -1633,7 +1635,9 @@ def _run_conversation_turn(
         s.api_call_count = int(codex_result.get("api_calls") or 0)
         s.active_system_prompt = _sync_failover_system_message(agent, None, s.active_system_prompt)
 
-    while (s.api_call_count < agent.max_iterations and agent.iteration_budget.remaining > 0) or agent._budget_grace_call:
+    while not direct_specialist_report and ((s.api_call_count < agent.max_iterations and agent.iteration_budget.remaining > 0) or agent._budget_grace_call):
+        if stage_delivery(agent, s):
+            break
         if _run_phase(begin_iteration, agent, s).action == "break":
             break
         _run_phase(prepare_iteration, agent, s)

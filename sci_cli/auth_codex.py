@@ -950,7 +950,9 @@ def _pool_codex_credential() -> Tuple[str, str]:
     return "", ""
 
 
-def _login_openai_codex(args, pconfig: ProviderConfig, *, force_new_login: bool = False) -> None:
+def _login_openai_codex(
+    args, pconfig: ProviderConfig, *, force_new_login: bool = False, configure_model: bool = True,
+) -> None:
     """OpenAI Codex login: device code by default, browser PKCE when opted in (``--browser`` /
     ``auth.codex_login_flow``). Tokens stored in ~/.sci/auth.json."""
     from sci_cli.auth import _print_login_success, _save_codex_tokens, _update_config_for_provider
@@ -963,6 +965,9 @@ def _login_openai_codex(args, pconfig: ProviderConfig, *, force_new_login: bool 
     elif kind == "fresh":
         _save_codex_tokens(creds["tokens"], creds.get("last_refresh"))
     publish("openai-codex", preferred_token=creds.get("api_key") or creds.get("tokens", {}).get("access_token", ""))
+    if not configure_model:
+        print("Codex authentication verified. Shared login available in main and all profiles. Selected models unchanged.")
+        return
     config_path = _update_config_for_provider(
         "openai-codex", creds.get("base_url", DEFAULT_CODEX_BASE_URL))
     _print_login_success("openai-codex", config_path, show_auth_state=True)

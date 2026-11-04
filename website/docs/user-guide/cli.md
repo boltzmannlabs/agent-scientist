@@ -564,6 +564,11 @@ Wrapped messages scroll by screen rows. Use the draggable scrollbar at the right
 or Ctrl+Home/Ctrl+End to jump to the beginning/latest output. New output does not
 pull you away while reading earlier messages; return to the bottom to follow it again.
 Mouse capture is limited to side mode; main retains normal terminal scrollback.
+Drag across side transcript text and release to copy the selected text without moving
+keyboard focus from the composer. The heading reports whether it was copied locally or
+sent to the terminal clipboard through OSC 52 (the terminal must permit clipboard writes).
+Ctrl+C copies selected side text again and keeps side open, even if copying fails.
+Shift+drag with the terminal's normal Copy shortcut is an alternative where supported.
 Tool polling, download notices, and Python stdout/stderr stay in the originating side
 chat even while main is visible. Closing side discards its later display output;
 it does not undo completed external actions.
@@ -571,8 +576,9 @@ it does not undo completed external actions.
 - Ctrl+/: switch between main and the existing side conversation without cancelling either.
   Terminals sending Ctrl+_ for this key are supported too.
 - `/side`: open or reopen the temporary conversation; optional text asks a question.
-- Ctrl+C: close side and return to main, even with an unfinished draft. Requests cancellation
+- Ctrl+C with no transcript selection: close side and return to main, even with an unfinished draft. Requests cancellation
   of side work without cancelling main. There are no back, close, or status subcommands.
+- Ctrl+Q: close side directly, including when transcript text is selected.
 
 Side conversations inherit the entire available context through the parent's last completed
 assistant message, including earlier turns (and existing compression summaries);

@@ -48,8 +48,11 @@ def test_none_bad_path_blank_edit_and_cancel_retain_profile_draft(tmp_path, monk
     assert load('reviewer').purpose == saved.purpose
     assert load('reviewer').output == 'Revised output'
     # Cancelling inside reference editing retains the last accepted location, too.
-    dispatch(cli, '/Update_subagent reviewer', UI(['References', 'Add file/folder/URL', str(tmp_path), 'Cancel']))
-    assert drafts(cli)['reviewer'][0].sources == (str(tmp_path.resolve()),)
+    (tmp_path / 'notes.txt').write_text('Reviewed fixture notes.')
+    reference_ui = UI(['References', 'Add file/folder/URL', str(tmp_path), 'Cancel'])
+    dispatch(cli, '/Update_subagent reviewer', reference_ui)
+    assert drafts(cli)['reviewer'][0].sources == (str(tmp_path.resolve()),), '\n'.join(
+        m for m in reference_ui.messages if 'Could not' in m)
     assert load('reviewer').sources == ()
     dispatch(cli, '/Update_subagent reviewer', UI(['Resume draft', 'Save and enable for the next conversation']))
     assert load('reviewer').sources == (str(tmp_path.resolve()),)
