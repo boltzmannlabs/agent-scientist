@@ -185,7 +185,8 @@ async def test_cancelled_start_hard_kills_sigterm_ignoring_descendant(tmp_path: 
         if not start.done():
             start.cancel()
             await asyncio.gather(start, return_exceptions=True)
-        if child is not None and child.is_running():
+        # psutil considers zombies running, but the cancelled client's child is already dead.
+        if child is not None and child.is_running() and child.status() != psutil.STATUS_ZOMBIE:
             child.kill()
 
 
