@@ -45,6 +45,20 @@ class Transport(Protocol):
         """Release any resources owned by this transport."""
 
 
+def start_frame_write(transport: Transport, obj: dict) -> Callable[[], bool]:
+    """Enqueue events when supported, returning completion work for outside the sequence lock."""
+    if obj.get("method") == "event":
+        # An overriding write() remains authoritative unless that class also opts into
+        # split delivery. Inheriting the base implementation must not bypass the override.
+        for cls in type(transport).__mro__:
+            if "start_write" in vars(cls):
+                return getattr(transport, "start_write")(obj)
+            if "write" in vars(cls):
+                break
+    sent = transport.write(obj)
+    return lambda: sent
+
+
 _current_transport: contextvars.ContextVar[Optional[Transport]] = contextvars.ContextVar(
     "sci_gateway_transport", default=None
 )

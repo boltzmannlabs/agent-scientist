@@ -1367,18 +1367,36 @@ class TestPlannedStopMarker:
 class TestReadProcessCmdlinePsFallback:
     """Tests for _read_process_cmdline falling back to ps on non-Linux."""
 
-    def test_ps_fallback_when_proc_unavailable(self, monkeypatch):
+    @pytest.mark.platforms("posix")
+    @pytest.mark.parametrize("psutil_result", ["denied", "empty"])
+    def test_ps_fallback_when_proc_unavailable(self, monkeypatch, psutil_result):
+        import psutil
+        def cmdline():
+            if psutil_result == "denied":
+                raise psutil.AccessDenied(873)
+            return []
+        monkeypatch.setattr(psutil, "Process", lambda pid: SimpleNamespace(cmdline=cmdline))
         monkeypatch.setattr(status.Path, "read_bytes", lambda self: (_ for _ in ()).throw(FileNotFoundError))
-        monkeypatch.setattr(
-            status.subprocess, "run",
-            lambda args, **kwargs: SimpleNamespace(returncode=0, stdout="/usr/libexec/bluetoothuserd\n"),
-        )
+        calls = []
+        def ps(args, **kwargs):
+            calls.append(args)
+            return SimpleNamespace(returncode=0, stdout="fixture-command\n")
+        monkeypatch.setattr(status.subprocess, "run", ps)
         result = status._read_process_cmdline(873)
-        assert result == "/usr/libexec/bluetoothuserd"
+        assert result == "fixture-command"
+        assert calls == [["ps", "-p", "873", "-o", "command="]]
 
 
     def test_proc_cmdline_takes_priority_over_ps(self, monkeypatch):
+        import psutil
         calls = []
+        def process(pid):
+            calls.append("psutil")
+            return SimpleNamespace(cmdline=lambda: ["fixture-psutil", "--argument"])
+        monkeypatch.setattr(psutil, "Process", process)
+        def unexpected_ps(*args, **kwargs):
+            pytest.fail("ps must not execute when /proc or psutil supplied the command")
+        monkeypatch.setattr(status.subprocess, "run", unexpected_ps)
 
         def fake_read_bytes(self):
             calls.append("proc")
@@ -1388,6 +1406,9 @@ class TestReadProcessCmdlinePsFallback:
         result = status._read_process_cmdline(12345)
         assert "sci_cli/main.py" in result
         assert calls == ["proc"]
+        monkeypatch.setattr(status.Path, "read_bytes", lambda self: b"")
+        assert status._read_process_cmdline(12345) == "fixture-psutil --argument"
+        assert calls == ["proc", "psutil"]
 
 
 class TestCorruptStatusFiles:

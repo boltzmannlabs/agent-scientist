@@ -13,7 +13,7 @@ import logging
 import socket
 import threading
 import time
-from typing import Any
+from typing import Any, Callable
 
 from tui_gateway import server
 from agent.message_sanitization import _sanitize_surrogates
@@ -121,8 +121,12 @@ class WSTransport:
             return False
 
     def write(self, obj: dict) -> bool:
+        return self.start_write(obj)()
+
+    def start_write(self, obj: dict) -> Callable[[], bool]:
+        """Enqueue a frame and return its existing delivery wait as a separate operation."""
         if self._closed:
-            return False
+            return lambda: False
         line = serialize_frame(obj, self._peer, _log)
         on_loop = self._on_loop()
         # Streamed token: buffer it and arm the flush timer; the worker returns immediately.
@@ -134,7 +138,7 @@ class WSTransport:
                 if not self._token_flush_armed:
                     self._token_flush_armed = True
                     self._loop.call_soon_threadsafe(self._arm_token_flush)
-            return not self._closed
+            return lambda: not self._closed
         # Non-streaming frame: append behind any buffered tokens and flush the whole batch NOW so it
         # can never overtake them. The send is scheduled INSIDE the lock so wire order matches buffer
         # order even if the coalesce timer fires on the loop at the same moment.
@@ -144,11 +148,14 @@ class WSTransport:
             batch, self._pending_tokens = self._pending_tokens, []
             if on_loop:
                 self._loop.create_task(self._safe_send_many(batch))
-                return True
+                return lambda: True
             fut = safe_schedule_threadsafe(self._safe_send_many(batch), self._loop)
             if fut is None:
                 self._closed = True
-                return False
+                return lambda: False
+        return lambda: self._finish_write(fut)
+
+    def _finish_write(self, fut) -> bool:
         try:
             fut.result(timeout=_WS_WRITE_TIMEOUT_S)
             return not self._closed

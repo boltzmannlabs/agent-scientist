@@ -570,7 +570,34 @@
           "evidence": "sample_verified",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Design amino-acid sequences for antibody-chain backbone structures using PiFold/ProDesign inverse folding. Supply a ZIP of backbone PDB files and select heavy- or light-chain mode. Each backbone must use chain A. The designed sequences can support subsequent structure and antibody-property evaluation.",
+        "public_results": "Designed full-chain amino-acid sequences with calculated sequence properties. Heavy/light compatibility and antigen binding require separate evaluation.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: Antibody_Backbone_to_Sequence_Generation. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "dataPath",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "ZIP containing non-empty PDB backbone files directly at the archive root. Each structure must contain chain A. PDB files in nested directories are not accepted."
+          },
+          {
+            "name": "mode",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Antibody chain type: H for a heavy-chain backbone or L for a light-chain backbone. Both modes require the backbone to be identified as chain A in the PDB."
+          }
+        ]
+      }
     },
     "Antibody_Numbering": {
       "display_name": "Antibody Numbering",
@@ -635,7 +662,41 @@
           "evidence": "sample_verified",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Assign antibody residue numbers to paired heavy- and light-chain sequences using AbNumber. Numbering provides a consistent reference for comparing antibody positions and identifying regions under a selected numbering convention.",
+        "public_results": "A CSV containing the input records and Heavy Number and Light Number mappings. Numbering is an annotation of sequence positions, not a structure or binding prediction.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: Antibody_Numbering. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "dataPath",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "CSV containing Heavy_chain and Light_chain columns, with one antibody pair per row. Supply amino-acid sequences and use column names without surrounding spaces; header matching is case-insensitive."
+          },
+          {
+            "name": "property_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Tool selector. Use AbNumber for antibody residue numbering."
+          },
+          {
+            "name": "scheme",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Required antibody numbering convention: Kabat, Chothia, Aho or IMGT. Select the convention explicitly; no default is supplied. Aho requires an associated CDR-definition convention and is available only when that configuration is supported."
+          }
+        ]
+      }
     },
     "Antibody_Prediction": {
       "display_name": "Antibody Property Prediction",
@@ -724,7 +785,41 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Predict selected antibody sequence properties and annotate complementarity-determining regions from paired heavy- and light-chain sequences. Available analyses include ProtBERT/ESM thermal-stability models, ESM solubility prediction and CDR identification under a selected numbering scheme.",
+        "public_results": "A CSV with per-antibody property predictions or heavy/light CDR annotations for the selected analyses. Scores are model estimates and should be interpreted in the context of the selected model.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: Antibody_Prediction. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "dataPath",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "CSV containing Heavy_chain and Light_chain columns, with one paired antibody per row. Include seq_id when selecting Solubility_ESM. Column matching is case-insensitive; avoid surrounding spaces in headers."
+          },
+          {
+            "name": "property_name",
+            "type": "array",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Analysis to perform: Thermal_Stability_Protbert, Thermal_Stability_ESM, Solubility_ESM or CDR_Prediction. Choose the model appropriate to the property of interest. Antigen_Antibody_binding is not available as a verified analysis through this interface. For API requests, send a non-empty JSON array of model names, such as [\"Solubility_ESM\"], even when selecting one model."
+          },
+          {
+            "name": "scheme",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Antibody numbering convention for CDR identification: kabat, imgt or chothia. Supply the desired convention explicitly when requesting CDR_Prediction."
+          }
+        ]
+      }
     },
     "agcdr_diff": {
       "display_name": "Antibody RFD3",
@@ -787,7 +882,48 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Generate alternative antibody CDR backbone conformations with AgCDR-Diff, conditioned on an antibody–antigen structure. Supply separate antibody and antigen PDB files positioned in the same coordinate frame. The model samples CDR geometry while using the surrounding complex as structural context.",
+        "public_results": "Generated complex PDB structures, the input reference and generation reports. The output describes CDR backbone conformations; amino-acid sequence design is a separate step.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: agcdr_diff. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "antibody_pdb_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Antibody PDB containing a numberable heavy chain and, for a paired antibody, a light chain. Its coordinates must already be positioned relative to the supplied antigen; this step does not dock the two inputs."
+          },
+          {
+            "name": "antigen_pdb_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Protein antigen PDB containing valid protein ATOM records. Use the same coordinate frame as the antibody structure."
+          },
+          {
+            "name": "num_samples",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Number of CDR backbone conformations to sample. Enter an integer from 1 through 100."
+          },
+          {
+            "name": "num_steps",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Number of diffusion sampling steps per sample. Enter an integer from 2 through 100; 50 is the standard setting."
+          }
+        ]
+      }
     },
     "atom_mapping": {
       "display_name": "Atom Mapping",
@@ -1078,7 +1214,34 @@
           "evidence": "sample_verified",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Generate antibody heavy- and light-chain backbone structures in one run using Protein Frame Flow. Supply the required H/L mode label and a sampling count. Both chain collections are generated for either mode value, with sampling distributed across configured chain lengths. The two backbone collections are returned separately for subsequent sequence design.",
+        "public_results": "Separate PDB archives for heavy-chain (H) and light-chain (L) backbones. Both archives are produced in the same run. Sampling is distributed over chain lengths, so the delivered count can differ from the requested sampling count.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: Backbone_Generation. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "mode",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Required chain-mode label: H for heavy chain or L for light chain. Both heavy- and light-chain backbone collections are generated for either value; this label does not restrict the output to one chain type."
+          },
+          {
+            "name": "n_samples",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Requested backbone sampling count. Enter a whole number of at least 7. Samples are distributed over configured chain lengths, so the final count may differ."
+          }
+        ]
+      }
     },
     "Binding_Site_Prediction": {
       "display_name": "Binding Site Prediction (fpocket)",
@@ -1254,7 +1417,48 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Predict biomolecular structures for supported combinations of proteins, nucleic acids and ligands using Boltz2. Supply the entity sequences or ligand SMILES to compare. Predictions are scheduled as pairs, including first-versus-rest comparisons within a polymer type and supported combinations across entity types.",
+        "public_results": "Prediction bundles, a ZIP of structures and a table of result paths. Inspect the confidence and affinity-related outputs where present. Supplying several entities does not request one arbitrary complex containing all of them.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: Boltz2. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "Protein_Sequences",
+            "type": "array",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "Protein amino-acid sequences to model. Keep each protein as a separate entity. An unused entity type may be left empty; the complete request must contain at least one usable protein or nucleic-acid sequence. For API requests, send a JSON array of strings. Use [] when this entity type is unused; do not send an empty string or a list containing an empty string."
+          },
+          {
+            "name": "DNA_Sequences",
+            "type": "array",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "DNA nucleotide sequences to model, with each sequence supplied as a separate entity. Leave empty when the prediction does not include DNA. For API requests, send a JSON array of strings. Use [] when this entity type is unused; do not send an empty string or a list containing an empty string."
+          },
+          {
+            "name": "RNA_Sequences",
+            "type": "array",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "RNA nucleotide sequences to model, with each sequence supplied as a separate entity. Leave empty when the prediction does not include RNA. For API requests, send a JSON array of strings. Use [] when this entity type is unused; do not send an empty string or a list containing an empty string."
+          },
+          {
+            "name": "SMILES",
+            "type": "array",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "Ligand structures expressed as SMILES, with one complete SMILES string per entity. Preserve each string as a unit; punctuation within a SMILES string is part of the molecular representation. Leave empty when no ligand is needed. For API requests, send a JSON array of strings. Use [] when this entity type is unused; do not send an empty string or a list containing an empty string."
+          }
+        ]
+      }
     },
     "boltzgen": {
       "display_name": "BoltzGen",
@@ -1669,7 +1873,55 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Generate antibody heavy-chain sequence variants by replacing one CDR with EvoDiff-generated sequence. The selected numbering scheme locates HCDR1, HCDR2 or HCDR3 in the full heavy-chain sequence. The surrounding sequence is retained as context.",
+        "public_results": "A CSV of full-length heavy-chain sequence variants with the selected CDR replaced and calculated sequence properties. Generation is not conditioned on an antigen.",
+        "fields": [
+          {
+            "name": "mode",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Supported antibody chain mode: H. Supply a full heavy-chain sequence and select HCDR1, HCDR2 or HCDR3. Light-chain CDR generation is not supported."
+          },
+          {
+            "name": "sequence",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Full heavy-chain amino-acid sequence using the 20 standard residues. The selected CDR is replaced while the surrounding sequence is retained."
+          },
+          {
+            "name": "scheme",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Antibody numbering scheme used to locate the CDR: imgt, kabat or chothia."
+          },
+          {
+            "name": "cdr_reg",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Heavy-chain region to regenerate: HCDR1, HCDR2 or HCDR3."
+          },
+          {
+            "name": "n_samples",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Number of full-length sequence variants to sample. Enter a positive integer."
+          },
+          {
+            "name": "file_format",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Output format: csv only. The CSV includes generated heavy-chain sequence variants and calculated sequence properties."
+          }
+        ]
+      }
     },
     "CodonRLBERTPropPred": {
       "display_name": "CDS Property Prediction",
@@ -2560,7 +2812,41 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Design cyclic peptide binder candidates against a selected protein chain in a target PDB structure. Specify the target chain and peptide length to guide structure-based peptide design.",
+        "public_results": "Generated peptide–target structures and design-run outputs. Predicted cyclization and interface geometry require further evaluation before synthesis or binding conclusions.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: cyclic_binder. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "pdb_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Target protein structure as a PDB file. The structure must contain the chain selected in target_chain."
+          },
+          {
+            "name": "target_chain",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Single-character identifier of the protein target chain in the uploaded PDB."
+          },
+          {
+            "name": "binder_len",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Length of the cyclic peptide to design, in amino acids. Enter an integer from 3 through 100. For API requests, send a JSON integer rather than quoted numeric text."
+          }
+        ]
+      }
     },
     "Insilico_Directed_Evolution": {
       "display_name": "Directed Evolution (MLDE)",
@@ -2753,7 +3039,62 @@
         "experiment_name_required": false,
         "payload_field": "experimentData"
       },
-      "diagnostics": []
+      "diagnostics": [],
+      "public_documentation": {
+        "public_description": "Optimize peptide binder candidates and predicted complex structures against a target protein using EvoBind. Supply the target sequence and a matching A3M alignment. The num_peptides parameter controls optimization iterations; target_residues can focus the interface, and cyclic_offset selects linear or cyclic peptide modeling.",
+        "public_results": "A ZIP containing generated PDB structures and metrics.csv. The optimization may produce repeated or related candidates; its iteration count is not a count of independent binders.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: Evobind. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "sequence",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Target protein sequence in uppercase one-letter amino-acid codes. The 20 standard residues and X are accepted. It must match the first query sequence in the A3M alignment after removing gaps."
+          },
+          {
+            "name": "a3m_file_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "A3M multiple-sequence alignment for the target protein. The first sequence must match sequence; preserve valid A3M alignment formatting."
+          },
+          {
+            "name": "num_peptides",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Number of optimization iterations, supplied as an integer of at least 2. Each iteration advances the peptide-design run. This value does not specify or guarantee the number of independent peptide sequences returned."
+          },
+          {
+            "name": "seq_length",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Requested peptide length in amino acids. Supply a positive integer for a fixed length, or 0 to use 40 residues."
+          },
+          {
+            "name": "target_residues",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Comma-separated, one-based target sequence positions used to focus the interface, for example 23,24. Include an empty string when no interface positions are specified."
+          },
+          {
+            "name": "cyclic_offset",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Select True for cyclic-peptide modeling or False for linear-peptide modeling. Lowercase true and false are also accepted. This setting controls modeled geometry."
+          }
+        ]
+      }
     },
     "forward_reaction": {
       "display_name": "Forward Reaction Prediction",
@@ -3717,7 +4058,20 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Redesign antibody CDR sequences from an antibody–antigen complex using IgDesign inverse folding. The supported structure layout uses heavy chain B, light chain A and antigen chain C, with fixed CDR position sets.",
+        "public_results": "A CSV of sampled CDR sequences and model scores. Confirm that the fixed position sets correspond to the intended CDRs in the supplied antibody.",
+        "fields": [
+          {
+            "name": "pdb_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Antibody–antigen complex PDB with heavy chain B, light chain A and antigen chain C. Chains must cover the configured CDR positions, which use zero-based residue order. Automatic chain remapping and CDR reannotation are not performed."
+          }
+        ]
+      }
     },
     "impurity_prediction": {
       "display_name": "Impurity Prediction",
@@ -4809,7 +5163,34 @@
           "evidence": "sample_verified",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Dock protein ligands against a receptor structure using MEGADOCK-GPU rigid-body docking. The FFT-grid search samples relative protein orientations and positions. Supply one receptor PDB and a ZIP of ligand PDB files.",
+        "public_results": "Docking decoy structures and run outputs for the usable ligand inputs. Docking scores rank predicted poses and are not measured binding energies.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: MegaDock. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "ligand_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "ZIP of protein ligand PDB structures with finite atom coordinates. Ligands are proteins, not small molecules. Use unique PDB filenames across the archive, including files in subdirectories."
+          },
+          {
+            "name": "receptor_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Receptor protein PDB with valid atom coordinates. Each usable ligand is docked against this structure."
+          }
+        ]
+      }
     },
     "Vina_basic_docking": {
       "display_name": "Molecular Docking",
@@ -5504,7 +5885,34 @@
           "evidence": "sample_verified",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Predict individual protein structures from amino-acid sequences using AlphaFold. Supply a CSV containing sequence identifiers and protein sequences. Each input sequence is treated as a monomer prediction.",
+        "public_results": "A prediction table with confidence metrics and a ZIP of predicted structures. Check output coverage and confidence when interpreting individual predictions.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: Protein_Structure_Prediction. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "experiment_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Name you choose for this experiment. Use a meaningful label to identify the run and its results."
+          },
+          {
+            "name": "input_csv",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "CSV containing sequences and exactly one identifier column named seq_id or sequence_id. Identifiers must be unique. Each row supplies one protein sequence; header matching is case-insensitive. Invalid rows may be excluded from results."
+          }
+        ]
+      }
     },
     "Motiff_Scaffolding": {
       "display_name": "Motif Scaffolding",
@@ -5660,7 +6068,27 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Predict protein complex structures from grouped amino-acid sequences using AlphaFold-Multimer/ColabFold. Provide the component sequences in the desired chain order to model their assembly.",
+        "public_results": "Predicted complex structures and confidence tables, including pLDDT and ipTM where available. Confidence measures describe the prediction and do not establish experimental binding.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: Multimer_Structure_Prediction. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "input_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Two or more protein amino-acid sequences joined by colons in one text value, in the desired chain order. Supply sequence text without a prefixed record identifier. This interface uses the sequence-text input mode."
+          }
+        ]
+      }
     },
     "Netsolp": {
       "display_name": "NetsolP (Solubility)",
@@ -5959,7 +6387,28 @@
           "evidence": "operator_and_public_docs_confirmed",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Predict peptide properties from amino-acid sequences or peptide SMILES using PeptiVerse. Sequence models cover hemolysis, non-fouling, solubility, penetrance and half-life. SMILES inputs additionally support toxicity, PAMPA permeability and Caco-2 permeability models.",
+        "public_results": "A CSV retaining the input sequence or SMILES column and adding the selected numeric property scores. Binding-affinity prediction and exported classifier labels are not provided.",
+        "public_limits": "CSV: 1–5000 rows, at most 5000 characters per value and at most 100 MiB. Select at least one property supported by the input representation.",
+        "fields": [
+          {
+            "name": "input_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "UTF-8 or UTF-8-sig CSV with exactly one column named sequences or smiles. Header matching is case-insensitive; omit surrounding spaces and extra columns. Limits: 1–5000 rows, at most 5000 characters per value and at most 100 MiB per file."
+          },
+          {
+            "name": "properties",
+            "type": "array",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Properties to predict. For sequences: hemolysis, nf, solubility, permeability_penetrance and halflife. For SMILES, toxicity, permeability_pampa and permeability_caco2 are also available. Select at least one property supported by the input format. For API requests, send a non-empty JSON array of property names, such as [\"hemolysis\",\"solubility\"]."
+          }
+        ]
+      }
     },
     "ligand_pharmacophore": {
       "display_name": "Ligand-Based Pharmacophore Hypothesis",
@@ -6434,7 +6883,72 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Generate single-chain protein backbones with PPIFlow using either unconditional generation at selected protein lengths or motif scaffolding around a supplied structural motif. Provide exactly one of length_subset and motif_csv_file. The sampled backbones provide structural candidates for subsequent sequence design and evaluation.",
+        "public_results": "A ZIP of sampled monomer PDB structures and sample_metrics.csv. Inspect the sampled structures and motif placement where applicable.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: ppiflowmonomer. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "task_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Workflow selector. Use monomer for single-chain backbone generation."
+          },
+          {
+            "name": "samples_min_length",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Lower protein-length preference in amino acids. Enter a positive integer. Generated lengths are determined by length_subset or the motif CSV; this field does not independently enforce a lower bound."
+          },
+          {
+            "name": "samples_max_length",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Upper protein-length preference in amino acids. Enter a positive integer at least as large as samples_min_length. Generated lengths are determined by length_subset or the motif CSV; this field does not independently enforce an upper bound."
+          },
+          {
+            "name": "samples_num",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Number of monomer structures to sample. Enter a positive integer; the default is 5."
+          },
+          {
+            "name": "length_subset",
+            "type": "string",
+            "required": "Conditional",
+            "input_kind": "value",
+            "description": "Protein lengths in amino acids for unconditional generation, supplied as a positive integer or comma-separated integers, such as 80 or 80,100. Required when motif_csv_file is omitted. Supply exactly one of length_subset and motif_csv_file."
+          },
+          {
+            "name": "motif_csv_file",
+            "type": "string",
+            "required": "Conditional",
+            "input_kind": "file",
+            "description": "Upload a motif-scaffolding CSV with non-empty target, motif_path, length and contig columns. Required when length_subset is omitted. Supply exactly one of motif_csv_file and length_subset. Every referenced motif structure must also be accessible to the job; uploading the CSV does not upload those structures."
+          },
+          {
+            "name": "motif_names",
+            "type": "string",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "Optional selector for the motifs to scaffold. Omit the field when no selection is needed; a supplied value must not be blank."
+          }
+        ],
+        "integration_notes": [
+          "The product field motif_csv_file differs from the connector field motif_csv. No new forwarding alias is added here; use the exact connector schema and resolve unsupported UI-to-API mappings before submission."
+        ]
+      }
     },
     "ppiflowantibody": {
       "display_name": "PPI Flow Antibody",
@@ -6525,7 +7039,83 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Generate antibody heavy- and light-chain CDR backbone conformations against an antigen using PPIFlow. Separate antigen and antibody framework structures define the structural context. Antigen hotspots guide the interface, and CDR length ranges control the loop lengths sampled.",
+        "public_results": "A ZIP containing sampled antibody–antigen PDB structures and sample_metrics.csv. The generated CDR backbones require subsequent sequence design and structural evaluation.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: ppiflowantibody. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "task_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Workflow selector. Use antibody for paired heavy- and light-chain CDR backbone generation."
+          },
+          {
+            "name": "antigen_pdb",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Antigen structure uploaded as a PDB file. Include the antigen chain to be targeted."
+          },
+          {
+            "name": "framework_pdb",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Framework-only PDB containing the antibody heavy and light chains, without the antigen. Use IMGT numbering and remove the CDR residues to regenerate while preserving the original residue numbers. Numbering gaps identify H1, H2, H3, then L1, L2 and L3. Avoid unrelated gaps and insertion-code ambiguity."
+          },
+          {
+            "name": "antigen_chain",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Identifier of the target antigen chain in antigen_pdb. The default is A; the chain must exist in the structure."
+          },
+          {
+            "name": "heavy_chain",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Identifier of the heavy-chain framework in framework_pdb. The default is H."
+          },
+          {
+            "name": "light_chain",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Identifier of the light-chain framework in framework_pdb. The default is L and it must differ from heavy_chain."
+          },
+          {
+            "name": "cdr_length",
+            "type": "string",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "Inclusive amino-acid length ranges for the six CDRs, written as CDR-name,min-max pairs. Default: CDRH1,5-12,CDRH2,4-17,CDRH3,5-26,CDRL1,5-12,CDRL2,3-10,CDRL3,4-13."
+          },
+          {
+            "name": "samples_per_target",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Number of antibody backbone designs to sample for the antigen. Enter a positive integer; the default is 5."
+          },
+          {
+            "name": "specified_hotspots",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Required antigen interface residues, written as comma-separated chain-plus-residue identifiers such as A23,A24. Supply a non-empty selection; every selected residue must exist on antigen_chain."
+          }
+        ]
+      }
     },
     "Prodigy": {
       "display_name": "Prodigy (Binding Affinity)",
@@ -6579,7 +7169,27 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Estimate protein–protein binding affinity from an existing complex structure with PRODIGY. Interface contacts and structural surface information are used to score selected interacting chain groups. Supply one PDB or a ZIP of complex PDB files.",
+        "public_results": "A CSV containing predicted affinity and interface-contact results. The input must already represent an assembled complex; this tool does not dock separate proteins.",
+        "fields": [
+          {
+            "name": "input_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Protein complex PDB, or ZIP of complex PDBs, with interacting chains positioned together in each structure."
+          },
+          {
+            "name": "chain_list",
+            "type": "array",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Two non-overlapping interacting chain groups, such as [\"A\",\"B\"] or [\"A,B\",\"C\"]. Include [] for automatic pairwise analysis of uppercase chain identifiers, limited to 100 pairs. Use an array, not an empty string."
+          }
+        ]
+      }
     },
     "Property_Prediction": {
       "display_name": "Property Prediction (propinf)",
@@ -6875,7 +7485,66 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Generate protein-binder backbone candidates against a target structure using PXDesign inference. Supply an mmCIF target, its author chain identifier, binder length and sample count. Optional target cropping and hotspots focus the structural context used for design.",
+        "public_results": "An archive of generated binder structures. This mode provides backbone candidates for subsequent sequence design and evaluation.",
+        "public_limits": "Binder length: 10–300 amino acids. Sample count: 1–10000. Both values must be integers.",
+        "fields": [
+          {
+            "name": "task",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Workflow selection object. Its value identifies pxdesign-infer. Select the mode corresponding to this tool. For API requests, supply the selected value as the task_name string pxdesign-infer."
+          },
+          {
+            "name": "cif_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Target structure uploaded in .cif or .mmcif format. A PDB file is not accepted for this field."
+          },
+          {
+            "name": "target_chain",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Single-character author chain identifier of the target in the mmCIF file. Use the identifier present in the uploaded structure. For API requests, supply this identifier using the parameter name chain."
+          },
+          {
+            "name": "crop",
+            "type": "string",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "Optional target author-residue range to retain, written as start-end, for example 17-145. Omit or leave empty to retain the uncropped target."
+          },
+          {
+            "name": "hotspots",
+            "type": "string",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "Optional target author-residue numbers to focus the interface, written as comma-separated positive integers such as 40,99,107. The residues must belong to target_chain."
+          },
+          {
+            "name": "binder_length",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Desired binder length in amino acids. Enter an integer from 10 through 300."
+          },
+          {
+            "name": "n_samples",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Number of design samples to request. Enter an integer from 1 through 10000. The number of candidates passing later evaluation may be smaller."
+          }
+        ],
+        "integration_notes": [
+          "The product fields task and target_chain differ from the connector fields task_name and chain. This guide does not verify or add forwarding aliases; use the exact connector schema."
+        ]
+      }
     },
     "QSPR_Screening": {
       "display_name": "QSPR Screening",
@@ -7198,7 +7867,38 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Generate antibody heavy- and light-chain sequence libraries with IgLM and calculate sequence properties. Both chain types are generated in one run and returned as separate CSV files. The chains are sampled independently, so the results are libraries for subsequent pairing and evaluation rather than confirmed antibody pairs.",
+        "public_results": "Separate heavy- and light-chain CSV files containing sequences and calculated properties. The collections do not represent confirmed heavy/light pairs or antigen-specific antibodies.",
+        "public_limits": "Use an integer sampling count of at least 16. Heavy-chain counts are rounded down to groups of 8 and light-chain counts to groups of 16.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: Random_Antibody_Generation. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "n_samples",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Requested sampling count. Enter a whole number of at least 16. Heavy chains are sampled in groups of 8 and light chains in groups of 16, with each count rounded down independently."
+          },
+          {
+            "name": "file_format",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Output format. Use csv. Heavy- and light-chain sequences and their calculated properties are returned in separate CSV files."
+          }
+        ],
+        "integration_notes": [
+          "The product guidance mentions 16 samples, but this connector currently requires an integer greater than 16 (minimum 17). Use the installed connector constraint; this documentation does not change or bypass it."
+        ]
+      }
     },
     "Random_based_generation_training": {
       "display_name": "Random based generation training",
@@ -8018,7 +8718,48 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Generate antibody or nanobody designs against an antigen using the RFantibody workflow, followed by ProteinMPNN sequence design. Supply an appropriate framework structure and antigen structure, then select the antibody type and requested design count.",
+        "public_results": "A ZIP of the ProteinMPNN-stage outputs. Inspect the included sequences, structures and any available metrics before selecting candidates for further evaluation.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: rfdiffusion_proteinmpnn. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "antibody_pdb_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Uploaded antibody or nanobody framework PDB used to condition design. Supply the structure file rather than a PDB accession alone."
+          },
+          {
+            "name": "antigen_pdb_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Uploaded target antigen PDB structure. Use the actual structure file, not a bare structure identifier."
+          },
+          {
+            "name": "num_sequences",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Requested design count. Enter a positive integer; the default is 10. Check the delivered sequence count in the result archive."
+          },
+          {
+            "name": "antibody_type",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Select antibody for a paired heavy/light framework or nanobody for a heavy-chain-only framework."
+          }
+        ]
+      }
     },
     "rna_inverse_fold": {
       "display_name": "RNA 2D Inverse Folding",
@@ -8890,7 +9631,35 @@
           "evidence": "sample_verified",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Generate and rank peptide candidates for a supplied target protein using PepPrCLIP. Language-model-based generation produces candidates, and contrastive target-conditioned scoring ranks them against the target sequence. Supply both the candidate count and one peptide length explicitly.",
+        "public_results": "A CSV of peptide sequences, model scores and calculated properties such as molecular weight and pI. Model scores support ranking; they do not establish measured affinity or activity.",
+        "public_limits": "Choose one peptide length from 11 through 50 amino acids and a positive candidate count. Supply both values as whole-number strings.",
+        "fields": [
+          {
+            "name": "sequence",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Target protein amino-acid sequence used to condition peptide generation. This is the protein to bind, not a starting peptide. Uppercase standard amino acids and X, B, U, Z and O are accepted."
+          },
+          {
+            "name": "num_peptides",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Required number of peptide candidates to generate, supplied as a positive whole-number string such as \"15\". No default count is supplied; enter the requested value explicitly."
+          },
+          {
+            "name": "seq_length",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Required peptide length in amino acids, supplied as one whole-number string from \"11\" through \"50\". Enter a single length; no default length is supplied."
+          }
+        ]
+      }
     },
     "Similarity_Screening": {
       "display_name": "Similarity Screening",
@@ -9830,7 +10599,90 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Generate antibody CDR backbone conformations conditioned on an antigen epitope using Epitope AbGen/AbsciDiff. Supply antigen and antibody framework PDB structures, identify their chains, and select the CDR regions to regenerate. The remaining structure provides context for the sampled loops.",
+        "public_results": "Generated PDB structures and accompanying reports. The outputs are CDR backbone conformations; final antibody sequence design is a separate step.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: epitope_abgen. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "antigen_pdb_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Antigen PDB containing valid protein ATOM records and the chains carrying the selected epitope."
+          },
+          {
+            "name": "antibody_pdb_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Antibody framework PDB containing the heavy and light chains used to condition CDR generation."
+          },
+          {
+            "name": "mask_cdrs",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "CDR regions to regenerate: hcdr3 for heavy-chain CDR3, heavy_cdrs for all heavy-chain CDRs, or all_cdrs for heavy- and light-chain CDRs."
+          },
+          {
+            "name": "heavy_chain_id",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Actual heavy-chain identifier in the antibody PDB."
+          },
+          {
+            "name": "light_chain_id",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Actual light-chain identifier in the antibody PDB. This paired-antibody workflow requires the corresponding light-chain structure."
+          },
+          {
+            "name": "antigen_chain_ids",
+            "type": "array",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Identifiers of the antigen chains to include. Every selected chain must exist in antigen_pdb_path. For API requests, send a JSON array of chain IDs, such as [\"A\",\"C\"]."
+          },
+          {
+            "name": "epitope_residues",
+            "type": "array",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Antigen residues defining the desired interface. Identify each residue by its antigen chain and original PDB residue number, for example C:23 and C:24. For API requests, send a JSON array containing one chain-qualified residue per entry, such as [\"C:23\",\"C:24\"]."
+          },
+          {
+            "name": "samples_per_task",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Number of structures to sample for each prepared task. Enter an integer from 1 through 16; the default is 4."
+          },
+          {
+            "name": "seed",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Random seed controlling sampling. Enter an integer from 0 through 4294967295; the default is 2026. Identical seeds do not guarantee identical results across software or hardware versions."
+          },
+          {
+            "name": "max_tokens",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Model sequence-token budget. Enter an integer from 32 through 416; the default is 384. This controls the modeling budget, not the number of output samples."
+          }
+        ]
+      }
     },
     "Thermal_MPNN": {
       "display_name": "Thermal MPNN",
@@ -9885,7 +10737,20 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Estimate the effects of single amino-acid substitutions on protein stability using ThermoMPNN, a structure-based graph neural network. Supply a ZIP of protein PDB files. Predictions use the first chain of each structure and evaluate mutation effects relative to the original residues.",
+        "public_results": "Mutation-level CSV predictions containing Model, Dataset, ddG_pred, position, wildtype and mutation. Confirm residue indexing and the score convention when interpreting stability changes. These are stability predictions, not protein–protein binding ΔΔG.",
+        "fields": [
+          {
+            "name": "zip_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "ZIP containing protein PDB structures. PDB files may be in subdirectories; nested ZIP archives are not supported. The first chain of each structure is used for prediction."
+          }
+        ]
+      }
     },
     "tm_align": {
       "display_name": "TM Align",
@@ -10139,7 +11004,42 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Generate antibody-chain amino-acid sequence variants conditioned on a backbone structure using AntiBMPNN. Supply an antibody or antibody–antigen structure, identify the chains to redesign and choose the number of samples. Structural conditioning helps retain the supplied backbone context during sequence design.",
+        "public_results": "An archive of designed sequence records and run outputs. Sample count does not guarantee sequence uniqueness or improved antibody properties.",
+        "public_limits": "Request 1–10000 sequence samples per PDB. Chain selection must be non-empty and every selected chain must exist in the corresponding structure.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: AntiBMPNN. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "input_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "One antibody or antibody–antigen PDB, or a ZIP of PDB structures. Every chain selected for redesign must be present in each applicable structure. Only PDB members are processed."
+          },
+          {
+            "name": "chains_to_design",
+            "type": "array",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Identifiers of the antibody chains whose sequences should be redesigned, such as H and L. Supply an explicit, non-empty selection without duplicates; each selected chain must exist in the structure. For API requests, send a non-empty JSON array of one-character chain IDs, such as [\"H\",\"L\"]."
+          },
+          {
+            "name": "generation_count",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Number of sequence samples per input PDB. Enter an integer from 1 through 10000. Duplicate sequences may occur."
+          }
+        ]
+      }
     },
     "ipsae-protein": {
       "display_name": "ipSAE Generation",
@@ -10207,7 +11107,42 @@
           "evidence": "source_documented",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Calculate protein-interface confidence scores with ipSAE from AlphaFold2-Multimer or Boltz2 predictions. The analysis combines predicted structures with matched confidence and predicted aligned error information. Optional cutoffs control which residue pairs contribute to scoring.",
+        "public_results": "A flattened CSV of interface scores. These scores describe confidence in a predicted interface and are not experimental affinity measurements.",
+        "public_limits": "PAE and distance cutoffs must be positive numbers. Fractional values are accepted; each omitted cutoff defaults to 10.0 angstroms.",
+        "fields": [
+          {
+            "name": "model_type",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Prediction source: af2_multimer or boltz2. Select the type that matches the files in the uploaded archive."
+          },
+          {
+            "name": "input_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "ZIP containing matched structures and confidence files. AF2-Multimer inputs need ranked PDBs and score JSON or JSON.GZ files. Boltz2 inputs need PDB/CIF structures and matching PAE NPZ files. A structure alone is insufficient."
+          },
+          {
+            "name": "pae_cutoff",
+            "type": "number",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "Positive predicted aligned error cutoff, in angstroms. Fractional values are allowed. Omission uses 10.0; do not supply null."
+          },
+          {
+            "name": "dist_cutoff",
+            "type": "number",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "Positive C-alpha distance cutoff, in angstroms. A smaller value selects closer residue pairs. Fractional values are allowed; omission uses 10.0. Do not supply null."
+          }
+        ]
+      }
     },
     "ppiflowprotein": {
       "display_name": "PPI Flow Protein",
@@ -10293,7 +11228,76 @@
         "experiment_name_required": false,
         "payload_field": "experimentData"
       },
-      "diagnostics": []
+      "diagnostics": [],
+      "public_documentation": {
+        "public_description": "Generate protein-binder backbone structures against a target chain with PPIFlow. Define the target interface using an existing binder chain or selected antigen hotspots, then specify binder length bounds and the number of samples. The output provides structural candidates for downstream sequence design.",
+        "public_results": "A ZIP of generated binder PDB structures and sample_metrics.csv. Assess the sampled interface, backbone geometry and actual output count before selecting candidates.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: ppiflowprotein. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "task_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Workflow selector. Use protein for protein-binder backbone generation."
+          },
+          {
+            "name": "input_pdb",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Target PDB structure. Include an existing binder chain when using binder_chain; otherwise specify target interface residues with specified_hotspots."
+          },
+          {
+            "name": "target_chain",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Identifier of the target protein chain in input_pdb. The default is A and the chain must exist in the structure."
+          },
+          {
+            "name": "binder_chain",
+            "type": "string",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "Identifier of an existing binder chain in input_pdb. Supply this or specified_hotspots to define the interface."
+          },
+          {
+            "name": "samples_min_length",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Minimum generated binder length in amino acids. Enter a positive integer; the default is 50."
+          },
+          {
+            "name": "samples_max_length",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Maximum generated binder length in amino acids. Enter a positive integer at least as large as samples_min_length; the default is 100."
+          },
+          {
+            "name": "samples_per_target",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Number of binder backbones to sample for the target. Enter a positive integer; the default is 5."
+          },
+          {
+            "name": "specified_hotspots",
+            "type": "string",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "Target interface residues in comma-separated chain-plus-residue format, for example A23,A24, without colons. Residues must belong to target_chain. Supply this or binder_chain."
+          }
+        ]
+      }
     },
     "ppiflownanobody": {
       "display_name": "PPI Flow Nanobody",
@@ -10369,7 +11373,76 @@
         "experiment_name_required": false,
         "payload_field": "experimentData"
       },
-      "diagnostics": []
+      "diagnostics": [],
+      "public_documentation": {
+        "public_description": "Generate nanobody CDR backbone conformations against an antigen using PPIFlow. Supply the antigen structure, a heavy-chain framework with the intended CDR numbering gaps, and antigen hotspots. CDR length ranges guide the loop structures sampled within the framework.",
+        "public_results": "A ZIP of sampled nanobody–antigen PDB structures and sample_metrics.csv. The loop backbones require subsequent sequence design and evaluation.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: ppiflownanobody. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "task_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Workflow selector. Use nanobody for heavy-chain-only CDR backbone generation."
+          },
+          {
+            "name": "antigen_pdb",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Antigen PDB structure containing the chain to be targeted."
+          },
+          {
+            "name": "framework_pdb",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Framework-only PDB containing the VH/VHH chain selected by heavy_chain, without antigen or a light chain. Use IMGT numbering and remove the CDR residues to regenerate while preserving residue numbers. Numbering gaps identify H1, H2 and H3 in order; avoid unrelated gaps and insertion-code ambiguity."
+          },
+          {
+            "name": "antigen_chain",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Identifier of the antigen chain in antigen_pdb. The default is A and the chain must exist."
+          },
+          {
+            "name": "heavy_chain",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Identifier of the nanobody framework chain in framework_pdb. The default is H."
+          },
+          {
+            "name": "cdr_length",
+            "type": "string",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "Inclusive amino-acid length ranges for CDRH1, CDRH2 and CDRH3, written as CDR-name,min-max pairs. Default: CDRH1,8-8,CDRH2,8-8,CDRH3,9-21."
+          },
+          {
+            "name": "samples_per_target",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Number of nanobody backbone designs to sample. Enter a positive integer; the default is 5."
+          },
+          {
+            "name": "specified_hotspots",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Required antigen interface residues in comma-separated chain-plus-number form, such as A23,A24. Supply a non-empty selection. Each residue must exist on antigen_chain."
+          }
+        ]
+      }
     },
     "pxdesignpipeline": {
       "display_name": "PX Design Pipeline",
@@ -10441,7 +11514,65 @@
         "experiment_name_required": false,
         "payload_field": "experimentData"
       },
-      "diagnostics": []
+      "diagnostics": [],
+      "public_documentation": {
+        "public_description": "Run the PXDesign binder-design pipeline from a target mmCIF structure. Select the target chain, binder length and sample count, with optional target cropping and hotspots. This workflow continues beyond backbone inference through the configured design and evaluation stages.",
+        "public_results": "Packaged design artifacts, including the sequences, structures and scoring outputs produced by the completed stages. Check the available metrics before selecting candidates.",
+        "fields": [
+          {
+            "name": "task",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Workflow selection object. Its value identifies pxdesign-pipeline. Select the mode corresponding to this tool. For API requests, supply the selected value as the task_name string pxdesign-pipeline."
+          },
+          {
+            "name": "cif_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Target structure uploaded in .cif or .mmcif format. A PDB file is not accepted for this field."
+          },
+          {
+            "name": "target_chain",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Single-character author chain identifier of the target in the mmCIF file. Use the identifier present in the uploaded structure. For API requests, supply this identifier using the parameter name chain."
+          },
+          {
+            "name": "crop",
+            "type": "string",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "Optional target author-residue range to retain, written as start-end, for example 17-145. Omit or leave empty to retain the uncropped target."
+          },
+          {
+            "name": "hotspots",
+            "type": "string",
+            "required": "Optional",
+            "input_kind": "value",
+            "description": "Optional target author-residue numbers to focus the interface, written as comma-separated positive integers such as 40,99,107. The residues must belong to target_chain."
+          },
+          {
+            "name": "binder_length",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Desired binder length in amino acids. Enter an integer from 10 through 300."
+          },
+          {
+            "name": "n_samples",
+            "type": "integer",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Number of design samples to request. Enter an integer from 1 through 10000. The number of candidates passing later evaluation may be smaller."
+          }
+        ],
+        "integration_notes": [
+          "The product fields task and target_chain differ from the connector fields task_name and chain. This guide does not verify or add forwarding aliases; use the exact connector schema."
+        ]
+      }
     },
     "stability-binding-ddg": {
       "display_name": "Stability-Binding DDG",
@@ -10531,7 +11662,56 @@
           "evidence": "product_mapping_and_operator_video_2026-09-25",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ]
+      ],
+      "public_documentation": {
+        "public_description": "Estimate how amino-acid substitutions change protein–protein binding free energy relative to a wild-type complex using StaB-ddG. Supply the docked complex, the sequence and identifier of the chain to mutate, and the residue positions to change. Each sampled variant changes all selected positions and is scored against the original complex.",
+        "public_results": "A CSV containing id (variant identifier), MutatedSequences (full mutant sequence) and DDG_values (predicted binding free-energy change). Duplicate variants may occur. Confirm the model score-sign convention before interpreting values as stronger or weaker binding. This is not a separate folding-stability prediction.",
+        "public_notices": "Align the selected chain sequence and one-based mutation positions with the PDB residue numbering before submission. Interpret the score sign using the model convention.",
+        "fields": [
+          {
+            "name": "job_name",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "envelope",
+            "description": "Tool identifier: stability-binding-ddg. It selects the tool, not the experiment label. The connector generates experiment_name when omitted; preserve an exact label only when supplied by the user."
+          },
+          {
+            "name": "pdb_path",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "file",
+            "description": "Required PDB file containing the docked wild-type protein–protein complex, with interface chains A and B. Upload the structure and use its returned storage reference. The selected chain must exist, and its sequence and residue numbering must match sequence and the selected mutation positions."
+          },
+          {
+            "name": "sequence",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Amino-acid sequence of the chain selected by chain, in the same residue order as in pdb_path. Use the 20 standard amino acids; lowercase letters are converted to uppercase. Mutation positions are one-based and must align with PDB numbering starting at 1."
+          },
+          {
+            "name": "chain",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Identifier of the chain to mutate: A or B. It must match the uploaded complex and the supplied sequence."
+          },
+          {
+            "name": "mutations",
+            "type": "array",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Non-empty list of one-based residue positions or inclusive ranges to change, such as [\"1\",\"2\",\"8-15\"]. These identify sites, not replacement amino acids. Every generated variant changes all selected sites."
+          },
+          {
+            "name": "num_mutations",
+            "type": "string",
+            "required": "Required",
+            "input_kind": "value",
+            "description": "Number of sequence variants to sample, supplied as a positive whole-number string such as \"10\". Every variant changes all selected sites. This is not a guarantee of unique sequences."
+          }
+        ]
+      }
     },
     "deepallo": {
       "display_name": "Enzyme DeepAllo",
