@@ -175,6 +175,7 @@ def test_agent_turn_binds_and_clears_lifecycle_parent(monkeypatch):
 
     monkeypatch.setattr("agent.conversation_loop.run_conversation", run_conversation)
 
-    assert agent.run_conversation("hello") == {"final_response": "ok"}
+    result = agent.run_conversation("hello")
+    assert result["final_response"] == "ok"
     assert observed == [agent]
     assert get_active_subagent_parent() is None

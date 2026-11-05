@@ -64,7 +64,10 @@ def stage_delivery(agent, state):
         if pending[0] == state.turn_id:
             report = pending[1]
     if report is None and state.api_call_count == 0:
-        row = state.messages[state.current_turn_user_idx] if state.current_turn_user_idx is not None else {}
+        # Compaction can replace the history and invalidate its absolute index. The current
+        # request is the final user row in the loop's live message list.
+        row = next((message for message in reversed(state.messages)
+                    if isinstance(message, dict) and message.get('role') == 'user'), {})
         if row.get('display_kind') == 'async_delegation_complete':
             report = (row.get('display_metadata') or {}).get('specialist_report')
     if not isinstance(report, str) or not report:

@@ -18,7 +18,8 @@ def test_resume_and_live_reply_share_presentation(monkeypatch):
     cli = SimpleNamespace(
         final_response_markdown='render', _last_turn_interrupted=False,
         _streamed_text_this_turn='', _stream_started=False, _stream_box_opened=False,
-        _scrollback_box_width=lambda: 80, _console_print=replay.append)
+        _scrollback_box_width=lambda: 80, _console_print=replay.append,
+        _chat_print_token_usage=lambda _result: None)
     response = 'A **retained** reply.\n\n- first point\n- second point'
     turn = SimpleNamespace(result={}, use_streaming_tts=False, box_opened=False)
     CLIChatTurnMixin._chat_print_response_panel(cli, turn, response)

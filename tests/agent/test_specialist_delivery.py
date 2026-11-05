@@ -49,3 +49,13 @@ def test_sync_delivery_is_turn_scoped_and_ordinary_or_nested_delegation_still_sy
     parent._specialist_policy = 'pod-lead'
     stage_sync(parent, [row])
     assert not stage_delivery(parent, state)
+
+
+def test_compacted_history_does_not_use_stale_user_index_for_delivery():
+    parent = SimpleNamespace(_current_turn_id='turn-a', _specialist_policy=None, _interrupt_requested=False)
+    state = SimpleNamespace(
+        turn_id='turn-a', api_call_count=0, current_turn_user_idx=4,
+        messages=[{'role': 'user', 'content': 'new request'}], final_response=None,
+    )
+
+    assert not stage_delivery(parent, state)
