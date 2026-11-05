@@ -24,6 +24,11 @@ class Specialist:
     output: str = "A concise answer with evidence, limitations and output artifact paths."
     tools: tuple[str, ...] = ()
     skills: tuple[str, ...] = ()
+    private_skills: tuple[str, ...] = ()
+    private_tools: tuple[str, ...] = ()
+    shared_tools: tuple[str, ...] = ()
+    extension_id: str = ""
+    extension_revision: str = ""
     skill_files: tuple[str, ...] = ()
     sources: tuple[str, ...] = ()
     source_documents: tuple[dict, ...] = ()
@@ -49,7 +54,7 @@ class Specialist:
         ):
             raise ValueError('Reference snapshots need source, label and readable text.')
         data['source_documents'] = tuple(dict(doc) for doc in docs)
-        for key in ("tools", "skills", "skill_files", "sources", "children"):
+        for key in ("tools", "skills", "private_skills", "private_tools", "shared_tools", "skill_files", "sources", "children"):
             values = data.get(key, [])
             if not isinstance(values, (list, tuple)) or any(not isinstance(v, str) or not v.strip() for v in values):
                 raise ValueError(f"{key} must contain non-empty names/references.")
@@ -59,6 +64,17 @@ class Specialist:
         except TypeError as exc:
             raise ValueError("A specialist needs a name and purpose.") from exc
         validate_name(item.name)
+        if not isinstance(item.extension_id, str) or (item.extension_id and not re.fullmatch(r'[a-f0-9]{32}', item.extension_id)):
+            raise ValueError('Invalid private capability identifier.')
+        if not isinstance(item.extension_revision, str) or (item.extension_revision and not re.fullmatch(r'[a-f0-9]{64}', item.extension_revision)):
+            raise ValueError('Invalid private capability revision.')
+        if (item.private_skills or item.private_tools) and not item.extension_id:
+            raise ValueError('Private capabilities require their own storage scope.')
+        if not set(item.private_skills) <= set(item.skills) or not set(item.private_tools) <= set(item.tools):
+            raise ValueError('Private capabilities must be selected in the reviewed grants.')
+        from agent.specialist_sources import DEFAULT_TOOLS
+        if not set(item.shared_tools) <= set(item.private_tools) & DEFAULT_TOOLS:
+            raise ValueError('Shared private/inherited grants must be standard tools.')
         if not isinstance(item.instruction_source, str):
             raise ValueError('Instruction source must be a path label.')
         if not isinstance(item.source_manifest, str):
@@ -166,5 +182,6 @@ def delete(name, home=None, *, expected_revision):
 
 def copy_to(item, destination_home, name=None):
     # Destination review resolves capabilities in THAT profile. Never copy private source grants or children.
-    return save(replace(item, name=name or item.name, sources=(), source_documents=(), source_manifest='', instruction_source='', children=(), automatic=False,
+    from agent.specialist_extensions import without_private
+    return save(replace(without_private(item), name=name or item.name, sources=(), source_documents=(), source_manifest='', instruction_source='', children=(), automatic=False,
                         enabled=False, needs_review=True), destination_home)

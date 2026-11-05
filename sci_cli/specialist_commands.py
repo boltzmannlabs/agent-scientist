@@ -103,7 +103,9 @@ def _history(cli, ui, args, *, detail=False, running_only=False):
         raise ValueError("Page must be at least 1.")
     ui.show(f"Specialist runs: {len(rows)}; page {page}. No scientific tool or service was queried.")
     for row in rows[(page - 1) * 10:page * 10]:
-        ui.show(f"{row['run_id']} | {row['specialist']} | {row['status']} | {row.get('goal', '')[:150]}\n"
+        outcome = row.get('result', {}).get('task_outcome', '')
+        state = row['status'] + (f' ({outcome})' if outcome in {'blocked', 'incomplete'} else '')
+        ui.show(f"{row['run_id']} | {row['specialist']} | {state} | {row.get('goal', '')[:150]}\n"
                 f"  {row.get('note', '')} Transcript: {row.get('transcript') or 'not retained'}")
     ui.show("Use /subagent status <run-id> for results/errors and transcript path; /subagent history <page> for more.")
 
@@ -209,7 +211,7 @@ def dispatch(cli, command, ui=None):
             return ui.show(USAGE)
         return handlers[action](cli, ui, args)
     except (Cancelled, KeyboardInterrupt, EOFError):
-        ui.show("Subagent action cancelled. Any unfinished draft is retained in this CLI/profile; use /Create_subagent or /Update_subagent to resume. Nothing was activated by cancellation.")
+        ui.show("Subagent action cancelled. Saved definitions are unchanged. Specialist edit drafts remain in this CLI/profile; private setup may retain files or credentials at the reported location. No pending assignment started.")
     except (ValueError, OSError) as exc:
         ui.show(f"Subagent action failed: {exc}. No automatic retry. Use /subagents to inspect the saved state.")
 

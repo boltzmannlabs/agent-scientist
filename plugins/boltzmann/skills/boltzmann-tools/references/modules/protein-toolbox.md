@@ -640,7 +640,7 @@ Fields below belong in `experiment_data`. The connector generates `experiment_na
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
 | `input_path` | string | yes | file | Uploaded CSV storage path with the exact Sequences column. FASTA is not supported by the platform submission path. |
-| `prediction_type` | string | no / mode-dependent | value | `"S"` (solubility), `"U"` (usability), `"US"` (both). Default: `"S"` |
+| `prediction_type` | string | no / mode-dependent | value | Uppercase only: `"S"` (solubility), `"U"` (usability), `"SU"` (both), or `"US"` (backward-compatible alias for both, normalized to `"SU"` by the corrected worker). The connector forwards the value unchanged. Omit for the service default `"S"`. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -658,11 +658,12 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "file"
     },
     "prediction_type": {
-      "description": "`\"S\"` (solubility), `\"U\"` (usability), `\"US\"` (both). Default: `\"S\"`",
+      "description": "Uppercase only: `\"S\"` (solubility), `\"U\"` (usability), `\"SU\"` (both), or `\"US\"` (backward-compatible alias for both, normalized to `\"SU\"` by the corrected worker). The connector forwards the value unchanged. Omit for the service default `\"S\"`.",
       "type": "string",
       "enum": [
         "S",
         "U",
+        "SU",
         "US"
       ],
       "x-input-kind": "value"

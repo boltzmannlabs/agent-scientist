@@ -34,12 +34,14 @@ def boltzmann_submit(
     allow_partial_validation: bool = False,
 ) -> str:
     """Submit one specified job; omit experiment_name for a generated platform label."""
-    return handle_boltzmann_submit(
+    result = handle_boltzmann_submit(
         job_name=job_name,
         experiment_data=experiment_data,
         experiment_name=experiment_name,
         allow_partial_validation=allow_partial_validation,
     )
+    from .job_monitor import monitor_result
+    return monitor_result("boltzmann_submit", {}, result, session_id="mcp")
 
 
 @mcp.tool()
@@ -49,11 +51,13 @@ def boltzmann_status(
     output_folder: str | None = None,
 ) -> str:
     """Poll the existing Boltzmann job identified by job_name and doc_id."""
-    return handle_boltzmann_status(
+    result = handle_boltzmann_status(
         job_name=job_name,
         doc_id=doc_id,
         output_folder=output_folder,
     )
+    from .job_monitor import monitor_result
+    return monitor_result("boltzmann_status", {}, result, session_id="mcp")
 
 
 @mcp.tool()

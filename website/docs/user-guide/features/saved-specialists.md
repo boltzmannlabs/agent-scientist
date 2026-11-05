@@ -185,6 +185,69 @@ From review, **Add capabilities** opens the existing Add skill, Add tool, Connec
 Boltzmann flow for the active profile. The draft remains available. Finish setup, resume the draft,
 select the added capabilities, save and start `/new`. This does not borrow another profile's access.
 
+### Add capabilities for one specialist only
+
+Choose **Add for this subagent only** from creation/editing review. It offers:
+
+- **Add tool (link or request):** enter the same request you would give `/Add_tool`, such as
+  `add this tool: https://github.com/owner/repository`. A separate normal SCI setup conversation
+  runs in this specialist's private destination using the owning agent's selected model/login.
+  Review the provider/model and outbound request before starting. The setup agent uses existing
+  installation/scanning/PM and capability-consent mechanisms, asks for action approvals, and reports
+  unsupported integrations or partial setup. It does not receive the parent's conversation/references.
+  After setup, separately approve loading/discovery of installed additions and select private plugin
+  tools. Save the specialist and use `/new`. A repository link is a setup request, not a guarantee
+  that every arbitrary repository can become a callable tool; executable adapters are not invented.
+- **External skill:** provide a prepared `SKILL.md`, complete skill folder/ZIP, supported identifier,
+  or public source URL. SCI reuses guarded source loading, quarantine, scanning, review and installation.
+  Supporting files are preserved. Plain documents belong under References; this flow does not turn
+  arbitrary material into a new skill automatically.
+- **MCP service:** supply a public MCP endpoint or a local JSON/YAML file containing `mcpServers`
+  or `mcp_servers`. Choose one connection, configure masked credentials or OAuth, approve external
+  actions, test handshake/discovery, select an explicit tool allowlist, and confirm private saving.
+  Local MCP servers are supported through configuration files with executable and separate arguments.
+- **Use an already-installed program:** provide an existing executable/script, interpreter where needed, separate
+  arguments, working directory, purpose, inputs, outputs and limitations. SCI saves a reviewed,
+  scanned instruction skill. The program remains at its original location and is not run during
+  setup. Private terminal/process access is included for final review, allowing execution when the
+  assignment requests it, even if main does not expose terminal tools. This grants the backend's
+  terminal access, not an executable-specific sandbox. This option does not install new software;
+  choose Add tool for a broader installation/integration request.
+
+These additions are stored beneath `<owning SCI_HOME>/subagent-data/<private-id>/`. Main, other
+profiles and sibling specialists do not receive their skill index, tool schemas, connection settings
+or private credentials. You may select existing inherited capabilities alongside private additions.
+Inherited service tools continue using the owning profile's authorization; private MCP tools use
+their own credential storage. Existing-key reuse is offered only where a matching configured secret
+exists, and requires review; new keys use masked capture. OAuth follows the service's supported flow.
+The LLM still uses the owning agent's resolved model/authentication; there is no second LLM login.
+
+Review lists private skills and tools explicitly. **Remove private capability** removes a selected
+grant without deleting retained software, connections or credentials. Save the specialist and start
+`/new` before assigning work. Private configuration/credential/skill changes invalidate the reviewed
+scope until a new review/save; an old conversation cannot silently adopt new private grants.
+
+Private setup files can remain after a failed or cancelled draft, particularly OAuth grants or
+approved package-runner downloads. The UI identifies the private destination. No parent settings
+are rewritten. Copy/duplicate/export/import deliberately omit private capabilities and credentials;
+configure them again in the destination. Parent-driven automatic selection and explicit runs both
+work. Nested specialists with their own private capability scope currently require direct assignment
+from the owning profile, rather than delegation through another specialist.
+
+Private capability scope controls SCI discovery, configuration and credentials. It does not create
+an operating-system sandbox: approved terminal programs and local MCP servers still have their
+execution environment's access. Specialist results and requested artifacts are returned to the parent.
+
+Example:
+
+```text
+/Update_subagent reviewer
+# Choose Add for this subagent only → Add tool, External skill, MCP service or an installed program.
+# Complete the review; Save and enable for the next conversation.
+/new
+/subagent run reviewer Use your private integration for this approved assignment.
+```
+
 ## Skills, tools and integration permissions
 
 Skills supply instructions; they do not grant execution permission. Selected skills are loaded
@@ -582,3 +645,38 @@ arbitrary dependency installs were used for testing. Remote path/mount contracts
 this does not certify a live Docker/SSH/cloud backend or every third-party package. Restart/reload
 SCI and use /new. For an existing specialist, review Use standard tools, save, then start /new.
 No commit or push was performed.
+
+## Retained-install reconciliation and blocked outcomes — 5 November 2026
+
+Private setup accepts overlap with inherited **standard** tools such as terminal/process management.
+The definition records shared ownership, so copying/exporting or removing private access does not
+accidentally remove an inherited standard grant. Genuine skill or nonstandard-tool name collisions
+remain reported; they do not discard unrelated installed additions. Private file/code/process work
+uses the private backend's terminal policy and workspace, while inherited service handlers retain
+the owning profile's credentials.
+
+If setup stops after installation, the recoverable draft retains discovered additions. To recover
+an older incomplete save without reinstalling:
+
+```text
+/Update_subagent <name>
+```
+
+Choose **Review installed private additions**, inspect the candidate skills/tools, then **Save and
+enable for the next conversation** and `/new`. Recovery reads local metadata and does not download,
+install, run the program or probe an MCP. If installed plugin tools need discovery, loading their
+code requires a separate explicit choice. Cancelling review leaves saved grants unchanged.
+
+A model response finishing successfully does not mean its assigned work completed. An explicit
+`Outcome: BLOCKED BEFORE EXECUTION`, incomplete/failed outcome header, or JSON `task_outcome` is
+recorded as failed with its specific task outcome. Run-history views also interpret those explicit
+headers in older receipts without silently rewriting the retained evidence. The raw report and
+stored tool activity remain intact. Subagents receive the authoritative runtime `sa-…` identifier;
+blocked-report delivery shows it separately from any model-written report/file label.
+
+
+Controlled verification covers private skill/MCP/plugin discovery, child execution, A → B → A
+profile isolation, cancelled review, retained installation recovery, standard-tool overlaps,
+blocked receipts and unchanged parent prompts/tool schemas. Tests use temporary homes and
+loopback services; no production scientific jobs are submitted. These checks do not certify
+arbitrary third-party installations or scientific correctness.

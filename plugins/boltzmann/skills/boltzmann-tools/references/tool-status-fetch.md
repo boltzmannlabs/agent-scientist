@@ -27,7 +27,7 @@ present. Credentials and diagnostic URLs are redacted, not stack frames or
 exception descriptions. Use these diagnostics to explain the failure; do not
 claim that reporting a traceback repairs the worker.
 
-The result endpoint can return documented `running` or `failed` job dictionaries
+The result endpoint can return documented `pending`, `running` or `failed` job dictionaries
 with HTTP 404. Those recognized bodies retain their job state. HTTP codes are
 not included in the agent-facing status result. Authentication failures and
 unrecognized, malformed or missing responses still mean the job outcome could

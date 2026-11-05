@@ -55,6 +55,39 @@ def test_solublempnn_requires_numeric_string_count_in_distributed_contract(tmp_p
             assert any("num_seq" in error for error in report.errors), count
 
 
+@pytest.mark.parametrize("mode,valid", [
+    ("S", True), ("U", True), ("SU", True), ("US", True),
+    ("s", False), ("u", False), ("su", False), ("us", False),
+    ("Su", False), ("uS", False), ("SU ", False), ("", False),
+    ("SS", False), ("invalid", False), (None, False), (1, False),
+])
+def test_netsolp_modes_are_uppercase_only_without_mutating_distributed_payloads(tmp_path, mode, valid):
+    """Issue #40: both combined spellings are supported, without a consent-only warning."""
+    import shutil
+
+    from plugins.boltzmann.contracts import ContractStore
+    from plugins.boltzmann.preflight import decision
+
+    installed = tmp_path / "installed-references"
+    installed.mkdir()
+    for filename in ("tool-contracts.v1.json", "file-input-contracts.v1.json", "input-limits.v1.json"):
+        shutil.copy2(ROOT / filename, installed / filename)
+    for root in (ROOT, installed):
+        store = ContractStore(root)
+        payload = {"input_path": "fixture/validated.csv", "prediction_type": mode}
+        report = store.validate_payload("Netsolp", payload)
+        assert payload == {"input_path": "fixture/validated.csv", "prediction_type": mode}
+        if valid:
+            assert decision(report, False) is None, report.as_dict()
+        else:
+            assert decision(report, True)["status"] == "not_started"
+            assert any("prediction_type" in error for error in report.errors)
+        omitted = {"input_path": "fixture/validated.csv"}
+        assert decision(store.validate_payload("Netsolp", omitted), False) is None
+        assert "prediction_type" not in omitted  # Preserve the service's default S.
+        assert store.validate_payload("Netsolp", {"prediction_type": "SU"}).errors
+
+
 def test_binding_affinity_modes_and_paired_csv_contract(tmp_path):
     from plugins.boltzmann.contracts import ContractStore
     from plugins.boltzmann.file_validation import validate_file

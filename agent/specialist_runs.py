@@ -29,6 +29,8 @@ def record(child, goal, result=None):
                "parent_session_id": getattr(child, "_parent_session_id", None),
                "transcript": getattr(child, "_live_transcript_path", None)}
     else:
+        from agent.specialist_results import assess_entry
+        result = assess_entry(dict(result))
         row = json.loads(path.read_text(encoding="utf-8-sig")) if path.exists() else {"run_id": run_id, "specialist": policy.name}
         row.update({"status": result.get("status", "unknown"), "finished_at": time.time(),
                     "result": {k: v for k, v in result.items() if not k.startswith("_")}})
@@ -46,6 +48,10 @@ def history(home=None):
         if path.is_symlink():
             continue
         row = json.loads(path.read_text(encoding="utf-8-sig"))
+        if isinstance(row.get('result'), dict):
+            from agent.specialist_results import assess_entry
+            row['result'] = assess_entry(dict(row['result']))
+            row['status'] = row['result'].get('status', row.get('status'))
         if row.get("status") == "queued":
             live = active.get(row["run_id"])
             row["status"] = "running" if live else "unknown"

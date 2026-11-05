@@ -93,6 +93,8 @@ def review_text(item):
            'explicit requests only (legacy setting; review and save to enable both)')
     children = ('\nExisting child-specialist grants: ' + ', '.join(item.children)) if item.children else ''
     return (f'Specialist: {item.name} — profile: {profile_label()}\nPurpose: {item.purpose}\nOutput: {item.output}\n'
+            f'Subagent-only skills: {", ".join(item.private_skills) or "none"}\n'
+            f'Subagent-only tools: {", ".join(item.private_tools) or "none"}\n'
             f'Skills: {", ".join(item.skills) or "none"}\nModules: {", ".join(item.skill_files) or "none"}\n'
             f'Tools: {", ".join(selected) or "none (can answer without tools)"}\n'
             f'Use: {use}.{children}\n'
@@ -114,6 +116,7 @@ def _capabilities(cli, ui, item, existing=None):
     selected_skills = {n for n in picked if n not in resources}
     selected_skills.update(r.partition('#')[0] for r in selected_files)
     item = replace(item, skills=tuple(sorted(selected_skills)), skill_files=selected_files)
+    item = replace(item, skills=tuple(sorted(set(item.skills) | set(item.private_skills))))
     remember(cli, item, existing)
     prior_tools = item.tools
     if selected_files and set(BOLTZMANN_WORKFLOW_TOOLS) <= set(tools):
@@ -134,7 +137,8 @@ def _capabilities(cli, ui, item, existing=None):
     if set(selected_tools) & EXECUTION_TOOLS and existing is not None:
         ui.choose('Terminal/code access can use the execution environment; a tool list is not a filesystem/network sandbox.',
                   ['Approve selected execution access', 'Cancel'])
-    return replace(item, skills=tuple(sorted(selected_skills)), skill_files=selected_files, tools=selected_tools)
+    return replace(item, skills=tuple(sorted(set(selected_skills) | set(item.private_skills))),
+                   skill_files=selected_files, tools=tuple(sorted(set(selected_tools) | set(item.private_tools))))
 
 
 def edit(cli, ui, *, name=None, existing=None):
@@ -161,15 +165,28 @@ def edit(cli, ui, *, name=None, existing=None):
             # Upgrade a previously stored bare path before review, without requiring a duplicate reference.
             item = replace(item, **purpose_fields(ui, initial=item.purpose))
     item = replace(item, automatic=True, enabled=True, needs_review=False)
+    if item.extension_id:
+        from sci_cli.specialist_private_inventory import reconcile
+        try:
+            installed = reconcile(item)
+            if set(installed.private_skills) - set(item.private_skills) or set(installed.private_tools) - set(item.private_tools):
+                ui.show('Installed private additions are awaiting permission review. Choose Review installed private additions; '
+                        'you do not need to reinstall or download them.')
+        except (ValueError, OSError, UnicodeError) as exc:
+            ui.show(f'Private inventory needs attention: {exc}. Your saved definition is unchanged.')
     while True:
         remember(cli, item, existing)
         ui.show(review_text(item))
         action = ui.choose('Review specialist', ['Save and enable for the next conversation', 'Edit purpose/output',
                           'Edit skills/tools', 'Use standard tools', 'Additional instructions', 'References', 'Add capabilities',
+                          'Add for this subagent only', 'Review installed private additions', 'Remove private capability',
                           'Rename', 'Discard draft', 'Cancel'])
         if action == 'Save and enable for the next conversation':
             try:
                 item = prepare_references(item, ui)
+                if item.extension_id:
+                    from agent.specialist_extensions import extension_home, fingerprint
+                    item = replace(item, extension_revision=fingerprint(extension_home(item)))
                 saved = save(item, expected_revision=existing.revision if existing else None)
             except (ValueError, OSError) as exc:
                 ui.show(f'Could not save: {exc}. Draft retained. Review, rename, or cancel; nothing was overwritten.')
@@ -185,6 +202,29 @@ def edit(cli, ui, *, name=None, existing=None):
             return
         if action == 'References':
             item = _sources(cli, ui, item, existing)
+        elif action == 'Review installed private additions':
+            from sci_cli.specialist_private_inventory import review_installed
+            item = review_installed(cli, ui, item, existing)
+        elif action == 'Add for this subagent only':
+            from sci_cli.specialist_private_setup import setup
+            try:
+                item = setup(cli, ui, item)
+            except (ValueError, OSError) as exc:
+                item = pending[item.name][0]
+                ui.show(f'Private setup stopped: {exc}. Draft retained. Saved private files/credentials may remain; nothing was added to main.')
+        elif action == 'Remove private capability':
+            selected = ui.choose('Remove access from this specialist (saved setup files are retained)',
+                                 [*item.private_skills, *item.private_tools, 'Back', 'Cancel'])
+            if selected != 'Back':
+                if selected in item.shared_tools:
+                    ui.show(f'{selected} also belongs to the inherited standard tools and remains selected there. '
+                            'Use Edit skills/tools to remove that inherited access as well.')
+                item = replace(item, private_skills=tuple(n for n in item.private_skills if n != selected),
+                               private_tools=tuple(n for n in item.private_tools if n != selected),
+                               shared_tools=tuple(n for n in item.shared_tools if n != selected),
+                               skills=tuple(n for n in item.skills if n != selected),
+                               tools=tuple(n for n in item.tools if n != selected or n in item.shared_tools),
+                               skill_files=tuple(r for r in item.skill_files if r.partition('#')[0] != selected))
         elif action == 'Edit skills/tools':
             item = _capabilities(cli, ui, item, existing)
         elif action == 'Use standard tools':

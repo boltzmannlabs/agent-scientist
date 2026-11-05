@@ -108,6 +108,11 @@ def _resolve_child_toolsets(
     else:
         child_toolsets = sorted(parent_toolsets) or DEFAULT_TOOLSETS
     child_toolsets = _strip_blocked_tools(child_toolsets)
+    from agent.specialist_policy import current_policy
+    policy = current_policy()
+    if policy is not None and policy.execution_home:
+        # These are separately reviewed private grants, not inherited profile tools.
+        child_toolsets = list(dict.fromkeys([*child_toolsets, *policy.private_toolsets]))
 
     raw_parent_disabled = getattr(parent_agent, "disabled_toolsets", None)
     inherited_disabled = (

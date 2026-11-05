@@ -79,6 +79,9 @@ def _fire_pre_api_request_hook(
                 system_prompt=_system_prompt_for_hooks(api_kwargs, request_messages),
                 message_count=len(api_messages),
                 tool_count=len(agent.tools or []),
+                # Full session scope, before API schema deferral. Observers can
+                # checkpoint permissions without mistaking hidden schemas for revocation.
+                available_tool_names=sorted(getattr(agent, "valid_tool_names", set())),
                 approx_input_tokens=approx_tokens,
                 request_char_count=total_chars,
                 max_tokens=agent.max_tokens,

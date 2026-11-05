@@ -147,6 +147,9 @@ API hooks describe provider attempts inside the agent loop:
   `approx_input_tokens`, `request_char_count`, `max_tokens`
 - timing: `started_at`
 - sanitized request payload: `request`
+- `available_tool_names`: the originating conversation's complete permitted tool
+  names before API schema deferral. This observer metadata does not change the
+  tools sent to the model or grant execution permission.
 
 `post_api_request` includes the same identity/runtime fields plus:
 

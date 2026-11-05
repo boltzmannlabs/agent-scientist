@@ -25,9 +25,14 @@ def reports_from_results(results):
                         full = saved.get('result') or row
                 except (ValueError, OSError) as exc:
                     logging.getLogger(__name__).warning('Could not recover full specialist report %s: %s', run_id, exc)
+        from agent.specialist_results import assess_entry
+        full = assess_entry(dict(full))
         text = full.get('summary')
         if full.get('status') != 'completed' or full.get('truncated') or full.get('summary_truncated'):
-            text = (f"Specialist {row['specialist']}: {full.get('status', 'unknown')}. "
+            outcome = full.get('task_outcome', '')
+            detail = f' ({outcome})' if outcome in {'blocked', 'incomplete'} else ''
+            identity = f' Authoritative subagent run ID: {run_id}. ' if re.fullmatch(r'sa-[a-zA-Z0-9_-]+', run_id) else ' '
+            text = (f"Specialist {row['specialist']}: {full.get('status', 'unknown')}{detail}." + identity +
                     f"{full.get('error') or 'Full completed output is unavailable; this result may be incomplete.'}" +
                     (f'\n\nPartial output:\n{text}' if text else ''))
         elif not isinstance(text, str) or not text:

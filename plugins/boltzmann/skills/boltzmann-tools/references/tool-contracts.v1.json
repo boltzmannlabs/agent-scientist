@@ -6112,11 +6112,12 @@
             "x-input-kind": "file"
           },
           "prediction_type": {
-            "description": "`\"S\"` (solubility), `\"U\"` (usability), `\"US\"` (both). Default: `\"S\"`",
+            "description": "Uppercase only: `\"S\"` (solubility), `\"U\"` (usability), `\"SU\"` (both), or `\"US\"` (backward-compatible alias for both, normalized to `\"SU\"` by the corrected worker). The connector forwards the value unchanged. Omit for the service default `\"S\"`.",
             "type": "string",
             "enum": [
               "S",
               "U",
+              "SU",
               "US"
             ],
             "x-input-kind": "value"
@@ -6144,8 +6145,7 @@
           "evidence": "sample_verified",
           "notes": "Restored from maintained tool-outcome-collections.csv; historical evidence, not a current service check."
         }
-      ],
-      "request_checks": "netsolp"
+      ]
     },
     "Novelty": {
       "display_name": "Novelty Check",

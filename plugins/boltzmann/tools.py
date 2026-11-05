@@ -38,7 +38,7 @@ _RETIRED_JOB_NAMES = frozenset({
 
 _TOOL_TIMEOUTS = {
     "boltzmann_submit":        int(os.getenv("TOOL_TIMEOUT_SUBMIT", "120")),       # 2 min
-    "boltzmann_status":        int(os.getenv("TOOL_TIMEOUT_STATUS", "600")),       # 10 min (long poll)
+    "boltzmann_status":        int(os.getenv("TOOL_TIMEOUT_STATUS", "600")),       # safety cap; checks use 30 s
     "boltzmann_download":      int(os.getenv("TOOL_TIMEOUT_DOWNLOAD", "300")),     # 5 min (large files)
     "boltzmann_upload":        int(os.getenv("TOOL_TIMEOUT_UPLOAD", "180")),       # 3 min
     "boltzmann_fetch_tool_log": int(os.getenv("TOOL_TIMEOUT_FETCH_LOG", "120")),
@@ -156,6 +156,11 @@ def _handle_boltzmann_submit_inner(**kwargs):
     if missing:
         return json.dumps({"error": f"Missing required arguments: {', '.join(missing)}"})
 
+    from .job_continuation import replay_error
+    duplicate = replay_error(job_name, experiment_data)
+    if duplicate:
+        return json.dumps(duplicate)
+
     if not experiment_name:
         experiment_name = _generated_experiment_name(job_name, experiment_data)
 
@@ -242,7 +247,10 @@ def _handle_boltzmann_status_inner(**kwargs):
 
     # Always refresh from the service: completed responses may contain expiring
     # signed artifact URLs. A terminal-state cache is not an artifact URL cache.
-    result = fetch_status(job_name, doc_id, token=token, conv_id=conv_id, output_folder=output_folder)
+    # Durable monitoring owns the waiting lifetime. A tool call is one bounded
+    # status check, below both the plugin and agent-executor deadlines.
+    result = fetch_status(job_name, doc_id, token=token, conv_id=conv_id, output_folder=output_folder,
+                          max_wait=30, poll_once=True)
     try:
         ReceiptStore().observe(job_name, doc_id, result)
     except ReceiptStorageError:

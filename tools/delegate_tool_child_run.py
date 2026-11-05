@@ -50,7 +50,9 @@ def _close_child(child: Any, log_message: str) -> None:
     with _quiet(log_message, exc_info=True):
         close = getattr(child, "close", None)
         if callable(close):
-            close()
+            from agent.specialist_extensions import execution_scope
+            with execution_scope(getattr(child, '_specialist_policy', None)):
+                close()
 
 def _with_children_lock(parent_agent: Any, op: str, child: Any) -> None:
     """``parent_agent._active_children.<op>(child)`` under the parent's lock when it has one."""

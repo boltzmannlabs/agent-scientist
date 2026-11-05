@@ -10,6 +10,8 @@ def export_definition(cli, ui, args):
     if len(args) != 2:
         raise ValueError('Usage: /subagent export <name> "<destination.json>"')
     item = load(args[0])
+    from agent.specialist_extensions import without_private
+    item = without_private(item)
     path = Path(args[1]).expanduser().absolute()
     ui.show(f'Export to {path}. Instructions and capability names only; credentials, references, child grants and history are excluded. '
             'Review instructions for private content before sharing.')
@@ -31,6 +33,8 @@ def import_definition(cli, ui, args):
     if len(payload) > _MAX_BYTES:
         raise ValueError('Definition exceeds 256 KB.')
     item = Specialist.parse(json.loads(payload))
+    from agent.specialist_extensions import without_private
+    item = without_private(item)
     item = replace(item, name=args[1] if len(args) == 2 else item.name, sources=(), source_documents=(), source_manifest='', instruction_source='', children=(),
                    enabled=False, needs_review=True)
     ui.show(f'Import {item.name} from {path} into the current profile as a disabled definition. '

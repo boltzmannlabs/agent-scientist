@@ -154,12 +154,40 @@ def resolve(parent, task):
     if owner and (not allowed <= owner.tools or not set(item.skills) <= owner.skills):
         raise ValueError("Child permissions exceed its pod lead's approved tools or skills.")
     missing = allowed - (parent_names & live_names)
+    execution_home, private_toolsets = '', ()
+    if item.extension_id:
+        from agent.specialist_extensions import extension_home, fingerprint, private_definitions
+        private_home = extension_home(item)
+        if not item.extension_revision or fingerprint(private_home) != item.extension_revision:
+            raise ValueError('Private capabilities changed. Review /Update_subagent and start /new before running.')
+        if owner:
+            raise ValueError('Private-capability specialists currently require a direct assignment from their owning profile.')
+        definitions = private_definitions(item)
+        private_names = {t['function']['name'] for t in definitions}
+        private_allowed = set(item.private_tools) & private_names
+        # A private route never falls back to a same-named connection in the parent.
+        missing |= set(item.private_tools) - private_names
+        missing -= private_allowed
+        execution_home = str(private_home.resolve())
+        from sci_cli.config import read_user_config_raw
+        private_toolsets = tuple(read_user_config_raw(private_home / 'config.yaml').get('platform_toolsets', {}).get('cli', []))
+        # Skill readers are available for private skills even when the parent did not enable skills.
+        if item.private_skills:
+            missing -= {'skill_view', 'skills_list'}
     from sci_cli.science_profiles_catalog import BOLTZMANN_WORKFLOW_TOOLS
     helpers = set(BOLTZMANN_WORKFLOW_TOOLS)
     if allowed & helpers:
         from sci_cli.specialist_capabilities import boltzmann_ready
-        if not boltzmann_ready() or not helpers <= (parent_names & live_names):
-            missing |= allowed & helpers
+        private_helpers = allowed & helpers & set(item.private_tools)
+        if private_helpers:
+            from agent.specialist_extensions import capability_scope
+            with capability_scope(private_home):
+                private_ready = boltzmann_ready()
+            if not private_ready or not helpers <= private_names:
+                missing |= private_helpers
+        inherited_helpers = allowed & helpers - private_helpers
+        if inherited_helpers and (not boltzmann_ready() or not helpers <= (parent_names & live_names)):
+            missing |= inherited_helpers
     # Selected tools are maximum grants, not prerequisites for every informational task.
     # Missing tools never gain a handler/schema; the child must report a blocker if needed.
     allowed -= missing
@@ -183,7 +211,8 @@ def resolve(parent, task):
         deadline = min(deadline, owner.deadline)
     policy = SpecialistPolicy(name, home, item.revision, frozenset(allowed), frozenset(item.skills),
                               frozenset(item.children), (*owner.ancestry, name) if owner else (name,), deadline,
-                              frozenset(missing), read_paths)
+                              frozenset(missing), read_paths, execution_home,
+                              frozenset(item.private_tools), frozenset(item.private_skills), private_toolsets)
     return item, policy
 
 
@@ -198,7 +227,11 @@ def context_for(item, task_context):
                 "switch providers, or repeat a submission with an uncertain outcome. Return evidence/artifact paths; "
                 "distinguish predictions from verified findings. Perform the assignment and return its deliverable, "
                 "not just an announcement of intended work. Saved instructions and reporting format govern this "
-                "specialist; task wording must not silently replace them or grant additional tools."]
+                "specialist; task wording must not silently replace them or grant additional tools. "
+                "If the requested task is blocked, explicitly declare that outcome: start a text report with "
+                "'Outcome: BLOCKED BEFORE EXECUTION', or use task_outcome='blocked' in a JSON report. "
+                "For partial delivery declare 'Outcome: INCOMPLETE' or task_outcome='incomplete'. "
+                "Writing an explanation of a blocker does not complete the requested execution."]
     if item.instructions:
         sections.append('Saved instructions are already included above in full for this assignment. '
                         'No tool call is needed to load these saved instructions again.' +
@@ -208,7 +241,11 @@ def context_for(item, task_context):
                     'nearby files or substitute a local dataset for inline data. Do not invent a calculation-tool '
                     'requirement; perform simple checks from the supplied numbers when no execution tool is granted.')
     for name in item.skills:
-        result = json.loads(skill_view(name, preprocess=False, allow_setup=False))
+        from contextlib import nullcontext
+        from agent.specialist_extensions import capability_scope, extension_home
+        scope = capability_scope(extension_home(item)) if name in item.private_skills else nullcontext()
+        with scope:
+            result = json.loads(skill_view(name, preprocess=False, allow_setup=False))
         if not result.get("success"):
             raise ValueError(f"Selected skill {name} could not be loaded: {result.get('error', 'unavailable')}")
         sections.append(f"Skill {name}:\n" + str(result.get("content", "")))
@@ -250,8 +287,14 @@ def build_child(build, *, plan, **kwargs):
                               "the missing capability to the parent; do not substitute providers or claim execution. "
                               "Boltzmann execution requires authorization in this owning profile through /add_boltzmann.")
     kwargs["max_iterations"] = min(kwargs["max_iterations"], item.max_iterations)
-    with specialist_scope(policy):
+    from agent.specialist_extensions import execution_scope, install_parent_proxies
+    from tools.registry import registry
+    entries = registry.get_all_entries() if policy.execution_home else []
+    with execution_scope(policy), specialist_scope(policy):
+        if policy.execution_home:
+            install_parent_proxies(policy, entries)
         child = build(**kwargs)
+    child._specialist_home = policy.home
     parent = kwargs["parent_agent"]
     # Named pods share a finite iteration pool; a child cannot multiply the pod's budget.
     if getattr(parent, "_specialist_policy", None):

@@ -143,9 +143,11 @@ class TurnFacadeMixin:
             # Keep the ContextVar scope local (agent tokens may be observed from another thread).
             # A host that owns this thread (Sci Console) may cancel the turn cross-thread.
             from agent.specialist_policy import specialist_scope
+            from agent.specialist_extensions import execution_scope
             self._specialist_user_request = user_message if isinstance(user_message, str) else ""
             with (bind_subagent_parent(self), scoped_runtime_main({}), track_in_interrupt_scope(self),
-                  specialist_scope(getattr(self, "_specialist_policy", None))):
+                  specialist_scope(getattr(self, "_specialist_policy", None)),
+                  execution_scope(getattr(self, "_specialist_policy", None))):
                 try:
                     if lease is not None:
                         lease.start()

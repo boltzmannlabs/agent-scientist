@@ -1,15 +1,12 @@
 # nodeapi_helpers.py — Boltzmann NodeAPI helpers + MongoDB logging layer.
 # Token is passed explicitly by the caller.
 
-import base64
 import json
 import os
 import threading
 import time
 import uuid
-import tempfile
 import requests
-from typing import Dict, Any, Optional
 from urllib.parse import urlparse
 from datetime import datetime
 from pathlib import Path
@@ -78,7 +75,7 @@ def _display_name(job_name: str) -> str:
 #   - a static float (seconds, already buffered), or
 #   - a callable (experiment_data: dict) -> float (computes + buffers)
 #
-# Unknown tools fall back to BOLTZMANN_MAX_POLL_SECONDS (default 300 s).
+# Unknown tools fall back to a buffered 300-second waiting window.
 
 def _tool_timeout(job_name: str, experiment_data: dict | None = None) -> float:
     """Return the per-tool poll timeout (seconds) for *job_name*.
@@ -563,20 +560,22 @@ def fetch_status(
     experiment_data: dict | None = None,
     conv_id: str | None = None,
     output_folder: str | None = None,
+    poll_once: bool = False,
 ):
     """Poll a submitted Boltzmann job until it completes or times out.
 
     The poll timeout is determined by (in priority order):
     1. Explicit ``max_wait`` parameter.
     2. Per-tool formula from ``_tool_timeout(collection_name, experiment_data)``.
-    3. ``BOLTZMANN_MAX_POLL_SECONDS`` env var (default 300 s).
+    Unknown tools use the buffered 300-second fallback. ``poll_once`` performs
+    one bounded check for a durable monitor instead of holding a tool call open.
 
     Parameters
     ----------
     experiment_data : dict | None
         Original input payload from submit_request.  Used to compute
         formula-based timeouts (e.g. number of samples / sequences).
-        When omitted the cached copy from ``submit_request`` is tried.
+        When omitted the formula uses its documented default input counts.
     """
     if max_wait is None:
         max_wait = _tool_timeout(str(collection_name), experiment_data)
@@ -619,11 +618,20 @@ def fetch_status(
                     "stage": "status", "status": "unknown", "job_name": collection_name,
                     "doc_id": doc_id, "safe_to_retry": False}
 
-        # This result endpoint also returns real running/failed job bodies with
-        # HTTP 404. Do not confuse them with a missing route or an auth failure.
+        # This endpoint uses 404 for real job bodies too. A recognized lifecycle
+        # and a usable body are required; an arbitrary missing route is not a job.
         reported_status = result.get("status") if isinstance(result, dict) else None
+        identified_job = (isinstance(result, dict)
+                          and result.get("doc_id", result.get("docId")) == doc_id
+                          and result.get("job_name") == collection_name)
+        normalized = reported_status.lower().strip() if isinstance(reported_status, str) else None
+        explicit_absence = identified_job and normalized in {"deleted", "not_found"}
         job_state_on_404 = (response.status_code == 404 and isinstance(reported_status, str)
-                            and reported_status.lower().strip() in {"running", "failed"}
+                            and (normalized in {"pending", "running", "failed"}
+                                 or identified_job and normalized in {
+                                     "error", "cancelled", "canceled", "completed", "success",
+                                     "100%completed", "deleted", "not_found"}))
+        job_state_on_404 = (job_state_on_404
                             and (isinstance(result.get("message"), str) and bool(result["message"].strip())
                                  or isinstance(result.get("info"), dict) and bool(result["info"])))
         if not 200 <= response.status_code < 300 and not job_state_on_404:
@@ -631,8 +639,14 @@ def fetch_status(
             return {**service_error("status", response, active_token),
                     "job_name": collection_name, "doc_id": doc_id}
 
-        if not isinstance(result, dict) or "status" not in result:
+        if not isinstance(result, dict) or not isinstance(reported_status, str) or not reported_status.strip():
             return {"error": "Status response omitted the job status; no completion is confirmed.",
+                    "stage": "status", "status": "unknown", "job_name": collection_name,
+                    "doc_id": doc_id, "safe_to_retry": False}
+
+        if any(key in result and result[key] != expected for key, expected in
+               (("doc_id", doc_id), ("docId", doc_id))):
+            return {"error": "Status response identifies a different job; outcome remains unresolved.",
                     "stage": "status", "status": "unknown", "job_name": collection_name,
                     "doc_id": doc_id, "safe_to_retry": False}
 
@@ -640,6 +654,12 @@ def fetch_status(
         result = service_diagnostics(result, active_token)
         status = str(result["status"]).lower().strip()
         last_result = {**result, "job_name": collection_name, "doc_id": doc_id}
+
+        if explicit_absence:
+            return {**last_result, "stage": "status", "monitor_terminal_confirmed": True,
+                    "safe_to_retry": False,
+                    "message": "The service explicitly identifies this job as deleted/not found. "
+                    "Monitoring stopped; no scientific completion is confirmed and nothing was resubmitted."}
 
         if status in ("completed", "success", "100%completed"):
             last_result["job_terminal_confirmed"] = True
@@ -654,6 +674,9 @@ def fetch_status(
                       "safe_to_retry": False}
             _log_platform_terminal(collection_name, doc_id, "failed", conv_id, active_token)
             return result
+
+        if poll_once:
+            return {**last_result, "status": status, "stage": "status", "safe_to_retry": False}
 
         elapsed = int(time.monotonic() - (deadline - max_wait))
         remaining = int(deadline - time.monotonic())

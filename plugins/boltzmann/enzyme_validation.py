@@ -238,8 +238,7 @@ def validate_joint_files(payload, inventories, report):
 
 def validate_request(check, payload, report):
     workflows = {"random_mutagenesis": validate_mutagenesis, "genzyme": validate_genzyme,
-                 "solublempnn": validate_solublempnn, "motif_scaffolding": validate_scaffolding,
-                 "netsolp": validate_netsolp}
+                 "solublempnn": validate_solublempnn, "motif_scaffolding": validate_scaffolding}
     if check in workflows:
         workflows[check](payload, report)
         return
@@ -346,8 +345,3 @@ def validate_scaffolding(payload, report):
             report.errors.append(f"{field}: a nonblank value is required.")
     if not report.errors:
         report.warnings.append("Native FrameFlow contig interpretation and target/motif compatibility remain unchecked locally.")
-
-
-def validate_netsolp(payload, report):
-    if payload.get("prediction_type") == "US":
-        report.warnings.append("NetSolP combined mode is US in the Node contract but SU in the inspected worker; deployed mode compatibility remains unverified. Do not silently substitute either spelling.")

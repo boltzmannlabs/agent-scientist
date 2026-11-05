@@ -720,6 +720,148 @@ def test_enzyme_upload_enforces_headers_and_profile_scoped_current_rules(tmp_pat
             manager.unload()
 
 
+@pytest.mark.parametrize("mode", ["S", "U", "SU", "US", None], ids=["S", "U", "SU", "US", "omitted"])
+def test_netsolp_upload_and_submission_accept_modes_without_bypassing_profile_checks(
+        tmp_path, monkeypatch, auth_server, mode):
+    """Issue #40: real CSV receipts and auth still gate every supported prediction mode."""
+    state, endpoint = auth_server
+    a, b = tmp_path / "a", tmp_path / "b"
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("SCI_HOME", str(a))
+    monkeypatch.delenv("SCI_BUNDLED_PLUGINS", raising=False)
+    monkeypatch.chdir(tmp_path)
+    with profile(a):
+        manager, module = discover(monkeypatch, endpoint)
+        try:
+            helpers = sys.modules[module.__name__ + ".nodeapi_helpers"]
+            auth = sys.modules[module.__name__ + ".auth"]
+            preflight = sys.modules[module.__name__ + ".preflight"]
+            base = endpoint.removesuffix("/api/get-projects")
+            monkeypatch.setattr(helpers, "_UPLOAD_URL", base + "/upload")
+            monkeypatch.setattr(helpers, "_SUBMIT_URL", base + "/submit")
+            monkeypatch.setattr(module.tools, "time", SimpleNamespace(sleep=lambda _: None))
+            source = tmp_path / "netsolp.csv"
+            state["upload_path"] = "fixture/netsolp.csv"
+            payload = {"input_path": state["upload_path"]}
+            if mode is not None:
+                payload["prediction_type"] = mode
+            original = dict(payload)
+
+            def submit(**kwargs):
+                return json.loads(module.tools.handle_boltzmann_submit(
+                    job_name="Netsolp", experiment_name="fixture-netsolp-mode",
+                    experiment_data=payload, **kwargs))
+
+            save_env_value("BOLTZMANN_API_KEY", "fixture-valid")
+            auth.authorize_saved_key()
+            assert submit()["status"] == "approval_required"  # Unreceipted input remains gated.
+            assert "/submit" not in state["calls"]
+            source.write_text("sequences\nMKT\n", encoding="utf-8")
+            upload_args = {"local_path": str(source), "job_name": "Netsolp",
+                           "input_field": "input_path", "experiment_data": payload}
+            rejected = json.loads(module.tools.handle_boltzmann_upload(
+                **upload_args, allow_partial_validation=True))
+            assert rejected["status"] == "not_started", rejected
+            assert "/upload" not in state["calls"]
+
+            source.write_text("Sequences\nMKT\n", encoding="utf-8")
+            uploaded = json.loads(module.tools.handle_boltzmann_upload(**upload_args))
+            assert uploaded["status"] == "uploaded", uploaded
+            report = preflight.preflight_submission("Netsolp", payload)
+            assert not report.errors and not report.warnings, report.as_dict()
+            assert report.upload_receipt_ids == [uploaded["receipt_id"]]
+
+            state["revoked"] = True
+            assert submit()["authorization_required"]
+            assert "/submit" not in state["calls"]
+            state["revoked"] = False
+            result = submit()  # No partial-validation override.
+            assert result["status"] == "accepted", result
+            assert result["doc_id"] == "fixture-job"
+            assert not result["validation"]["warnings"]
+            assert payload == original == state["submission"]["experimentData"]
+            assert state["calls"].count("/submit") == 1
+
+            with profile(b):
+                assert submit()["authorization_required"]
+                save_env_value("BOLTZMANN_API_KEY", "fixture-valid")
+                auth.authorize_saved_key()
+                assert submit()["status"] == "approval_required"  # No cross-profile receipt reuse.
+            with profile(a):
+                restored = preflight.preflight_submission("Netsolp", payload)
+                assert preflight.decision(restored, False) is None
+                assert restored.upload_receipt_ids == [uploaded["receipt_id"]]
+            assert state["calls"].count("/upload") == state["calls"].count("/submit") == 1
+        finally:
+            manager.unload()
+
+
+def test_monitor_checkpoint_and_continuation_guard_use_the_real_profile_plugin_hooks(tmp_path, monkeypatch, auth_server):
+    from agent.api_request_hooks import ApiRequestHooksMixin
+    from agent.turn_api_request import _fire_pre_api_request_hook
+    from sci_cli.plugins import _dispatch_pre_tool_call_hooks, get_plugin_manager
+
+    state, endpoint = auth_server
+    home = tmp_path / "a"
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("SCI_HOME", str(home))
+    monkeypatch.delenv("SCI_BUNDLED_PLUGINS", raising=False)
+    monkeypatch.chdir(tmp_path)
+    with profile(home):
+        # Use the real singleton: creating an independent inspection manager and
+        # then importing the agent would load a second copy of this plugin.
+        manager = get_plugin_manager()
+        manager.discover_and_load()
+        module = manager._plugins["boltzmann"].module
+        monkeypatch.setattr(sys.modules[module.__name__ + ".nodeapi_helpers"], "_AUTH_CHECK_URL", endpoint)
+        try:
+            assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
+            jobs = sys.modules[module.__name__ + ".job_monitor"]
+            continuation = sys.modules[module.__name__ + ".job_continuation"]
+            monkeypatch.setattr(jobs, "ensure_worker", lambda store: "running")
+
+            class Agent(ApiRequestHooksMixin):
+                session_id = "source"
+                platform = "cli"
+                model = "fixture-model"
+                provider = "custom"
+                base_url = "http://fixture.invalid"
+                api_mode = "chat_completions"
+                max_tokens = 100
+                tools = [{"type": "function", "function": {"name": "boltzmann_status"}}]
+                valid_tool_names = {"boltzmann_status"}
+
+            messages = [{"role": "system", "content": "cached prefix"},
+                        {"role": "user", "content": "Inspect the approved results"}]
+            original = json.dumps(messages)
+            _fire_pre_api_request_hook(Agent(), {"messages": messages, "tools": []}, messages, [],
+                                      messages=messages, original_user_message="Inspect the approved results",
+                                      approx_tokens=30, total_chars=90, retry_count=0, api_call_count=1,
+                                      api_request_id="attempt", api_start_time=0, effective_task_id="task", turn_id="turn")
+            row = jobs.observe("boltzmann_submit", {},
+                               {"status": "accepted", "job_name": "Boltz2", "doc_id": "fixture"}, session_id="source")
+            store = jobs.JobStore()
+            assert store.get(row["checkpoint"])["allowed_tools"] == ["boltzmann_status"]
+            store.update(row["id"], state="success")
+
+            def run(data, rows):
+                blocked, _ = _dispatch_pre_tool_call_hooks("terminal", {})
+                assert "frozen permissions" in blocked
+                allowed, _ = _dispatch_pre_tool_call_hooks("boltzmann_status", {})
+                assert allowed is None
+                return {"ok": True, "response": "Controlled continuation verified"}
+
+            continuation.continue_ready(store, runner=run)
+            result = store.get(row["id"])
+            assert result["continuation"] == "reported", result
+            assert result["continuation_result"]["ok"]
+            assert _dispatch_pre_tool_call_hooks("terminal", {})[0] is None
+            assert json.dumps(messages) == original
+            assert "/submit" not in state["calls"]
+        finally:
+            manager.unload()
+
+
 def test_service_diagnostics_are_safe_and_status_failures_do_not_resubmit(tmp_path, monkeypatch, auth_server):
     state, endpoint = auth_server
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -951,7 +1093,7 @@ def test_status_preserves_nested_worker_diagnostics_and_running_messages(tmp_pat
                 state["result_override"] = {"status": "running", "message": "job is still in execution"}
                 running = json.loads(module.tools.handle_boltzmann_status(job_name="fpocket", doc_id="fixture-job"))
                 assert running["status"] == "running" and running["message"] == "job is still in execution"
-                assert running["timeout"] and "error" not in running and "info" not in running
+                assert not running.get("timeout") and "error" not in running and "info" not in running
                 assert "http_status" not in running and "status_code" not in running
             assert "/submit" not in state["calls"]
         finally:

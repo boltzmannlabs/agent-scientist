@@ -36,7 +36,8 @@ SCHEMAS = [
         "name": "boltzmann_status",
         "description": (
             "Poll an existing Boltzmann platform-tools job. Use the exact job_name and doc_id "
-            "returned by boltzmann_submit; polling never creates another job."
+            "returned by boltzmann_submit. One bounded check returns promptly; durable monitoring "
+            "continues pending/running jobs without an overall queue deadline. Polling never creates another job."
         ),
         "input_schema": {
             "type": "object",

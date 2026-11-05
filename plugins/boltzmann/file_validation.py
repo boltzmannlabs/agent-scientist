@@ -142,7 +142,8 @@ def _csv(data, rule, payload, report):
     checks = {"number": _finite, "binary": lambda s: s in {"0", "1"},
               "integer": lambda s: _finite(s) and float(s).is_integer()}
     for column, kind in values.items():
-        if not isinstance(kind, dict) and kind not in checks and column not in semantics:
+        if (not isinstance(kind, dict) and kind not in checks and kind != "smiles"
+                and column not in semantics):
             report.warnings.append(f"{column}: {kind} semantics are not verified by the generic CSV parser.")
     count = 0
     for row in reader:
@@ -158,6 +159,11 @@ def _csv(data, rule, payload, report):
             if isinstance(kind, dict):
                 # Reuse canonical scalar-schema checks; never coerce or rewrite cells.
                 validate_schema(value, kind, report, f"CSV row {count + 1}: {column}")
+            elif kind == "smiles" and column not in semantics:
+                # Contract files use this shorthand for molecule semantics. Route it
+                # through the same optional RDKit check as semantic_values so a
+                # supported check is not incorrectly reported as generic-only.
+                validate_molecule(value, f"CSV row {count + 1}: {column}", report)
             else:
                 check = checks.get(kind) if isinstance(kind, str) else None
                 if check and not check(value):

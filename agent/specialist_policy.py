@@ -21,6 +21,10 @@ class SpecialistPolicy:
     deadline: float
     unavailable_tools: frozenset[str] = frozenset()
     read_paths: tuple[str, ...] | None = None
+    execution_home: str = ''
+    private_tools: frozenset[str] = frozenset()
+    private_skills: frozenset[str] = frozenset()
+    private_toolsets: tuple[str, ...] = ()
 
 
 @contextmanager
@@ -46,7 +50,7 @@ def check_call(name, args):
     if policy is None:
         return None
     from sci_constants import get_sci_home
-    if str(get_sci_home().resolve()) != policy.home:
+    if str(get_sci_home().resolve()) not in {policy.home, policy.execution_home}:
         return "Specialist profile scope changed; this tool call was stopped."
     if time.monotonic() >= policy.deadline:
         return "Specialist runtime limit reached; no further tool was executed."

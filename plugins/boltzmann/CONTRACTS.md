@@ -52,6 +52,8 @@ RDKit are declared plugin dependencies, installed only through the normal PM
 dependency-consent flow; they participate in the shared environment's dependency
 union. Discovery does not import them. If unavailable, the exact unchecked
 operation is reported, without installing packages or claiming validation.
+CSV contract values marked `smiles` use that same RDKit parser instead of being
+reported as unchecked by the generic CSV value parser.
 
 Structure checks cover models, selected chains/residues/atoms, finite coordinates,
 documented backbone/size rules and bounded archive discovery. Catalytic Geometry
@@ -100,11 +102,21 @@ members; this is distinct from MolProbity's candidate-local parsing failures.
 Random mutagenesis indices are zero-based **protected** positions, not positions
 to mutate. GENzyme shares the molecule parser without inheriting EnzyControl's
 128-atom cap. FrameFlow native contig compatibility remains explicitly unchecked.
-NetSolP's `US` Node versus `SU` worker combined-mode mismatch is disclosed only
-when selected; neither spelling is silently substituted. Missing current worker
-sources and unverified deployment behavior are not promoted to tested/verified.
+NetSolP accepts only uppercase `S` (solubility), `U` (usability), `SU` (both),
+and `US` (the backward-compatible combined-mode alias). The connector validates
+and forwards either combined spelling unchanged; the corrected worker normalizes
+`US` to `SU`. Omitting `prediction_type` preserves the service default `S`.
+These modes alone do not require best-effort validation consent. Authorization,
+file validation and current-profile upload receipt checks remain enforced; unrelated
+validation warnings still require explicit consent. The older mode mismatch in
+`contract_sources/` is historical evidence, not a current execution restriction.
+Controlled connector tests do not establish hosted worker rollout or live
+scientific execution, neither of which was verified for this change.
 
 ## Enzyme CSV headers and credit-calculation errors
+
+For queued jobs, durable monitoring, status classification, stop/resume and
+workflow-continuation boundaries, see [MONITORING.md](MONITORING.md).
 
 For `Enzymes`, prepare CSV files with exact `Seq_id,Sequences` headers, matching
 the frontend's `ENZ_PROP` credit checker. `Sequence_ID` is not a supported alias.

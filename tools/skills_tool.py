@@ -582,6 +582,13 @@ def skill_view(
     slash/preload callers render the message themselves. ``allow_setup=False`` reads
     instructions without host dependency installation or credential setup."""
     from agent.specialist_policy import current_policy, check_call
+    policy = current_policy()
+    if policy is not None and policy.execution_home and name not in policy.private_skills:
+        from sci_constants import get_sci_home
+        if str(get_sci_home().resolve()) != policy.home:
+            from agent.specialist_extensions import capability_scope
+            with capability_scope(policy.home):
+                return skill_view(name, file_path, task_id, preprocess, allow_setup=allow_setup)
     if current_policy() is not None:
         if error := check_call("skill_view", {"name": name}):
             return _fail(error)

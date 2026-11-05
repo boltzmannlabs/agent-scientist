@@ -208,6 +208,10 @@ def _build_child_agent(
         goal, context, workspace_path=_resolve_workspace_hint(parent_agent), role=effective_role,
         max_spawn_depth=max_spawn, child_depth=child_depth,
     )
+    if policy is not None:
+        child_prompt += (f'\nAuthoritative subagent run ID: {subagent_id}. If reporting a subagent run ID, '
+                         'use this exact value. Report/file labels and remote scientific job IDs are separate; '
+                         'do not invent another subagent run identifier.')
     parent_api_key = getattr(parent_agent, "api_key", None)
     if (not parent_api_key) and hasattr(parent_agent, "_client_kwargs"):
         parent_api_key = parent_agent._client_kwargs.get("api_key")
