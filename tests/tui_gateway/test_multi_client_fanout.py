@@ -6,6 +6,7 @@ import queue
 import socket
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack, suppress
 
 import pytest
@@ -158,6 +159,91 @@ def _session(transport):
     return dict(transport=transport, agent=None, session_key="fanout-invariant",
                 history=[], history_lock=threading.Lock(), history_version=0,
                 running=False, attached_images=[])
+
+
+@pytest.mark.parametrize("second_source", ["ordinary", "connector"])
+def test_sequence_order_matches_delivery_without_blocking_other_sessions(monkeypatch, second_source):
+    first_entered, release_first = threading.Event(), threading.Event()
+    second_started, second_entered = threading.Event(), threading.Event()
+
+    class GatedPeer(RecordingTransport):
+        def write(self, obj):
+            if (obj["params"].get("payload") or {}).get("text") == "first":
+                first_entered.set()
+                assert release_first.wait(timeout=20)
+            else:
+                second_entered.set()
+            return super().write(obj)
+
+    peer, unrelated = GatedPeer(), RecordingTransport()
+    sid = f"ordered-{second_source}"
+    monkeypatch.setitem(server._sessions, sid, _session(peer))
+    monkeypatch.setitem(server._sessions, sid + "-other", _session(unrelated))
+
+    def second_event():
+        second_started.set()
+        if second_source == "connector":
+            server._emit_tool_lifecycle("tool.start", sid, "manage_connections", {},
+                                       {"tool_id": "fixture", "name": "manage_connections", "args": {}})
+        else:
+            server._emit("message.delta", sid, {"text": "second"})
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        first = pool.submit(server._emit, "message.delta", sid, {"text": "first"})
+        try:
+            assert first_entered.wait(timeout=5)
+            second = pool.submit(second_event)
+            assert second_started.wait(timeout=5)
+            other = pool.submit(server._emit, "message.delta", sid + "-other", {"text": "independent"})
+            assert other.result(timeout=5)
+            # Give the competing writer a chance to overtake the gated frame. The assertion
+            # below checks actual delivery order, rather than a wall-clock scheduling bound.
+            second_entered.wait(timeout=2)
+        finally:
+            release_first.set()
+        assert first.result(timeout=5)
+        second.result(timeout=5)
+
+    seqs = [frame["params"]["seq"] for frame in peer.frames]
+    assert len(seqs) == 2 and seqs == sorted(seqs)
+    assert unrelated.frames[0]["params"]["payload"]["text"] == "independent"
+
+
+def test_single_ws_delivery_wait_leaves_the_event_loop_free_to_emit(monkeypatch):
+    from tui_gateway import ws
+
+    monkeypatch.setattr(ws, "_WS_WRITE_TIMEOUT_S", 20)
+    entered = threading.Event()
+    release = asyncio.Event()
+    with ExitStack() as stack:
+        client = SocketClient(stack)
+        monkeypatch.setitem(server._sessions, "queued-event", _session(client))
+        send = client.send_text
+
+        async def gated_send(payload):
+            entered.set()
+            await release.wait()
+            await send(payload)
+
+        monkeypatch.setattr(client, "send_text", gated_send)
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            emit = pool.submit(server._emit, "tool.start", "queued-event",
+                               {"tool_id": "fixture", "name": "terminal", "args": {}})
+            try:
+                assert entered.wait(timeout=5)
+
+                async def emit_from_loop():
+                    server._emit("tool.start", "queued-event",
+                                 {"tool_id": "second", "name": "terminal", "args": {}})
+                    release.set()
+
+                asyncio.run_coroutine_threadsafe(emit_from_loop(), client._loop).result(timeout=5)
+                assert emit.result(timeout=5)
+            finally:
+                client._loop.call_soon_threadsafe(release.set)
+        frames = [client.receive(), client.receive()]
+        assert [frame["params"]["payload"]["tool_id"] for frame in frames] == ["fixture", "second"]
+        assert frames[0]["params"]["seq"] < frames[1]["params"]["seq"]
 
 
 @pytest.mark.parametrize("attachment", ["direct", "flattened"])

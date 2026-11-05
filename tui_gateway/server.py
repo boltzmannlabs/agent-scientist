@@ -655,19 +655,22 @@ def write_json(obj: dict) -> bool:
     session's transport (async events reach the owner even from threads with no contextvar binding);
     (2) the context-bound transport (:func:`dispatch`); (3) module stdio (tests monkey-patch ``_real_stdout``).
     Every event frame gets a per-session monotonic ``seq`` + replay-ring entry so ``session.events.since`` can resume."""
-    from tui_gateway.event_replay import _stamp_event
+    from tui_gateway.event_replay import ordered_event_delivery
     from tui_gateway.hosted_room_member_activity import project_room_member_activity
-    _stamp_event(obj)
-    params = obj.get("params")
-    if obj.get("method") == "event" or (isinstance(obj.get("id"), str) and "method" in obj):
-        # Event notifications AND server→client requests carry ``params.session_id``; both route to the
-        # owning session's transport. A room member's hidden session has no transport: its frames would
-        # die at stdio below.
-        project_room_member_activity(obj, _sessions)
-        sid = ((params or {}).get("session_id")) if isinstance(params, dict) else ""
-        if sid and (t := (_sessions.get(sid) or {}).get("transport")) is not None:
-            return t.write(obj)
-    return (current_transport() or _stdio_transport).write(obj)
+    from tui_gateway.transport import start_frame_write
+    target = current_transport() or _stdio_transport
+    with ordered_event_delivery(obj):
+        params = obj.get("params")
+        if obj.get("method") == "event" or (isinstance(obj.get("id"), str) and "method" in obj):
+            # Event notifications AND server→client requests carry ``params.session_id``; both route to the
+            # owning session's transport. A room member's hidden session has no transport: its frames would
+            # die at stdio below.
+            project_room_member_activity(obj, _sessions)
+            sid = ((params or {}).get("session_id")) if isinstance(params, dict) else ""
+            if sid and (t := (_sessions.get(sid) or {}).get("transport")) is not None:
+                target = t
+        finish = start_frame_write(target, obj)
+    return finish()
 
 
 def _event_frame(event: str, sid: str, payload: dict | None = None) -> dict:
