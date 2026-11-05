@@ -1,6 +1,81 @@
 """Contract coverage and preflight behavior; no scientific service is contacted."""
 
 
+def test_netsolp_upload_accepts_sequences_csv_but_never_uploads_fasta(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from plugins.boltzmann import preflight
+
+    monkeypatch.setattr(preflight, "current_key", lambda: "fixture-key")
+    uploaded = []
+
+    def upload(snapshot):
+        uploaded.append(Path(snapshot).read_bytes())
+        return "fixture/netsolp.csv"
+
+    cases = [
+        ("valid.csv", b"Sequences\nACDE\n", True),
+        ("named.csv", b"Seq_id,Sequences\nreference,ACDE\n", True),
+        ("input.fasta", b">reference\nACDE\n", False),
+        ("input.fa", b">reference\nACDE\n", False),
+        ("renamed.csv", b">reference\nACDE\n", False),
+        ("singular.csv", b"Sequence\nACDE\n", False),
+    ]
+    for filename, content, valid in cases:
+        source = tmp_path / filename
+        source.write_bytes(content)
+        before = len(uploaded)
+        result = preflight.validated_upload(
+            str(source), "Netsolp", "input_path", {"prediction_type": "S"}, True, upload,
+        )
+        assert source.read_bytes() == content
+        if valid:
+            assert result["status"] == "uploaded", result
+            assert uploaded[before:] == [content]
+            report = preflight.preflight_submission(
+                "Netsolp", {"input_path": result["s3_path"], "prediction_type": "S"},
+            )
+            assert not report.errors and not report.warnings, report.as_dict()
+        else:
+            assert result["status"] == "not_started", result
+            assert result["stage"] == "validation"
+            assert len(uploaded) == before
+
+
+def test_netsolp_submission_blocks_fasta_references_even_with_partial_approval(monkeypatch):
+    import json
+    from types import SimpleNamespace
+
+    from plugins.boltzmann import nodeapi_helpers, preflight, tools
+
+    sent = []
+
+    def post(url, **kwargs):
+        assert url == nodeapi_helpers._SUBMIT_URL
+        sent.append(kwargs["json"])
+        return SimpleNamespace(status_code=200, json=lambda: {"success": True, "docId": "fixture-job"})
+
+    monkeypatch.setattr(tools, "require_authorized", lambda: None)
+    monkeypatch.setattr(tools, "current_key", lambda: "fixture-key")
+    monkeypatch.setattr(preflight, "current_key", lambda: "fixture-key")
+    monkeypatch.setattr(nodeapi_helpers.requests, "post", post)
+    for suffix, valid in (("csv", True), ("fasta", False), ("fa", False)):
+        payload = {"input_path": "fixture/netsolp." + suffix, "prediction_type": "S"}
+        before = len(sent)
+        result = json.loads(tools.handle_boltzmann_submit(
+            job_name="Netsolp", experiment_name="fixture-netsolp", experiment_data=payload,
+            allow_partial_validation=True,
+        ))
+        if valid:
+            assert result["status"] == "accepted", result
+            assert sent[before:] == [{"job_name": "Netsolp", "experimentName": "fixture-netsolp",
+                                      "experimentData": payload}]
+        else:
+            assert result["status"] == "not_started", result
+            assert result["stage"] == "validation"
+            assert len(sent) == before
+
+
 def test_diagnostic_collection_resolution_requires_exact_documented_mapping():
     import csv
 

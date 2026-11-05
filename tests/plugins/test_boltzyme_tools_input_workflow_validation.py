@@ -210,22 +210,6 @@ def test_generic_backbone_accepts_mse_and_repeated_chain_sections(tmp_path):
         assert not report.errors, report.as_dict()
 
 
-def test_canonical_netsolp_fasta_rejects_duplicate_identifiers(tmp_path):
-    from plugins.boltzmann.contracts import ContractStore
-    from plugins.boltzmann.file_validation import validate_file
-
-    rule = ContractStore().file_rule("Netsolp", "input_path")
-    path = tmp_path / "input.fasta"
-    for second_id, valid in (("other", True), ("same", False)):
-        contents = f">same\nMKT\n>{second_id}\nACD\n".encode()
-        path.write_bytes(contents)
-        report = validate_file(path, rule, {})
-        assert bool(report.errors) is not valid, report.as_dict()
-        if not valid:
-            assert any("duplicate" in error for error in report.errors)
-        assert path.read_bytes() == contents
-
-
 def test_public_structure_file_validation_reports_corrupt_gzip(tmp_path):
     import gzip
 

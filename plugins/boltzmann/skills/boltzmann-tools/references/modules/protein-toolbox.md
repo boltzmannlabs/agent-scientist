@@ -604,7 +604,7 @@ Fields below belong in `experiment_data`. The connector generates `experiment_na
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_path` | string | yes | file | S3 path to CSV or FASTA (upload first) |
+| `input_path` | string | yes | file | Uploaded CSV storage path with the exact Sequences column. FASTA is not supported by the platform submission path. |
 | `prediction_type` | string | no / mode-dependent | value | `"S"` (solubility), `"U"` (usability), `"US"` (both). Default: `"S"` |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
@@ -618,7 +618,7 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "input_path": {
-      "description": "S3 path to CSV or FASTA (upload first)",
+      "description": "Uploaded CSV storage path with the exact Sequences column. FASTA is not supported by the platform submission path.",
       "type": "string",
       "x-input-kind": "file"
     },
@@ -661,26 +661,19 @@ For mode-dependent fields, include the fields required by the selected schema br
 {
   "input_path": {
     "formats": [
-      "csv",
-      "fasta"
+      "csv"
     ],
     "header_case_sensitive": true,
     "columns": [
       "Sequences"
     ],
-    "notes": "Use exact plural Sequences for the Node/worker intersection. Sequence_ID is optional metadata, not a required Node column in the recorded all-missing-column diagnostic; the worker also permits an absent identifier. No corrected-header live execution was performed.",
+    "notes": "CSV only, with exact plural Sequences, matching the frontend/Node credit-check path. Record identifiers are optional metadata. The native worker's FASTA support is not available through this platform path. If conversion is needed, create and validate a separate CSV preserving identifiers and sequences; never just rename FASTA to .csv or overwrite the original. No new live execution is claimed.",
     "semantic_values": {
       "Sequences": {
         "alphabet": "ACDEFGHIKLMNPQRSTVWYXBZUO.-",
         "whitespace": "preserve",
         "case_sensitive": true
       }
-    },
-    "sequence_validation": {
-      "alphabet": "ACDEFGHIKLMNPQRSTVWYXBZUO.-",
-      "whitespace": "preserve",
-      "case_sensitive": true,
-      "unique_ids": true
     },
     "forbidden_columns": [
       "sequence",
@@ -1914,6 +1907,7 @@ The optional ZIP-root ligand manifest shape is canonical in
 ### Execution notices
 
 - In measurement_only mode the connector ignores supplied quality_thresholds before validation/submission, matching the worker. In validation, a nonempty supported object or uploaded JSON path is required.
+- For a confirmed terminal failure specifically caused by missing ligand restraints or unknown ligand atom types, follow molprobity-ligand-bundles.md#recovery-after-a-missing-ligand-dictionary-failure. With explicit user pre-authorization covering recovery credits, prepare and validate a reviewed custom-ligand ZIP and submit one separately named replacement without asking for cost approval again. Do not retry pending/unknown outcomes, invent ligand chemistry, or bypass authorization and input-validation requirements.
 - The latest recorded reference submission was accepted but remained pending without artifacts. This is not completed validation; do not duplicate a pending job.
 
 ### Recorded payload example
