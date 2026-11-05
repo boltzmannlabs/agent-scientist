@@ -1186,26 +1186,19 @@
       "files": {
         "input_path": {
           "formats": [
-            "csv",
-            "fasta"
+            "csv"
           ],
           "header_case_sensitive": true,
           "columns": [
             "Sequences"
           ],
-          "notes": "Use exact plural Sequences for the Node/worker intersection. Sequence_ID is optional metadata, not a required Node column in the recorded all-missing-column diagnostic; the worker also permits an absent identifier. No corrected-header live execution was performed.",
+          "notes": "CSV only, with exact plural Sequences, matching the frontend/Node credit-check path. Record identifiers are optional metadata. The native worker's FASTA support is not available through this platform path. If conversion is needed, create and validate a separate CSV preserving identifiers and sequences; never just rename FASTA to .csv or overwrite the original. No new live execution is claimed.",
           "semantic_values": {
             "Sequences": {
               "alphabet": "ACDEFGHIKLMNPQRSTVWYXBZUO.-",
               "whitespace": "preserve",
               "case_sensitive": true
             }
-          },
-          "sequence_validation": {
-            "alphabet": "ACDEFGHIKLMNPQRSTVWYXBZUO.-",
-            "whitespace": "preserve",
-            "case_sensitive": true,
-            "unique_ids": true
           },
           "forbidden_columns": [
             "sequence",
