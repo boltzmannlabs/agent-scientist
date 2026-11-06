@@ -3,7 +3,7 @@
 Tracking issue: [agent-scientist#33](https://github.com/boltzmannlabs/agent-scientist/issues/33)
 Original research tracking: [science-environments#89](https://github.com/boltzmannlabs/science-environments/issues/89)
 Related environment issue: https://github.com/boltzmannlabs/science-environments/issues/46
-Status: Proposed
+Status: Local development v1 runnable; scientific advantage unproven
 
 ## Objective
 
@@ -30,9 +30,39 @@ across comparisons.
 Assess task success, scientific decision quality, redundant evaluations,
 completion time and total parent-plus-child reasoning cost.
 
-Scientific improvement remains untested.
+No scientific improvement has been demonstrated. The current first-decision
+main-agent and specialist controls chose the same action; a full matched workflow
+comparison remains pending.
 
 ## Daily Progress
+
+### 2026-11-04
+
+**Completed**
+- Implemented one skill-loaded, host-mediated optimization investigator with
+  exact parent/library choices, persistent state and bounded execution.
+- Qualified actual native model reasoning and original-connector execution.
+- Completed a development campaign with two new CReM jobs plus one shared prior:
+  790 distinct structures including the reference and zero qualifying candidates.
+  Stopped at the allowance without changing constraints.
+- Compared one frozen first decision with a task-guided main-agent control;
+  both chose the same action. This does not establish specialist benefit.
+- Reduced identifier repetition in model context while retaining scientific
+  records and checking canonical restoration.
+- Prepared a fresh private user demonstration without launching its new jobs.
+
+**Next**
+- Observe the user's bounded example run and examine the actual decision traces.
+- Identify decisions that outperform the simple policy before claiming specialist
+  value; then run a matched full-workflow comparison.
+
+**Open Questions**
+- Can a specialized search policy improve joint constraint satisfaction under
+  matched scientific and reasoning budgets?
+- Which property-score units and exact provider model revision apply?
+- What backend prediction work and costs occur within each generation job?
+
+See the [current qualification report](../results/optimization-v1-validation.md).
 
 ### 2026-11-02
 

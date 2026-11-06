@@ -2,9 +2,32 @@
 
 Research and proposed evaluation of a specialist subagent for small-molecule optimization in Agent Scientist.
 
-The goal is to identify a useful scientific decision that a specialist can improve, while retaining the native agent's tools and the lead-optimization environment's evidence/assessment responsibilities. The offline baseline, context reference, local saved-specialist bundle and conditional pilot runner are implemented. Actual LLM reasoning, scientific advantage and real-profile deployment remain unvalidated; no new prediction model is claimed.
+The goal is to identify a useful scientific decision that a specialist can improve, while retaining the native agent's tools and the lead-optimization environment's evidence/assessment responsibilities. A bounded host-mediated optimization specialist now has actual native-model and connector execution evidence. The prompt-entry plugin and saved specialist are installed in the local CLI profile; native discovery passed, while natural-prompt routing and scientific advantage still need user evaluation. No new prediction model is claimed.
 
-## Current work — 3 November 2026
+## Current work — 4 November 2026
+
+The [development workflow](workflow/README.md) implements one CReM investigation:
+the specialist chooses a parent and fragment-source library, the owning host
+validates the request and uses the original connector, and the environment retains
+results for the next decision. The optimization skill and CReM reference are
+actually injected into the named specialist. Private state supports bounded
+execution and resume. The profile-local entry plugin is installed for testing;
+Agent Scientist source and Git history were not changed.
+
+The [main-agent entry instructions](integration/README.md) explain the prompt or
+Markdown-task flow and provide the exact task file for a first test. The native
+plugin is installed in the local CLI profile; open a new conversation to load its
+saved-specialist snapshot.
+
+The [current validation report](results/optimization-v1-validation.md) separates
+software checks, actual model reasoning, live scientific jobs and decision controls.
+The development campaign stopped after three generation jobs including one shared
+prior batch: **790 distinct structures including the reference, zero qualifying
+candidates**. A paired first-decision control chose the same action with and
+without the specialist. This is working execution evidence, not evidence that the
+specialist improves optimization.
+
+## Historical work — 3 November 2026
 
 End-of-day progress is recorded in the [3 November work summary](research/progress-2026-11-03.md).
 The final implementation has 27 passing portable checks, an explicit property-model

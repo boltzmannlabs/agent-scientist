@@ -1,0 +1,7 @@
+name: smallmol-optimization
+version: "0.1.0"
+description: Profile-local bridge for bounded small-molecule investigations
+manifest_version: 2
+api_version: 1
+provides_tools:
+  - smallmol_campaign

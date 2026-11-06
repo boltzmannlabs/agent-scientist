@@ -1,5 +1,14 @@
 # Validation evidence
 
+- [4 November optimization v1 qualification](optimization-v1-validation.md): actual
+  skill-loaded reasoning, bounded host-mediated live campaign, paired decision
+  controls, context measurements and explicit absence of demonstrated scientific gain.
+- [Current qualification record](optimization-v1-validation.json) and
+  [SDK admission XML](optimization-v1-native-gate-tests.xml): portable checks and
+  source identities, with separate native middleware evidence.
+- [Main-agent entry canary](main-entry-native-tests.xml): one SDK harness test of
+  real profile-scoped plugin discovery, saved-specialist catalog/resolution,
+  skill loading and bridge dispatch with fixture state only.
 - [Property-pilot publication check](pilot-property-validation-20261104.json):
   27 portable checks repeated on 4 November against the implementation developed
   on 3 November; current source hashes and separately dated native canary evidence.
@@ -41,5 +50,6 @@ The earlier combined checks are software-mechanics and local structure-intake
 results. No candidate generator, property predictor, scientific service or benchmark
 campaign ran in those combined checks. Later live qualifications are described
 separately in the dated progress summary. Native
-integration uses a separate loopback fixture; actual LLM reasoning is not tested.
+integration in that historical record uses a separate loopback fixture. Actual
+LLM reasoning and later live execution are covered in the optimization v1 report.
 Artificial outcomes do not establish molecular-discovery performance.

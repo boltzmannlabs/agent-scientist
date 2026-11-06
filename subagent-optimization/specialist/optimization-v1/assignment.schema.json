@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:smallmol:optimization:assignment:v1",
+  "title": "Small-molecule optimization episode assignment",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "assignment_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "campaign_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "episode_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "task_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "evidence_snapshot_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "objective_config_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "task": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Actual complete fixed task, including original reference, objective values/methods and success/parent rules; a digest alone is insufficient."
+    },
+    "capability_contract": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Host-supplied current canonical allowed job/request/file contract and approved operation identities. Tool names alone are not payload authority."
+    },
+    "helper_summaries": {
+      "type": "object",
+      "description": "Actual host-calculated candidate values, constraints/trade-offs, action reference and evidence-access limitations; not fabricated by the child."
+    },
+    "parent_options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "form_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "representation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "admissible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "candidate_id",
+          "form_id",
+          "representation",
+          "admissible"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "library_options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "library_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "local_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "admitted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "library_id",
+          "content_sha256",
+          "local_path",
+          "admitted"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "prior_actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "minProperties": 1
+      }
+    },
+    "pending_jobs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "job_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "doc_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "receipt_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "job_name",
+          "status"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "doc_id"
+            ],
+            "properties": {
+              "doc_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "required": [
+              "receipt_id"
+            ]
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    "resources": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Cumulative allowance, observed usage and unknown costs. Missing/null values are not zero or an enforced budget."
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "schema_version",
+    "assignment_id",
+    "campaign_id",
+    "episode_id",
+    "input_digest",
+    "task_digest",
+    "evidence_snapshot_digest",
+    "objective_config_digest",
+    "task",
+    "capability_contract",
+    "helper_summaries",
+    "parent_options",
+    "library_options",
+    "prior_actions",
+    "pending_jobs",
+    "resources",
+    "limitations"
+  ],
+  "additionalProperties": false
+}

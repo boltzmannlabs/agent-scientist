@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-11-04T10:19:39.357441+00:00",
+  "scope": "local main-agent prompt entry and bounded CReM Lipophilicity task; not a scientific superiority qualification",
+  "portable_tests": {
+    "modules": [
+      "workflow.test_search",
+      "workflow.test_runtime_launch",
+      "workflow.test_native_episode",
+      "workflow.test_identifiers",
+      "workflow.test_session",
+      "workflow.test_admission",
+      "workflow.test_connector_process",
+      "workflow.test_controller",
+      "workflow.test_baseline_episode",
+      "workflow.test_run",
+      "workflow.test_delegated_bridge",
+      "integration.test_plugin"
+    ],
+    "tests": 112,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "python": "3.13.7",
+    "runner": "python3 -B -m unittest -q workflow.test_search workflow.test_runtime_launch workflow.test_native_episode workflow.test_identifiers workflow.test_session workflow.test_admission workflow.test_connector_process workflow.test_controller workflow.test_baseline_episode workflow.test_run workflow.test_delegated_bridge integration.test_plugin"
+  },
+  "sdk_canaries": {
+    "required_harness": "/home/boltzmann13/agent-scientist/scripts/run_tests.sh",
+    "admission": {
+      "xml": "optimization-v1-native-gate-tests.xml",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "main_agent_entry": {
+      "xml": "main-entry-native-tests.xml",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "real_profile_plugin_discovery": true,
+      "canned_model_inference": false,
+      "scientific_submission": false
+    }
+  },
+  "profile_install": {
+    "owner_home": "/home/boltzmann13/.sci",
+    "plugin": "/home/boltzmann13/.sci/plugins/smallmol-optimization",
+    "specialist": "smallmol-investigation",
+    "revision": "6a87bb47f42c47fd87df8b6d5f724b5e",
+    "bridge_tool_available": true,
+    "credentials_copied": false,
+    "scientific_jobs_submitted": 0
+  },
+  "scientific_development_run": {
+    "generation_jobs_including_shared": 3,
+    "new_generation_jobs": 2,
+    "distinct_structures_including_reference": 790,
+    "qualified_candidates": 0,
+    "objective_achieved": false,
+    "stopped_at_submission_allowance": true,
+    "backend_oracle_work": "unknown"
+  },
+  "first_decision_control": {
+    "actual_model_calls_each": 1,
+    "same_frozen_evidence": true,
+    "same_action_chosen": true,
+    "scientific_jobs_in_control": 0,
+    "specialist_advantage_demonstrated": false
+  },
+  "source_sha256": {
+    "integration/README.md": "ecd09c03dd061d83116f2209e66685d0f79facecdfa620ef9f1fbbd0a07ba153",
+    "integration/definition.json": "dcd03cacb57a9b5a508ad31dca472d512c4d5018511a3c409367c8ecf38a689f",
+    "integration/install.py": "5230cc58b189698cb25fe94035687b2c39f1520abcaffade4a23cb49b66cd3b7",
+    "integration/plugin/__init__.py": "44b61e54dee97e4d644a0b6d72bea5ca8015a2cbcbd9000ccf5dd93b6213bd01",
+    "integration/plugin/plugin.yaml": "79d415778f94865f02806eee89f6ee70288a7bf43d904862d82daab5b63ab2b4",
+    "integration/skills/smallmol-routing/SKILL.md": "2b83976d74f5e7bf62a0e2043df08cc616d8d92359c23e72a45500431f2aa87c",
+    "integration/test_native_entry.py": "b60db1a99d514e28294a146961e50d692e65277965ccb04bd193cb52f733d297",
+    "integration/test_plugin.py": "9af6b5f17252842830c6b657e3bd26e737146b7da84643c7c4c44c3628977948",
+    "specialist/optimization-v1/README.md": "a516140f7ef4b88da66a0991dd24a78cf5938e43090bd1e595f45c18d8e5848c",
+    "specialist/optimization-v1/assignment.schema.json": "e56fedc7f5769f0a9b33de0b9a0f3f415d60446b58df0269fa53af6255c7d321",
+    "specialist/optimization-v1/definition.json": "07472eee943ca46ae8129b28a32c6db2e10ab6fc575f8115cdead10a72ed127d",
+    "specialist/optimization-v1/outcome.schema.json": "1d2a77816e8b1a230eb3c4977099696e6725fcb02b4e8a4206dc4eeb236d4797",
+    "specialist/optimization-v1/skills/smallmol-optimization/SKILL.md": "453f6a9bc9a36d278b6f83249c1bed42049210f46e72339e40fb888064110210",
+    "specialist/optimization-v1/skills/smallmol-optimization/references/crem.md": "c71038642a7de02cd2825a350a16ed3b31ea897cfed54feca2528e1d24d06a6e",
+    "specialist/optimization-v1/skills/smallmol-optimization/references/evidence-and-resume.md": "cb3c0e418cb38974416932b7c0f7a5944cda63473833c0ca7a5ef9d63edf4d35",
+    "specialist/optimization-v1/skills/smallmol-optimization/references/main-agent-bridge.md": "a2c6e0a5b1e1735c68c9ffb4d5abb00242ebd322d877c587ee9d671734927b47",
+    "specialist/optimization-v1/skills/smallmol-optimization/references/sources.md": "5cd2babe38d88492df25c07424d0292a189bc9853cc8777623c32cfc02eb8fde",
+    "workflow/admission.py": "e8882a34d861f5a597c939e954abff0541ecb0e93dcda8a875fa70314b998d63",
+    "workflow/baseline_episode.py": "b4ef4c8c0ee9a7f93e8fc7673d5ae92be9737819bf6280b8aa6b4488464a98ec",
+    "workflow/connector_process.py": "6761b679e0e24dba61d4f1091864671fc769257cb6c288450ac6fbf06e2db1ff",
+    "workflow/context.py": "13907ccd6a6a7dcde1c77f92defc3b05273a3da3db8904ad76d283bba4648d0a",
+    "workflow/controller.py": "432f8be4cedd240b7fb0b6e09b74992a5b60594351d326abe7f4435b5e024437",
+    "workflow/delegated_bridge.py": "acb2d155c04afac0ba4c215fe3b5ab3ada6b4c3eee28b612cdfb6f88e2b873c7",
+    "workflow/identifiers.py": "09ec10feba44ede4deac6f7ff56694c124bf638c67c1c0998332a63ff41c22b2",
+    "workflow/native_episode.py": "581921e7bb12c93fb61ada82d150bee9be01a5b1c05c25bdbe09b99c3851b08b",
+    "workflow/run.py": "35e143b49e875f789829820bcbb20a48452ea5840c07043f1580fcfa44b04283",
+    "workflow/runtime_launch.py": "d9c0a4f6bda6ce71c936c8e833719a038dcbae947d6dae64719ad8fd7d52d94d",
+    "workflow/search.py": "84526b025a06bc07946ab09c2fc56ccfc4cf4939388fa407b34519d45a1a09cb",
+    "workflow/session.py": "60c9510d59b19f972cdee2eefb895d1c19b636be779f4fd4dbaf77eedf57c87c",
+    "workflow/test_admission.py": "0098276c75ab625d4657e9b63b6fc79bc146adc1e2a8632d9f174029760eeb0d",
+    "workflow/test_baseline_episode.py": "2293ac768a328f34b3b0a773ed0c947c324d1a06d8f89b6b3f7a40d40cd8c693",
+    "workflow/test_connector_process.py": "783f8464d608441df9da5e43e2c47f47aab72eba25263927cfa480c925a44e4d",
+    "workflow/test_controller.py": "6845cfab574dd974e27139db65a521f75caa50713c209e6565c2b9672b74b1a7",
+    "workflow/test_delegated_bridge.py": "8757652777882abc34a067b893c166ceae3161a79b7ef6bfcf1be5e71738c042",
+    "workflow/test_identifiers.py": "8de2a67e4d0aef09a3b4fc30f49efb9e2745ce8e37dd68f418a635d10b2d9f0d",
+    "workflow/test_native_episode.py": "cba57192d9a3195ebaf89665589fe6f8fa1c9ce6aabef7d921fa78029de09a83",
+    "workflow/test_native_gate.py": "b19eee212ca6b75be9a0fbbec03234e468368cf78afa3e3111afc7a41bb31ad2",
+    "workflow/test_run.py": "d6dea63ebf4f7698b2cd3ae082fce7f66dd89f3c32f76e06884918697da9f7f7",
+    "workflow/test_runtime_launch.py": "d689501576ef8db8a5b20c3d8f8afd2b6b8fd34523d2db5ae885eb15ed892c47",
+    "workflow/test_search.py": "d2f69e3b1725e483de33bfdf109bfcffc7c901992584bc8644c9b1cf9bb3827c",
+    "workflow/test_session.py": "e0b01b77cf6da74c5e34deef5a5d7462f2cb91d94c9c8b90592ad55d229809a2"
+  }
+}
