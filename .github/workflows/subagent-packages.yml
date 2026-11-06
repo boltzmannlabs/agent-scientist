@@ -1,0 +1,38 @@
+name: Portable specialist packages
+on:
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    name: Specialist package acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+      - name: Build isolated test environment through PM
+        run: python -m pm.build_env --source . --out .venv --group dev --group test
+      - name: Validate contributor source packages; no preparation commands required
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ -n "$BASE_SHA" ]; then
+            .venv/bin/python scripts/validate_subagent_catalog.py --base "$BASE_SHA"
+          else
+            .venv/bin/python scripts/validate_subagent_catalog.py
+          fi
+      - name: Main promotion requires integrated dev evidence and fresh release snapshot
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: .venv/bin/python scripts/validate_subagent_catalog.py --base "$BASE_SHA" --promotion --check-snapshot
+      - name: Controlled local integration regressions; no production service credentials
+        run: scripts/run_tests.sh tests/sci_cli/test_subagent_packages.py tests/sci_cli/test_subagent_package_validation.py tests/sci_cli/test_subagent_package_dependencies.py tests/sci_cli/test_subagent_package_commands.py tests/sci_cli/test_subagent_package_boltzmann.py tests/sci_cli/test_subagent_package_review.py tests/scripts/test_subagent_catalog.py tests/tools/test_saved_specialist_execution.py -j 2 --file-timeout 180 --file-retries 0

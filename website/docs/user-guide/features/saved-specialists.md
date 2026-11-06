@@ -680,3 +680,10 @@ profile isolation, cancelled review, retained installation recovery, standard-to
 blocked receipts and unchanged parent prompts/tool schemas. Tests use temporary homes and
 loopback services; no production scientific jobs are submitted. These checks do not certify
 arbitrary third-party installations or scientific correctness.
+
+## Portable packages and company contributions
+
+For complete skill/resource/dependency sharing, use `/subagent package` and
+`/subagent catalog`. This is separate from definition-only JSON export/import.
+See [Portable specialist packages](subagent-packages.md) for setup, recipient keys,
+profile-independent PR contributions, clean-install verification and reviewed updates.

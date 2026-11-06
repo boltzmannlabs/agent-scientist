@@ -13,7 +13,7 @@ USAGE = ('/Create_subagent [name]\n/Update_subagent [name]\n/subagents [search t
          '/subagent copy <name> [profile|main] [new-name]\n/subagent duplicate <name> <new-name>\n'
          '/subagent export <name> "<destination.json>"\n/subagent import "<definition.json>" [new-name]\n'
          '/subagent status [run-id]\n/subagent history [page]\n/subagent stop <run-id>\n'
-         '/subagent steer <run-id> <message>')
+         '/subagent steer <run-id> <message>\n/subagent package [install|update|updates]\n/subagent catalog [search]')
 
 
 def _run(cli, ui, args):
@@ -202,7 +202,8 @@ def dispatch(cli, command, ui=None):
             return browse(cli, ui, " ".join(args))
         action, args = args[0].lower(), args[1:]
         from sci_cli.specialist_portability import export_definition, import_definition
-        handlers = {"run": _run, "copy": _copy, "duplicate": _duplicate,
+        from sci_cli.subagent_package_commands import dispatch as packages, browse as catalog
+        handlers = {"package": packages, "catalog": catalog, "run": _run, "copy": _copy, "duplicate": _duplicate,
                     "export": export_definition, "import": import_definition,
                     "history": _history, "status": lambda c, u, a: _history(c, u, a, detail=True),
                     **{k: lambda c, u, a, k=k: _change(c, u, a, k) for k in ("edit", "show", "enable", "disable", "delete")},
@@ -211,7 +212,7 @@ def dispatch(cli, command, ui=None):
             return ui.show(USAGE)
         return handlers[action](cli, ui, args)
     except (Cancelled, KeyboardInterrupt, EOFError):
-        ui.show("Subagent action cancelled. Saved definitions are unchanged. Specialist edit drafts remain in this CLI/profile; private setup may retain files or credentials at the reported location. No pending assignment started.")
+        ui.show("Subagent action cancelled. Saved definitions are unchanged. Specialist edit drafts remain in this CLI/profile; package setup may retain files or credentials at the reported private location. No pending assignment started.")
     except (ValueError, OSError) as exc:
         ui.show(f"Subagent action failed: {exc}. No automatic retry. Use /subagents to inspect the saved state.")
 

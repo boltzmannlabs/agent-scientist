@@ -27,6 +27,7 @@ class Specialist:
     private_skills: tuple[str, ...] = ()
     private_tools: tuple[str, ...] = ()
     shared_tools: tuple[str, ...] = ()
+    package_info: dict = field(default_factory=dict)
     extension_id: str = ""
     extension_revision: str = ""
     skill_files: tuple[str, ...] = ()
@@ -64,6 +65,12 @@ class Specialist:
         except TypeError as exc:
             raise ValueError("A specialist needs a name and purpose.") from exc
         validate_name(item.name)
+        if not isinstance(item.package_info, dict) or set(item.package_info) - {
+            'id', 'version', 'digest', 'source', 'state', 'definition_digest', 'resolved', 'missing'}:
+            raise ValueError('Invalid managed-package metadata.')
+        if item.package_info and (item.package_info.get('state') not in {'ready', 'setup_required'} or
+                                  not isinstance(item.package_info.get('missing'), list)):
+            raise ValueError('Managed package must record readiness and missing requirements.')
         if not isinstance(item.extension_id, str) or (item.extension_id and not re.fullmatch(r'[a-f0-9]{32}', item.extension_id)):
             raise ValueError('Invalid private capability identifier.')
         if not isinstance(item.extension_revision, str) or (item.extension_revision and not re.fullmatch(r'[a-f0-9]{64}', item.extension_revision)):

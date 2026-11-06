@@ -66,7 +66,7 @@ def fingerprint(home):
 
 
 def without_private(item):
-    return replace(item, extension_id='', extension_revision='', private_skills=(), private_tools=(), shared_tools=(),
+    return replace(item, extension_id='', extension_revision='', private_skills=(), private_tools=(), shared_tools=(), package_info={},
                    skills=tuple(n for n in item.skills if n not in item.private_skills),
                    tools=tuple(n for n in item.tools if n not in item.private_tools or n in item.shared_tools),
                    skill_files=tuple(r for r in item.skill_files if r.partition('#')[0] not in item.private_skills))

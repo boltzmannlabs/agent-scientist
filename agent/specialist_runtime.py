@@ -127,6 +127,8 @@ def resolve(parent, task):
     if item is None:
         raise ValueError(f"Specialist {name} is not enabled in this conversation. Review /subagents and start /new.")
     current = load(name)
+    if current.package_info and current.package_info.get('state') != 'ready':
+        raise ValueError('Package setup is incomplete. Use /subagent package install to finish the declared requirements.')
     if not current.enabled or current.needs_review or current.revision != item.revision:
         raise ValueError(f"Specialist {name} was disabled or edited. Review it and start /new; no task was submitted.")
     if owner:

@@ -1,0 +1,29 @@
+schema_version: 1
+id: table-reviewer
+name: table-reviewer
+version: 1.0.0
+authors:
+  - Boltzmann Labs
+license: MIT
+description: Inspect a supplied CSV table and report structural data-quality problems.
+sci_requires: '>=0'
+instructions: instructions.md
+output: A concise report with row and column counts, missing cells, duplicate rows and limitations. Do not invent measurements.
+automatic: true
+tools:
+  - read_file
+skills:
+  - id: table-quality
+    kind: package
+    path: skills/table-quality
+dependencies: []
+references: []
+limits:
+  max_iterations: 20
+  timeout_seconds: 300
+platforms:
+  - any
+fixtures:
+  - input: tests/sample.csv
+    expected: tests/expected.json
+    description: Synthetic two-column CSV with one empty cell and one repeated row.

@@ -1,0 +1,15 @@
+{
+  "package_id": "table-reviewer",
+  "package_version": "1.0.0",
+  "local": {
+    "status": "not_run",
+    "environment": "Replace with SCI version, OS/architecture, execution backend and integrations tested",
+    "checks": []
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "",
+    "checks": []
+  }
+}

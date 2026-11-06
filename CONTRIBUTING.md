@@ -4,6 +4,10 @@ Thank you for contributing to Sci Agent! This guide covers everything you need: 
 
 ---
 
+## Company specialist contributions
+
+For saved subagent packages, follow [the dev → validation → main process](subagent-catalog/README.md) and use [the starter template](contribution-templates/subagent/README.md). Prepare source files and test evidence yourself; contributor preparation slash commands are not provided. Initial and corrective specialist PRs target **dev**. Maintainers own final acceptance, release artifacts and promotion to **main**.
+
 ## Contribution Priorities
 
 We value contributions in this order:
