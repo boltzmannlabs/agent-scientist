@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import ANY, Mock
 
 import pytest
 
@@ -16,16 +16,19 @@ def test_command_is_available_without_plugin_and_routes_case_insensitively(monke
     run = Mock(return_value="setup fixture")
     monkeypatch.setattr("sci_cli.boltzmann_setup.run", run)
     cli = SciCLI.__new__(SciCLI)
-    for text in ("/add_boltzmann", "/Add_boltzmann", "/ADD_BOLTZMANN"):
+    for text in ("/add_boltzmann", "/Add_boltzmann", "/ADD_BOLTZMANN", "/boltzmann_login", "/BOLTZMANN_LOGIN"):
         definition = resolve_command(text)
         assert definition is not None
         handler, with_arg = cli._slash_handler(definition.name)
         assert with_arg
         getattr(cli, handler)(text)
-        run.assert_called_with(cli, "")
+        run.assert_called_with(cli, "", report=ANY)
     getattr(cli, handler)("/add_boltzmann --replace --now")
-    run.assert_called_with(cli, "--replace --now")
+    run.assert_called_with(cli, "--replace --now", report=ANY)
     assert "/add_boltzmann" in COMMANDS
+    assert "/boltzmann_login" in COMMANDS
+    assert "/boltzmann_login" in dict(COMMANDS_BY_CATEGORY["Tools & Skills"])
+    assert not is_gateway_known_command("boltzmann_login")
     assert "/add_boltzmann" in dict(COMMANDS_BY_CATEGORY["Tools & Skills"])
     assert resolve_command("/add_boltz") is None
     assert not is_gateway_known_command("add_boltzmann")
@@ -63,8 +66,9 @@ def test_unconfigured_profile_auth_is_explicit_deferred_and_isolated(tmp_path, m
     b = tmp_path / "other-profile"
     b.mkdir()
     atomic_config_replace(b / "config.yaml", {"plugins": {"enabled": ["boltzmann"]}})
-    validator = Mock(side_effect=lambda key: key == "fixture-valid")
-    monkeypatch.setattr("plugins.boltzmann.onboarding.validate_api_key", validator)
+    from plugins.boltzmann.authentication import AuthenticationResult
+    validator = Mock(side_effect=lambda key: AuthenticationResult(key == "fixture-valid", "fixture verification"))
+    monkeypatch.setattr("plugins.boltzmann.onboarding.authenticate_api_key", validator)
     cli = SimpleNamespace(agent=SimpleNamespace(system_prompt="frozen", tools=["skills_list"]),
                           conversation_history=[{"role": "user", "content": "private"}])
     cli._secret_capture_callback = lambda name, prompt, **kw: prompt_for_secret(cli, name, prompt, **kw)

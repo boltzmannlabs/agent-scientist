@@ -28,6 +28,15 @@ def active(cli):
     return bool(controller and controller.active and not controller.conversation.closed.is_set())
 
 
+def is_side_command(text):
+    """Use canonical command identity before any queue or modal consumes input."""
+    from sci_cli.commands import resolve_command
+
+    words = text.strip().split(None, 1)
+    command = resolve_command(words[0]) if words and words[0].startswith('/') else None
+    return bool(command and command.name == 'side')
+
+
 class SideController:
     def __init__(self, cli):
         self.cli = cli
@@ -37,7 +46,8 @@ class SideController:
             self.ui.agent = None
             self.ui.conversation_history = []
         self.conversation = SideConversation(cli.agent, cli.conversation_history,
-                                             configure=lambda agent: configure_agent(self, agent))
+                                             configure=lambda agent: configure_agent(self, agent),
+                                             session_db=getattr(cli, '_session_db', None), require_durable=True)
         self.active = True
         self.running = False
         self.started = 0.0
@@ -74,12 +84,17 @@ class SideController:
                     if not self.conversation.closed.is_set():
                         self.outcome = "ready"
                         end_turn(self, answer)
-                except Exception:
+                except Exception as exc:
                     from cli import logger
+                    from agent.side_persistence import SidePersistenceError
                     logger.exception("Side conversation failed")
                     if not self.conversation.closed.is_set():
                         self.outcome = "failed"
-                        self.emit("This request stopped with an error. No automatic retry was made. "
+                        if isinstance(exc, SidePersistenceError) and self.conversation.last_result:
+                            if answer := self.conversation.last_result.get('final_response'):
+                                end_turn(self, answer)
+                        self.emit(str(exc) if isinstance(exc, SidePersistenceError) else
+                                  "This request stopped with an error. No automatic retry was made. "
                                   "Main is unchanged; check SCI logs before retrying an external action.")
                 finally:
                     release_callbacks(self.ui)
@@ -141,7 +156,13 @@ def handle_side(cli, command, *, images=None):
             # The command worker initializes it without sending a synthetic main turn.
             if not cli._init_agent():
                 return False
-        controller = cli._side_controller = SideController(cli)
+        try:
+            controller = cli._side_controller = SideController(cli)
+        except Exception as exc:
+            from cli import logger
+            logger.exception('Could not open saved side conversation')
+            _show(cli, f'Could not open side conversation: {exc}. Main is unchanged.')
+            return False
         view = getattr(cli, "_side_view", None)
         if view is not None:
             view.clear()
@@ -172,16 +193,29 @@ def route_input(cli, text, *, has_images=False):
     owner = getattr(cli, "_side_owner", cli)
     controller = current(owner)
     word = text.split(None, 1)[0].lower() if text.strip() else ""
-    if word == "/side":
+    if is_side_command(text):
         if not getattr(owner, "agent", None):
             return False  # Let the ordinary command worker initialize the runtime.
         images = list(getattr(cli, "_attached_images", []))
-        if getattr(cli, "_side_surface", False) and text.strip().lower() == "/side":
+        if getattr(cli, "_side_surface", False) and len(text.split(None, 1)) == 1:
             images = []  # The existing side composer already owns these attachments.
         if handle_side(owner, text, images=images) and images:
             # Opening without a question transfers the attachment to side's composer.
             cli._attached_images.clear()
         return True
+    if word == "/export-chat":
+        if controller and controller.active and not controller.conversation.closed.is_set():
+            from sci_cli.chat_export import export_chat
+
+            transcript = controller.conversation.transcript
+            export_chat(owner, text, session={
+                "id": controller.conversation.id,
+                "title": "Side conversation",
+                "model": getattr(owner, "model", None),
+                "messages": transcript,
+            })
+            return True
+        return False
     if not controller or not controller.active:
         return False
     if word.startswith(("/", "!")):
@@ -199,12 +233,13 @@ def label(cli):
     controller = getattr(cli, "_side_controller", None)
     if not controller or controller.conversation.closed.is_set():
         return ""
-    parent = "waiting for input" if any(getattr(cli, key, None) for key in (
-        "_approval_state", "_clarify_state", "_secret_state", "_sudo_state")) else (
-        "running" if getattr(cli, "_agent_running", False) else "idle")
     if not controller.active:
         return "Ctrl+/ side"
-    return f"Side · main {parent} · Ctrl+/ switch · Ctrl+C copy/close"
+    ui = controller.ui
+    waiting = ui is not None and any(getattr(ui, key, None) for key in (
+        '_approval_state', '_clarify_state', '_secret_state', '_sudo_state', '_connection_state'))
+    status = 'waiting for input' if waiting else controller.outcome
+    return f"Side · {status} · Ctrl+/ switch · Ctrl+Q close"
 
 
 def cancel_from_keyboard(cli, event):

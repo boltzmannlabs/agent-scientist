@@ -127,6 +127,8 @@ class CLIInfoMixin:
                 console=self.console, model=self.model, cwd=cwd,
                 enabled_toolsets=self.enabled_toolsets, session_id=self.session_id,
                 context_length=ctx_len, provider=self.provider, context_pinned=ctx_pinned)
+            if welcome := getattr(self, '_welcome_animation', None):
+                banner_kw['welcome_handler'] = welcome.capture
 
             if snapshot is not None:
                 self._defer_tool_warnings = True
@@ -797,9 +799,13 @@ class CLIInfoMixin:
         account_lines = [f"  {line}" for line in render_account_usage_lines(account_snapshot)]
         if not account_lines:
             return False
-        print()
+        from cli import _accent_hex, _hex_to_ansi, _RST, _cprint
+        emphasis = _hex_to_ansi(_accent_hex(), bold=True)
+        _cprint("")
         for line in account_lines:
-            print(line)
+            if line.lstrip().startswith(("Email:", "Available credits:", "Frozen credits:")):
+                line = f"{emphasis}{line}{_RST}"
+            _cprint(line)
         return True
 
     def _show_insights(self, command: str = "/insights"):

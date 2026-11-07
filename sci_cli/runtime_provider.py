@@ -1016,6 +1016,18 @@ def resolve_runtime_provider(*, requested: Optional[str] = None, explicit_api_ke
     OpenCode Zen/Go where different models route through different API surfaces)."""
     requested_provider = resolve_requested_provider(requested)
     _raise_if_provider_disabled(requested_provider)
+    from providers import get_provider_profile
+    profile = get_provider_profile(requested_provider)
+    if profile is not None and profile.name != requested_provider:
+        _raise_if_provider_disabled(profile.name)
+    owned = profile.resolve_credentials(strict=True) if profile is not None else None
+    if owned is not None:
+        if explicit_api_key and explicit_api_key != owned.get("api_key"):
+            raise PermissionError("This provider requires its owning profile's authorized credential.")
+        if explicit_base_url and explicit_base_url.rstrip("/") != owned["base_url"].rstrip("/"):
+            raise ValueError("Review this provider's endpoint in its profile configuration before changing it.")
+        return _runtime(profile.name, profile.api_mode, owned["base_url"], owned["api_key"],
+                        source=owned.get("source", "profile"), requested_provider=requested_provider)
     # Same alias expansion the auxiliary client applies, so ``provider: openai`` means one thing on
     # every path (background review, curator, MoA slots, delegation) instead of "Unknown provider".
     # The pre-expansion name is what the codex_app_server overlay judges: ``openai`` is eligible,

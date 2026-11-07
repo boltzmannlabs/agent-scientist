@@ -1,6 +1,7 @@
 """Bundled connector authorization must precede discovery and every operation."""
 
 import json
+from inspect import unwrap
 import shutil
 import sys
 import threading
@@ -39,11 +40,20 @@ def auth_server(monkeypatch):
                 self.end_headers()
                 self.wfile.write(b"id,value\nfixture-1,1\nfixture-2,2\n")
                 return
-            ok = self.headers.get("Authorization") == "Bearer " + state.get("accepted_key", "fixture-valid") and not state["revoked"]
+            authenticating = self.path == "/api/agent-authenticate"
+            if authenticating:
+                assert self.headers.get("Authorization") is None
+                body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+                assert set(body) == {"apiToken"}
+                token = body["apiToken"]
+            else:
+                token = self.headers.get("Authorization", "").removeprefix("Bearer ")
+            ok = token == state.get("accepted_key", "fixture-valid") and not state["revoked"]
             self.send_response(state.get("result_http", 200) if ok and self.path == "/result" else 200 if ok else 401)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
-            payload = {"status": "success" if ok else "error"}
+            payload = ({"success": ok, "email": "fixture@example.invalid", "credits": 0, "freezedCredits": 3}
+                       if authenticating else {"status": "success" if ok else "error"})
             if ok and self.path == "/result":
                 payload["OutputData"] = {"fixture": {"download_link":
                     f"http://127.0.0.1:{self.server.server_port}/artifact.csv"}}
@@ -82,7 +92,7 @@ def auth_server(monkeypatch):
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        yield state, f"http://127.0.0.1:{server.server_port}/api/get-projects"
+        yield state, f"http://127.0.0.1:{server.server_port}/api/agent-authenticate"
     finally:
         server.shutdown()
         server.server_close()
@@ -164,7 +174,7 @@ def test_main_and_named_profile_credentials_resolve_without_fallback(tmp_path, m
                 assert not auth.available()
             assert auth.current_key() == "fixture-main"
             assert not (main / "profiles" / "default").exists()
-            assert set(state["calls"]) == {"/api/get-projects"}
+            assert set(state["calls"]) == {"/api/agent-authenticate"}
         finally:
             manager.unload()
 
@@ -187,7 +197,7 @@ def test_diagnostic_lookup_resolves_collection_without_changing_job_or_profile(t
         auth = sys.modules[module.__name__ + ".auth"]
         # Patch the globals actually bound by the real discovered handler.
         monkeypatch.setitem(module.tools.fetch_tool_log.__globals__, "_TOOL_LOG_URL",
-                            endpoint.replace("/api/get-projects", "/tool-log"))
+                            endpoint.replace("/api/agent-authenticate", "/tool-log"))
         try:
             for name in ("a", "b", "a"):
                 with profile(tmp_path / name):
@@ -219,7 +229,7 @@ def test_diagnostic_lookup_resolves_collection_without_changing_job_or_profile(t
                 job_name="Random_Antibody_Generation", experiment_id="fixture-a"))
             assert result["authorization_required"]
             assert state["diagnostic_requests"] == previous
-            assert set(state["calls"]) == {"/api/get-projects", "/tool-log"}
+            assert set(state["calls"]) == {"/api/agent-authenticate", "/tool-log"}
         finally:
             manager.unload()
 
@@ -288,7 +298,7 @@ def test_command_is_required_and_activation_is_deferred_and_profile_local(tmp_pa
             fresh.unload()
     output = capsys.readouterr()
     assert "fixture-valid" not in output.out + output.err
-    assert set(state["calls"]) == {"/api/get-projects"}
+    assert set(state["calls"]) == {"/api/agent-authenticate"}
 
 
 def test_revocation_blocks_all_operations_including_status_and_downloads(tmp_path, monkeypatch, auth_server):
@@ -319,7 +329,7 @@ def test_revocation_blocks_all_operations_including_status_and_downloads(tmp_pat
             save_env_value("BOLTZMANN_API_KEY", "")
             assert not module.available()
             assert json.loads(tools.handle_boltzmann_submit())["authorization_required"]
-            assert set(state["calls"]) == {"/api/get-projects"}
+            assert set(state["calls"]) == {"/api/agent-authenticate"}
         finally:
             manager.unload()
 
@@ -344,7 +354,7 @@ def test_fresh_authorized_connector_executes_fixture_job_without_local_plugin(tm
         manager, module = discover(monkeypatch, endpoint)
         try:
             helpers = sys.modules[module.__name__ + ".nodeapi_helpers"]
-            base = endpoint.removesuffix("/api/get-projects")
+            base = endpoint.removesuffix("/api/agent-authenticate")
             monkeypatch.setattr(helpers, "_SUBMIT_URL", base + "/submit")
             monkeypatch.setattr(helpers, "_FETCH_URL", base + "/result")
             inputs = {"n_samples": 20, "file_format": "csv"}
@@ -362,7 +372,7 @@ def test_fresh_authorized_connector_executes_fixture_job_without_local_plugin(tm
             assert Path(result["output_paths"][0]).read_text(encoding="utf-8-sig").splitlines() == [
                 "id,value", "fixture-1,1", "fixture-2,2"]
             assert state["calls"].count("/submit") == 1
-            assert set(state["calls"]) <= {"/api/get-projects", "/submit", "/result", "/artifact.csv"}
+            assert set(state["calls"]) <= {"/api/agent-authenticate", "/submit", "/result", "/artifact.csv"}
         finally:
             manager.unload()
 
@@ -379,7 +389,7 @@ def test_partial_file_preflight_upload_and_submit_with_real_profile_receipts(tmp
         try:
             assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
             helpers = sys.modules[module.__name__ + ".nodeapi_helpers"]
-            base = endpoint.removesuffix("/api/get-projects")
+            base = endpoint.removesuffix("/api/agent-authenticate")
             monkeypatch.setattr(helpers, "_UPLOAD_URL", base + "/upload")
             monkeypatch.setattr(helpers, "_SUBMIT_URL", base + "/submit")
             # Onboarding can refresh discovery; patch the actual bound functions,
@@ -412,7 +422,7 @@ def test_partial_file_preflight_upload_and_submit_with_real_profile_receipts(tmp
             assert state["submission"]["experimentData"] == payload
             # Real discovery and a loopback status response retire only this job's pin.
             assert "boltzmann-receipts" in manager._cli_commands
-            monkeypatch.setitem(module.tools.fetch_status.__globals__, "_FETCH_URL", base + "/result")
+            monkeypatch.setitem(unwrap(module.tools.fetch_status).__globals__, "_FETCH_URL", base + "/result")
             status = json.loads(module.tools.handle_boltzmann_status(
                 job_name="Single_Point_Energy", doc_id=result["doc_id"]))
             assert status["job_terminal_confirmed"] is True
@@ -444,7 +454,7 @@ def test_binding_affinity_uses_authorized_connector_for_direct_and_uploaded_inpu
         manager, module = discover(monkeypatch, endpoint)
         try:
             assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
-            base = endpoint.removesuffix("/api/get-projects")
+            base = endpoint.removesuffix("/api/agent-authenticate")
             monkeypatch.setitem(module.tools.file_upload.__globals__, "_UPLOAD_URL", base + "/upload")
             monkeypatch.setitem(module.tools.submit_request.__globals__, "_SUBMIT_URL", base + "/submit")
             source = tmp_path / "pairs.csv"
@@ -489,11 +499,11 @@ def test_five_enzyme_tools_use_existing_profile_scoped_wire_path(tmp_path, monke
         try:
             message, cli = capture(manager, monkeypatch, "fixture-valid")
             assert "SAVED" in message
-            base = endpoint.removesuffix("/api/get-projects")
+            base = endpoint.removesuffix("/api/agent-authenticate")
             for function, setting, route in ((module.tools.file_upload, "_UPLOAD_URL", "/upload"),
                                               (module.tools.submit_request, "_SUBMIT_URL", "/submit"),
                                               (module.tools.fetch_status, "_FETCH_URL", "/result")):
-                monkeypatch.setitem(function.__globals__, setting, base + route)
+                monkeypatch.setitem(unwrap(function).__globals__, setting, base + route)
             store = module.tools.ContractStore()
             preflight = sys.modules[module.__name__ + ".preflight"]
             for job in ("deepallo", "enzycontrol", "Enzyme_RFD3", "Catalytic_Geometry", "Mol_Probity"):
@@ -592,7 +602,7 @@ def test_ligand_pharmacophore_upload_submit_and_receipts_are_profile_scoped(tmp_
             auth = sys.modules[module.__name__ + ".auth"]
             preflight = sys.modules[module.__name__ + ".preflight"]
             helpers = sys.modules[module.__name__ + ".nodeapi_helpers"]
-            base = endpoint.removesuffix("/api/get-projects")
+            base = endpoint.removesuffix("/api/agent-authenticate")
             for setting, suffix in (("_UPLOAD_URL", "/upload"), ("_SUBMIT_URL", "/submit"),
                                     ("_FETCH_URL", "/result")):
                 monkeypatch.setattr(helpers, setting, base + suffix)
@@ -664,7 +674,7 @@ def test_enzyme_upload_enforces_headers_and_profile_scoped_current_rules(tmp_pat
             helpers = sys.modules[module.__name__ + ".nodeapi_helpers"]
             auth = sys.modules[module.__name__ + ".auth"]
             preflight = sys.modules[module.__name__ + ".preflight"]
-            base = endpoint.removesuffix("/api/get-projects")
+            base = endpoint.removesuffix("/api/agent-authenticate")
             monkeypatch.setattr(helpers, "_UPLOAD_URL", base + "/upload")
             source = tmp_path / "enzymes.csv"
             original = b"Sequence_ID,Sequences\nenzyme-1,MKT\n"
@@ -736,7 +746,7 @@ def test_netsolp_upload_and_submission_accept_modes_without_bypassing_profile_ch
             helpers = sys.modules[module.__name__ + ".nodeapi_helpers"]
             auth = sys.modules[module.__name__ + ".auth"]
             preflight = sys.modules[module.__name__ + ".preflight"]
-            base = endpoint.removesuffix("/api/get-projects")
+            base = endpoint.removesuffix("/api/agent-authenticate")
             monkeypatch.setattr(helpers, "_UPLOAD_URL", base + "/upload")
             monkeypatch.setattr(helpers, "_SUBMIT_URL", base + "/submit")
             monkeypatch.setattr(module.tools, "time", SimpleNamespace(sleep=lambda _: None))
@@ -796,68 +806,63 @@ def test_netsolp_upload_and_submission_accept_modes_without_bypassing_profile_ch
             manager.unload()
 
 
-def test_monitor_checkpoint_and_continuation_guard_use_the_real_profile_plugin_hooks(tmp_path, monkeypatch, auth_server):
-    from agent.api_request_hooks import ApiRequestHooksMixin
-    from agent.turn_api_request import _fire_pre_api_request_hook
-    from sci_cli.plugins import _dispatch_pre_tool_call_hooks, get_plugin_manager
+def test_foreground_status_uses_real_profile_registration_without_monitor_handoff(
+        tmp_path, monkeypatch, auth_server, capsys):
+    from tools.registry import registry
+    from sci_cli.plugins import get_plugin_manager
 
     state, endpoint = auth_server
-    home = tmp_path / "a"
+    a, b = tmp_path / "a", tmp_path / "b"
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("SCI_HOME", str(home))
+    monkeypatch.setenv("SCI_HOME", str(a))
     monkeypatch.delenv("SCI_BUNDLED_PLUGINS", raising=False)
     monkeypatch.chdir(tmp_path)
-    with profile(home):
-        # Use the real singleton: creating an independent inspection manager and
-        # then importing the agent would load a second copy of this plugin.
+    with profile(a):
+        # Setup also resolves the singleton's toolsets. Use that same manager so
+        # credential setup cannot replace the registered handler with another copy.
         manager = get_plugin_manager()
         manager.discover_and_load()
         module = manager._plugins["boltzmann"].module
         monkeypatch.setattr(sys.modules[module.__name__ + ".nodeapi_helpers"], "_AUTH_CHECK_URL", endpoint)
         try:
             assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
+            helpers = sys.modules[module.__name__ + ".nodeapi_helpers"]
             jobs = sys.modules[module.__name__ + ".job_monitor"]
-            continuation = sys.modules[module.__name__ + ".job_continuation"]
-            monkeypatch.setattr(jobs, "ensure_worker", lambda store: "running")
+            monkeypatch.setattr(helpers, "_FETCH_URL", endpoint.removesuffix("/api/agent-authenticate") + "/result")
+            monkeypatch.setattr(helpers, "_log_platform_terminal", lambda *args: None)
+            monkeypatch.setattr(module.tools, "time", SimpleNamespace(sleep=lambda _: None))
+            clock, observed = [0.0], []
 
-            class Agent(ApiRequestHooksMixin):
-                session_id = "source"
-                platform = "cli"
-                model = "fixture-model"
-                provider = "custom"
-                base_url = "http://fixture.invalid"
-                api_mode = "chat_completions"
-                max_tokens = 100
-                tools = [{"type": "function", "function": {"name": "boltzmann_status"}}]
-                valid_tool_names = {"boltzmann_status"}
+            def pause(seconds):
+                clock[0] += 6 * 3600  # Cross all old timeouts without waiting in real time.
+                observed.append(state["result_override"]["status"])
+                state["result_override"] = {"status": "running" if len(observed) == 1 else "success"}
 
-            messages = [{"role": "system", "content": "cached prefix"},
-                        {"role": "user", "content": "Inspect the approved results"}]
-            original = json.dumps(messages)
-            _fire_pre_api_request_hook(Agent(), {"messages": messages, "tools": []}, messages, [],
-                                      messages=messages, original_user_message="Inspect the approved results",
-                                      approx_tokens=30, total_chars=90, retry_count=0, api_call_count=1,
-                                      api_request_id="attempt", api_start_time=0, effective_task_id="task", turn_id="turn")
-            row = jobs.observe("boltzmann_submit", {},
-                               {"status": "accepted", "job_name": "Boltz2", "doc_id": "fixture"}, session_id="source")
-            store = jobs.JobStore()
-            assert store.get(row["checkpoint"])["allowed_tools"] == ["boltzmann_status"]
-            store.update(row["id"], state="success")
+            monkeypatch.setattr(helpers, "time", SimpleNamespace(monotonic=lambda: clock[0], sleep=pause))
 
-            def run(data, rows):
-                blocked, _ = _dispatch_pre_tool_call_hooks("terminal", {})
-                assert "frozen permissions" in blocked
-                allowed, _ = _dispatch_pre_tool_call_hooks("boltzmann_status", {})
-                assert allowed is None
-                return {"ok": True, "response": "Controlled continuation verified"}
+            def no_handoff(*args, **kwargs):
+                pytest.fail("A foreground tool started a monitor or continuation")
 
-            continuation.continue_ready(store, runner=run)
-            result = store.get(row["id"])
-            assert result["continuation"] == "reported", result
-            assert result["continuation_result"]["ok"]
-            assert _dispatch_pre_tool_call_hooks("terminal", {})[0] is None
-            assert json.dumps(messages) == original
+            monkeypatch.setattr(jobs, "ensure_worker", no_handoff)
+            monkeypatch.setattr(jobs, "monitor_result", no_handoff)
+            entry = registry.get_entry("boltzmann_status")
+            assert entry.manages_timeout
+            state["result_override"] = {"status": "pending"}
+            result = json.loads(entry.handler({"job_name": "fixture", "doc_id": "fixture-job"}))
+            assert result.get("status") == "success" and result.get("job_terminal_confirmed"), result
+            assert clock[0] >= 12 * 3600 and observed == ["pending", "running"]
+            assert "monitor" not in result and jobs.JobStore().list() == []
             assert "/submit" not in state["calls"]
+            with profile(b):
+                before = list(state["calls"])
+                blocked = json.loads(module.tools.handle_boltzmann_status(job_name="fixture", doc_id="fixture-job"))
+                assert blocked["authorization_required"] and state["calls"] == before
+                assert jobs.JobStore().list() == []
+            with profile(a):
+                again = json.loads(entry.handler({"job_name": "fixture", "doc_id": "fixture-job"}))
+                assert again["status"] == "success"
+            output = capsys.readouterr().err
+            assert "pending" in output and "running" in output and "elapsed" in output
         finally:
             manager.unload()
 
@@ -873,7 +878,7 @@ def test_service_diagnostics_are_safe_and_status_failures_do_not_resubmit(tmp_pa
         try:
             assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
             helpers = sys.modules[module.__name__ + ".nodeapi_helpers"]
-            base = endpoint.removesuffix("/api/get-projects")
+            base = endpoint.removesuffix("/api/agent-authenticate")
             monkeypatch.setattr(helpers, "_SUBMIT_URL", base + "/submit")
             monkeypatch.setattr(helpers, "_FETCH_URL", base + "/result")
             state.update(submit_http=422, submit_response={"detail": [{"msg": "Invalid input column; fixture-valid https://example.invalid/?token=private"}]})
@@ -907,7 +912,7 @@ def test_submit_preserves_service_diagnostics_without_claiming_a_job_outcome(tmp
         try:
             assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
             monkeypatch.setitem(module.tools.submit_request.__globals__, "_SUBMIT_URL",
-                                endpoint.removesuffix("/api/get-projects") + "/submit")
+                                endpoint.removesuffix("/api/agent-authenticate") + "/submit")
             traceback = ("Traceback (most recent call last):\n" + "  credit calculator frame\n" * 120
                          + "ValueError: fixture credit calculation failure")
             backend_error = "Missing required column(s): Seq_id, Sequence / Sequences, SMILES in catpred.csv"
@@ -962,7 +967,7 @@ def test_schema_rejection_preserves_field_errors_without_echoing_secrets(tmp_pat
         try:
             assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
             helpers = sys.modules[module.__name__ + ".nodeapi_helpers"]
-            monkeypatch.setattr(helpers, "_SUBMIT_URL", endpoint.removesuffix("/api/get-projects") + "/submit")
+            monkeypatch.setattr(helpers, "_SUBMIT_URL", endpoint.removesuffix("/api/agent-authenticate") + "/submit")
             state.update(submit_http=400, submit_response={
                 "message": "Schema validation failed", "status": "failed",
                 "errors": [{"path": "flexible_residues", "message": "fixture field rejected",
@@ -998,7 +1003,7 @@ def test_flexible_docking_uploads_csv_and_rejects_inline_smiles(tmp_path, monkey
         manager, module = discover(monkeypatch, endpoint)
         try:
             assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
-            base = endpoint.removesuffix("/api/get-projects")
+            base = endpoint.removesuffix("/api/agent-authenticate")
             monkeypatch.setitem(module.tools.submit_request.__globals__, "_SUBMIT_URL", base + "/submit")
             monkeypatch.setitem(module.tools.file_upload.__globals__, "_UPLOAD_URL", base + "/upload")
             payload = {"target_name": "fixture", "processed_pdb": "fixture/receptor.pdb",
@@ -1044,7 +1049,7 @@ def test_graph_ga_preserves_selected_global_property_in_http_request(tmp_path, m
         try:
             assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
             monkeypatch.setitem(module.tools.submit_request.__globals__, "_SUBMIT_URL",
-                                endpoint.removesuffix("/api/get-projects") + "/submit")
+                                endpoint.removesuffix("/api/agent-authenticate") + "/submit")
             for count, name in enumerate(("Solubility", "Lipophilicity"), start=1):
                 payload = {"smiles": "CCO", "n_mols": 1, "n_steps": 1,
                            "global_models": [{"name": name, "min_threshold": -4, "max_threshold": 0.4}],
@@ -1074,9 +1079,9 @@ def test_status_preserves_nested_worker_diagnostics_and_running_messages(tmp_pat
         manager, module = discover(monkeypatch, endpoint)
         try:
             assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
-            monkeypatch.setitem(module.tools.fetch_status.__globals__, "_FETCH_URL",
-                                endpoint.removesuffix("/api/get-projects") + "/result")
-            monkeypatch.setitem(module.tools.fetch_status.__globals__, "_tool_timeout", lambda *args: 0.04)
+            monkeypatch.setitem(unwrap(module.tools.fetch_status).__globals__, "_FETCH_URL",
+                                endpoint.removesuffix("/api/agent-authenticate") + "/result")
+            monkeypatch.setitem(unwrap(module.tools.fetch_status).__globals__, "_tool_timeout", lambda *args: 0.04)
             cause = "stat: path should be string, bytes, os.PathLike or integer, not NoneType"
             traceback = ('Traceback (most recent call last):\n  File "/worker/fpocket_main.py", line 20\n'
                          + "  worker frame\n" * 180 + "TypeError: " + cause)
@@ -1091,7 +1096,9 @@ def test_status_preserves_nested_worker_diagnostics_and_running_messages(tmp_pat
                 assert "http_status" not in result and "status_code" not in result
                 assert result["job_name"] == "fpocket" and result["doc_id"] == "fixture-job"
                 state["result_override"] = {"status": "running", "message": "job is still in execution"}
-                running = json.loads(module.tools.handle_boltzmann_status(job_name="fpocket", doc_id="fixture-job"))
+                # A single-check client still receives the service's diagnostic;
+                # the normal foreground handler deliberately waits past running.
+                running = module.tools.fetch_status("fpocket", "fixture-job", token="fixture-valid", poll_once=True)
                 assert running["status"] == "running" and running["message"] == "job is still in execution"
                 assert not running.get("timeout") and "error" not in running and "info" not in running
                 assert "http_status" not in running and "status_code" not in running
@@ -1112,7 +1119,7 @@ def test_status_transport_failures_do_not_fabricate_job_states(tmp_path, monkeyp
         try:
             assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
             helpers = sys.modules[module.__name__ + ".nodeapi_helpers"]
-            monkeypatch.setattr(helpers, "_FETCH_URL", endpoint.removesuffix("/api/get-projects") + "/result")
+            monkeypatch.setattr(helpers, "_FETCH_URL", endpoint.removesuffix("/api/agent-authenticate") + "/result")
             for http, body in ((404, {"status": "error", "message": "Route not found"}),
                                (404, {"status": "success"}), (404, {"status": None}),
                                (500, {"status": "running", "message": "Proxy failed"}),
@@ -1141,11 +1148,11 @@ def test_file_upload_discovery_and_fresh_multi_artifact_results(tmp_path, monkey
         manager, module = discover(monkeypatch, endpoint)
         try:
             assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
-            base = endpoint.removesuffix("/api/get-projects")
+            base = endpoint.removesuffix("/api/agent-authenticate")
             for func, setting, suffix in [(module.tools.file_upload, "_UPLOAD_URL", "/upload"),
                                           (module.tools.submit_request, "_SUBMIT_URL", "/submit"),
                                           (module.tools.fetch_status, "_FETCH_URL", "/result")]:
-                monkeypatch.setitem(func.__globals__, setting, base + suffix)
+                monkeypatch.setitem(unwrap(func).__globals__, setting, base + suffix)
             # Registration formerly failed before file inspection. A generic short
             # format fixture is sufficient; it is not a valid experiment sample.
             source = tmp_path / "format-only.fasta"
@@ -1280,4 +1287,4 @@ def test_execution_policy_is_authorized_profile_local_and_frozen(tmp_path, monke
             assert _frozen_plugin_prompt_sections(fresh) == snapshot
         finally:
             manager.unload()
-    assert set(state["calls"]) == {"/api/get-projects"}  # no scientific jobs or remote services
+    assert set(state["calls"]) == {"/api/agent-authenticate"}  # no scientific jobs or remote services

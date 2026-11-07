@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Copy, FlaskConical, LoaderCircle } from 'lucide-react';
+import { Check, ChevronDown, Copy, LoaderCircle } from 'lucide-react';
+import { BoltzmannParticleLogo } from '@/components/BoltzmannParticleLogo';
 import { Markdown } from '@/components/Markdown';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import type { WebChatState } from '@/lib/web-chat-state';
 import type { ReactNode } from 'react';
 
-interface ChatTranscriptProps { state: WebChatState; children?: ReactNode; onSuggestion: (text: string) => void }
-export function ChatTranscript({ state, children, onSuggestion }: ChatTranscriptProps) {
+interface ChatTranscriptProps { state: WebChatState; children?: ReactNode; onSuggestion: (text: string) => void; active?: boolean }
+export function ChatTranscript({ state, children, onSuggestion, active = true }: ChatTranscriptProps) {
   const scroll = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
   const [copied, setCopied] = useState('');
@@ -23,7 +24,7 @@ export function ChatTranscript({ state, children, onSuggestion }: ChatTranscript
   }}>
     <div className="chat-transcript" role="log" aria-label="Conversation" aria-live="off">
       {state.messages.length === 0 && !state.stream && <div className="chat-welcome">
-        <span className="chat-welcome-icon"><FlaskConical size={30} strokeWidth={1.4} /></span>
+        <BoltzmannParticleLogo active={active && !state.busy} />
         <p className="chat-eyebrow">YOUR SCIENTIFIC WORKSPACE</p>
         <h1>What would you like to explore?</h1>
         <p>Ask a question, explore your research, or work through an idea together.</p>

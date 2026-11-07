@@ -2122,8 +2122,8 @@ class TestUpdateModelResetsCalibration:
         assert comp.awaiting_real_usage_after_compression is False
         assert comp._ineffective_compression_count == 0
 
-    def test_switch_waits_for_new_provider_evidence(self):
-        """A model switch clears old evidence; the new provider adjudicates pressure."""
+    def test_smaller_switch_checks_inherited_history_before_new_provider_evidence(self):
+        """A smaller budget checks inherited history; fitting/larger routes still defer."""
         comp = self._comp()
         comp.last_real_prompt_tokens = 50_000
         # Before switch, a modest rough growth would defer.
@@ -2132,9 +2132,13 @@ class TestUpdateModelResetsCalibration:
 
         comp.update_model("small-model", context_length=65_536)
         assert comp.last_real_prompt_tokens == 0
+        assert comp.should_defer_preflight_to_real_usage(comp.context_length + 5_000) is False
+        comp.awaiting_real_usage_after_compression = True
         assert comp.should_defer_preflight_to_real_usage(comp.context_length + 5_000) is True
         comp.update_from_response({"prompt_tokens": comp.threshold_tokens + 1})
         assert comp.should_defer_preflight_to_real_usage(comp.context_length + 5_000) is False
+        comp.update_model("larger-model", context_length=500_000)
+        assert comp.should_defer_preflight_to_real_usage(comp.threshold_tokens + 5_000) is True
 
 
 

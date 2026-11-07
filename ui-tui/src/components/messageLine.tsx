@@ -16,6 +16,7 @@ import type { Theme } from '../theme.js'
 import type { ActiveTool, DetailsMode, Msg, SectionVisibility } from '../types.js'
 
 import { Md } from './markdown.js'
+import { ScienceMessage } from './scienceDesign.js'
 import { StreamingMd } from './streamingMarkdown.js'
 import { ToolTrail } from './thinking.js'
 import { TodoPanel } from './todoPanel.js'
@@ -217,7 +218,7 @@ export const MessageLine = memo(function MessageLine({
       const [head, ...rest] = userDisplay(msg.text).split('[long message]')
 
       return (
-        <Text color={body}>
+        <Text color={t.color.text}>
           {head}
           <Text color={t.color.muted} dimColor>
             {T.longMessage}
@@ -234,7 +235,7 @@ export const MessageLine = memo(function MessageLine({
       const segments = splitComposerHighlights(msg.text)
 
       return (
-        <Text {...(body ? { color: body } : {})}>
+        <Text color={t.color.text}>
           {segments.map((segment, i) =>
             segment.ref ? (
               <Text color={t.color.accent} key={i}>
@@ -285,7 +286,7 @@ export const MessageLine = memo(function MessageLine({
         </Box>
       )}
 
-      {showResponseSeparator && (
+      {showResponseSeparator && msg.kind && (
         <Box marginBottom={1}>
           <NoSelect flexShrink={0} fromLeftEdge width={gutterWidth}>
             <Text color={t.color.border}>└─ </Text>
@@ -296,7 +297,7 @@ export const MessageLine = memo(function MessageLine({
         </Box>
       )}
 
-      {stamp && (
+      {stamp && (msg.kind || (msg.role !== 'user' && msg.role !== 'assistant')) && (
         <Box>
           <NoSelect flexShrink={0} fromLeftEdge width={gutterWidth}>
             <Text> </Text>
@@ -307,15 +308,21 @@ export const MessageLine = memo(function MessageLine({
         </Box>
       )}
 
-      <Box>
-        <NoSelect flexShrink={0} fromLeftEdge width={gutterWidth}>
-          <Text bold={msg.role === 'user'} color={prefix}>
-            {glyph}{' '}
-          </Text>
-        </NoSelect>
+      {!msg.kind && (msg.role === 'user' || msg.role === 'assistant') ? (
+        <ScienceMessage cols={cols} role={msg.role} stamp={stamp} t={t}>
+          {content}
+        </ScienceMessage>
+      ) : (
+        <Box>
+          <NoSelect flexShrink={0} fromLeftEdge width={gutterWidth}>
+            <Text bold={msg.role === 'user'} color={prefix}>
+              {glyph}{' '}
+            </Text>
+          </NoSelect>
 
-        <Box width={transcriptBodyWidth(cols, msg.role, t.brand.prompt, TERMUX_TUI_MODE)}>{content}</Box>
-      </Box>
+          <Box width={transcriptBodyWidth(cols, msg.role, t.brand.prompt, TERMUX_TUI_MODE)}>{content}</Box>
+        </Box>
+      )}
     </Box>
   )
 })

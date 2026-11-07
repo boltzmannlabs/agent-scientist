@@ -138,7 +138,7 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "dashboard.theme": _select(
         "Web dashboard visual theme", "default", "midnight", "ember", "mono", "cyberpunk", "rose"
     ),
-    "display.busy_input_mode": _select("Input behavior while agent is running", "interrupt", "queue", "steer"),
+    "display.busy_input_mode": _select("Input behavior while agent is running", "queue", "steer", "interrupt"),
     "approvals.mode": _select("Dangerous command approval mode", "manual", "smart", "off"),
     "context.engine": _select("Context management engine", "default", "custom"),
     "human_delay.mode": _select("Simulated typing delay mode", "off", "typing", "fixed"),

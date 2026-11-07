@@ -205,7 +205,7 @@ def _cli_config_defaults():
         },
         "display": {
             "compact": False,
-            "show_reasoning": False, "reasoning_full": False, "streaming": True, "busy_input_mode": "interrupt",
+            "show_reasoning": False, "reasoning_full": False, "streaming": True, "busy_input_mode": "queue",
             "persistent_output": True, "persistent_output_max_lines": 200,
             # Also clear scrollback on redraw/resize recovery; off because users prefer history.
             "cli_rebuild_scrollback_on_redraw": False,

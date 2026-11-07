@@ -30,6 +30,7 @@ import type {
   SessionCloseResponse,
   TerminalResizeResponse
 } from '../gatewayTypes.js'
+import { useActivityMarker } from '../hooks/useActivityMarker.js'
 import { useGitBranch } from '../hooks/useGitBranch.js'
 import { pruneVirtualHeightCache, useVirtualHistory } from '../hooks/useVirtualHistory.js'
 import { t } from '../i18n/runtime.js'
@@ -690,26 +691,22 @@ export function useMainApp(gw: GatewayClient) {
     }
   }, [gw, ui.sid])
 
-  // Tab title: `⚠` waiting on approval/sudo/secret/clarify, `⏳` busy, `✓` idle.
-  // Format: `<marker> <session name> · <model> · <cwd>` — name/cwd omitted when absent.
+  // The title indicator animates only while working, without changing conversation state.
   const model = ui.info?.model?.replace(/^.*\//, '') ?? ''
-
-  const marker =
-    overlay.approval || overlay.sudo || overlay.secret || overlay.vaultUnlock || overlay.clarify
-      ? '⚠'
-      : ui.busy
-        ? '⏳'
-        : '✓'
+  const marker = useActivityMarker(
+    ui.busy,
+    Boolean(overlay.approval || overlay.sudo || overlay.secret || overlay.vaultUnlock || overlay.clarify)
+  )
 
   const tabCwd = ui.info?.cwd
 
   useTerminalTitle(
     model
       ? {
-          tab: composeTabTitle(marker, ui.sessionTitle, '', ''),
+          tab: composeTabTitle(marker, ui.sessionTitle || 'Agent Scientist', '', ''),
           window: composeTabTitle(marker, ui.sessionTitle, model, tabCwd ? shortCwd(tabCwd, 24) : '')
         }
-      : 'Sci'
+      : `${marker} Agent Scientist`.trim()
   )
 
   useEffect(() => {

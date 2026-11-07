@@ -30,6 +30,9 @@ def test_fresh_install_and_missing_theme_use_released_palette(tmp_path, monkeypa
     assert DEFAULT_CONFIG["display"]["skin"] == expected_name
     assert _cli_config_defaults()["display"]["skin"] == expected_name
     assert config["display"]["skin"] == expected_name
+    assert "color_mode" not in DEFAULT_CONFIG["display"]
+    assert "color_mode" not in _cli_config_defaults()["display"]
+    assert "color_mode" not in config["display"]
     assert not (home / "skins").exists()
     skin_engine.init_skin_from_config(config)
     assert skin_engine.get_active_skin().colors == released_palette["colors"]

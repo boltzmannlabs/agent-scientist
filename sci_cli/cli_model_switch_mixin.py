@@ -159,8 +159,16 @@ def _print_switch_summary(cli, result, old_model, *, one_turn: bool, strict_cont
         ctx = None
     if ctx:
         from agent.context_pin import context_pin_suffix
+        from providers import get_provider_profile
+        profile = get_provider_profile(result.target_provider)
+        pin = context_pin_suffix(ctx, getattr(agent, '_config_context_length', None) if agent else None)
+        note = profile.get_model_context_note(result.new_model, ctx) if profile and not pin else ""
         _cprint(f"    {t('gateway.model.context_label', tokens=f'{ctx:,}')}"
-                f"{context_pin_suffix(ctx, getattr(agent, '_config_context_length', None) if agent else None)}")
+                f"{pin or (' (' + note + ')' if note else '')}")
+        compressor = getattr(agent, "context_compressor", None)
+        if compressor is not None and getattr(agent, "compression_enabled", False):
+            _cprint(f"    Auto-compaction: ~{compressor.threshold_tokens:,} input tokens "
+                    "(after output reservation and safety caps)")
     if mi:
         if mi.max_output:
             _cprint(f"    {t('gateway.model.max_output_label', tokens=f'{mi.max_output:,}')}")

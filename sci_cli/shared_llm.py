@@ -49,6 +49,9 @@ def provider_config(config, *, expand=True):
     with _read_main_scope(main):
         raw = read_user_config_raw(main / "config.yaml")
         shared = deepcopy({k: raw[k] for k in ("providers", "custom_providers") if k in raw})
+        from providers import get_provider_profile
+        shared["providers"] = {name: value for name, value in shared.get("providers", {}).items()
+                               if not ((profile := get_provider_profile(name)) and profile.credential_scope == "profile")}
         if expand:
             shared = _expand_env_vars(shared)
         from agent.secret_scope import get_secret_str
@@ -112,6 +115,10 @@ def with_shared_credentials(function):
         # OpenRouter has a dedicated resolver rather than an auth-registry entry.
         key_names.setdefault("openrouter", ("OPENROUTER_API_KEY",))
         for slug, names in key_names.items():
+            from providers import get_provider_profile
+            profile = get_provider_profile(slug)
+            if profile is not None and profile.credential_scope == "profile":
+                continue
             if slug in local_providers:
                 continue
             for name in names:

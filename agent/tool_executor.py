@@ -905,7 +905,10 @@ def _run_sequential_tool_execution_middleware(
     generic deadline would report ``tool_timeout`` while the prompt is still live. They
     are ``_NEVER_PARALLEL_TOOLS`` and run inline below, before any deadline is armed, so
     they need no ``_SEQUENTIAL_DEADLINE_EXEMPT_TOOLS`` entry."""
-    timeout_s = None if function_name in _SEQUENTIAL_DEADLINE_EXEMPT_TOOLS else _resolve_sequential_tool_timeout()
+    from tools.registry import registry
+    entry = registry.get_entry(function_name)
+    owns_wait = entry is not None and entry.manages_timeout
+    timeout_s = None if owns_wait or function_name in _SEQUENTIAL_DEADLINE_EXEMPT_TOOLS else _resolve_sequential_tool_timeout()
     ref = _ToolCallRef(function_name, function_args, effective_task_id, tool_call_id, middleware_trace)
     kwargs = dict(ref.middleware_kwargs(), execute=execute, scope_block=scope_block, display_index=display_index)
     from agent.terminal_approval_batch import take_prepared_call

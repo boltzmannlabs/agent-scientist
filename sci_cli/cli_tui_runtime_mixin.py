@@ -67,6 +67,8 @@ class CLITuiRuntimeMixin:
         user_input, is_voice_input, is_seeded_query = self._tui_unwrap_input(user_input)
         if not user_input:
             return
+        if welcome := getattr(self, '_welcome_animation', None):
+            welcome.dismiss(self)
         notification_preview = user_input if isinstance(user_input, TimelineNotification) else None
         self._status_bar_suppressed_after_resize = False  # input ends post-resize suppression
 
@@ -241,12 +243,19 @@ class CLITuiRuntimeMixin:
         from cli import _accent_hex, _detect_light_mode
         with suppress(Exception):  # light-mode probe before pt grabs the tty (cached)
             _detect_light_mode()
+        from sci_cli.terminal_appearance import TerminalAppearance
+        from sci_cli.skin_engine import get_active_skin
+        self._terminal_appearance = TerminalAppearance()
+        self._terminal_appearance.apply(get_active_skin())
         # Scroll the cursor to the last row so banner, responses and prompt pin to the bottom.
         with suppress(Exception):
             _term_lines = shutil.get_terminal_size().lines
             if _term_lines > 2:
                 print("\n" * (_term_lines - 1), end="", flush=True)
 
+        if not self._resumed:
+            from sci_cli.welcome_animation import WelcomeAnimation
+            self._welcome_animation = WelcomeAnimation()
         self.show_banner()
         self._show_security_advisories()
         self._show_browser_backend_notice()
@@ -391,10 +400,13 @@ class CLITuiRuntimeMixin:
         from cli import CLI_CONFIG, EditingMode, _STEADY_CURSOR, _select_classic_cli_pt_output
         _cpr_disabled_output = _select_classic_cli_pt_output(sys.stdout)
 
-        # Kitty placeholders encode the image id in exact foreground RGB, so the whole app
-        # runs 24-bit there. ColorDepth is imported lazily for tests that stub prompt_toolkit.
+        # Preserve authored surface colors on truecolor terminals; leave limited-color
+        # terminals and explicit prompt_toolkit overrides alone. Kitty images require RGB.
         extra_kw = {}
-        if pet_render.supports_kitty_placeholders():
+        truecolor = os.environ.get("COLORTERM", "").lower() in ("truecolor", "24bit")
+        if pet_render.supports_kitty_placeholders() or (
+            truecolor and not os.environ.get("PROMPT_TOOLKIT_COLOR_DEPTH")
+        ):
             from prompt_toolkit.output import ColorDepth
 
             extra_kw["color_depth"] = ColorDepth.DEPTH_24_BIT
@@ -427,6 +439,8 @@ class CLITuiRuntimeMixin:
             erase_when_done=True,
             **extra_kw,
         )
+        if welcome := getattr(self, '_welcome_animation', None):
+            welcome.bind(app)
         app._sci_side_view = getattr(self, "_side_view", None)
         if app._sci_side_view is not None:
             from prompt_toolkit.key_binding import DynamicKeyBindings
@@ -533,3 +547,7 @@ class CLITuiRuntimeMixin:
         _run_cleanup()
         self._print_exit_summary()
         self._release_active_session()
+        if activity := getattr(self, "_terminal_activity", None):
+            activity.restore(self._app.output)
+        if appearance := getattr(self, "_terminal_appearance", None):
+            appearance.restore()

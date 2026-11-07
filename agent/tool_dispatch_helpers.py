@@ -185,6 +185,10 @@ def _batch_admission(tool_call, execution_cwd: Optional[Path]) -> tuple[str, Lis
         return None
 
     name, args = _peel_bridge_call(tool_name, function_args)
+    from tools.registry import registry
+    entry = registry.get_entry(name)
+    if entry is not None and entry.manages_timeout:
+        return None
     if name in _NEVER_PARALLEL_TOOLS:
         return None
     if name in _PATH_SCOPED_TOOLS:

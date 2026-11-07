@@ -7,6 +7,8 @@ from threading import Event
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+import pytest
+
 from sci_cli.rename_command import rename
 from sci_cli.side_commands import cancel_from_keyboard, handle_side, route_input
 
@@ -43,10 +45,11 @@ def test_rename_updates_only_profile_metadata_and_survives_reopen(tmp_path, monk
         reopened.close()
     assert resolve_command('/ReNaMe').name == 'rename'
     assert '/rename' in COMMANDS and '/side' in COMMANDS
-    assert resolve_command('btw') is None and '/btw' not in COMMANDS
+    assert resolve_command('btw') is resolve_command('side') and '/btw' in COMMANDS
 
 
-def test_side_routes_followups_back_close_and_profile_change_without_parent_interruption(monkeypatch, tmp_path):
+@pytest.mark.parametrize('command', ['/side', '/btw'])
+def test_side_routes_followups_back_close_and_profile_change_without_parent_interruption(monkeypatch, tmp_path, command):
     from sci_cli import side_commands
     from sci_cli.cli_tui_mixin import CLITuiMixin
 
@@ -81,11 +84,13 @@ def test_side_routes_followups_back_close_and_profile_change_without_parent_inte
     event = SimpleNamespace(app=SimpleNamespace(current_buffer=SimpleNamespace(text='', reset=Mock()), invalidate=Mock()))
     # A parent clarification must not swallow the command or a side follow-up.
     cli._clarify_state = {'question': 'parent approval'}
-    event.app.current_buffer.text = '/SIDE\twhy?'
+    event.app.current_buffer.text = command.upper() + '\twhy?'
     assert CLITuiMixin._tui_enter_overlay(cli, event) is False
     event.app.current_buffer.text = ''
     # Exercise the actual pre-queue Enter path while parent chat() is blocked.
-    assert CLITuiMixin._tui_enter_inline_command(cli, event, '/side why?', False)
+    cli._pending_input.put('queued parent followup')
+    assert CLITuiMixin._tui_enter_inline_command(cli, event, command + ' why?', False)
+    event.app.current_buffer.reset.assert_called_once_with(append_to_history=False)
     controller = cli._side_controller
     assert started.wait(5)
     resets = event.app.current_buffer.reset.call_count
@@ -97,13 +102,13 @@ def test_side_routes_followups_back_close_and_profile_change_without_parent_inte
     assert route_input(cli, '!touch forbidden')
     side_commands.toggle(cli)
     assert not route_input(cli, 'parent followup')
-    handle_side(cli, '/side')
+    handle_side(cli, command)
     release.set()
     controller.worker.join(5)
     assert route_input(cli, 'side followup')
     controller.worker.join(5)
     assert prompts == ['why?', 'side followup']
-    assert cli._pending_input.empty()
+    assert list(cli._pending_input.queue) == ['queued parent followup']
     cli._session_db = SimpleNamespace(resolve_resume_session_id=lambda _: 'compacted-parent')
     cli.session_id = 'compacted-parent'
     assert side_commands.current(cli) is controller
@@ -112,7 +117,7 @@ def test_side_routes_followups_back_close_and_profile_change_without_parent_inte
     parent.interrupt.assert_not_called()
     assert not controller.active and controller.conversation.closed.is_set()
     assert cli.conversation_history == [{'role': 'assistant', 'content': 'prior'}]
-    handle_side(cli, '/side')
+    handle_side(cli, command)
     new = cli._side_controller
     monkeypatch.setenv('SCI_HOME', str(tmp_path / 'other'))
     assert not route_input(cli, 'other profile text')

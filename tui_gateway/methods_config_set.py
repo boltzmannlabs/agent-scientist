@@ -350,9 +350,6 @@ def _word_setters() -> dict:
         "thinking_mode": (_word, {"collapsed", "truncated", "full"}, "unknown thinking_mode: {value}", lambda w: (
             _write_config_key("display.thinking_mode", w),
             _write_config_key("display.details_mode", "expanded" if w == "full" else "collapsed"))),
-        # 'light'/'dark' pin beats background auto-detection (xterm.js hosts misreport OSC 11).
-        "theme": (_word, {"auto", "light", "dark"}, "unknown theme value: {value} (use auto|light|dark)",
-                  lambda w: _write_config_key("display.tui_theme", w)),
         # _raw_word: 0/False/[] keep their text so the error names what was sent.
         "indicator": (_raw_word, INDICATOR_STYLES, "unknown indicator: {raw!r}; pick one of " + "|".join(INDICATOR_STYLES),
                       lambda w: _write_config_key("display.tui_status_indicator", w)),

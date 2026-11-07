@@ -31,6 +31,8 @@ def render_transcript(cli, entries):
     from sci_cli.cli_render import assistant_message_panel
     from sci_cli.cli_status_bar_mixin import CLIStatusBarMixin
     from cli import _accent_hex
+    from rich.rule import Rule
+    from sci_cli.skin_engine import get_active_skin
     # Keep detailed activity in the read-only viewer, never rerun it during replay.
     entries = [(role, body) for role, body in entries if role in ("user", "assistant")]
 
@@ -39,10 +41,10 @@ def render_transcript(cli, entries):
             return assistant_message_panel(
                 body, mode=getattr(cli, "final_response_markdown", "render"),
                 width=CLIStatusBarMixin._scrollback_box_width())
-        message = Text(style="bold")
-        message.append("● ", style=_accent_hex())
+        message = Text()
+        message.append("● You: ", style=f"bold {_accent_hex()}")
         message.append(body)
-        return Group(Text("─" * 40, style=_accent_hex()), message)
+        return Group(Rule(style=get_active_skin().get_color("session_border")), message)
 
     if not entries:
         cli._console_print(Text("No retained conversation text is available for this session."))

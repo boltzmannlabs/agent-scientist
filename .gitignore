@@ -1,4 +1,9 @@
 .DS_Store
+# Private conversation exports and local comparison reports.
+/codex-session-*.md
+/HERMES_CODE_FEATURES_*.md
+/HERMES_PUBLIC_FEATURES_*.md
+/SCI_HERMES_COMPARISON_*.md
 /venv/
 /venv.old/
 /venv.stale.runtime-*/

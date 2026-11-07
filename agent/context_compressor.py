@@ -2167,6 +2167,7 @@ class ContextCompressor(SummaryDispatchMixin, MicroCompactionMixin, ContextEngin
         """Forget the real-usage state read by real_usage_pending()."""
         self.last_real_prompt_tokens = self.last_compression_rough_tokens = 0
         self.awaiting_real_usage_after_compression = self._provider_omits_usage = False
+        self._preflight_after_budget_shrink = False
 
     def _reset_session_compaction_state(self) -> None:
         """Shared per-session reset for /new, /reset and session end."""
@@ -2536,7 +2537,9 @@ class ContextCompressor(SummaryDispatchMixin, MicroCompactionMixin, ContextEngin
             logger.debug("compression cancellation check failed", exc_info=True)
             return False
 
-    def _derive_trigger(self, model: str, context_length: int, provider: str) -> tuple[float, float, int]:
+    def _derive_trigger(
+        self, model: str, context_length: int, provider: str, max_tokens: int | None = None,
+    ) -> tuple[float, float, int]:
         """``(base_percent, effective_percent, threshold_tokens)`` for a model/window, from the raw config
         value so a switch away from an overridden model falls back correctly. Pure: the one place the
         trigger math lives, shared by ``update_model`` and the switch guard's preview so the number the
@@ -2544,7 +2547,8 @@ class ContextCompressor(SummaryDispatchMixin, MicroCompactionMixin, ContextEngin
         ceiling, which the feasibility probe re-derives per runtime."""
         base_percent = resolve_model_threshold(model, self.model_thresholds, self._config_threshold_percent, provider)
         effective_percent = self._effective_threshold_percent(context_length, base_percent)
-        threshold = self._compute_threshold_tokens(context_length, effective_percent, self.max_tokens)
+        reservation = self.max_tokens if max_tokens is None else self._coerce_max_tokens(max_tokens)
+        threshold = self._compute_threshold_tokens(context_length, effective_percent, reservation)
         cap = self._effective_threshold_cap(context_length)
         if cap is not None:
             threshold = min(threshold, cap)
@@ -2555,9 +2559,11 @@ class ContextCompressor(SummaryDispatchMixin, MicroCompactionMixin, ContextEngin
         cap = self.threshold_tokens_cap
         return min(cap, context_length) if cap is not None and cap > 0 else None
 
-    def preview_threshold_tokens(self, model: str, context_length: int, provider: str = "") -> int:
+    def preview_threshold_tokens(
+        self, model: str, context_length: int, provider: str = "", *, max_tokens: int | None = None,
+    ) -> int:
         """The trigger ``update_model`` would install, without mutating state."""
-        return self._derive_trigger(model, context_length, provider)[2]
+        return self._derive_trigger(model, context_length, provider, max_tokens)[2]
 
     def update_model(
         self, model: str, context_length: int, base_url: str = "", api_key: Any = "", provider: str = "",
@@ -2565,12 +2571,14 @@ class ContextCompressor(SummaryDispatchMixin, MicroCompactionMixin, ContextEngin
     ) -> None:
         """Update model info after a model switch or fallback activation."""
         runtime_changed = (model, provider, base_url, api_mode) != (self.model, self.provider, self.base_url, self.api_mode)
+        previous_input_window = self._effective_input_window(self.context_length, self.max_tokens)
         self.model, self.base_url, self.api_key, self.provider, self.api_mode = model, base_url, api_key, provider, api_mode
         self.context_length = context_length
         # max_tokens=None means "unspecified": keep the existing output reservation.
         # A switch that genuinely changes the output budget passes the new value explicitly. (#43547)
         if max_tokens is not None:
             self.max_tokens = self._coerce_max_tokens(max_tokens)
+        budget_shrank = self._effective_input_window(context_length, self.max_tokens) < previous_input_window
         if runtime_changed:
             # The aux ceiling was probed against the previous main runtime (an "auto" aux route follows the
             # main model); the caller re-runs the feasibility probe. A same-runtime recompute (overflow-reported
@@ -2587,6 +2595,7 @@ class ContextCompressor(SummaryDispatchMixin, MicroCompactionMixin, ContextEngin
         # latch: the next response supplies usage or enables the usage-less fallback.
         self.last_prompt_tokens = self.last_completion_tokens = self.last_total_tokens = 0
         self._reset_real_usage_pairing()
+        self._preflight_after_budget_shrink = budget_shrank
         # Strikes were judged against the previous threshold; void them durably too.
         self._record_ineffective_compression_verdict(0)
         self._prellm_skip_count = 0
@@ -2791,6 +2800,7 @@ class ContextCompressor(SummaryDispatchMixin, MicroCompactionMixin, ContextEngin
         self._apply_real_prompt_verdict()
         # Consume the flag once real usage arrives even without prompt_tokens, so it can't stay armed.
         self._verify_compaction_cleared_threshold = self.awaiting_real_usage_after_compression = False
+        self._preflight_after_budget_shrink = False
 
     def _apply_real_prompt_verdict(self) -> None:
         """Pair the real prompt count with its rough estimate and judge the armed compaction verdict."""
@@ -2873,6 +2883,11 @@ class ContextCompressor(SummaryDispatchMixin, MicroCompactionMixin, ContextEngin
             return False
         if self.awaiting_real_usage_after_compression:
             return True
+        # An inherited transcript must fit the smaller destination BEFORE the first
+        # request. Waiting for that request's usage defeats preflight on model switches.
+        # After a successful compaction the latch above still prevents a second pass.
+        if self._preflight_after_budget_shrink:
+            return False
         # Estimate magnitude is not evidence of overflow, even past the full window.
         # Let the provider adjudicate; its overflow error still triggers reactive recovery.
         if self.last_real_prompt_tokens >= self.threshold_tokens:

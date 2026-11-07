@@ -36,6 +36,7 @@ class TestBackgroundInlineDetector:
         cli._agent_running = True
         assert cli._should_handle_background_command_inline("/bg do work") is True
         assert cli._should_handle_background_command_inline("/side do work") is True
+        assert cli._should_handle_background_command_inline("/BTW\tquestion") is True
 
 
     def test_ignores_background_when_agent_idle(self):

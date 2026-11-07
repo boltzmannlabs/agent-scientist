@@ -912,7 +912,7 @@ def build_welcome_banner(
     console: "Console", model: str, cwd: str, tools: List[dict] = None, enabled_toolsets: List[str] = None,
     session_id: str = None, get_toolset_for_tool=None, context_length: int = None, provider: str = None,
     availability: Dict[str, Any] = None, skills_by_category: Dict[str, List[str]] = None,
-    context_pinned: bool = False,
+    context_pinned: bool = False, welcome_handler=None,
 ):
     """Build and print a welcome banner with caduceus on left and info on right.
 
@@ -935,6 +935,33 @@ def build_welcome_banner(
     text = _skin_color("banner_text", "#FFE3ED")
     # Use skin's custom caduceus art if provided
     _bskin = _quiet(_active_skin)
+    from sci_cli.skin_defaults import DEFAULT_SKIN_NAME
+    if (getattr(_bskin, "name", None) == DEFAULT_SKIN_NAME
+            and not (_bskin.banner_logo or _bskin.banner_hero)):
+        from sci_cli.banner_science import science_welcome_panel
+
+        skills_enabled = not _enabled_ts or "skills" in _enabled_ts
+        skills = (skills_by_category if skills_by_category is not None else get_available_skills()) if skills_enabled else {}
+        display_model = model or _quiet(lambda: _route_model_for_banner(provider), "")
+        if console.width >= 95:
+            console.print(_agentic_sciences_logo(console.width))
+            console.print()
+        welcome_params = dict(
+            skin=_bskin, profile=_quiet(_active_profile_name), model=display_model,
+            provider=provider, cwd=cwd, tool_count=len(tools),
+            skill_count=sum(len(names) for names in skills.values()),
+            context_length=context_length, context_pinned=context_pinned,
+            yolo=bool(os.getenv("SCI_YOLO_MODE")),
+            width=console.width,
+        )
+        if welcome_handler is None or not welcome_handler(console, welcome_params):
+            console.print(science_welcome_panel(**welcome_params))
+        behind = _quiet(lambda: get_update_result(timeout=0.05))
+        if behind:
+            console.print(_format_update_notice(behind))
+        elif behind is None and not _update_check_done.is_set():
+            _defer_update_notice()
+        return
     left_lines = ["", getattr(_bskin, "banner_hero", None) or SCI_B_LOGO, ""]
     left_lines += _banner_left_lines(model, cwd, session_id, context_length, provider, accent=accent, dim=dim,
                                      context_pinned=context_pinned)
@@ -992,9 +1019,11 @@ def build_welcome_banner(
     release_info = get_latest_release_tag()
     if release_info:
         version_label = f"[link={release_info[1]}]{version_label}[/link]"
+    surface = _skin_color("terminal_elevated", "")
     outer_panel = Panel(
         layout_table, title=f"[bold {_skin_color('banner_title', '#FF7AA7')}]{version_label}[/]",
-        border_style=_skin_color("banner_border", "#8D123B"), padding=(0, 2))
+        border_style=_skin_color("banner_border", "#8D123B"), padding=(1, 2),
+        style=f"on {surface}" if surface else "")
     console.print()
     banner_width = min(console.width, shutil.get_terminal_size().columns)
     if banner_width >= 95:

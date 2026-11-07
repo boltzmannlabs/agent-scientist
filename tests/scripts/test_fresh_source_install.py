@@ -7,6 +7,7 @@ builds its unchanged runtime recipe and the tiny app, then publishes launchers.
 import hashlib
 import json
 import os
+import runpy
 from pathlib import Path
 import shutil
 import subprocess
@@ -69,6 +70,8 @@ def test_current_installer_publishes_real_dependencies_and_warm_path(tmp_path, s
         shutil.copytree(ROOT / name, source / name, ignore=shutil.ignore_patterns("__pycache__"))
     for name in ("utils.py", "sci_constants.py", "sci_yaml.py", "sci_bootstrap.py", "setup-sci.sh", "install-sci.sh"):
         shutil.copy2(ROOT / name, source / name)
+    (source / "scripts").mkdir()
+    shutil.copy2(ROOT / "scripts/source-install-preflight.sh", source / "scripts/source-install-preflight.sh")
     # Setup now synchronizes through the managed launcher, using the real
     # skill synchronizer rather than silently falling back to a directory copy.
     skill = source / "skills" / "science" / "fixture-research"
@@ -97,6 +100,7 @@ def test_current_installer_publishes_real_dependencies_and_warm_path(tmp_path, s
         "import installer_probe, json, sys\n"
         "from pathlib import Path\n"
         "PROJECT_ROOT = Path(__file__).resolve().parents[1]\n"
+        "def _has_any_provider_configured(): return False\n"
         "def main():\n print(json.dumps({'module':installer_probe.__file__, 'argv':sys.argv[1:]}))\n"
         "if __name__ == '__main__': main()\n", encoding="utf-8")
     docroot, url = served
@@ -126,7 +130,18 @@ def test_current_installer_publishes_real_dependencies_and_warm_path(tmp_path, s
     commit = run(["git", "rev-parse", "HEAD"], cwd=source).stdout.strip()
     install = tmp_path / "installed source"
     env["SCI_REPO_URL"] = str(source)
-    command = ["bash", str(ROOT / "scripts/install.sh"), "--dir", str(install),
+    # The standalone bootstrap normally downloads its embedded release pin
+    # before cloning. Generate its pin block from the same loopback fixture
+    # as PM, so the acceptance test never needs GitHub artifact access.
+    generator = runpy.run_path(str(ROOT / "scripts/gen-bootstrap-pins.py"))
+    bootstrap_script = tmp_path / "bootstrap.sh"
+    shutil.copy2(ROOT / "scripts/install.sh", bootstrap_script)
+    fixture_uv = {"version": pins["uv"]["version"], "artifacts": {
+        target: pins["uv"]["artifacts"][current_target()]
+        for target in generator["_POSIX_TARGETS"]
+    }}
+    generator["_splice"](bootstrap_script, generator["_sh_fragment"](fixture_uv), False)
+    command = ["bash", str(bootstrap_script), "--dir", str(install),
                "--branch", "fixture", "--commit", commit, "--non-interactive", "--json"]
     result = run(command, expected=1 if fault else 0)
     assert not npm_called.exists()

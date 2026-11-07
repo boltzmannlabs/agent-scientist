@@ -100,19 +100,20 @@ def relaunch_profile(cli):
 
 
 def request_resume(cli, session_id, ui, *, foreground=False):
-    """A fresh runtime re-reads current permissions, while the target keeps its cached prompt."""
+    """Reuse live views; only a saved, unowned chat needs a fresh runtime."""
     from sci_constants import get_sci_home
     from sci_cli.profiles import get_active_profile_name
     from sci_cli.session_browser import flush_before_switch
-    flush_before_switch(cli)
-    if session_id and session_id == cli.session_id:
-        ui.show("This conversation is already open here.")
+    from sci_cli.cli_session_views import select_view
+    if session_id and select_view(cli, session_id):
+        ui.show("Opened the existing conversation view. Both chats and any running work are unchanged.")
         return
+    flush_before_switch(cli)
     if session_id and not cli._session_db.get_session(session_id):
         raise ValueError("Conversation is not in this profile's store.")
     from sci_cli.cli_session_recovery import prepare_resume
-    from sci_cli.background_chats import find_worker
-    worker = find_worker(session_id) if session_id else None
+    from sci_cli.background_chats import find_view_worker
+    worker = find_view_worker(session_id) if session_id else None
     takeover = False
     if worker and worker["attached"]:
         ui.choose("Move this chat's viewer here? Its other terminal will detach; its agent keeps running.",
@@ -126,13 +127,17 @@ def request_resume(cli, session_id, ui, *, foreground=False):
     if foreground:
         cli._pending_relaunch.append("--no-daemon")
     if worker:
-        cli._pending_relaunch = ["-p", get_active_profile_name(), "background", "attach", worker["id"]]
+        cli._pending_relaunch = ["-p", get_active_profile_name(), "background", "attach", session_id]
         if takeover:
             cli._pending_relaunch.append("--takeover")
     elif session_id:
         cli._pending_relaunch.extend(["--resume", session_id])
     if worker:
-        ui.show("Attaching to the same running agent. Its conversation, prompt and permissions remain unchanged.")
+        if worker.get('legacy_side_view'):
+            ui.show("This older runtime cannot select a side view remotely. Reconnecting to its parent CLI; "
+                    "use Ctrl+/ or /btw there to open this side chat. No work will be restarted.")
+        else:
+            ui.show("Attaching to the same running agent. Its conversation, prompt and permissions remain unchanged.")
     else:
         ui.show(f"Opening [{profile_label()}] conversation {session_id or '(new)'}. Current permissions will be re-read; "
                 "saved model context remains compressed; its retained transcript will appear in scrollback.")

@@ -39,7 +39,9 @@ def test_set_edits_active_user_skin_in_place_preserving_everything_else():
     assert not (_skins() / "oasis-custom.yaml").exists()
 
 
-def test_set_forks_a_builtin_without_inventing_a_background():
+def test_set_forks_a_builtin_preserving_its_palette():
+    from sci_cli.skin_engine import load_skin
+    original = dict(load_skin("default").colors)
     _activate("default")  # a built-in — no file
 
     assert skin_cmd._skin_set("ui_tool", "#00FFFF", None) == 0
@@ -48,8 +50,8 @@ def test_set_forks_a_builtin_without_inventing_a_background():
     assert fork.exists()
     data = yaml.safe_load(fork.read_text())
     assert data["colors"]["ui_tool"] == "#00FFFF"
-    # default has no background, so the fork must not invent one (terminal stays put).
-    assert "background" not in data["colors"]
+    # Editing one token must preserve every other authored color, including the canvas.
+    assert data["colors"] == {**original, "ui_tool": "#00FFFF"}
     # full palette carried over, and it became active.
     assert data["colors"].get("banner_title")
     assert (get_sci_home() / "config.yaml").read_text().find("default-custom") != -1

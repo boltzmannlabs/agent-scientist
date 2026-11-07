@@ -41,5 +41,4 @@ class TestExtensionHookSubclass:
         status_idx = children.index("status")
         assert children[spacer_idx + 1] == "radio-menu"
         assert children[spacer_idx + 2] == "mini-player"
-        assert children[spacer_idx + 3] == "status"
-        assert status_idx == spacer_idx + 3
+        assert children.index("mini-player") < children.index("input-area") < status_idx

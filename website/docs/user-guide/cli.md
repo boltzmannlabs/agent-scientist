@@ -263,7 +263,7 @@ Common examples:
 | `/reasoning high` | Increase reasoning effort |
 | `/title My Session` | Name the current session |
 | `/rename [name]` | Rename the conversation; omit the name to open a prompt (classic CLI) |
-| `/side [question]` | Open a temporary, multi-turn discussion using the parent conversation's context (classic CLI) |
+| `/btw [question]`, `/side [question]` | Open a saved, multi-turn discussion using the parent conversation's context (classic CLI) |
 | `/status` | Show session info — model/profile/tokens/duration — followed by a local **Session recap** block (recent turn counts, top tools used, files touched, latest user prompt + assistant reply). Pure local compute; no LLM call. |
 | `/context [all]` | Visual context-usage breakdown — glyph block grid + per-category token table (system prompt / tools / skills / memory / conversation / free space). `/context all` adds per-skill and per-toolset costs. |
 | `/sessions` | Open an interactive session picker right inside the classic CLI (same surface the TUI uses). Type to filter, arrow keys to navigate, Enter to resume. |
@@ -399,36 +399,44 @@ Most terminals send the same byte sequence for `Enter` and `Shift+Enter` by defa
 
 Where the terminal cannot distinguish them, `Alt+Enter` and `Ctrl+J` continue to work by default. **On Windows Terminal specifically, `Alt+Enter` is captured by the terminal (toggles fullscreen) and never reaches Sci — use `Ctrl+Enter` (delivered as `Ctrl+J`) or `Ctrl+J` directly for a newline.**
 
-## Redirecting the Agent Mid-Turn
+## Sending messages while SCI is working
 
-While the agent is working, you can send a correction without starting a new turn:
+Normal messages queue by default. SCI finishes the current task, displays its result or blocker,
+then processes follow-ups in arrival order. A tool returning is not necessarily the end of a task:
+upload, submit, poll, download and reporting can all belong to one turn.
 
-- **Type a new message + Enter** — redirects the active turn using your correction
-- **`Ctrl+C`** — interrupt the current operation (press twice within 2s to force exit)
-- Completed tool work and reasoning already shown stay in context
-- A running tool reaches its safe boundary before the correction is applied
+- **Enter** queues a separate follow-up. The CLI shows a queued acknowledgement.
+- **`/steer <correction>`** explicitly adjusts the current task at its next tool-result boundary.
+  During a long foreground wait, the correction stays pending until that call returns.
+- **`Ctrl+C`** stops the local operation; `/stop` is available on messaging surfaces.
+  Stopping local polling does not itself cancel an already submitted remote scientific job.
+- **`/queue list`**, **`/queue edit N …`**, **`/queue rm N`**, **`/queue move A B`** and
+  **`/queue clear`** manage pending follow-ups without interrupting the current work.
+
+Queues belong to their conversation and profile. In the classic CLI, finish or clear pending
+messages before `/activate`, `/resume` or `/new`; these commands refuse to move queued prompts into
+another conversation. The TUI and desktop retain separate queues for each conversation.
+The classic CLI's pending queue is in memory and does not survive process exit.
 
 ### Busy Input Mode
 
-The `display.busy_input_mode` config key controls what happens when you press Enter while the agent is working:
-
 | Mode | Behavior |
 |------|----------|
-| `"interrupt"` (default) | Your message redirects the active turn. Model generation restarts with displayed reasoning and completed work preserved. A running foreground terminal command is moved to the background (not killed — you get a completion notification) so your message is read immediately; other running tools finish first |
-| `"queue"` | Your message is silently queued and sent as the next turn after the agent finishes |
-| `"steer"` | Your message is injected into the current run via `/steer`, arriving at the agent after the next tool call — no interrupt, no new turn |
+| `"queue"` (default) | Finish the current task, then run the follow-up as a separate turn |
+| `"steer"` (opt-in) | Apply new messages to the current task at the next tool-result boundary |
+| `"interrupt"` (opt-in) | Redirect model generation; running tools still reach a safe boundary |
 
 ```yaml
-# ~/.sci/config.yaml
 display:
-  busy_input_mode: "steer"   # or "queue" or "interrupt" (default)
+  busy_input_mode: "queue"
 ```
 
-`"queue"` mode prepares a separate follow-up turn. `"steer"` always waits for the next tool-result boundary. The default `"interrupt"` mode responds sooner during model generation while avoiding cancellation of a running tool; a long foreground `terminal` command (a build, a poller) is handed to the background so the agent sees your message right away instead of after the command exits. Use `/stop` when you want to cancel the turn and its foreground work. Unknown values fall back to `"interrupt"`.
+Missing or invalid settings default to queue in main and named profiles. Explicit saved settings
+remain effective. `/steer` is available without changing the default. No busy-input mode moves a
+foreground terminal command into the background automatically. Prompt/tool caches stay intact.
 
-`"steer"` has two automatic fallbacks: if the agent hasn't started yet, or if images are attached, the message falls back to `"queue"` behavior so nothing is lost.
-
-Whatever the mode, `/queue <prompt>` queues a follow-up turn explicitly, and `/queue list`, `/queue rm N`, `/queue edit N …` and `/queue move A B` act on the pending queue immediately, even mid-run. The live work dock lists what is waiting.
+On desktop, Enter and Cmd/Ctrl+Enter queue normal follow-ups. Use the queued-message steering
+control to explicitly apply a correction to the current turn. Stop remains a separate action.
 
 You can also change it inside the CLI:
 
@@ -549,12 +557,15 @@ auxiliary:
 
 When compression triggers, middle turns are summarized while the first 3 and last 20 turns are always preserved.
 
-## Temporary side conversations
+## Saved side conversations
 
-In the classic CLI, `/side` opens a temporary discussion, including while the parent is
-working. `/side Why did we choose this method?` opens it and asks the first question.
+In the classic CLI, `/btw` (alias of `/side`) opens a separate discussion in main or any
+named profile, including while the parent is working. `/btw Why did we choose this method?`
+opens it and asks the first question. It does not interrupt, steer, or consume the parent's
+queued messages, and a pending parent approval never treats it as an answer.
 Ordinary follow-up messages then go to the side discussion. The status bar labels the
-side view and shows whether the parent is running, idle, or waiting for input.
+side view and shows its own readiness, running work, or pending input. Main commands
+and tool progress do not mark the side conversation as busy.
 The side transcript uses a separate terminal screen. Main replies arriving while you
 are there are shown in main when you return; they do not appear in the side transcript.
 Each chat keeps its own draft and input history. Page Up/Page Down scroll the side
@@ -575,14 +586,17 @@ it does not undo completed external actions.
 
 - Ctrl+/: switch between main and the existing side conversation without cancelling either.
   Terminals sending Ctrl+_ for this key are supported too.
-- `/side`: open or reopen the temporary conversation; optional text asks a question.
+- `/btw` or `/side`: open or return to the side conversation; optional text asks a question.
 - Ctrl+C with no transcript selection: close side and return to main, even with an unfinished draft. Requests cancellation
   of side work without cancelling main. There are no back, close, or status subcommands.
 - Ctrl+Q: close side directly, including when transcript text is selected.
 
-Side conversations inherit the entire available context through the parent's last completed
-assistant message, including earlier turns (and existing compression summaries);
-unfinished turns and later parent activity are not included. The same selected model answers
+Side conversations capture the parent's available context when opened, including earlier
+turns and existing compression summaries. Accepted requests and committed tool activity
+from an unfinished turn are included as clearly marked reference context; a pending call
+is never treated as a completed result or executed by the fork. Partial streaming output
+that has not been saved is not part of the snapshot. Later main activity is not added.
+The same selected model answers
 follow-ups without changing the parent's history, tools, or cached prompt. No provider
 fallback is made. Replies, tool activity, attachments, and approval prompts use the normal
 chat interface. Available tools and skills follow the active profile's permissions. Inherited
@@ -590,8 +604,31 @@ requests and approvals are reference material: external actions require a reques
 Only the conversations are separated; files, credentials, and services are shared, so changes
 made with tools have real effects. Closing cannot undo completed actions or remote jobs.
 Closing returns immediately; opening another side waits for its cancelled worker to finish.
-Side conversations are not saved for `/resume`; provider processing and ordinary diagnostic
-logging still follow the application's existing settings. `/btw` has been removed.
+After the first question, the fork and its subsequent conversation/tool activity are saved
+in the active profile's session store. Use `/resume` or `/sessions` and select its `Side:`
+title to continue it. If it is already open in this CLI, resume selects its existing view.
+For a persistent CLI in another terminal, confirm moving the viewer: the same runtime
+opens the selected side view, detaches the old viewer, and keeps the parent chat running.
+Input is enabled only after the owning CLI confirms the view selection; no request is replayed
+and no second writer is created. Main and side drafts and cached prompts remain unchanged.
+While one runtime owns multiple chats, reconnecting keeps its loaded code; close its side
+chats normally before choosing a code reload. For older services/workers without view-selection
+support, resume checks the side chat's profile-local lease and reconnects to that exact parent
+runtime. It explains that you must use Ctrl+/ or `/btw` to select the side view manually; it
+does not silently restart the parent. Use a newly launched `sci --resume SIDE_SESSION_ID`
+when an already-running CLI still has the old resume code loaded. An unmanaged foreground
+owner must still be opened in its original terminal. Ctrl+Q inside the side view releases
+only that side chat so its saved history can then be resumed independently.
+After the side is closed or SCI has exited, resume opens its saved history as an independent
+conversation. Closing the view does not delete
+saved history. Opening and closing an empty side
+composer does not create a saved conversation. Storage failures are reported, and an initial
+save failure prevents the side model request. The captured context and parent prompt are
+preserved for resume; current authorization checks still apply.
+Provider processing and ordinary diagnostic logging follow the application's existing settings.
+This is an explicitly requested
+side discussion; normal messages in the main view still follow the queue behavior above.
+The side-view command is available in the classic CLI, not the Ink TUI, desktop, or messaging interfaces.
 
 `/rename "Literature review"` saves a name for the active parent conversation. `/rename`
 opens the naming prompt when idle; use an inline name while work is running. Names are

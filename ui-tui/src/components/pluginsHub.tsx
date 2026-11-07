@@ -220,7 +220,7 @@ export function PluginsHub({ gw, maxWidth, onClose, t }: PluginsHubProps) {
             wrap="truncate-end"
           >
             {active ? '▸ ' : '  '}
-            {i + 1}. {row}
+            {row}
           </Text>
         )
       })}

@@ -40,8 +40,7 @@ def boltzmann_submit(
         experiment_name=experiment_name,
         allow_partial_validation=allow_partial_validation,
     )
-    from .job_monitor import monitor_result
-    return monitor_result("boltzmann_submit", {}, result, session_id="mcp")
+    return result
 
 
 @mcp.tool()
@@ -56,8 +55,7 @@ def boltzmann_status(
         doc_id=doc_id,
         output_folder=output_folder,
     )
-    from .job_monitor import monitor_result
-    return monitor_result("boltzmann_status", {}, result, session_id="mcp")
+    return result
 
 
 @mcp.tool()

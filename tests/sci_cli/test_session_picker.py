@@ -32,6 +32,10 @@ async def test_resume_order_identity_search_and_escape_across_profile_homes(tmp_
             assert [r['id'] for r in picker.rows] == ['old', 'new']
             labels = ''.join(text for _, text in picker.fragments())
             assert labels.count('Untitled') == 2
+            assert 'Messages' not in ''.join(text for _, text in picker.heading())
+            for row in picker.rows:
+                row['message_count'] = 987654
+            assert ''.join(text for _, text in picker.fragments()) == labels
             assert 'messages' not in labels and 'old' not in labels and 'new' not in labels
             picker.move(1)
             with create_pipe_input() as pipe:

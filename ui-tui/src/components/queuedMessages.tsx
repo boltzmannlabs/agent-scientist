@@ -25,31 +25,26 @@ export function QueuedMessages({ cols, queueEditIdx, queued, t }: QueuedMessages
   const q = getQueueWindow(queued.length, queueEditIdx)
 
   return (
-    <Box flexDirection="column" marginTop={1}>
-      <Text color={t.color.muted} dimColor>
+    <Box backgroundColor={t.surfaces?.elevated} flexDirection="column" marginTop={1} paddingX={1}>
+      <Text bold color={t.color.label}>
         {`${T.header(queued.length)}${queueEditIdx !== null ? T.editing(queueEditIdx + 1) : ''}`}
       </Text>
 
-      {q.showLead && (
-        <Text color={t.color.muted} dimColor>
-          {' '}
-          …
-        </Text>
-      )}
+      {q.showLead && <Text color={t.color.muted}> …</Text>}
 
       {queued.slice(q.start, q.end).map((item, i) => {
         const idx = q.start + i
         const active = queueEditIdx === idx
 
         return (
-          <Text color={active ? t.color.accent : t.color.muted} dimColor key={`${idx}-${item.slice(0, 16)}`}>
-            {active ? '▸' : ' '} {idx + 1}. {compactPreview(item, Math.max(16, cols - 10))}
+          <Text color={active ? t.color.accent : t.color.text} key={`${idx}-${item.slice(0, 16)}`}>
+            {active ? '▸' : ' '} {compactPreview(item, Math.max(16, cols - 10))}
           </Text>
         )
       })}
 
       {q.showTail && (
-        <Text color={t.color.muted} dimColor>
+        <Text color={t.color.muted}>
           {'  '}
           {T.more(queued.length - q.end)}
         </Text>

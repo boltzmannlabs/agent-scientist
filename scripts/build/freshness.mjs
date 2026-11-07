@@ -17,6 +17,8 @@ const tuiInputs = [
   ]),
   'tsconfig.json', 'package.json', 'package-lock.json', '.npmrc', 'pm/lock.json',
   'scripts/build/tui.mjs', 'scripts/build/frontend-common.mjs', 'scripts/build/freshness.mjs',
+  'sci_cli/data/science-terminal-art.json',
+  'sci_cli/data/boltzmann-spin.json',
 ]
 
 function treeHash(root, inputs, skip, contents = () => true) {
@@ -43,6 +45,7 @@ export function sourceHash(source, product) {
   return treeHash(source, product === 'tui' ? tuiInputs : [
     workspace, 'apps/shared', 'package.json', 'package-lock.json', '.npmrc', 'pm/lock.json',
     'scripts/build',
+    ...(product === 'web' ? ['sci_cli/data/science-terminal-art.json'] : []),
     'scripts/generate-icons.mjs', 'scripts/generate_icons.py',
     // The root install-stamp.json is runtime identity rewritten after every install; desktop's
     // baked stamp is a prepared input.

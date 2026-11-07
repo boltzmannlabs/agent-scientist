@@ -104,7 +104,7 @@ describe('applyDisplay', () => {
     expect(setBell).toHaveBeenCalledWith(false)
     expect(s.inlineDiffs).toBe(true)
     expect(s.showReasoning).toBe(false)
-    expect(s.statusBar).toBe('top')
+    expect(s.statusBar).toBe('bottom')
     expect(s.streaming).toBe(true)
     expect(s.sections).toEqual({})
   })
@@ -170,10 +170,10 @@ describe('normalizeStatusBar', () => {
   })
 
   it('defaults missing/unknown values to top', () => {
-    expect(normalizeStatusBar(undefined)).toBe('top')
-    expect(normalizeStatusBar(null)).toBe('top')
-    expect(normalizeStatusBar('sideways')).toBe('top')
-    expect(normalizeStatusBar(42)).toBe('top')
+    expect(normalizeStatusBar(undefined)).toBe('bottom')
+    expect(normalizeStatusBar(null)).toBe('bottom')
+    expect(normalizeStatusBar('sideways')).toBe('bottom')
+    expect(normalizeStatusBar(42)).toBe('bottom')
   })
 
   it('trims whitespace and folds case', () => {

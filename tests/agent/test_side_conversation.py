@@ -114,7 +114,7 @@ def test_real_multiturn_fork_profile_isolation_and_no_parent_writes(provider, tm
             assert side.answer('Explain the previous answer.') == 'Fixture side answer.'
             fork = side._agent
             assert fork.session_id != parent.session_id
-            assert fork._session_db is None and fork._persist_disabled
+            assert fork._session_db is parent._session_db and not fork._persist_disabled
             assert fork._cached_system_prompt == original_prompt
             assert side.answer('And what are the assumptions?') == 'Fixture side answer.'
             outbound = json.dumps(requests[-1])
@@ -125,8 +125,10 @@ def test_real_multiturn_fork_profile_isolation_and_no_parent_writes(provider, tm
             assert 'later parent activity' not in outbound
             assert parent._cached_system_prompt == original_prompt and parent.tools == original_tools
             assert parent._session_db.get_messages_as_conversation(parent.session_id) == original
+            saved_id = side.id
             side.close()
             assert side._agent is None
+            assert parent._session_db.get_session_model_config_value(saved_id, '_side_from') == parent.session_id
             failed = SideConversation(parent, original)
             count_before = len(requests)
             with pytest.raises(RuntimeError, match='failed'):
@@ -145,9 +147,12 @@ def test_real_multiturn_fork_profile_isolation_and_no_parent_writes(provider, tm
 def test_midturn_snapshot_cancellation_and_tool_execution(provider, monkeypatch, tmp_path):
     from sci_cli.plugins import _get_pre_tool_call_directive_details
     from run_agent import AIAgent
+    from sci_state import SessionDB
 
     url, requests, entered, release = provider
     parent = parent_agent(url)
+    parent._session_db = SessionDB(tmp_path / 'state.db')
+    parent._session_db.create_session(parent.session_id, 'cli', system_prompt=parent._cached_system_prompt)
     history = [{'role': 'user', 'content': 'earlier'}, {'role': 'assistant', 'content': 'complete'},
                {'role': 'user', 'content': 'working'},
                {'role': 'assistant', 'tool_calls': [{'id': 'unfinished'}], 'content': ''}]
@@ -173,6 +178,8 @@ def test_midturn_snapshot_cancellation_and_tool_execution(provider, monkeypatch,
     assert not worker.is_alive()
     assert denied != ['block'] and len(requests) == 1
     assert side._agent is None and side.transcript == []
+    assert any(m.get('content') == 'wait-for-cancellation'
+               for m in parent._session_db.get_messages_as_conversation(side.id))
     assert not parent._interrupt_requested
     with pytest.raises(ValueError, match='closed'):
         side.answer('no restart')
@@ -181,6 +188,7 @@ def test_midturn_snapshot_cancellation_and_tool_execution(provider, monkeypatch,
     parent.valid_tool_names = {'terminal'}
     tool_side = SideConversation(parent, history)
     assert tool_side.answer('try-a-tool') == 'Fixture side answer.'
+    assert any(m.get('role') == 'tool' for m in parent._session_db.get_messages_as_conversation(tool_side.id))
     assert (tmp_path / 'side-fixture-output').exists()
     assert any(m.get('role') == 'tool' and 'exit_code' in str(m.get('content'))
                for m in requests[-1]['messages'])
@@ -198,3 +206,173 @@ def test_midturn_snapshot_cancellation_and_tool_execution(provider, monkeypatch,
         restricted_side.close()
         clear_thread_tool_whitelist(restriction)
     parent.close()
+    parent._session_db.close()
+
+
+def test_btw_real_reply_keeps_main_and_profile_queues_and_prompts_unchanged(provider, monkeypatch, tmp_path):
+    from queue import Queue
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+
+    from agent.secret_scope import set_multiplex_context, reset_multiplex_context
+    from sci_cli import side_commands
+    from sci_cli.cli_tui_mixin import CLITuiMixin
+    from sci_constants import get_sci_home
+    from sci_state import SessionDB
+    from tui_gateway import server
+
+    home = tmp_path / '.sci'
+    home.mkdir()
+    monkeypatch.setattr(Path, 'home', lambda: tmp_path)
+    monkeypatch.setenv('SCI_HOME', str(home))
+    url, requests, _, _ = provider
+    clients, homes, output = {}, {}, []
+    monkeypatch.setattr(side_commands, '_show', lambda cli, text: output.append(
+        (str(get_sci_home()), cli.session_id, text)))
+    multiplex = set_multiplex_context(True)
+    try:
+        for name in ('main', 'A', 'B', 'A'):
+            scoped_home = home if name == 'main' else home / 'profiles' / name
+            scoped_home.mkdir(parents=True, exist_ok=True)
+            (scoped_home / 'config.yaml').write_text('{}\n')
+            session = {'profile_home': str(scoped_home)}
+            with server._session_profile_runtime_scope(session, hydrate_secrets=False):
+                if name not in clients:
+                    parent = parent_agent(url)
+                    db = SessionDB(scoped_home / 'state.db')
+                    db.create_session(parent.session_id, 'cli', system_prompt=parent._cached_system_prompt)
+                    db.append_message(parent.session_id, 'user', f'{name} private question')
+                    db.append_message(parent.session_id, 'assistant', f'{name} private answer')
+                    parent._session_db = db
+                    cli = SimpleNamespace(agent=parent, session_id=parent.session_id, _agent_running=True,
+                                          conversation_history=db.get_messages_as_conversation(parent.session_id),
+                                          _pending_input=Queue(), _app=Mock(),
+                                          _clarify_state={'question': 'parent approval'})
+                    cli._pending_input.put(f'{name} queued task')
+                    clients[name], homes[name] = cli, session
+                cli = clients[name]
+                parent = cli.agent
+                history, prompt, tools = deepcopy(cli.conversation_history), parent._cached_system_prompt, deepcopy(parent.tools)
+                event = SimpleNamespace(app=SimpleNamespace(
+                    current_buffer=SimpleNamespace(text='/BTW\tExplain the previous answer.', reset=Mock()),
+                    invalidate=Mock()))
+                assert CLITuiMixin._tui_enter_overlay(cli, event) is False
+                assert CLITuiMixin._tui_enter_inline_command(cli, event, event.app.current_buffer.text, False)
+                side = cli._side_controller
+                side.worker.join(30)
+                assert not side.worker.is_alive() and side.outcome == 'ready'
+                assert output[-1] == (str(scoped_home), cli.session_id, 'Fixture side answer.')
+                outbound = json.dumps(requests[-1])
+                assert f'{name} private question' in outbound
+                assert all(f'{other} private question' not in outbound for other in ('main', 'A', 'B') if other != name)
+                assert side.conversation._agent.provider == parent.provider
+                assert side.conversation._agent.model == parent.model
+                assert not parent._interrupt_requested
+                assert list(cli._pending_input.queue) == [f'{name} queued task']
+                assert cli._clarify_state == {'question': 'parent approval'}
+                assert cli.conversation_history == history
+                assert parent._cached_system_prompt == prompt and parent.tools == tools
+                assert parent._session_db.get_messages_as_conversation(cli.session_id) == history
+                side_commands.toggle(cli)
+                assert not side_commands.route_input(cli, 'next main task')
+        assert len(requests) == 4
+    finally:
+        for name, cli in clients.items():
+            with server._session_profile_runtime_scope(homes[name], hydrate_secrets=False):
+                side_commands.shutdown(cli)
+                cli.agent.close()
+                cli.agent._session_db.close()
+        reset_multiplex_context(multiplex)
+
+
+def test_saved_side_fork_resumes_with_captured_live_context_and_no_parent_changes(provider, tmp_path, monkeypatch):
+    from sci_state import SessionDB
+    from sci_cli.session_picker import SessionPicker
+    from types import SimpleNamespace
+    from run_agent import AIAgent
+
+    monkeypatch.setattr(Path, 'home', lambda: tmp_path)
+    home = tmp_path / '.sci'
+    home.mkdir()
+    monkeypatch.setenv('SCI_HOME', str(home))
+    url, requests, _, _ = provider
+    db = SessionDB(home / 'state.db')
+    parent = parent_agent(url)
+    parent._session_db = db
+    db.create_session(parent.session_id, 'cli', system_prompt=parent._cached_system_prompt)
+    db.append_message(parent.session_id, 'user', 'earliest main context')
+    db.append_message(parent.session_id, 'assistant', 'completed main answer')
+    old_cli_history = db.get_messages_as_conversation(parent.session_id)
+    # Current main turn has reached the store, but the CLI still shows its old history.
+    db.append_message(parent.session_id, 'user', 'current main request')
+    db.append_message(parent.session_id, 'assistant', 'currently checking files', tool_calls=[
+        {'id': 'pending', 'type': 'function', 'function': {'name': 'read_file', 'arguments': '{"path":"pending.txt"}'}}])
+    side = SideConversation(parent, old_cli_history, require_durable=True)
+    # Later progress never enters this captured fork.
+    db.append_message(parent.session_id, 'tool', 'later main result', tool_call_id='pending')
+    before = db.get_messages_as_conversation(parent.session_id, repair_alternation=False)
+    assert side.answer('What was happening when I opened this?') == 'Fixture side answer.'
+    sent = json.dumps(requests[-1])
+    assert 'earliest main context' in sent and 'current main request' in sent
+    assert 'currently checking files' in sent and 'incomplete' in sent
+    assert 'later main result' not in sent
+    assert not any(m.get('tool_calls') for m in requests[-1]['messages'])
+    saved_id = side.id
+    assert SessionDB.session_gateway_runtime(db.get_session(saved_id))['base_url'] == parent.base_url
+    assert saved_id in [row['id'] for row in SessionPicker(SimpleNamespace(
+        _session_db=db, session_id=parent.session_id)).rows]
+    from sci_cli.active_sessions import active_session_registry_snapshot
+    assert any(row['session_id'] == saved_id for row in active_session_registry_snapshot(home))
+    prompt = parent._cached_system_prompt
+    side.close()
+    assert not any(row['session_id'] == saved_id for row in active_session_registry_snapshot(home))
+    assert db.get_messages_as_conversation(parent.session_id, repair_alternation=False) == before
+    parent.close()
+    db.close()
+    reopened = SessionDB(home / 'state.db')
+    reopened.reopen_session(saved_id)
+    restored = reopened.get_messages_as_conversation(saved_id)
+    assert any(m.get('content') == 'What was happening when I opened this?' for m in restored)
+    resumed = AIAgent(api_key='fixture-key', base_url=url, provider='custom', model='fixture',
+                      session_id=saved_id, session_db=reopened, enabled_toolsets=[],
+                      skip_memory=True, skip_context_files=True, quiet_mode=True)
+    try:
+        result = resumed.run_conversation(user_message='Continue my side question.', conversation_history=restored)
+        assert result['final_response'] == 'Fixture side answer.'
+        sent = json.dumps(requests[-1])
+        assert 'current main request' in sent and 'What was happening when I opened this?' in sent
+        assert 'later main result' not in sent
+        assert resumed._cached_system_prompt == prompt
+        assert reopened.get_messages_as_conversation(parent.session_id, repair_alternation=False) == before
+    finally:
+        resumed.close()
+        reopened.close()
+
+
+def test_failed_side_seed_stops_before_model_request(provider, tmp_path, monkeypatch):
+    from sci_state import SessionDB
+    from agent.side_persistence import SidePersistenceError
+
+    url, requests, _, _ = provider
+    parent = parent_agent(url)
+    db = SessionDB(tmp_path / 'state.db')
+    parent._session_db = db
+    db.create_session(parent.session_id, 'cli', system_prompt=parent._cached_system_prompt)
+    history = [{'role': 'user', 'content': 'parent question'}, {'role': 'assistant', 'content': 'parent answer'}]
+    db.append_messages_batch(parent.session_id, history)
+    side = SideConversation(parent, history, require_durable=True)
+    original_append = db.append_messages_batch
+    def fail_child(session_id, *args, **kwargs):
+        if session_id != parent.session_id:
+            raise OSError('fixture disk full')
+        return original_append(session_id, *args, **kwargs)
+    monkeypatch.setattr(db, 'append_messages_batch', fail_child)
+    try:
+        with pytest.raises(SidePersistenceError, match='No side request was sent'):
+            side.answer('side question')
+        assert requests == []
+        assert [m['content'] for m in db.get_messages_as_conversation(parent.session_id)] == [m['content'] for m in history]
+    finally:
+        side.close()
+        parent.close()
+        db.close()

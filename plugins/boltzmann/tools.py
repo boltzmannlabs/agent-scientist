@@ -38,7 +38,7 @@ _RETIRED_JOB_NAMES = frozenset({
 
 _TOOL_TIMEOUTS = {
     "boltzmann_submit":        int(os.getenv("TOOL_TIMEOUT_SUBMIT", "120")),       # 2 min
-    "boltzmann_status":        int(os.getenv("TOOL_TIMEOUT_STATUS", "600")),       # safety cap; checks use 30 s
+    "boltzmann_status":        None,  # Poll until terminal/interrupt; each HTTP request remains bounded.
     "boltzmann_download":      int(os.getenv("TOOL_TIMEOUT_DOWNLOAD", "300")),     # 5 min (large files)
     "boltzmann_upload":        int(os.getenv("TOOL_TIMEOUT_UPLOAD", "180")),       # 3 min
     "boltzmann_fetch_tool_log": int(os.getenv("TOOL_TIMEOUT_FETCH_LOG", "120")),
@@ -48,8 +48,8 @@ _TOOL_TIMEOUTS = {
 def _run_with_timeout(fn, tool_name: str, kwargs: dict):
     """Run fn(**kwargs) with a tool-level timeout.
 
-    Returns the function result. On timeout, returns a clean error dict
-    so the LLM can understand and retry.
+    Status owns its interruptible polling wait. Other operations retain bounded
+    deadlines and report an unresolved outcome on timeout, never permission to retry.
     """
     try:
         require_authorized()
@@ -65,11 +65,15 @@ def _run_with_timeout(fn, tool_name: str, kwargs: dict):
         except Exception as exc:
             error_holder[0] = exc
 
-    thread = spawn_context_thread(_worker, name=f"boltzmann-{tool_name}")
-    thread.start()
-    thread.join(timeout=timeout)
+    thread = None
+    if timeout is None:
+        _worker()  # Stay on the interrupt-tracked foreground tool thread.
+    else:
+        thread = spawn_context_thread(_worker, name=f"boltzmann-{tool_name}")
+        thread.start()
+        thread.join(timeout=timeout)
 
-    if thread.is_alive():
+    if thread is not None and thread.is_alive():
         # Thread is still running — it timed out
         print(f"[{tool_name}] Timed out after {timeout}s")
         return json.dumps({
@@ -247,10 +251,8 @@ def _handle_boltzmann_status_inner(**kwargs):
 
     # Always refresh from the service: completed responses may contain expiring
     # signed artifact URLs. A terminal-state cache is not an artifact URL cache.
-    # Durable monitoring owns the waiting lifetime. A tool call is one bounded
-    # status check, below both the plugin and agent-executor deadlines.
     result = fetch_status(job_name, doc_id, token=token, conv_id=conv_id, output_folder=output_folder,
-                          max_wait=30, poll_once=True)
+                          wait_until_terminal=True)
     try:
         ReceiptStore().observe(job_name, doc_id, result)
     except ReceiptStorageError:

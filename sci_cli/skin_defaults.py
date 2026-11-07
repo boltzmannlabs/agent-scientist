@@ -1,11 +1,25 @@
-"""Packaged release palette, matching assets/skins/neon-theme.yaml.
+"""Native terminal palette adapted from the approved Agent Scientist HTML design.
 
-Keep this data available in Python-only installs, without a private skin file.
+Semantic success/warning/error colors use the design's readable ink tokens.
+Optional surfaces are opt-in so other skins retain their terminal backgrounds.
 """
 
 DEFAULT_SKIN_NAME = "neon-theme"
 
+SURFACE_COLOR_KEYS = frozenset({
+    "background",
+    "choice_text",
+    "hint_text",
+    "meter_background",
+    "meter_foreground",
+    "terminal_bg",
+    "terminal_elevated",
+    "account_bg",
+    "account_border",
+})
+
 DEFAULT_COLORS = {
+    "background": "#080408",
     "banner_border": "#8D123B",
     "banner_title": "#FF7AA7",
     "banner_accent": "#FF356F",
@@ -13,8 +27,8 @@ DEFAULT_COLORS = {
     "banner_text": "#FFE3ED",
     "ui_accent": "#FF3F79",
     "ui_label": "#E965AF",
-    "ui_ok": "#D1F2CD",
-    "ui_error": "#FF385A",
+    "ui_ok": "#7CE38B",
+    "ui_error": "#FF5C77",
     "ui_warn": "#FFB17D",
     "prompt": "#FFE8F0",
     "input_rule": "#F52566",
@@ -36,26 +50,54 @@ DEFAULT_COLORS = {
     "selection_bg": "#753052",
     "shell_dollar": "#FF81B3",
     "voice_status_bg": "#250D20",
+    "terminal_bg": "#080408",
+    "terminal_elevated": "#11080F",
+    "account_bg": "#0D1E12",
+    "account_border": "#40784A",
+    "hint_text": "#A2788D",
+    "choice_text": "#D7B4C5",
+    "meter_foreground": "#FF3F79",
+    "meter_background": "#1E0B16",
 }
 
 DEFAULT_LIGHT_COLORS = {
+    "background": "#FFFFFF",
+    "banner_border": "#8D123B",
     "banner_title": "#9C174C",
     "banner_accent": "#B71A55",
     "banner_dim": "#795065",
-    "banner_text": "#351627",
+    "banner_text": "#2A0F1D",
     "ui_accent": "#B71A55",
     "ui_label": "#92276B",
-    "prompt": "#351627",
+    "ui_ok": "#146C2E",
+    "ui_error": "#BE123C",
+    "ui_warn": "#9A3412",
+    "prompt": "#2A0F1D",
     "input_rule": "#B71A55",
     "response_border": "#92276B",
-    "status_bar_bg": "#FFF0F5",
-    "status_bar_text": "#351627",
+    "session_label": "#B71A55",
+    "session_border": "#E2BFD0",
+    "status_bar_bg": "#FDF0F5",
+    "status_bar_text": "#2A0F1D",
     "status_bar_strong": "#9C174C",
-    "status_bar_dim": "#795065",
+    "status_bar_dim": "#75465E",
+    "status_bar_good": "#166534",
+    "status_bar_warn": "#B45309",
+    "status_bar_bad": "#BE123C",
+    "status_bar_critical": "#E11D48",
     "completion_menu_bg": "#FFF5F8",
     "completion_menu_current_bg": "#F7CBDD",
     "completion_menu_meta_bg": "#FCE5EE",
     "completion_menu_meta_current_bg": "#F0B6D0",
-    "selection_bg": "#F0B6D0",
+    "selection_bg": "#F7CBDD",
+    "shell_dollar": "#B71A55",
     "voice_status_bg": "#FCE5EE",
+    "terminal_bg": "#FFFFFF",
+    "terminal_elevated": "#FFF9FB",
+    "account_bg": "#ECFDF3",
+    "account_border": "#86EFAC",
+    "hint_text": "#795065",
+    "choice_text": "#593347",
+    "meter_foreground": "#B71A55",
+    "meter_background": "#F9E3EC",
 }

@@ -9,6 +9,7 @@ import { $delegationState } from '../app/delegationStore.js'
 import type { BatteryInfo, IndicatorStyle, Notice } from '../app/interfaces.js'
 import { $isStatusRuleOccluded } from '../app/overlayStore.js'
 import { useTurnSelector } from '../app/turnStore.js'
+import { $uiTheme } from '../app/uiStore.js'
 import { DEV_CREDITS_MODE } from '../config/env.js'
 import { faces } from '../content/faces.js'
 import { VERBS } from '../content/verbs.js'
@@ -892,11 +893,14 @@ export function StatusRule({
 }
 
 export function FloatBox({ children, color }: { children: ReactNode; color: string }) {
+  const theme = useStore($uiTheme)
+
   return (
     <Box
       alignSelf="flex-start"
+      backgroundColor={theme.surfaces?.elevated}
       borderColor={color}
-      borderStyle="double"
+      borderStyle="round"
       flexDirection="column"
       marginTop={1}
       opaque

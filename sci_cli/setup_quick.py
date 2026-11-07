@@ -86,25 +86,27 @@ def _run_portal_one_shot(config: dict) -> None:
 
 
 def _run_first_time_quick_setup(config: dict, sci_home, is_existing: bool):
-    """Streamlined first-time setup with the user's provider, terminal & messaging;
+    """First-time Boltzmann login, model provider, terminal and messaging setup;
     everything else gets defaults."""
     from sci_cli.setup import (
         _apply_default_agent_settings, _info, print_info, _print_setup_summary, print_success,
         prompt_choice, save_config, setup_gateway, setup_model_provider, setup_terminal_backend
     )
     # Reuse the provider-neutral flow, including its reload after model/auth writes.
+    from sci_cli.boltzmann_setup import quick_setup_step
+    quick_setup_step(config, sci_home)
     setup_model_provider(config, quick=True)
     _info("Web search and MCP connections are independent of your model-provider login.",
           "Web search uses your configured backend, or available keyless providers when unconfigured.",
           "Public search services have usage limits; configure a dedicated backend with 'sci tools'.",
           "MCP servers use their own credentials when required.", None)
 
-    # Step 2: Terminal Backend; Step 3: defaults for everything else.
+    # After Boltzmann/model setup: terminal backend and defaults for everything else.
     setup_terminal_backend(config)
     _apply_default_agent_settings(config)
     save_config(config)
 
-    # Step 4: Offer messaging gateway setup
+    # Finally offer messaging gateway setup.
     print()
     gateway_choice = prompt_choice("Connect a messaging platform? (Telegram, Discord, etc.)", [
         "Set up messaging now (recommended)", "Skip — set up later with 'sci setup gateway'",
@@ -329,6 +331,9 @@ def _run_quick_setup(config: dict, sci_home):
     )
     from sci_cli.config import (get_missing_env_vars, get_missing_config_fields, check_config_version)
     print_header("Quick Setup — Missing Items Only", gap=True)
+
+    from sci_cli.boltzmann_setup import quick_setup_step
+    quick_setup_step(config, sci_home)
 
     # Check what's missing
     missing_env = get_missing_env_vars(required_only=False)

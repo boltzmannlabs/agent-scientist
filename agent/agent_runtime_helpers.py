@@ -1325,10 +1325,15 @@ def restore_primary_runtime(agent) -> bool:
             agent._use_prompt_caching = False
             agent._use_native_cache_layout = False
         _rebuild_primary_client(agent, rt, reason="restore_primary")
+        from agent.context_budget import output_reservation
+        from agent.context_compressor import ContextCompressor
         agent.context_compressor.update_model(
             model=rt["compressor_model"], context_length=rt["compressor_context_length"],
             base_url=rt["compressor_base_url"], api_key=rt["compressor_api_key"],
             provider=rt["compressor_provider"], api_mode=rt.get("compressor_api_mode", ""),
+            **({"max_tokens": output_reservation(
+                agent.model, agent.provider, agent.base_url, getattr(agent, "max_tokens", None)
+            ) or 0} if isinstance(agent.context_compressor, ContextCompressor) else {}),
         )
         # Same rule as fallback activation: refresh an existing verdict only; never-probed sessions stay lazy.
         if getattr(agent, "_compression_feasibility_checked", False) is True:
@@ -1767,8 +1772,8 @@ def anthropic_prompt_cache_policy(
 def _provider_supplied_client(agent, client_kwargs: dict) -> Any | None:
     """Ask the registered ProviderProfile for a custom client, if any. Resolves by provider name,
     then by ``base_url`` prefix so a URL-only runtime (``acp://…``) still reaches its profile.
-    A profile that raises is logged and skipped: a third-party plugin must not be able to take
-    the turn down, it can only fail to provide a client."""
+    Optional custom clients may fall back to the standard transport. Profiles declaring
+    a required client fail closed, so admission checks cannot be bypassed."""
     try:
         from providers import get_provider_profile
     except Exception:
@@ -1787,8 +1792,13 @@ def _provider_supplied_client(agent, client_kwargs: dict) -> Any | None:
     if profile is None:
         return None
     try:
-        return profile.create_client(**client_kwargs)
+        client = profile.create_client(**client_kwargs)
+        if client is None and profile.requires_custom_client:
+            raise RuntimeError(f"Provider {profile.name} requires its custom client.")
+        return client
     except Exception:
+        if getattr(profile, "requires_custom_client", False) is True:
+            raise
         _ra().logger.warning(
             "Provider profile %r failed to create a client; falling back to the standard client path",
             getattr(profile, "name", provider_name) or "?", exc_info=True,
@@ -2218,6 +2228,8 @@ def _resolve_switch_context_length(agent, snapshot):
 def _update_switch_compressor(agent, custom_providers, effective_context_length, snapshot) -> None:
     """Point the context compressor at the new model (rolls back the switch on failure)."""
     from agent.model_metadata import get_model_context_length
+    from agent.context_budget import output_reservation
+    from agent.context_compressor import ContextCompressor
     if custom_providers is None:
         try:
             from sci_cli.config import get_compatible_custom_providers, load_config
@@ -2239,6 +2251,10 @@ def _update_switch_compressor(agent, custom_providers, effective_context_length,
             api_key=agent.api_key,  # context_compressor forwards to call_llm; callable preserved
             provider=agent.provider,
             api_mode=agent.api_mode,
+            **({"max_tokens": output_reservation(
+                agent.model, agent.provider, agent.base_url, getattr(agent, "max_tokens", None)
+            ) or 0} if isinstance(agent.context_compressor, ContextCompressor) else {}),
+            # Zero clears the old reservation; external engines own their budget policy.
         )
     except Exception:
         _restore_switch_snapshot(agent, snapshot)

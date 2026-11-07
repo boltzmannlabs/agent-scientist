@@ -357,6 +357,25 @@ def test_profile_scopes_a_b_a_preserve_separate_receipts_and_state(tmp_path, mon
         reset_multiplex_context(token)
 
 
+@pytest.mark.parametrize("requested", [180, 900, 0])
+def test_status_legacy_wait_hint_does_not_end_foreground_wait(monkeypatch, requested):
+    calls = []
+    monkeypatch.setattr(tools, "require_authorized", lambda: None)
+    monkeypatch.setattr(tools, "fetch_status", lambda *args, **kwargs: calls.append(kwargs) or {
+        "status": "success", "job_terminal_confirmed": True,
+        "job_name": "fixture-job", "doc_id": "fixture-doc",
+    })
+    monkeypatch.setattr(tools.ReceiptStore, "observe", lambda *args, **kwargs: None)
+    monkeypatch.setattr(tools.time, "sleep", lambda *_: None)
+
+    response = json.loads(tools.handle_boltzmann_status(
+        job_name="fixture-job", doc_id="fixture-doc", wait_seconds=requested))
+
+    assert response["status"] == "success"
+    assert calls[0]["wait_until_terminal"] is True
+    assert "max_wait" not in calls[0] and "poll_once" not in calls[0]
+
+
 @pytest.mark.platforms("posix")
 def test_storage_is_private_and_rejects_symlinked_records():
     store = rs.ReceiptStore()

@@ -659,7 +659,7 @@ def _run_full_setup(config: dict, sci_home, *, is_existing: bool, migration_ran:
 
 # First-time mode picker: (menu label, setup_quick runner name) — None falls through to Full Setup.
 _FIRST_TIME_MODES = (
-    ("Quick Setup — choose your model provider (recommended)",
+    ("Quick Setup — Boltzmann login, model provider and essentials (recommended)",
      "_run_first_time_quick_setup"),
     ("Full setup — configure every provider, tool & option yourself (bring your own keys)", None),
     ("Blank Slate — everything off except the bare minimum; opt in to each capability", "_run_blank_slate_setup"),

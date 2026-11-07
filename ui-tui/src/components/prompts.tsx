@@ -7,7 +7,7 @@ import { clarifyAnswerText, clarifyRevisitState } from '../lib/text.js'
 import type { Theme } from '../theme.js'
 import type { ApprovalReq, ClarifyReq, ConfirmReq } from '../types.js'
 
-import { chipRowProps } from './overlayPrimitives.js'
+import { ActionRow, MenuRow } from './overlayPrimitives.js'
 import { TextInput } from './textInput.js'
 
 const APPROVAL_OPTS = ['once', 'session', 'always', 'deny'] as const
@@ -105,8 +105,8 @@ export function ApprovalPrompt({ cols = 80, onChoice, req, t }: ApprovalPromptPr
 
   // Wrap long single-line commands to the panel width instead of clipping the
   // tail (mirrors the CLI approval panel fix — the full command must be
-  // reviewable before approving). Border + paddingX + inner padding ≈ 8 cols.
-  const innerWidth = Math.max(20, cols - 8)
+  // reviewable before approving). Include the host cell, border and both paddings.
+  const innerWidth = Math.max(1, cols - 12)
 
   const rawLines = req.command
     .split('\n')
@@ -116,12 +116,26 @@ export function ApprovalPrompt({ cols = 80, onChoice, req, t }: ApprovalPromptPr
   const overflow = rawLines.length - shown.length
 
   return (
-    <Box borderColor={t.color.warn} borderStyle="double" flexDirection="column" paddingX={1}>
+    <Box
+      backgroundColor={t.surfaces?.elevated}
+      borderColor={t.color.warn}
+      borderStyle="round"
+      flexDirection="column"
+      paddingX={2}
+      paddingY={1}
+    >
       <Text bold color={t.color.warn}>
         {T.prompt.approval.title} · {req.description}
       </Text>
 
-      <Box flexDirection="column" paddingLeft={1}>
+      <Box
+        backgroundColor={t.color.completionBg}
+        borderColor={t.color.sessionBorder}
+        borderStyle="round"
+        flexDirection="column"
+        marginTop={1}
+        paddingX={1}
+      >
         {shown.map((line, i) => (
           <Text color={t.color.text} key={i} wrap="truncate-end">
             {line || ' '}
@@ -134,12 +148,7 @@ export function ApprovalPrompt({ cols = 80, onChoice, req, t }: ApprovalPromptPr
       <Text />
 
       {opts.map((o, i) => (
-        <Text key={o}>
-          <Text color={t.color.muted} {...chipRowProps(t, sel === i)}>
-            {sel === i ? '▸ ' : '  '}
-            {i + 1}. {approvalLabels()[o]}
-          </Text>
-        </Text>
+        <MenuRow active={sel === i} key={o} label={approvalLabels()[o]} t={t} />
       ))}
 
       <Text color={t.color.muted}>↑/↓ select · Enter confirm · 1-{opts.length} quick pick · Esc/Ctrl+C deny</Text>
@@ -310,7 +319,14 @@ export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }:
       : T.prompt.clarify.hint(enterAction)
 
   return (
-    <Box flexDirection="column">
+    <Box
+      backgroundColor={t.surfaces?.elevated}
+      borderColor={t.color.primary}
+      borderStyle="round"
+      flexDirection="column"
+      paddingX={2}
+      paddingY={1}
+    >
       <Text bold>
         <Text color={t.color.accent}>ask</Text>
         <Text color={t.color.text}>
@@ -350,22 +366,22 @@ export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }:
                   <Text color={t.color.label}>{'> '}</Text>
                   <TextInput
                     color={t.color.text}
-                    columns={Math.max(20, cols - 8)}
+                    columns={Math.max(1, cols - 12)}
                     onChange={setCustom}
                     onSubmit={value => (multi ? lockPicked([value]) : lockActive(value))}
                     value={custom}
                   />
                 </Box>
               ) : (
-                <Box flexDirection="column" paddingLeft={2}>
+                <Box flexDirection="column" marginY={1}>
                   {[...activeChoices, T.prompt.clarify.other].map((c, ci) => (
-                    <Text key={ci}>
-                      <Text color={t.color.muted} {...chipRowProps(t, sel === ci)}>
-                        {sel === ci ? '▸ ' : '  '}
-                        {multi && ci < activeChoices.length ? (picked.includes(c) ? '[x] ' : '[ ] ') : ''}
-                        {ci + 1}. {c}
-                      </Text>
-                    </Text>
+                    <MenuRow
+                      active={sel === ci}
+                      checked={multi && ci < activeChoices.length ? picked.includes(c) : undefined}
+                      key={ci}
+                      label={c}
+                      t={t}
+                    />
                   ))}
                 </Box>
               )
@@ -417,7 +433,14 @@ export function ConfirmPrompt({ onCancel, onConfirm, req, t }: ConfirmPromptProp
   ]
 
   return (
-    <Box borderColor={accent} borderStyle="double" flexDirection="column" paddingX={1}>
+    <Box
+      backgroundColor={t.surfaces?.elevated}
+      borderColor={accent}
+      borderStyle="round"
+      flexDirection="column"
+      paddingX={2}
+      paddingY={1}
+    >
       <Text bold color={accent}>
         {req.danger ? '⚠' : '?'} {req.title}
       </Text>
@@ -433,10 +456,7 @@ export function ConfirmPrompt({ onCancel, onConfirm, req, t }: ConfirmPromptProp
       <Text />
 
       {rows.map((row, i) => (
-        <Text key={row.label}>
-          <Text color={sel === i ? accent : t.color.muted}>{sel === i ? '▸ ' : '  '}</Text>
-          <Text color={sel === i ? row.color : t.color.muted}>{row.label}</Text>
-        </Text>
+        <ActionRow active={sel === i} color={row.color} key={row.label} label={row.label} t={t} />
       ))}
 
       <Text color={t.color.muted}>{T.prompt.confirm.hint}</Text>

@@ -89,6 +89,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
                cli_only=True, desktop="terminal"),
     CommandDef("save", "Export the current conversation (bare /save shows usage)", "Session",
                args_hint="<json|md|html> [filename] [redact]"),
+    CommandDef("export-chat", "Export the visible chat transcript as Markdown", "Session",
+               cli_only=True, args_hint="[output.md]", desktop="terminal"),
     CommandDef("retry", "Retry the last message (resend to agent)", "Session"),
     CommandDef("prompt", "Compose your next prompt in $EDITOR (markdown), then send it", "Session",
                cli_only=True, args_hint="[initial text]", aliases=("compose",)),
@@ -130,8 +132,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("background", "Disconnect, inspect, attach, or stop persistent chats", "Session",
                cli_only=True, args_hint="[status|attach <id>|stop <id>]", busy_policy="dispatch"),
     CommandDef("detach", "Disconnect from a persistent chat; keep its worker running", "Session", cli_only=True, busy_policy="dispatch"),
-    CommandDef("side", "Open a temporary side conversation while the parent continues", "Session",
-               args_hint="[question]",
+    CommandDef("side", "Open a saved side conversation while the parent continues", "Session",
+               aliases=("btw",), args_hint="[question]",
                cli_only=True, busy_policy="dispatch", desktop="terminal"),
     CommandDef("agents", "Show active agents and running tasks", "Session",
                aliases=("tasks",), busy_policy="dispatch"),
@@ -273,6 +275,9 @@ COMMAND_REGISTRY: list[CommandDef] = [
                cli_only=True, desktop="terminal"),
     CommandDef("add_boltzmann", "Securely authorize Boltzmann for this profile",
                "Tools & Skills", aliases=("Add_boltzmann",), args_hint="[--now] [--replace]",
+               argument_mode="options", cli_only=True, desktop="terminal"),
+    CommandDef("boltzmann_login", "Log in to Boltzmann, show account credits and enable its tools",
+               "Tools & Skills", args_hint="[--replace] [--now]",
                argument_mode="options", cli_only=True, desktop="terminal"),
     CommandDef("add_mcp", "Ask Sci to connect an MCP service from your request/link",
                "Tools & Skills", aliases=("Add_mcp",), args_hint="[request or URL]",
@@ -477,7 +482,7 @@ for _cmd in COMMAND_REGISTRY:
 HELP_SESSION_SUBGROUPS: dict[str, tuple[str, ...]] = {
     "Context": ("compress", "compact", "context", "ctx", "status"),
     "Background & Automation": (
-        "bg", "side", "agents", "tasks", "queue", "q", "steer", "s", "goal", "subgoal", "heartbeat", "hb",
+        "bg", "side", "btw", "agents", "tasks", "queue", "q", "steer", "s", "goal", "subgoal", "heartbeat", "hb",
         "refine", "loop", "proactive", "moa", "journey", "learning", "memory-graph")}
 
 # All names + aliases the gateway dispatches. Config-gated commands are

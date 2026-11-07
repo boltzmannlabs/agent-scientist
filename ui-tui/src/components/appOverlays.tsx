@@ -358,12 +358,8 @@ export function FloatingOverlays({
       id: 'completions',
       render: () => (
         <FloatBox color={theme.color.primary}>
-          {/* No painted panel fill: FloatBox is `opaque`, so rows sit on the
-              terminal's own background — the one color that is always right
-              on a canvas we don't own (a full completionBg fill was the lone
-              surface painting its own background, which is why it could
-              disagree with every other overlay). Only the ACTIVE row carries
-              a selection chip, mirroring the session switcher. */}
+          {/* FloatBox owns the shared panel surface; selected rows use the
+              same contrast-safe chip as the profile and session pickers. */}
           <Box flexDirection="column" width={Math.max(28, cols - 6)}>
             {(() => {
               const visible = completions.slice(start, start + viewportSize)

@@ -8,7 +8,6 @@ import { formatBytes, performHeapDump } from '../../../lib/memory.js'
 import { launchWidget } from '../../../sdk/host.js'
 import { listWidgetApps } from '../../../sdk/registry.js'
 import { loadUserWidgets } from '../../../sdk/userWidgets.js'
-import { detectLightMode } from '../../../theme.js'
 import { getUiState } from '../../uiStore.js'
 import type { SlashCommand } from '../types.js'
 
@@ -73,7 +72,7 @@ export const debugCommands: SlashCommand[] = [
   },
 
   {
-    help: 'print live theme diagnostics (background probe, light mode, palette)',
+    help: 'print live theme diagnostics (terminal background and palette)',
     name: 'theme-info',
     run: (_arg, ctx) => {
       const { theme } = getUiState()
@@ -87,14 +86,7 @@ export const debugCommands: SlashCommand[] = [
               t('slashCmd.debug.themeInfo.osc11Background'),
               terminalBackgroundHex() ?? t('slashCmd.debug.themeInfo.noReply')
             ],
-            ['SCI_TUI_BACKGROUND', process.env.SCI_TUI_BACKGROUND ?? unset],
-            ['SCI_TUI_THEME', process.env.SCI_TUI_THEME ?? unset],
-            ['COLORFGBG', process.env.COLORFGBG ?? unset],
-            ['TERM_PROGRAM', process.env.TERM_PROGRAM ?? unset],
-            [
-              t('slashCmd.debug.themeInfo.detectedMode'),
-              detectLightMode() ? t('slashCmd.debug.themeInfo.light') : t('slashCmd.debug.themeInfo.dark')
-            ],
+            ['native palette', 'dark only'],
             ['text', theme.color.text],
             ['completionBg', theme.color.completionBg],
             ['selectionBg', theme.color.selectionBg],

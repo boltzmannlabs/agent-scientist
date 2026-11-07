@@ -184,7 +184,7 @@ class CLIStreamMixin:
             if getattr(self, "show_timestamps", False) else "")
         lines = user_input.split("\n")
         if len(lines) <= 1:
-            return f"[bold {_accent_hex()}]●[/] [bold]{_escape(user_input)}[/]{ts_suffix}"
+            return f"[bold {_accent_hex()}]● You:[/] {_escape(user_input)}{ts_suffix}"
 
         first_lines = max(1, int(getattr(self, "user_message_preview_first_lines", 2)))
         last_lines = max(0, int(getattr(self, "user_message_preview_last_lines", 2)))
@@ -196,12 +196,12 @@ class CLIStreamMixin:
             hidden_middle_count = 0
             tail = []
 
-        preview_lines = [f"[bold {_accent_hex()}]●[/] [bold]{_escape(head[0])}[/]{ts_suffix}"]
-        preview_lines.extend(f"[bold]{_escape(line)}[/]" for line in head[1:])
+        preview_lines = [f"[bold {_accent_hex()}]● You:[/] {_escape(head[0])}{ts_suffix}"]
+        preview_lines.extend(_escape(line) for line in head[1:])
         if hidden_middle_count > 0:
             key = "cli.stream.preview_more_lines_one" if hidden_middle_count == 1 else "cli.stream.preview_more_lines_other"
             preview_lines.append(f"[dim]{_escape(t(key, count=hidden_middle_count))}[/]")
-        preview_lines.extend(f"[bold]{_escape(line)}[/]" for line in tail)
+        preview_lines.extend(_escape(line) for line in tail)
         return "\n".join(preview_lines)
 
     def _expand_paste_references(self, text: str | None) -> str:
@@ -233,12 +233,10 @@ class CLIStreamMixin:
             render_notification(lambda: ChatConsole().print(f"[dim]◈ {_escape(user_input.display_text)}[/dim]"),
                                 platform="cli", diagnostic=user_input.notification_category == "diagnostic")
             return
-        ChatConsole().print(f"[{_accent_hex()}]{'─' * 40}[/]")
-        text = str(user_input or "")
-        if "\n" in text:
-            ChatConsole().print(self._format_submitted_user_message_preview(text))
-        else:
-            ChatConsole().print(f"[bold {_accent_hex()}]●[/] [bold]{_escape(text)}[/]")
+        from rich.rule import Rule
+        from sci_cli.skin_engine import get_active_skin
+        ChatConsole().print(Rule(style=get_active_skin().get_color("session_border")))
+        ChatConsole().print(self._format_submitted_user_message_preview(str(user_input or "")))
 
     def _stream_reasoning_delta(self, text: str) -> None:
         """Stream reasoning tokens into a dim box above the response.
@@ -450,8 +448,8 @@ class CLIStreamMixin:
             if self.show_timestamps:
                 label = f"{label} {datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))}"
             w = self._scrollback_box_width()
-            fill = w - 2 - SciCLI._status_bar_display_width(label)
-            _cprint(f"\n{_ACCENT}╭─{label}{'─' * max(fill - 1, 0)}╮{_RST}")
+            fill = w - 3 - SciCLI._status_bar_display_width(label)
+            _cprint(f"\n{_ACCENT}─ {label} {'─' * max(fill, 0)}{_RST}\n")
 
         # Turn-level record of what actually reached the screen; survives _reset_stream_state at
         # tool-call boundaries so an interrupted reply isn't re-rendered as a Panel (#65666).
@@ -519,7 +517,7 @@ class CLIStreamMixin:
             self._stream_buf = ""
         if self._stream_box_opened and getattr(self, "_stream_box_live", False):
             w = self._scrollback_box_width()
-            _cprint(f"{_ACCENT}╰{'─' * (w - 2)}╯{_RST}")
+            _cprint(f"\n{_ACCENT}{'─' * w}{_RST}")
         self._stream_box_live = False
         self._release_held_status_lines()
 

@@ -79,6 +79,7 @@ export function Dialog({ children, hint, title, width }: DialogProps) {
 
   return (
     <Box
+      backgroundColor={theme.surfaces?.elevated}
       borderColor={theme.color.primary}
       borderStyle="round"
       flexDirection="column"
@@ -88,7 +89,7 @@ export function Dialog({ children, hint, title, width }: DialogProps) {
       width={width}
     >
       {title && (
-        <Box justifyContent="center" marginBottom={1} width={innerWidth}>
+        <Box marginBottom={1} width={innerWidth}>
           <Text bold color={theme.color.primary}>
             {title}
           </Text>

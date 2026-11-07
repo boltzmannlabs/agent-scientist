@@ -10,7 +10,7 @@ from sci_cli.plugins_state import PluginState
 from .nodeapi_helpers import validate_api_key
 
 KEY_NAME = "BOLTZMANN_API_KEY"
-AUTH_MESSAGE = "Boltzmann is locked. Run /add_boltzmann in this profile and enter a valid API key."
+AUTH_MESSAGE = "Boltzmann is locked. Run /boltzmann_login or /add_boltzmann in this profile and enter a valid API key."
 
 
 def _profile_context():
@@ -42,12 +42,15 @@ def available():
     return isinstance(receipt, str) and hmac.compare_digest(receipt, fingerprint(key))
 
 
-def authorize_saved_key():
+def authorize_saved_key(*, expected_fingerprint=None):
     """Called only after the secure prompt validated and persisted the supplied key."""
     key = current_key()
     if not key:
         raise ValueError("No saved Boltzmann credential")
-    PluginState("boltzmann").set("authorization", fingerprint(key))
+    verified = fingerprint(key)
+    if expected_fingerprint is not None and not hmac.compare_digest(verified, expected_fingerprint):
+        raise ValueError("Boltzmann key changed after verification. Verify the current key before authorizing it.")
+    PluginState("boltzmann").set("authorization", verified)
 
 
 def require_authorized():

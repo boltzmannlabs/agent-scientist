@@ -33,7 +33,6 @@ import { POPOUT_WIDTH_REM } from '@/store/composer-popout'
 import { parkQueuedPrompts, removeQueuedPrompt, unparkQueuedPrompts } from '@/store/composer-queue'
 import { $hudMode } from '@/store/hud'
 import { $showsAdvancedChrome } from '@/store/interface-mode'
-import { sessionBlockingPrompt } from '@/store/prompts'
 import { toggleReview } from '@/store/review'
 import { $gatewayState } from '@/store/session'
 import { $botChatSessionIds, $sessionStates, $sessionTiles, isBotChatSession } from '@/store/session-states'
@@ -204,7 +203,6 @@ export function ChatBar({
   // would discard a question the user may want to come back to. The blocking
   // prompt owns its own dismissal (Skip, Reject, dialog close).
   const awaitingInput = useStore(scope.$awaitingInput)
-  const blockingPrompt = useStore(useMemo(() => sessionBlockingPrompt(sessionId ?? null), [sessionId]))
   const activeQueueSessionKey = queueSessionKey || sessionId || freshDraftKey || null
   const { collapsed: statusDrawerCollapsed, toggle: toggleStatusDrawer } = useStatusDrawer(activeQueueSessionKey)
   const statusDrawerId = useId()
@@ -305,7 +303,6 @@ export function ChatBar({
     insertInlineRefs,
     insertText,
     isHelpHint,
-    isSteerableText,
     loadIntoComposer,
     requestMainFocus,
     sessionIdRef,
@@ -415,23 +412,12 @@ export function ChatBar({
   const hasComposerPayload = hasText || attachments.length > 0
   const canSubmit = busy || hasComposerPayload
 
-  // Steer only makes sense mid-turn, text-only (the gateway can't carry images
-  // into a tool result) and never for a slash command (those execute inline).
-  // A blocking prompt (approval/sudo/secret) also rules it out: the tool batch
-  // is parked on the user, so a steer can't reach the model — text queues.
-  const canSteer = busy && !compacting && !blockingPrompt && !!onSteer && attachments.length === 0 && isSteerableText
-
-  // While busy: text redirects the live turn (Cursor-style stop-and-correct),
-  // attachments queue for the next turn, an empty composer stops.
-  const busyAction: 'steer' | 'queue' | 'stop' = canSteer
-    ? 'steer'
-    : compacting || hasComposerPayload
-      ? 'queue'
-      : 'stop'
+  // While busy, normal sends queue for the next turn; an empty composer stops.
+  const busyAction: 'steer' | 'queue' | 'stop' = compacting || hasComposerPayload ? 'queue' : 'stop'
 
   // The submit engine — the orchestration seam where draft + queue meet. Owns
   // the submit decision tree, the send-with-restore primitive, and steer.
-  const { queueDraft, steerDraft, submitDraft } = useComposerSubmit({
+  const { queueDraft, submitDraft } = useComposerSubmit({
     activeQueueSessionKey,
     activeQueueSessionKeyRef,
     attachments,
@@ -977,8 +963,8 @@ export function ChatBar({
       return
     }
 
-    // Cmd/Ctrl+Enter queues a follow-up while a turn runs. Plain Enter steers
-    // a text-only draft, so both live-turn actions stay reachable by keyboard.
+    // Cmd/Ctrl+Enter and ordinary Enter both queue while busy.
+    // Explicit steering remains available on queued-message controls.
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !event.shiftKey) {
       event.preventDefault()
 

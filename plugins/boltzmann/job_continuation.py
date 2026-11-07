@@ -26,7 +26,7 @@ def _text(value):
 
 
 def checkpoint(session_id="", turn_id="", user_message="", conversation_history=None,
-               request=None, available_tool_names=None, model="", provider="", **kwargs):
+               request=None, available_tool_names=None, model="", provider="", platform="", **kwargs):
     if not session_id or not user_message or _POLICY.get() is not None or not available():
         return
     body = (request or {}).get("body", request or {})
@@ -42,6 +42,8 @@ def checkpoint(session_id="", turn_id="", user_message="", conversation_history=
                if isinstance(item, dict) and item.get("role") in {"user", "assistant"} and item.get("content")]
     data = {"session_id": session_id, "user_request": _text(user_message)[:32000],
             "history": history, "allowed_tools": names, "model": model, "provider": provider}
+    from .job_routes import capture_route
+    data["notification_route"] = capture_route(session_id, platform)
     from agent.specialist_policy import current_policy
     # A specialist also carries path, skill, child-delegation and deadline grants.
     # A list of tool names alone cannot authorize a replacement unrestricted agent.

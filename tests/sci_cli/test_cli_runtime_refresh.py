@@ -124,8 +124,9 @@ def test_new_reloads_real_tool_config_without_changing_departed_prompt(tmp_path,
                 terminal.send(f'/new now Reloaded fixture {iteration}')
                 terminal.until(lambda: any(c['attached'] and c['pid'] != worker['pid']
                                            for c in request('status', home=home)['chats']))
-                terminal.until(lambda: b'Session:' in terminal.output and
-                               '❯ '.encode() in terminal.output.split(b'Session:', 1)[1])
+                # Wait for the fresh attached viewport's composer, independent of banner layout.
+                terminal.until(lambda: b'\x1b[3J' in terminal.output and
+                               '❯ '.encode() in terminal.output.rsplit(b'\x1b[3J', 1)[1])
                 terminal.send('Reply SECOND_DONE for this fixture.')
                 terminal.until(lambda: len(model.main_requests()) == count + 2 and b'SECOND_DONE' in terminal.output)
                 after = model.main_requests()[-1]

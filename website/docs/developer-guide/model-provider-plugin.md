@@ -114,6 +114,21 @@ Full definition in `providers/base.py`. The most useful ones:
 | `default_max_tokens` | `int \| None` | Provider-level max_tokens cap (Nvidia: 16384) |
 | `unsupported_response_formats` | `tuple` | `response_format` types the API rejects outright; auxiliary requests omit them instead of paying a guaranteed 400 (DeepSeek: `("json_schema",)`) |
 | `default_aux_model` | str | Cheap model for auxiliary tasks (compression, vision, summarization) |
+| `credential_scope` | str | `shared` (default) or `profile`; profile-owned provider keys/configuration are excluded from shared LLM inheritance/publication |
+| `picker_visible_when_locked` | bool | Keep a login-required model group visible without granting execution access |
+| `requires_custom_client` | bool | Fail closed if `create_client()` raises or returns `None`, instead of using a standard SDK client |
+| `allow_fallback` | bool | Allow recovery to another credential/provider; default `True` |
+| `show_account_usage_after_turn` | bool | Refresh `fetch_account_usage()` in the CLI turn footer; default `False` |
+
+Providers with an existing service-account admission flow may override
+`resolve_credentials(*, strict=False)` to return runtime credentials. Return
+`None` to keep standard resolution. Non-strict checks are local-only; strict
+checks reject missing authorization. Override `setup_model(config,
+current_model="")` and return `True` to handle model selection without the
+generic credential prompt. Guarded clients can implement `to_async_client()`;
+auxiliary conversion then preserves their authorization policy instead of
+rebuilding an unguarded SDK client. The bundled `boltzmann_models` provider is a
+concrete example of these hooks.
 
 ## Declaring model capabilities
 
@@ -285,6 +300,19 @@ Explicit external-process delegation retains the selected provider and its proto
 Native clients may persist private assistant replay in `reasoning_details` with a namespaced `<provider>.native_assistant` type. Declare the identical string in `ProviderProfile.native_reasoning_details_type` (default `None`). Chat Completions request sanitization forwards that carrier only to its declaring profile, including after fallback or model switching; it removes other private carriers even if their source plugin is no longer installed. Standard reasoning details such as OpenRouter's `reasoning.encrypted` remain unchanged. Filtering is request-only: durable history remains intact for returning to the original provider.
 
 Providers may override `get_model_context_length(model)` with a qualified positive token bound, or return `None` for the existing lookup chain. Explicit configuration and endpoint-scoped overrides take precedence; the provider bound is consulted before generic caches and HTTP probes. Do not confuse a catalog maximum with an account entitlement.
+
+`get_model_context_note(model, context_length)` optionally labels the resolved value in the CLI
+switch confirmation, for example `gateway metadata` or `estimate; gateway context limit unavailable`.
+The supplied value may be an explicit user override. The default returns an empty string.
+Metadata must be scoped to the owning profile, endpoint and credentials, and must not mutate
+the current prompt or tools. OpenAI-compatible gateways can reuse
+`agent.model_metadata.fetch_endpoint_model_metadata` (five-minute metadata cache).
+
+`get_output_reservation(model, max_tokens)` supplies the completion budget used for compaction.
+The default uses the explicit cap when set, otherwise `get_max_tokens(model)`. A gateway that
+ignores client output caps must override this to reserve its server-managed limit. Unknown
+limits return `None`; they must not be represented as verified zero output. Startup, model-switch
+previews and the built-in compressor use the same reservation.
 
 For a nonstandard cost surface, `get_usage_cost(model, usage)` may return an `agent.usage_pricing.CostResult`, or `None` for normal pricing. `usage` is a `CanonicalUsage` whose `raw_usage` retains response metadata when available. Classify native list-price totals as `estimated`, never `actual` or `included`; missing invoice information is not proof of zero charges. The default hooks return `None`, preserving existing providers.
 

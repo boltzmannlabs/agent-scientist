@@ -108,6 +108,8 @@ def _install_plugin_debug_handler(force: bool = False) -> None:
 _install_plugin_debug_handler()
 
 VALID_HOOKS: Set[str] = {
+    # Read-only local snapshots for the classic CLI live-work dock; no service probes.
+    "cli_background_jobs",
     "pre_tool_call", "post_tool_call", "transform_terminal_output", "transform_tool_result",
     # transform_llm_output: return a replacement string (first non-None wins) or None.
     "transform_llm_output", "pre_llm_call", "post_llm_call",
@@ -459,6 +461,7 @@ class PluginContext(PluginOnboardingContextMixin):
         self, name: str, toolset: str, schema: dict, handler: Callable,
         check_fn: Callable | None = None, requires_env: list | None = None, is_async: bool = False,
         description: str = "", emoji: str = "", override: bool = False,
+        manages_timeout: bool = False,
     ) -> Optional[PluginRegistration]:
         """Register a tool in the global registry and track it as plugin-provided. ``override=True``
         replaces a same-named built-in (without it a name claimed by another toolset is rejected) and
@@ -468,6 +471,11 @@ class PluginContext(PluginOnboardingContextMixin):
         ``override=True`` against a built-in tool requires the operator to opt in via
         ``plugins.entries.<plugin_id>.allow_tool_override: true`` in config.yaml — mirrors the trust gate
         pattern used for ``ctx.llm`` provider/model overrides (#23194).
+
+        ``manages_timeout=True`` serializes the call and skips the executor's generic
+        deadline. The handler must bound each I/O request and honor
+        ``tools.interrupt.is_interrupted()`` while waiting. Use this only for an
+        operation that owns its wait, such as polling an accepted remote job.
         """
         if override and not self._tool_override_allowed(name):
             raise PluginToolOverrideError(
@@ -485,7 +493,7 @@ class PluginContext(PluginOnboardingContextMixin):
         registry.register(
             name=name, toolset=toolset, schema=schema, handler=handler, check_fn=check_fn,
             requires_env=requires_env, is_async=is_async, description=description, emoji=emoji,
-            override=override, scope=scope,
+            override=override, scope=scope, manages_timeout=manages_timeout,
         )
         registered = registry.snapshot_registration(name, scope=scope)
         handle = None

@@ -71,6 +71,18 @@ under `$SCI_HOME/plugins/model-providers/` for a private plugin).
 | `build_api_kwargs_extras(**ctx)` | `(extra_body_additions, top_level_kwargs)` — Kimi puts reasoning_effort top-level, Qwen splits `enable_thinking`/`thinking_budget`. |
 | `supported_reasoning_efforts(model)` | Declared per-model reasoning-effort vocabulary for gateways that 400 on unknown levels (Ramp Router reads its live catalog). `None` = defer to transport defaults, `()` = model takes no reasoning params, tuple = clamp target. Must be cache-only — called on the request hot path. |
 | `fetch_models(*, api_key)` | Live catalog fetch — default hits `{models_url or base_url}/models` with Bearer auth. Override for no-REST providers (Bedrock), OAuth catalogs (Anthropic), or public catalogs (OpenRouter). |
+| `resolve_credentials(*, strict)` | Return provider-owned runtime credentials, or `None` for standard resolution. Non-strict inspection must be local-only; strict resolution rejects missing authorization. |
+| `setup_model(config, current_model)` | Return `True` when a provider-owned model-selection flow handled setup; otherwise use generic setup. |
+
+Profile-owned service accounts can declare `credential_scope="profile"` to
+exclude their keys/configuration from shared LLM inheritance and publication.
+`picker_visible_when_locked=True` keeps their setup entry visible without
+granting access. A provider with `requires_custom_client=True` fails closed when
+its `create_client()` hook fails or returns no client; `allow_fallback=False`
+prevents recovery onto another credential/provider. A guarded client can supply
+`to_async_client()` to preserve its admission rules during auxiliary conversion.
+`show_account_usage_after_turn=True` opts into the existing account-usage hook in
+the CLI turn footer. The bundled Boltzmann models provider uses these contracts.
 
 ---
 

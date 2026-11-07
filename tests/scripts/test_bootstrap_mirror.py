@@ -160,6 +160,8 @@ def test_dev_setup_reaches_the_same_mirror_without_python(tmp_path, server):
     repo = tmp_path / "repo"
     (repo / "pm").mkdir(parents=True)
     shutil.copyfile(ROOT / "setup-sci.sh", repo / "setup-sci.sh")
+    (repo / "scripts").mkdir()
+    shutil.copy2(ROOT / "scripts/source-install-preflight.sh", repo / "scripts/source-install-preflight.sh")
     (repo / "pm/artifact-mirror.json").write_text(json.dumps({"origin": base, "prefix": "archive/"}, indent=2), encoding="utf-8")
     (repo / "pm/lock.json").write_text(json.dumps({"packages": {
         "uv": {"version": "fixture", "artifacts": {current_target(): {"url": base + "/missing.tar.gz", "sha256": digest}}},

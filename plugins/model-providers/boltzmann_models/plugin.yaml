@@ -1,0 +1,5 @@
+name: boltzmann-models-provider
+kind: model-provider
+version: 1.0.0
+description: Boltzmann-authorized Qwen, Discovery RSI, GLM and Codex gateway
+author: Boltzmann Labs

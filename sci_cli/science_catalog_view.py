@@ -2,7 +2,26 @@
 
 import json
 import shlex
+from collections import Counter
 from pathlib import Path
+
+
+_SECTIONS = {
+    "Protein Engineering": {"Protein Engineering"},
+    "Small Molecule Design": {"Small Molecule Design"},
+    "Synthetic Chemistry": {"Synthetic Chemistry"},
+    "RNA Design": {"RNA Design"},
+    "Simulation tools": {"Density Functional Theory", "Molecular Dynamics", "Physics Simulation", "Simulation tools"},
+}
+_PAGE_SIZE = 12
+
+
+def _normalized(value):
+    return " ".join(value.casefold().replace("-", " ").replace("_", " ").split())
+
+
+def _section(row):
+    return next((name for name, domains in _SECTIONS.items() if row["domain"] in domains), row["domain"])
 
 
 def registry_path():
@@ -56,41 +75,102 @@ def authorization_summary():
             ". Catalog visibility is not execution permission, live entitlement, or readiness verification.")
 
 
+def _filtered_rows(section, query, domain):
+    rows = catalog_rows(domain=domain)
+    if query:
+        matches = catalog_rows(domain=domain, query=query)
+        normalized = _normalized(query)
+        rows = [row for row in rows if row in matches or (normalized and normalized in _normalized(_section(row)))]
+    if section != "All":
+        rows = [row for row in rows if _section(row) == section]
+    return sorted(rows, key=lambda row: (row["status"] != "active", _section(row), row["module"], row["name"]))
+
+
+def _tool_choices(rows, section):
+    labels = []
+    for row in rows:
+        group = f"{_section(row)} → {row['module']}" if section == "All" else row["module"]
+        label = f"{group} → {row['name']}"
+        if row["status"] != "active":
+            label += f" [{row['status']}]"
+        labels.append(label)
+    # Some distinct backend entries share a display name. Keep both selectable.
+    counts, seen = Counter(labels), Counter()
+    choices = {}
+    for label, row in zip(labels, rows):
+        seen[label] += 1
+        key = f"{label} (entry {seen[label]})" if counts[label] > 1 else label
+        choices[key] = row
+    return choices
+
+
+def _browse_tools(ui, section, query="", domain=""):
+    page = 0
+    while True:
+        rows = _filtered_rows(section, query, domain)
+        pages = max(1, (len(rows) + _PAGE_SIZE - 1) // _PAGE_SIZE)
+        page = min(page, pages - 1)
+        entries = list(_tool_choices(rows, section).items())[page * _PAGE_SIZE:(page + 1) * _PAGE_SIZE]
+        choices = dict(entries)
+        controls = ["Search", "Back", "Done"]
+        if query or domain:
+            controls.append("Clear search")
+        if page + 1 < pages:
+            controls.append("Next page")
+        if page:
+            controls.append("Previous page")
+        title = f"{section} — {len(rows)} tools; page {page + 1}/{pages}"
+        if query:
+            title += f"; search: {query}"
+        if domain:
+            title += f"; module filter: {domain}"
+        if not rows:
+            title += "\nNo matching tools. Search again, clear the search, or go Back."
+        choice = ui.choose(title + "\nSelect a tool to view its catalog details; no tool will run.",
+                           [*controls, *choices])
+        if choice in {"Back", "Done"}:
+            return choice
+        if choice in choices:
+            row = choices[choice]
+            detail = (f"{row['name']}\nModule: {_section(row)} → {row['module']}\n"
+                      f"Catalog status: {row['status']}\nCatalog details only; no tool has run or been enabled.")
+            if ui.choose(detail, ["Back", "Done"]) == "Done":
+                return "Done"
+            continue
+        if choice == "Search":
+            query, page = ui.ask(f"Search {section} tools, aliases, or modules:"), 0
+            continue
+        page, query, domain = {
+            "Clear search": (0, "", ""),
+            "Next page": (page + 1, query, domain),
+            "Previous page": (page - 1, query, domain),
+        }[choice]
+
+
 def run_catalog(cli, command, ui=None):
     from sci_cli.skill_add import WizardUI, Cancelled
     ui = ui or WizardUI(cli)
     try:
         args = shlex.split(command)[1:]
-        search = bool(args and args[0].lower() == "search")
-        query, domain = (" ".join(args[1:]), "") if search else ("", " ".join(args))
-        rows = catalog_rows(domain=domain, query=query)
+        section, query, domain = None, "", ""
+        if args and args[0].casefold() == "search":
+            section, query = "All", " ".join(args[1:])
+        elif args:
+            requested = " ".join(args)
+            section = next((name for name in [*_SECTIONS, "All"] if _normalized(name) == _normalized(requested)), "All")
+            domain = "" if _normalized(requested) == _normalized(section) else requested
         ui.show(authorization_summary())
-        ui.show("Installed scientific catalog. Request, file-validation and output verification are separate. "
-                "An active entry is not proof of live service readiness; explicit restrictions still apply.")
-        page = 0
         while True:
-            pages = max(1, (len(rows) + 19) // 20)
-            ui.show(f"Boltzmann scientific tools — {len(rows)} matches; page {page + 1}/{pages}")
-            previous = None
-            for row in rows[page * 20:(page + 1) * 20]:
-                group = (row["status"] != "active", row["domain"], row["module"])
-                if group != previous:
-                    ui.show(("Unavailable / on hold — " if group[0] else "") + f"{group[1]} → {group[2]}")
-                    previous = group
-                ui.show(f"  {row['name']}" + (f" [{row['status']}]" if group[0] else ""))
-            controls = ["Done", "Search"]
-            if page + 1 < pages:
-                controls.append("Next page")
-            if page:
-                controls.append("Previous page")
-            choice = ui.choose("Browse scientific catalog (no jobs are run)", controls)
-            if choice == "Done":
-                return
-            if choice == "Search":
-                rows = catalog_rows(query=ui.ask("Search scientific tools, domains, or modules:"))
-                page = 0
-            else:
-                page += 1 if choice == "Next page" else -1
+            if section is None:
+                choice = ui.choose("Boltzmann scientific tools — choose a module", [*_SECTIONS, "All", "Search", "Done"])
+                if choice == "Done":
+                    break
+                section = "All" if choice == "Search" else choice
+                query = ui.ask("Search all scientific tools, aliases, or modules:") if choice == "Search" else ""
+            if _browse_tools(ui, section, query, domain) == "Done":
+                break
+            section, query, domain = None, "", ""
+        ui.show("Catalog closed. Nothing changed.")
     except (Cancelled, KeyboardInterrupt, EOFError):
         ui.show("Catalog closed. Nothing changed.")
     except (ValueError, OSError, KeyError):

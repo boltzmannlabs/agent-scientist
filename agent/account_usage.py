@@ -47,6 +47,8 @@ class AccountUsageSnapshot:
     # Exact decoded provider response body (no headers/credentials) for integrations that need
     # fields Sci does not normalize yet. Only populated by providers that fetch a JSON body.
     raw: Optional[dict] = None
+    # Optional compact post-response view; /usage retains the complete details.
+    after_turn_lines: Optional[tuple[str, ...]] = None
 
     @property
     def available(self) -> bool:

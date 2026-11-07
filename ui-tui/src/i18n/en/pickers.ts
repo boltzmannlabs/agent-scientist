@@ -120,8 +120,7 @@ export const pickersEn = {
         untitled: '(untitled)',
         closing: 'closing…',
         deleting: 'deleting…',
-        pressDAgain: 'press d again to delete',
-        messageCount: (count: number) => `${count} msgs`
+        pressDAgain: 'press d again to delete'
       },
       noOtherSessions: 'no other sessions — Enter on +new to start one',
       promptLabel: 'prompt › ',

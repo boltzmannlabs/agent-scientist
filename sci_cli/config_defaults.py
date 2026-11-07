@@ -826,7 +826,7 @@ DEFAULT_CONFIG = {
     "display": {
         "compact": False,
         "personality": "",
-        "busy_input_mode": "interrupt",  # interrupt | queue | steer
+        "busy_input_mode": "queue",  # queue | steer | interrupt
         # steer mode: false hides only the "Steered into current run" bubble; steering itself still
         # happens.
         "busy_steer_ack_enabled": True,

@@ -379,6 +379,12 @@ def _model_level_key_env(provider_id: str) -> str:
 
 def _resolve_api_key_provider_secret(provider_id: str, pconfig: ProviderConfig) -> tuple[str, str]:
     """Resolve an API-key provider's token and indicate where it came from."""
+    from providers import get_provider_profile
+    profile = get_provider_profile(provider_id)
+    if profile is not None:
+        owned = profile.resolve_credentials(strict=False)
+        if owned is not None:
+            return owned.get("api_key", ""), owned.get("source", "profile")
     if provider_id == "copilot":
         # The dedicated copilot auth module does proper token validation/exchange.
         try:
@@ -2310,6 +2316,12 @@ def resolve_api_key_provider_credentials(provider_id: str) -> Dict[str, Any]:
             f"Provider '{provider_id}' is not an API-key provider.",
             provider=provider_id, code="invalid_provider")
 
+    from providers import get_provider_profile
+    profile = get_provider_profile(provider_id)
+    if profile is not None:
+        owned = profile.resolve_credentials(strict=True)
+        if owned is not None:
+            return owned
     api_key, key_source = _resolve_api_key_provider_secret(provider_id, pconfig)
     # No-auth LM Studio: a placeholder so runtime / auxiliary_client see the local server as
     # configured. doctor still reports unconfigured because the status path uses the raw secret.

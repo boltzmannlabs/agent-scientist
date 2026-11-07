@@ -1068,7 +1068,7 @@ class CLIStatusBarMixin:
                     context_label = t("cli.status_bar.ctx_unknown")
                 segs.append([(_DIM, context_label)])
             if _ok("context_pct"):
-                bar_style = "fg:#FFFFFF"
+                bar_style = "class:status-bar-strong" if styled else ""
                 if wide and styled:
                     from sci_cli.cli_context_meter import context_meter
                     total = snapshot.get("context_length")

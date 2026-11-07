@@ -1,13 +1,7 @@
-"""A user message sent while a foreground terminal command runs must not wait for the command.
-
-``AIAgent.redirect()`` during tool execution degrades to ``steer()``, whose delivery rides
-the tool result — so a long foreground command (a 5-minute ``sleep`` poller, a build) parked
-the user's message until it exited. Now redirect() also asks the tool workers to YIELD: the
-local terminal backend hands the still-running process to the process registry as a
-notify-on-complete background session and returns immediately, without killing it.
-"""
+"""A follow-up message queues guidance without detaching the foreground command."""
 import json
-import os
+import shlex
+import sys
 import threading
 import time
 
@@ -15,7 +9,6 @@ import pytest
 
 from agent.interrupt_control import InterruptControlMixin
 from tools import interrupt as interrupt_mod
-from tools.process_registry import process_registry
 from tools.terminal_tool import terminal_tool
 
 pytestmark = pytest.mark.platforms("linux")
@@ -36,50 +29,60 @@ class _Agent(InterruptControlMixin):
         self._execution_thread_id = None
 
 
-@pytest.mark.live_system_guard_bypass
-def test_redirect_mid_command_yields_it_to_background_without_killing_it(tmp_path, monkeypatch):
-    """Real signal delivery is required: the registry SIGTERMs the shell first, so its
-    ``sleep`` child is reparented to init before the registry reaps it from the descendant
-    snapshot — the conftest guard's parent-chain walk can no longer see it under the test PID."""
-    import psutil
-
+@pytest.mark.parametrize("cancel", [False, True])
+def test_redirect_keeps_foreground_ownership_until_completion_or_stop(tmp_path, monkeypatch, cancel):
     monkeypatch.setenv("SCI_HOME", str(tmp_path))
     agent = _Agent()
     res = {}
+    started, finish = tmp_path / "started", tmp_path / "finish"
+    script = ("from pathlib import Path; import time; "
+              f"Path({str(started)!r}).touch(); print('started', flush=True); "
+              f"\nwhile not Path({str(finish)!r}).exists(): time.sleep(0.05)"
+              "\nprint('done', flush=True)")
+    command = shlex.join([sys.executable, "-c", script])
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("Foreground command was detached")
+
+    monkeypatch.setattr("tools.terminal_tool.spawn_background_process", forbidden)
+    monkeypatch.setattr("tools.terminal_tool._check_all_guards", lambda *a, **k: {"approved": True})
 
     def worker():
-        with agent._tool_worker_threads_lock:
-            agent._tool_worker_threads.add(threading.current_thread().ident)
-        t0 = time.monotonic()
-        res["result"] = json.loads(terminal_tool("echo started; sleep 60; echo done", task_id="yield-test", timeout=90))
-        res["elapsed"] = time.monotonic() - t0
+        try:
+            res["result"] = json.loads(terminal_tool(command, task_id="foreground-test", timeout=90))
+        finally:
+            interrupt_mod.set_interrupt(False)
 
-    t = threading.Thread(target=worker, daemon=True)
-    t.start()
-    time.sleep(1.5)
-    assert agent.redirect("also, check the session ids") is True
-    assert agent._pending_steer == "also, check the session ids"  # still delivered as a steer
-
-    t.join(timeout=15)
-    assert not t.is_alive(), "terminal tool still blocked on the command after redirect()"
-    r = res["result"]
+    thread = threading.Thread(target=worker, daemon=True)
+    thread.start()
     try:
-        assert r["status"] == "yielded_to_background"
-        assert r["exit_code"] is None and "started" in r["output"]
-        assert r["notify_on_complete"] is True
-        # The process is alive and tracked: poll/wait/kill and the completion notification work.
-        assert os.path.exists(f"/proc/{r['pid']}")
-        assert process_registry.poll(r["session_id"])["status"] == "running"
-        assert not interrupt_mod.is_thread_yield_requested(t.ident)
-        descendants = psutil.Process(r["pid"]).children(recursive=True)
-        assert descendants, "the yielded shell should still own its sleep child"
+        deadline = time.monotonic() + 15
+        while not started.exists() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert started.exists(), res
+        with agent._tool_worker_threads_lock:
+            agent._tool_worker_threads.add(thread.ident)
+        assert agent.redirect("check the outputs after completion")
+        assert agent._pending_steer == "check the outputs after completion"
+        assert not interrupt_mod.is_thread_yield_requested(thread.ident)
+        if cancel:
+            interrupt_mod.set_interrupt(True, thread.ident)
+        else:
+            finish.touch()
+        thread.join(15)
+        assert not thread.is_alive()
+        result = res["result"]
+        assert result["exit_code"] == (130 if cancel else 0), result
+        assert result.get("status") != "yielded_to_background"
+        assert "session_id" not in result
+        assert "started" in result["output"]
+        if not cancel:
+            assert "done" in result["output"]
     finally:
-        killed = process_registry.kill_process(r["session_id"])
-    assert killed["status"] == "killed", killed
-    # The shell exits on SIGTERM before its child does; the orphaned child must still be reaped.
-    assert not any(process_registry._proc_alive(p) for p in descendants), "orphaned descendant survived kill"
-    evt = process_registry.completion_queue.get(timeout=5)
-    assert evt["session_id"] == r["session_id"]
+        finish.touch()
+        interrupt_mod.set_interrupt(True, thread.ident)
+        thread.join(15)
+        interrupt_mod.set_interrupt(False, thread.ident)
 
 
 def test_yield_request_without_steer_leaves_foreground_wait_alone():

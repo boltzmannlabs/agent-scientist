@@ -78,6 +78,13 @@ class CLILoopsMixin:
         _cprint(f"  {_DIM}{t('cli.display.ui_redrawn')}{_RST}")
 
     def _cmd_clear(self, cmd_original: str):
+        from sci_cli.session_browser import require_empty_input_queue
+        from cli import _cprint
+        try:
+            require_empty_input_queue(self)
+        except ValueError as exc:
+            _cprint(str(exc))
+            return True
         from cli import ChatConsole, _build_compact_banner, _clear_output_history, _cprint, get_tool_definitions
         from sci_cli.banner import build_welcome_banner
         if self._confirm_destructive_slash(
@@ -184,6 +191,13 @@ class CLILoopsMixin:
                 _cprint(f"  {t('cli.title.queued', title=new_title)}")
 
     def _cmd_new(self, cmd_original: str):
+        from sci_cli.session_browser import require_empty_input_queue
+        from cli import _cprint
+        try:
+            require_empty_input_queue(self)
+        except ValueError as exc:
+            _cprint(str(exc))
+            return True
         # Strip inline-skip tokens (now/--yes/-y) before deriving the title so
         # "/new now My Session" yields title="My Session". See _split_destructive_skip.
         _new_args, _ = self._split_destructive_skip(cmd_original)

@@ -308,6 +308,29 @@ auxiliary model is re-probed immediately: the trigger is clamped again before th
 compaction on the new window, or restored to the main model's own value when the
 auxiliary model now fits.
 
+An auxiliary-limit warning describes an earlier trigger for this session, not a
+failed summary or a change to the main model's context window. Limits are
+provider-specific: a direct API window must not be substituted for the Codex
+subscription window or a custom gateway's deployed limit.
+
+For example, a 500K main window at 85% triggers at 425K. If the helper resolves
+to 272K, SCI lowers the session trigger to 272K. For future sessions, select a
+helper whose verified window fits the desired trigger, or keep the helper and
+configure an absolute cap:
+
+```yaml
+compression:
+  threshold_tokens: 272000
+```
+
+This cap applies after the percentage floor, including when `threshold` alone
+would be raised to 75% on a window below 512K. It applies to other models in the
+same profile too; it never raises a smaller model's normal trigger. Prefer
+provider-reported limits; only set `model.context_length` or
+`auxiliary.compression.context_length` when the actual deployment limit is known.
+Custom gateway aliases without usable metadata cannot establish their own context
+limit by name alone.
+
 ### Per-model threshold overrides
 
 `compression.model_thresholds` lets you trigger compaction at different points

@@ -3,6 +3,7 @@
 
 import json
 import os
+import sys
 import threading
 import time
 import uuid
@@ -11,6 +12,7 @@ from urllib.parse import urlparse
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
+from .polling_display import report_progress, rolling_polls
 
 # Per-conversation locks to prevent read-modify-write races.
 # Keyed by conversation_id — different users/conv_ids never block each other.
@@ -28,7 +30,7 @@ def _get_conv_lock(conversation_id: str) -> threading.Lock:
 CONVERSATION_COLLECTION = "AgentConversationLogs"
 
 _SUBMIT_URL = "https://nodeapis.boltzmann.co/api/submit-job"
-_AUTH_CHECK_URL = "https://nodeapis.boltzmann.co/api/get-projects"
+_AUTH_CHECK_URL = "https://nodejsdev.grsmano.shop/api/agent-authenticate"
 _FETCH_URL = "https://nodeapis.boltzmann.co/api/result"
 _UPLOAD_URL = "https://nodeapis.boltzmann.co/api/fileUpload"
 _DOC_FETCH_URL = "https://nodeapis.boltzmann.co/fetchdocdetails"
@@ -404,24 +406,15 @@ def _auth_headers(token: str | None = None):
     return {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
 
 
+def authenticate_api_key(token: str | None = None):
+    """Return account details from the same verifier used by execution gates."""
+    from .authentication import authenticate
+    return authenticate(_resolve_token(token), endpoint=_AUTH_CHECK_URL)
+
+
 def validate_api_key(token: str | None = None) -> bool:
-    """Validate the API key using the read-only authenticated projects route."""
-    active_token = _resolve_token(token)
-    if not active_token:
-        return False
-    try:
-        response = requests.get(
-            _AUTH_CHECK_URL,
-            headers=_auth_headers(active_token),
-            timeout=15,
-            allow_redirects=False,
-        )
-        if response.status_code != 200:
-            return False
-        payload = response.json()
-    except (requests.exceptions.RequestException, ValueError):
-        return False
-    return isinstance(payload, dict) and str(payload.get("status", "")).lower() == "success"
+    """Boolean admission check for callers which do not display account details."""
+    return authenticate_api_key(token).authenticated
 
 
 # ───────────────────────────────────────────────
@@ -551,6 +544,7 @@ def _log_platform_terminal(collection_name, doc_id, status, conv_id, token):
         print(f"[_log_platform_terminal] log failed for {collection_name}/{doc_id}: {exc}")
 
 
+@rolling_polls
 def fetch_status(
     collection_name,
     doc_id,
@@ -561,10 +555,13 @@ def fetch_status(
     conv_id: str | None = None,
     output_folder: str | None = None,
     poll_once: bool = False,
+    wait_until_terminal: bool = False,
 ):
-    """Poll a submitted Boltzmann job until it completes or times out.
+    """Poll a submitted job; foreground callers can wait without an overall deadline.
 
-    The poll timeout is determined by (in priority order):
+    ``wait_until_terminal`` overrides both ``max_wait`` and ``poll_once``. It
+    retains bounded HTTP requests and checks interruption between requests and
+    during pauses. Otherwise the poll timeout is determined by:
     1. Explicit ``max_wait`` parameter.
     2. Per-tool formula from ``_tool_timeout(collection_name, experiment_data)``.
     Unknown tools use the buffered 300-second fallback. ``poll_once`` performs
@@ -577,17 +574,23 @@ def fetch_status(
         formula-based timeouts (e.g. number of samples / sequences).
         When omitted the formula uses its documented default input counts.
     """
-    if max_wait is None:
+    if max_wait is None and not wait_until_terminal:
         max_wait = _tool_timeout(str(collection_name), experiment_data)
     active_token = _resolve_token(token)
     headers = _auth_headers(active_token)
     payload = {"docId": doc_id, "job_name": collection_name}
-    deadline = time.monotonic() + max_wait
+    started = time.monotonic()
+    deadline = None if wait_until_terminal else started + max_wait
     consecutive_errors = 0
     last_result = {"status": "unknown"}
 
     while True:
-        if time.monotonic() >= deadline:
+        from tools.interrupt import is_interrupted
+        if is_interrupted():
+            return {**last_result, "stage": "status", "job_name": collection_name, "doc_id": doc_id,
+                    "status": "unknown", "cancelled": True, "safe_to_retry": False,
+                    "error": "Stopped waiting at the user's request. The remote job was not cancelled; retain this job ID and do not resubmit."}
+        if deadline is not None and time.monotonic() >= deadline:
             polling_message = "Polling window ended. The job may still be running; poll this same job, never resubmit."
             return {**last_result, "stage": "status", "job_name": collection_name, "doc_id": doc_id,
                     "timeout": True, "safe_to_retry": False,
@@ -596,7 +599,7 @@ def fetch_status(
 
         try:
             response = requests.get(_FETCH_URL, headers=headers, json=payload,
-                                    timeout=max(0.1, min(60, deadline - time.monotonic())), allow_redirects=False)
+                                    timeout=60 if deadline is None else max(0.1, min(60, deadline - time.monotonic())), allow_redirects=False)
             auth_err = _is_auth_error(response)
             if auth_err:
                 return {"error": auth_err, "stage": "status", "status": "unknown",
@@ -606,9 +609,9 @@ def fetch_status(
         except requests.exceptions.RequestException:
             consecutive_errors += 1
             backoff = min(watch_time * (2 ** min(consecutive_errors - 1, 4)), 120)
-            print(f"[fetch_status] Network error (attempt {consecutive_errors}); job outcome is unknown.")
-            print(f"[fetch_status] Retrying in {backoff}s...")
-            time.sleep(max(0, min(backoff, deadline - time.monotonic())))
+            report_progress(f"[fetch_status] Network error (attempt {consecutive_errors}); "
+                            f"job outcome is unknown. Retrying in {backoff}s...")
+            _poll_pause(backoff, deadline)
             continue
 
         try:
@@ -675,13 +678,25 @@ def fetch_status(
             _log_platform_terminal(collection_name, doc_id, "failed", conv_id, active_token)
             return result
 
-        if poll_once:
+        if poll_once and not wait_until_terminal:
             return {**last_result, "status": status, "stage": "status", "safe_to_retry": False}
 
-        elapsed = int(time.monotonic() - (deadline - max_wait))
-        remaining = int(deadline - time.monotonic())
-        print(f"[fetch_status] status={status}  elapsed={elapsed}s  remaining={remaining}s")
-        time.sleep(max(0, min(watch_time, deadline - time.monotonic())))
+        elapsed = int(time.monotonic() - started)
+        report_progress(f"[Boltzmann] {collection_name} · {status} · elapsed {elapsed}s · job {doc_id}")
+        _poll_pause(watch_time, deadline)
+
+
+def _poll_pause(seconds, deadline):
+    from tools.interrupt import is_interrupted
+
+    end = time.monotonic() + seconds
+    if deadline is not None:
+        end = min(end, deadline)
+    while not is_interrupted():
+        remaining = end - time.monotonic()
+        if remaining <= 0:
+            return
+        time.sleep(min(1, remaining))
 
 
 def download_from_signed_url(urls, output_folder: str, token: str | None = None):

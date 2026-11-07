@@ -79,9 +79,14 @@ def _fire_pre_api_request_hook(
                 system_prompt=_system_prompt_for_hooks(api_kwargs, request_messages),
                 message_count=len(api_messages),
                 tool_count=len(agent.tools or []),
-                # Full session scope, before API schema deferral. Observers can
-                # checkpoint permissions without mistaking hidden schemas for revocation.
-                available_tool_names=sorted(getattr(agent, "valid_tool_names", set())),
+                # Snapshot direct tools plus the session-scoped tools reachable through
+                # the deferred tool_call bridge. Background continuations need the
+                # underlying names because executor permission checks happen after
+                # that bridge has been unwrapped.
+                available_tool_names=sorted(
+                    set(getattr(agent, "valid_tool_names", set()))
+                    | set(_deferred_tool_names(agent))
+                ),
                 approx_input_tokens=approx_tokens,
                 request_char_count=total_chars,
                 max_tokens=agent.max_tokens,
@@ -91,6 +96,18 @@ def _fire_pre_api_request_hook(
             )
     except Exception:
         pass
+
+
+def _deferred_tool_names(agent: Any) -> set[str]:
+    """Return only deferred tools available in this agent's active profile scope."""
+    try:
+        from agent.tool_executor import _tool_search_scoped_names
+
+        return set(_tool_search_scoped_names(agent))
+    except Exception:
+        # Failure must not widen a continuation's permission snapshot.
+        logger.debug("Could not resolve deferred tool scope for API observer", exc_info=True)
+        return set()
 
 
 def build_api_request(

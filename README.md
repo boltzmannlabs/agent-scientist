@@ -51,12 +51,16 @@ Clone, install, and launch **without sudo**:
 git clone https://github.com/boltzmannlabs/agent-scientist.git
 cd agent-scientist
 bash ./install-sci.sh
-export PATH="$HOME/.local/bin:$PATH"
-agent-sci
+# SCI opens automatically after model setup.
 ```
 
-Follow provider setup using your own account or API key. The PATH command enables
-the launcher in this terminal; open a new terminal for future sessions.
+Follow provider setup using your own account or API key. Existing model
+configuration is reused. PATH is registered automatically for future terminals,
+and SCI opens immediately. Use `--no-launch` to skip opening chat. Missing OS
+utilities are listed and can be installed after confirmation through an existing
+supported package manager; unattended approval uses `--install-prerequisites`.
+Preflight checks writable destinations and a 2 GiB bootstrap free-space floor;
+full dependencies and optional scientific software may need more.
 
 For unattended installation, use `bash ./install-sci.sh --non-interactive`,
 then run `sci setup` interactively before chatting.
@@ -72,7 +76,8 @@ cd agent-scientist
 .\install-sci.ps1
 ```
 
-Follow provider setup, then open a new terminal and launch:
+Follow provider setup; SCI opens automatically. The installer registers User
+PATH and refreshes the current PowerShell PATH. To launch again:
 
 ```powershell
 agent-sci
@@ -87,13 +92,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install-sci.ps1
 
 This override is temporary. Do not bypass organization-enforced controls.
 
-If the launcher is not found, add its directory to this terminal's PATH:
-
-```powershell
-$sciBin = if ($env:SCI_HOME) { Join-Path $env:SCI_HOME 'bin' } else { Join-Path $env:LOCALAPPDATA 'sci\bin' }
-$env:Path = "$sciBin;$env:Path"
-agent-sci
-```
+When the installer runs through a separate child PowerShell/CMD process, open
+a new terminal for its updated PATH. Manual PATH editing is not required. Use
+`-NoLaunch` to skip chat, or `-InstallPrerequisites` to explicitly approve
+missing Git installation through WinGet. Without WinGet, the installer provides
+manual Git instructions.
 
 For unattended installation, use `.\install-sci.ps1 -NonInteractive`, then
 `sci setup`. From CMD, `scripts\install.cmd` invokes the same installer.
@@ -124,15 +127,17 @@ A successful chat confirms model access—not scientific-service readiness.
 
 ### Boltzmann
 
-Inside SCI, run:
+Quick Setup offers Boltzmann login first. To connect later, inside SCI run:
 
 ```text
-/add_boltzmann
+/boltzmann_login
 ```
 
-Enter your own API key in the masked prompt. The connector remains locked until
+Log in at [Boltzmann](https://app.boltzmann.co/home) to obtain your API key, then enter it
+in the masked prompt. SCI verifies it and displays the returned email, credits and frozen credits.
+`/add_boltzmann` opens the same flow. The connector remains locked until
 the selected profile has a validated key and its authorization record.
-After saving, restart SCI and use:
+After saving, choose a new conversation or use `/new`, then use:
 
 ```text
 /boltzmann_tools
@@ -146,6 +151,15 @@ When an authorized Boltzmann workflow matches a request, SCI prefers its install
 contract. Missing inputs or authentication failures must not trigger silent
 provider switching; ambiguous submissions must not be duplicated.
 See [Boltzmann integration](plugins/boltzmann/README.md).
+
+The same authorized account can use **boltzmann_models** from `/model` or
+`sci model`: choose **qwen**, **discoveryrsi**, **glm**, or **codex**. SCI checks
+profile authorization before each request and reports the gateway's token usage.
+`/usage` displays the account balance from the authentication service. The SCI
+client does not calculate or submit model-credit deductions; billing is being
+moved to the model gateway.
+See [Boltzmann models](plugins/model-providers/boltzmann_models/README.md)
+for gateway access and response behavior.
 
 ### ToolUniverse, PubMed, and other services
 
@@ -200,6 +214,7 @@ Slash commands below run **inside Agent Scientist**.
 | `/capabilities` | Inspect the active profile's capabilities and setup state |
 | `/capabilities setup` | Review optional default MCP connections |
 | `/add_boltzmann` | Authorize Boltzmann for this profile |
+| `/boltzmann_login` | Verify a Boltzmann key, show email/credits and enable tools |
 | `/boltzmann_tools [domain]` | Browse the scientific catalog; use `search <text>` to search |
 | `/Add_skill` | Supply skill material or describe a workflow for a reviewed draft |
 | `/Add_tool <request or URL>` | Ask the agent to add a tool |
@@ -283,7 +298,7 @@ stable/native releases. Do not substitute another application's installer or fee
 
 | Problem | Next step |
 |---|---|
-| `agent-sci` not found | Open a new terminal or use the PATH instructions above |
+| `sci` not found | Rerun the installer to register PATH, then open a new terminal |
 | Installation interrupted | Read the failed stage, fix its cause, and rerun the same installer |
 | No model response | Check authentication with `sci setup` or `sci model` |
 | Scientific service unavailable | Check `/capabilities`, credentials, and required dependencies |

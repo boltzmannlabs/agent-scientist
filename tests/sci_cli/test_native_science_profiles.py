@@ -99,8 +99,9 @@ def test_wizard_existing_new_keys_cancel_invalid_key_and_duplicate_are_transacti
     with profile_scope(root):
         save_env_value_secure("BOLTZMANN_API_KEY", "existing-fixture")
     ui = SimpleNamespace(show=Mock(), choose=Mock(side_effect=["Use existing key from source profile", "Validate key"]))
-    validate = Mock(return_value=True)
-    monkeypatch.setattr(helpers, "validate_api_key", validate)
+    from plugins.boltzmann.authentication import AuthenticationResult
+    validate = Mock(return_value=AuthenticationResult(True, "fixture verification"))
+    monkeypatch.setattr(helpers, "authenticate_api_key", validate)
     service = setup_boltzmann(cli, ui, root, manifest)
     validate.assert_called_once_with("existing-fixture")
     assert service.verified and len(service.tools) == 5
@@ -115,7 +116,7 @@ def test_wizard_existing_new_keys_cancel_invalid_key_and_duplicate_are_transacti
     with pytest.raises(Cancelled):
         setup_boltzmann(cli, ui, root, manifest)
     validate.assert_not_called()
-    validate.return_value = False
+    validate.return_value = AuthenticationResult(False, "Rejected fixture")
     ui.choose = Mock(side_effect=["Use existing key from source profile", "Validate key", "Remove service"])
     assert setup_boltzmann(cli, ui, root, manifest) is None
     # A controlled terminal walkthrough: scientific skills, no services,

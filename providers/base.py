@@ -57,6 +57,11 @@ class ProviderProfile:
     base_url: str = ""
     models_url: str = ""  # explicit models endpoint; falls back to {base_url}/models
     auth_type: str = "api_key"   # api_key|oauth_device_code|oauth_external|copilot|aws_sdk
+    credential_scope: str = "shared"  # profile-owned service tokens must never be inherited from main
+    show_account_usage_after_turn: bool = False
+    picker_visible_when_locked: bool = False
+    requires_custom_client: bool = False
+    allow_fallback: bool = True
     supports_health_check: bool = True  # False → doctor skips /models probe for this provider
     # False → fetch_models returns None without a network call (catalog comes from an SDK/subprocess).
     supports_model_listing: bool = True
@@ -144,6 +149,18 @@ class ProviderProfile:
     model_capabilities: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     # ── Hooks (override in subclass for complex providers) ───
+
+    def resolve_credentials(self, *, strict: bool = False) -> dict | None:
+        """Own an existing credential scope; None keeps standard credential resolution.
+
+        Status checks use strict=False without network access. Runtime resolution
+        uses strict=True and propagates admission failures rather than guessing a key.
+        """
+        return None
+
+    def setup_model(self, config: dict, current_model: str = "") -> bool:
+        """Return True when a provider-owned selection flow handled setup."""
+        return False
 
     def fetch_account_usage(
         self, *, base_url: str | None = None, api_key: str | None = None
@@ -257,6 +274,21 @@ class ProviderProfile:
     def get_model_context_length(self, model: str) -> int | None:
         """Provider-qualified context bound; explicit user overrides take precedence."""
         return None
+
+    def get_model_context_note(self, model: str, context_length: int) -> str:
+        """Optional provenance for the resolved bound, including user overrides.
+
+        Never mutate the provider or conversation. Any metadata probes must use
+        the owning profile's credentials and scoped cache.
+        """
+        return ""
+
+    def get_output_reservation(self, model: str, max_tokens: int | None) -> int | None:
+        """Completion budget for compaction. Explicit caps normally win.
+
+        Gateways that ignore a caller's cap can reserve their server-managed budget.
+        """
+        return max_tokens if max_tokens is not None else self.get_max_tokens(model)
 
     def get_usage_cost(self, model: str, usage: Any) -> Any | None:
         """Optional CostResult from canonical usage; distinguish estimates from invoices."""

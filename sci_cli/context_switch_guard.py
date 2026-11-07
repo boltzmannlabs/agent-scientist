@@ -15,11 +15,16 @@ def _append_warning(result: ModelSwitchResult, text: str) -> None:
         result.warning_message = text
 
 
-def _threshold_tokens(compressor: Any, model: str, context_length: int, provider: str = "") -> int:
+def _threshold_tokens(
+    compressor: Any, model: str, context_length: int, provider: str = "", *, max_tokens=None,
+) -> int:
     """The trigger the compressor WILL use after the switch (cap, model_thresholds and small-window
     floor included), so the warning quotes the real number; duck-typed engines keep the plain ratio."""
     preview = getattr(compressor, "preview_threshold_tokens", None)
     if callable(preview):
+        from agent.context_compressor import ContextCompressor
+        if isinstance(compressor, ContextCompressor):
+            return int(preview(model, context_length, provider, max_tokens=max_tokens))
         return int(preview(model, context_length, provider))
     return max(int(context_length * float(getattr(compressor, "threshold_percent", 0.5))), MINIMUM_CONTEXT_LENGTH)
 
@@ -30,10 +35,6 @@ def _estimate_tokens(agent: Any, messages: Optional[List[dict]]) -> Optional[int
         return None
 
     if messages is not None:
-        protect = (
-            int(getattr(cc, "protect_first_n", 3)) + int(getattr(cc, "protect_last_n", 20)) + 1)
-        if len(messages) <= protect:
-            return None
         try:
             from agent.model_metadata import estimate_request_tokens_rough
 
@@ -99,7 +100,14 @@ def merge_preflight_compression_warning(
     if estimate is None:
         return
 
-    new_threshold = _threshold_tokens(cc, result.new_model, new_ctx, result.target_provider)
+    from agent.context_budget import output_reservation
+    reservation = output_reservation(
+        result.new_model, result.target_provider, result.base_url or getattr(agent, "base_url", ""),
+        getattr(agent, "max_tokens", None),
+    )
+    new_threshold = _threshold_tokens(
+        cc, result.new_model, new_ctx, result.target_provider, max_tokens=reservation or 0,
+    )
     if estimate < new_threshold:
         return
 

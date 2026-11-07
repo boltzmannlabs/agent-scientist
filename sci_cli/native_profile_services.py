@@ -1,7 +1,6 @@
 """Explicit service selection and credential consent for native science profiles."""
 
 from copy import deepcopy
-from pathlib import Path
 from contextlib import contextmanager
 import fnmatch
 import hashlib
@@ -79,18 +78,21 @@ def credential(cli, ui, name, existing):
 
 def setup_boltzmann(cli, ui, home, manifest):
     from agent.secret_scope import build_profile_secret_scope
-    from plugins.boltzmann.nodeapi_helpers import validate_api_key
+    from plugins.boltzmann.nodeapi_helpers import authenticate_api_key
+    from plugins.boltzmann.authentication import AUTHENTICATE_URL, PLATFORM_URL
     existing = build_profile_secret_scope(home).get("BOLTZMANN_API_KEY", "")
     while True:
         key, choice = credential(cli, ui, "BOLTZMANN_API_KEY", existing)
         if key is None:
             return None
-        ui.show("Boltzmann: validation sends the selected key only to "
-                "https://nodeapis.boltzmann.co/api/get-projects. Read-only, 15-second limit; no scientific job.")
+        ui.show(f"Get a Boltzmann API key by logging in at {PLATFORM_URL}. "
+                f"Verification sends the selected key only to {AUTHENTICATE_URL} "
+                "using GET with a JSON body. Read-only, 15-second limit; no scientific job.")
         ui.choose("Approve Boltzmann credential validation?", ["Validate key", "Cancel"])
         with progress(ui, "Boltzmann authentication"):
-            valid = validate_api_key(key)
-        if valid:
+            verification = authenticate_api_key(key)
+        if verification.authenticated:
+            ui.show(verification.account_summary())
             ui.show("Authentication succeeded. All five helper operations are included. "
                     "This selection is plugin-wide; it does not restrict individual scientific workflows.")
             return Service("boltzmann", "plugin", secrets={"BOLTZMANN_API_KEY": key},

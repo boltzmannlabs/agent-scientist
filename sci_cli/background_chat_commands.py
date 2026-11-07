@@ -4,7 +4,7 @@ import json
 import os
 import shlex
 
-from sci_cli.background_chats import ensure_server, find_worker, read_server, request
+from sci_cli.background_chats import ensure_server, find_view_worker, find_worker, read_server, request
 
 
 def build_parser(subparsers):
@@ -35,7 +35,7 @@ def attach_on_resume(cli):
     from sci_cli.cli_session_recovery import StartupRecoveryUI
     from sci_cli.skill_add import Cancelled
     try:
-        worker = find_worker(cli.session_id)
+        worker = find_view_worker(cli.session_id)
         if not worker or worker["pid"] == os.getpid():
             return False
         if not sys.stdin.isatty() or not sys.stdout.isatty():
@@ -45,7 +45,7 @@ def attach_on_resume(cli):
         if worker["attached"]:
             ui.choose("Move the viewer here? Work continues; the previous terminal will detach.",
                       ("Cancel", "Move viewer"))
-        attach(worker["id"], takeover=worker["attached"])
+        attach(worker["id"], takeover=worker["attached"], view_session=worker.get("view_session"))
     except (Cancelled, KeyboardInterrupt, EOFError):
         cli._console_print("Attachment cancelled. The background chat is unchanged.")
     except (OSError, ValueError, RuntimeError) as exc:
@@ -91,10 +91,10 @@ def _attach(args):
     from sci_cli.background_chat_terminal import attach
     if not args.session:
         raise ValueError("Use sci background attach <chat-or-session-id>.")
-    worker = find_worker(args.session)
+    worker = find_view_worker(args.session)
     if not worker:
         raise ValueError("No live worker for that chat. Resume its saved conversation normally.")
-    attach(worker["id"], takeover=args.takeover)
+    attach(worker["id"], takeover=args.takeover, view_session=worker.get("view_session"))
 
 
 def _control(args):

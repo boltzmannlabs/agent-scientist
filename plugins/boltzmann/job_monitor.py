@@ -66,6 +66,10 @@ def observe(tool_name, args, result, session_id="", **kwargs):
     if not isinstance(result, dict) or not result.get("doc_id") or not result.get("job_name"):
         return
     store = JobStore()
+    from .job_continuation import _POLICY
+    policy = _POLICY.get()
+    if policy is not None:
+        session_id = policy["session_id"]
     from .job_store import identity
     existed = store.get("job:" + identity(result["job_name"], result["doc_id"]))
     row = store.track(result["job_name"], result["doc_id"], session_id=session_id,
@@ -75,14 +79,14 @@ def observe(tool_name, args, result, session_id="", **kwargs):
     from .job_continuation import attach_checkpoint
     if row["continuation"] != "not_requested":
         attach_checkpoint(store, row, session_id)
-    from gateway.session_context import get_session_env
-    if session_id and get_session_env("SCI_SESSION_ID") == session_id:
-        route = {key: get_session_env("SCI_SESSION_" + key.upper()) for key in
-                 ("platform", "chat_id", "user_id", "user_name", "thread_id", "message_id")}
-        route["session_key"] = get_session_env("SCI_SESSION_KEY") or session_id
-        store.update(row["id"], notification_route=route)
+    from .job_routes import ensure_origin_route
+    # Reload after attach_checkpoint: the source's frozen route is now available.
+    row = ensure_origin_route(store, store.get(row["id"]))
+    if policy and not row.get("notification_route") and policy.get("notification_route"):
+        row = store.update(row["id"], notification_route=policy["notification_route"],
+                           notification_origin=policy["notification_route"])
     if tool_name == "boltzmann_submit" and isinstance(args, dict) and args.get("experiment_data"):
-        from .job_continuation import submission_fingerprint, _POLICY
+        from .job_continuation import submission_fingerprint
         digest = submission_fingerprint(result["job_name"], args["experiment_data"])
         store.update(row["id"], submission_fingerprint=digest)
         if _POLICY.get() is not None:
@@ -95,7 +99,7 @@ def observe(tool_name, args, result, session_id="", **kwargs):
             store.update(row["id"], monitor_error=f"Monitor startup failed ({type(exc).__name__}). "
                          "Job ID retained. Run sci boltzmann-jobs resume; do not resubmit.")
     saved = store.get(row["id"])
-    if saved.get("notification_route"):
+    if saved.get("notification_route") and policy is None and session_id == saved.get("session_id"):
         from .job_notifications import watch
         watch(session_id)
     return saved
@@ -122,6 +126,7 @@ def check(store, row):
     """One check. Auth/transport errors preserve the job and schedule another attempt."""
     if row["stopped"] or row["state"] in STOP_MONITOR or row["next_check"] > time.time():
         return row
+    store.update(row["id"], status_check_started=time.time())
     try:
         key = require_authorized()
         result = fetch_status(row["job_name"], row["doc_id"], token=key, max_wait=30, poll_once=True)
@@ -191,7 +196,8 @@ def session_start(session_id="", **kwargs):
     store = JobStore()
     if not store.path.exists():
         return
-    if any(not row["stopped"] and row["state"] not in STOP_MONITOR for row in store.list()):
+    if any(not row["stopped"] and (row["state"] not in STOP_MONITOR
+           or row.get("checkpoint") and row["continuation"] == "waiting") for row in store.list()):
         ensure_worker(store)
     if session_id:
         from .job_notifications import watch
@@ -202,7 +208,8 @@ def session_context(session_id="", **kwargs):
     store = JobStore()
     if not store.path.exists():
         return None
-    rows = sorted((row for row in store.list() if row.get("session_id") == session_id),
+    from .job_routes import owns_session
+    rows = sorted((row for row in store.list() if owns_session(store, row, session_id)),
                   key=lambda row: row["created"])[-20:]
     if not rows:
         return None

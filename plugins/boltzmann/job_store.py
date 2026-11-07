@@ -83,6 +83,22 @@ class JobStore:
         with self.connect() as conn:
             return [json.loads(data) for (data,) in conn.execute("SELECT data FROM records WHERE id LIKE 'job:%'")]
 
+    def snapshot(self):
+        """Read UI status without creating storage or taking a writer lock."""
+        if not self.path.exists():
+            return [], False
+        for path in (self.root.parent.parent, self.root.parent, self.root, self.path):
+            if path.is_symlink():
+                raise ValueError("Monitor storage must not use symbolic links.")
+        conn = sqlite3.connect(self.path.as_uri() + "?mode=ro", uri=True, timeout=0.05)
+        try:
+            conn.execute("BEGIN")
+            rows = [json.loads(data) for (data,) in conn.execute("SELECT data FROM records WHERE id LIKE 'job:%'")]
+            lease = conn.execute("SELECT expires FROM leases WHERE id='worker'").fetchone()
+            return rows, bool(lease and lease[0] > time.time())
+        finally:
+            conn.close()
+
     def track(self, job, doc_id, *, session_id="", result=None):
         key = "job:" + identity(job, doc_id)
         with self.connect() as conn:
@@ -111,6 +127,7 @@ class JobStore:
         if result.get("authorization_required"):
             state = "paused_auth"
         return {"state": state, "last_result": result, "errors": errors,
+                "last_checked_at": time.time(), "status_check_started": None,
                 **({"alert_queued": False, "monitor_error": None} if not failed_check else {}),
                 "checks": row.get("checks", 0) + 1,
                 "next_check": time.time() + min(30 * 2 ** min(errors, 5), 900)}

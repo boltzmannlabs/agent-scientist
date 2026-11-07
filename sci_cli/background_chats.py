@@ -165,6 +165,36 @@ def find_worker(session_id, home=None):
     return None
 
 
+def find_view_worker(session_id, home=None):
+    """Resume can address a side view; stop/start still address whole workers only."""
+    if not read_server(home):
+        return None
+    chats = request("status", home=home)["chats"]
+    for item in chats:
+        if item["alive"] and session_id in (item["id"], item.get("session_id"), *item.get("view_sessions", [])):
+            target = session_id if session_id in item.get("view_sessions", []) else None
+            return {**item, "view_session": target}
+    # Older services/workers cannot publish side view IDs. The native lease is
+    # still authoritative: attach to that exact live owner, never open a writer
+    # or infer ownership from a title, PID alone, or a different profile.
+    from sci_cli.active_sessions import active_session_registry_snapshot
+    owners = [entry for entry in active_session_registry_snapshot(home, strict=True)
+              if entry.get("session_id") == session_id]
+    if len(owners) != 1 or owners[0].get("surface") != "side":
+        return None
+    owner = owners[0]
+    matches = [item for item in chats if item["alive"] and item["pid"] == owner["pid"]]
+    if len(matches) != 1 or not owner.get("process_start_time"):
+        return None
+    try:
+        process = psutil.Process(owner["pid"])
+        if abs(process.create_time() - owner["process_start_time"]) > 0.01:
+            return None
+    except psutil.Error:
+        return None
+    return {**matches[0], "view_session": session_id, "legacy_side_view": True}
+
+
 def publish_cli_state(cli):
     """Called by the existing display loop; only managed workers contact the service."""
     now = time.monotonic()
@@ -180,6 +210,13 @@ def publish_cli_state(cli):
         waiting = any(getattr(cli, name, None) for name in
                       ("_clarify_state", "_approval_state", "_sudo_state", "_secret_state"))
         busy = any(getattr(cli, name, False) for name in ("_agent_running", "_command_running", "_voice_processing"))
+        from sci_cli.cli_session_views import open_views, receive_selection
+        views = open_views(cli)
+        side = getattr(cli, "_side_controller", None)
+        if side:
+            busy = busy or side.running
+            waiting = waiting or any(getattr(side.ui, name, None) for name in
+                                     ("_clarify_state", "_approval_state", "_sudo_state", "_secret_state"))
         state = "waiting for input" if waiting else ("running" if busy else "idle")
         from tools.process_registry import process_registry
         from tools.delegate_tool_registry import _active_subagents, _active_subagents_lock
@@ -187,8 +224,10 @@ def publish_cli_state(cli):
             children = len(_active_subagents)
         tasks = len(getattr(cli, "_background_tasks", {})) + process_registry.count_running() + children
         reply = request("worker", pid=os.getpid(), session_id=cli.session_id, state=state,
-                        background_tasks=tasks)
+                        background_tasks=tasks, view_sessions=views,
+                        view_ack=getattr(cli, "_background_view_ack", None))
         cli._background_managed = bool(reply.get("managed"))
+        receive_selection(cli, reply.get("select_view"))
     except (OSError, ValueError, RuntimeError, psutil.Error):
         # Service loss closes its PTY; normal terminal-loss handling owns shutdown.
         pass

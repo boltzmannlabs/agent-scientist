@@ -34,10 +34,10 @@ def test_long_model_id_stays_on_the_cursor_row_and_keeps_its_indent():
     body = _panel_box_width(PICKER_TITLE, [HINT] + labels, min_width=46, max_width=84) - 2
 
     selected = [r.rstrip() for r in _render(labels, 1)]
-    assert selected[1] == f"❯ {LONG_LABEL}", selected  # cursor and full label on ONE row
+    assert selected[1] == f"◉ {LONG_LABEL}", selected  # cursor and full label on ONE row
     unselected = [r.rstrip() for r in _render(labels, 0)]
-    assert unselected[1] == f"  {LONG_LABEL}", unselected  # indent kept, aligned with neighbours
-    assert unselected[0] == f"❯ {labels[0]}"
+    assert unselected[1] == f"○ {LONG_LABEL}", unselected  # indent kept, aligned with neighbours
+    assert unselected[0] == f"◉ {labels[0]}"
     for rows in (selected, unselected):
         assert len(rows) == len(labels)
         assert all(len(r) <= body for r in rows), rows
@@ -49,12 +49,12 @@ def test_palette_rows_align_on_the_cursor_cell_and_wrap_with_its_indent():
     labels = ["/model  —  Switch the active model", long_label, "/help  —  Help"]
     rows = [r.rstrip() for r in _render(labels, 1, indent="    ", min_width=50, max_width=90,
                                         title="⚙ Command Palette", hint=hint)]
-    assert rows[0] == f"  {labels[0]}"  # unselected: two-column lead, same column as the cursor row
-    assert rows[1].startswith("❯ /very-long-command-name")
+    assert rows[0] == f"○ {labels[0]}"  # unselected: two-column lead, same column as the cursor row
+    assert rows[1].startswith("◉ /very-long-command-name")
     assert rows[2] == "    " + "x" * 60  # continuation row carries the palette's 4-space indent
-    assert rows[3] == f"  {labels[2]}"
+    assert rows[3] == f"○ {labels[2]}"
 
     token = "/" + "y" * 69  # one unbreakable token that fills the body: cursor must stay on its row
     rows = [r.rstrip() for r in _render([token, "/help  —  Help"], 0, indent="    ", min_width=50,
                                         max_width=90, title="⚙ Command Palette", hint=hint)]
-    assert rows == [f"❯ {token}", "  /help  —  Help"], rows
+    assert rows == [f"◉ {token}", "○ /help  —  Help"], rows

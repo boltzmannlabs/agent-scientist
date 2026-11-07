@@ -171,6 +171,7 @@ declare module '@sci/ink' {
     readonly write: (data: string) => boolean
   }
   export function useTerminalFocus(): boolean
+  export function useTabStatus(kind: 'idle' | 'busy' | 'waiting' | null): void
   export function useTerminalTitle(title: string | TerminalTitlePair | null): void
   export interface TerminalTitlePair {
     tab?: string

@@ -287,10 +287,14 @@ def test_real_worker_process_uses_saved_profile_key_and_only_local_status_gets(t
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             calls.append(self.path)
-            assert self.headers["Authorization"] == "Bearer fixture-valid"
+            if self.path == "/auth":
+                assert self.headers.get("Authorization") is None
+                assert json.loads(self.rfile.read(int(self.headers["Content-Length"]))) == {"apiToken": "fixture-valid"}
+            else:
+                assert self.headers["Authorization"] == "Bearer fixture-valid"
             pending = calls.count("/result") == 1
             body = ({"status": "pending" if pending else "success", "message": "fixture job"}
-                    if self.path == "/result" else {"status": "success"})
+                    if self.path == "/result" else {"success": True})
             self.send_response(404 if self.path == "/result" and pending else 200)
             self.end_headers()
             self.wfile.write(json.dumps(body).encode())
@@ -375,3 +379,34 @@ def test_live_outcomes_use_existing_notification_routing_without_cross_session_d
     other = SimpleNamespace(session_id="other")
     assert CLIProcessNotificationsMixin._owns_process_notification(owner, queued[-1])
     assert not CLIProcessNotificationsMixin._owns_process_notification(other, queued[-1])
+
+
+def test_continuation_status_check_preserves_original_job_notification_route(monkeypatch):
+    from gateway import session_context
+    from plugins.boltzmann import job_notifications
+
+    store = job_store.JobStore()
+    current = {"SCI_SESSION_ID": "origin", "SCI_SESSION_KEY": "origin-key"}
+    monkeypatch.setattr(session_context, "get_session_env", lambda name: current.get(name))
+    monkeypatch.setattr(monitor, "ensure_worker", lambda _store: "running")
+    monkeypatch.setattr(job_notifications, "watch", lambda _session_id: None)
+
+    row = monitor.observe(
+        "boltzmann_submit", {},
+        {"status": "accepted", "job_name": "Boltz2", "doc_id": "route-fixture"},
+        session_id="origin",
+    )
+    original_route = row["notification_route"]
+    assert original_route["session_key"] == "origin-key"
+
+    # The durable continuation checks the same remote job in a different session.
+    current.update(SCI_SESSION_ID="cron-continuation", SCI_SESSION_KEY="cron-key")
+    row = monitor.observe(
+        "boltzmann_status", {},
+        {"status": "success", "job_terminal_confirmed": True,
+         "job_name": "Boltz2", "doc_id": "route-fixture"},
+        session_id="cron-continuation",
+    )
+
+    assert row["session_id"] == "origin"
+    assert row["notification_route"] == original_route

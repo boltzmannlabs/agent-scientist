@@ -1,7 +1,7 @@
 import json
 import sys
 
-from sci_cli.session_export import export_record_count, render_sessions_export
+from sci_cli.session_export import export_record_count, render_chat_export, render_sessions_export
 from sci_cli.session_export_html import (
     _generate_messages_html,
     generate_multi_session_html_export,
@@ -51,6 +51,30 @@ def _sample_session():
             },
         ],
     }
+
+
+def test_chat_export_skips_assistant_tool_call_records_without_visible_text():
+    rendered = render_chat_export({
+        "id": "tool-turn",
+        "messages": [
+            {"role": "user", "content": "Look this up."},
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [{"id": "call-1", "function": {"name": "web_search"}}],
+            },
+            {"role": "tool", "tool_name": "web_search", "content": "internal result"},
+            {"role": "assistant", "content": "Here is the answer."},
+            {"role": "assistant", "content": "   ", "tool_calls": [{"id": "call-2"}]},
+        ],
+    })
+
+    assert rendered.count("## You") == 1
+    assert rendered.count("## Sci Agent") == 1
+    assert "Look this up." in rendered
+    assert "Here is the answer." in rendered
+    assert "internal result" not in rendered
+    assert "## Sci Agent\n\n\n" not in rendered
 
 
 

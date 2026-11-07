@@ -3714,6 +3714,10 @@ def _recover_provider_pool(provider: str, exc: Exception, *, failed_api_key: str
     another process already rotated (current() would be None).
     """
     normalized = _normalize_aux_provider(provider)
+    from providers import get_provider_profile
+    profile = get_provider_profile(normalized)
+    if profile is not None and profile.allow_fallback is False:
+        return False
     try:
         pool = load_pool(normalized)
     except Exception as load_exc:
@@ -4388,6 +4392,10 @@ def _try_configured_fallback_chain(
     """Try auxiliary.<task>.fallback_chain entries in order (each needs ``provider``; model/base_url/api_key optional).
     ``failed_model`` scoping per ``_failed_backend_skip`` (sibling models on the same provider still
     run after a model-scoped failure). Returns (client, model, provider_label) or (None, None, "")."""
+    from providers import get_provider_profile
+    profile = get_provider_profile(failed_provider)
+    if profile is not None and profile.allow_fallback is False:
+        return None, None, ""
     if not task:
         return None, None, ""
     chain = _get_auxiliary_task_config(task).get("fallback_chain")
@@ -4474,6 +4482,10 @@ def _try_main_fallback_chain(
     """Top-level main-agent fallback chain for a ``provider: auto`` auxiliary call: auto tasks honour the
     user's main fallback policy before the built-in discovery chain; read via ``get_fallback_chain`` so
     ``fallback_providers`` and legacy ``fallback_model`` keep the main agent's order."""
+    from providers import get_provider_profile
+    profile = get_provider_profile(failed_provider)
+    if profile is not None and profile.allow_fallback is False:
+        return None, None, ""
     try:
         from sci_cli.config import load_config_readonly
         from sci_cli.fallback_config import get_fallback_chain
@@ -4701,6 +4713,9 @@ def _effective_provider_for_client(client: Any, fallback: str) -> str:
 
 def _to_async_client(sync_client, model: str, is_vision: bool = False):
     """Sync client → async counterpart, preserving Codex routing (``is_vision`` adds the Copilot vision header)."""
+    convert = getattr(type(sync_client), "to_async_client", None)
+    if callable(convert):
+        return convert(sync_client), model
     from openai import AsyncOpenAI
     if isinstance(sync_client, _AuxProbeClientStub):
         return sync_client, model
@@ -5252,8 +5267,13 @@ def _api_key_profile_supplied_client(provider: str, **client_kwargs: Any) -> Any
     if profile is None:
         return None
     try:
-        return profile.create_client(**client_kwargs)
+        client = profile.create_client(**client_kwargs)
+        if client is None and profile.requires_custom_client:
+            raise RuntimeError(f"Provider {profile.name} requires its custom client.")
+        return client
     except Exception:
+        if getattr(profile, "requires_custom_client", False) is True:
+            raise
         logger.warning("resolve_provider_client: provider profile %r failed to create an "
                        "auxiliary client; falling back to the standard client path",
                        provider, exc_info=True)
@@ -7728,6 +7748,10 @@ def _ladder_provider_fallback(first_err: Exception, route: _LadderRoute):
     regardless of user intent. Auth errors from an explicit provider may only use the task's
     own configured fallback_chain; they never imply an unconfigured provider hop."""
     task, tag, resolved_provider = route.task, route.tag, route.resolved_provider
+    from providers import get_provider_profile
+    profile = get_provider_profile(resolved_provider)
+    if profile is not None and profile.allow_fallback is False:
+        return None
     # Respect explicit provider choice for transient errors (auth, request validation, etc.) but allow
     # fallback when the provider clearly cannot serve the request due to capacity: payment/quota exhaustion
     # and connection failures are capacity problems, not request constraints. See #26803: daily token quota

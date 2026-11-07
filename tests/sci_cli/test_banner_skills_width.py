@@ -10,8 +10,10 @@ import model_tools
 import tools.mcp_tool_discovery
 
 def _build_banner_with_skills(skills_by_category, term_width=160):
-    """Helper: build banner with given skills and return captured output."""
+    """The detailed inventory remains available for custom/artwork skins."""
+    from sci_cli.skin_engine import load_skin
     with (
+        patch.object(banner, "_active_skin", return_value=load_skin("mono")),
         patch.object(
             model_tools,
             "check_tool_availability",

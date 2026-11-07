@@ -802,12 +802,6 @@ export function ActiveSessionSwitcher({
                 </Text>
               </Box>
 
-              <Box {...fixedSessionColumnStyle()} width={18}>
-                <Text color={rowTextColor ?? t.color.muted} wrap="truncate-end">
-                  {S.row.messageCount(h.message_count ?? 0)}
-                </Text>
-              </Box>
-
               <Box flexGrow={1} flexShrink={1} minWidth={0}>
                 <Text
                   bold={selected}

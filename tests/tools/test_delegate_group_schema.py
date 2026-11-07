@@ -17,10 +17,9 @@ def test_group_schema_tracks_delivery_policy_without_mutating_previous_definitio
     for config in ({}, {"independent_completions": True}, {"independent_completions": False}):
         monkeypatch.setattr(delegate_tool_config, "_cfg", lambda: config)
         definition = registry.get_definitions({"delegate_task"})[0]
-        enabled = config.get("independent_completions", False)
         task = definition["function"]["parameters"]["properties"]["tasks"]["items"]
-        assert ("group" in task["properties"]) == enabled
-        assert ("group" in definition["function"]["description"]) == enabled
+        assert "group" not in task["properties"]
+        assert "group" not in definition["function"]["description"]
         assert json.dumps(registry.get_definitions({"delegate_task"})[0]) == json.dumps(definition)
         for previous, serialized in snapshots:
             assert json.dumps(previous) == serialized

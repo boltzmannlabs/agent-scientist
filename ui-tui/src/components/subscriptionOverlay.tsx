@@ -500,7 +500,7 @@ function OverviewScreen({ onClose, onPatch, overlay, t }: ScreenProps) {
 
       <Text />
       {rows.map((row, i) => (
-        <MenuRow active={sel === i} index={i + 1} key={row.label} label={row.label} t={t} />
+        <MenuRow active={sel === i} key={row.label} label={row.label} t={t} />
       ))}
 
       <Text />
@@ -558,7 +558,7 @@ function PickerScreen({ onPatch, overlay, t }: ScreenProps) {
       <Text />
       {choices.length === 0 && <Text color={t.color.muted}>{T.picker.noOtherPlans}</Text>}
       {rows.map((row, i) => (
-        <MenuRow active={sel === i} index={i + 1} key={row.label} label={row.label} t={t} />
+        <MenuRow active={sel === i} key={row.label} label={row.label} t={t} />
       ))}
       <Text />
       {footer(T.picker.hint, t)}

@@ -2326,6 +2326,15 @@ cli:
     footer_detail: "Esc roster · PgUp/PgDn tail{steer} · x stop"
     footer_roster: "↑/↓ select · Enter tail{steer} · x stop · q/Ctrl+T close"
 
+  jobs:
+    heading: "Background jobs · {count} · Ctrl+R collapse"
+    count: "{count} jobs"
+    id: "Job: …{id}"
+    last_check: "Last check: {age} ago"
+    next_check: "Next check: {delay}"
+    check_due: "Next check due"
+    more: "+{count} more background jobs"
+
   dock:
     process_goal_label: "background process"
     last_output: "last: {detail}"

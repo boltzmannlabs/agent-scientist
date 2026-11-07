@@ -8,6 +8,11 @@ description: "Browser-based administration panel for managing configuration, API
 
 The web dashboard is a browser-based UI for managing your Sci Agent installation. Instead of editing YAML files or running CLI commands, you can configure settings, manage API keys, and monitor sessions from a clean web interface.
 
+An empty Chat view displays the dotted Boltzmann “b” as a softly glowing particle
+animation. It pauses when hidden or off-screen and disappears when the conversation
+starts. Reduced-motion preferences and browsers without canvas use a still dotted
+logo. The animation runs locally in the browser and makes no model or tool requests.
+
 :::tip
 Hosted-mode auth uses Nous Portal OAuth; if you also want the dashboard to talk to a real backend, `sci setup --portal` wires up the model and tool gateway too. See [Nous Portal](../../integrations/nous-portal.md).
 :::

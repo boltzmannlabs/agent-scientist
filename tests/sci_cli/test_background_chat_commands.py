@@ -51,7 +51,7 @@ def test_resume_joins_live_worker_before_claiming_a_writer(monkeypatch):
     import sys
     import os
     worker = {"id": "worker", "pid": os.getpid() + 1, "attached": True}
-    monkeypatch.setattr(commands, "find_worker", lambda key: worker)
+    monkeypatch.setattr(commands, "find_view_worker", lambda key: worker)
     monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
     monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
     choice = Mock(return_value="Move viewer")
@@ -60,7 +60,7 @@ def test_resume_joins_live_worker_before_claiming_a_writer(monkeypatch):
     monkeypatch.setattr(background_chat_terminal, "attach", attach)
     cli = SimpleNamespace(_resumed=True, session_id="saved", _console_print=Mock())
     assert commands.attach_on_resume(cli) is True
-    attach.assert_called_once_with("worker", takeover=True)
+    attach.assert_called_once_with("worker", takeover=True, view_session=None)
     attach.reset_mock()
     choice.side_effect = Cancelled
     assert commands.attach_on_resume(cli) is True

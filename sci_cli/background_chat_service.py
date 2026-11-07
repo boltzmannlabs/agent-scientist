@@ -109,7 +109,8 @@ class ChatService:
                 state = "worker alive; execution status unavailable"
             result.append({"id": c["id"], "session_id": c["session_id"], "pid": c["process"].pid,
                            "alive": alive, "state": state, "attached": c["pty"].attached,
-                           "background_tasks": c["background_tasks"]})
+                           "background_tasks": c["background_tasks"],
+                           "view_sessions": c.get("view_sessions", [])})
         return {"chats": result, "profile_home": str(self.home), "pid": os.getpid()}
 
     def persist(self):
@@ -223,7 +224,31 @@ class ChatService:
                     background_tasks=int(params.get("background_tasks", 0)))
         if chat["state"] != "stopping":
             chat["state"] = state
+        views = params.get("view_sessions", [])
+        if not isinstance(views, list) or len(views) > 2 or any(not isinstance(v, str) or len(v) > 256 for v in views):
+            raise ValueError("Invalid conversation views.")
+        chat["view_sessions"] = views
+        selection = chat.get("view_selection")
+        if selection:
+            ack = params.get("view_ack") or {}
+            if ack.get("id") == selection["request"]["id"] and not selection["ready"].done():
+                selection["ready"].set_result(ack.get("selected") is True)
+            return {"managed": True, "select_view": selection["request"]}
         return {"managed": True}
+
+    async def select_view(self, chat, session_id):
+        selection = {"request": {"id": uuid.uuid4().hex, "session_id": session_id,
+                                  "expires": time.monotonic() + 8},
+                     "ready": asyncio.get_running_loop().create_future()}
+        chat["view_selection"] = selection
+        try:
+            selected = await asyncio.wait_for(selection["ready"], 8)
+            if not selected or session_id not in chat.get("view_sessions", []):
+                raise ValueError("That view closed before attachment. Retry resume to open its saved history.")
+        except asyncio.TimeoutError:
+            raise ValueError("The owning CLI did not acknowledge the view change. No second writer was opened; retry when its interface is ready.") from None
+        finally:
+            chat.pop("view_selection", None)
 
     async def detach(self, params):
         chat = self._lookup(params.get("id"), params.get("pid"))
@@ -273,6 +298,15 @@ class ChatService:
             async with chat["attach_lock"]:
                 if chat["pty"].attached and params.get("takeover") is not True:
                     raise ValueError("Another terminal is attached. Use attach --takeover to move the viewer here.")
+                if params.get("view_session"):
+                    if params["view_session"] not in chat.get("view_sessions", []):
+                        raise ValueError("That conversation view is no longer available in this runtime. Retry resume; the current viewer is unchanged.")
+                    # Fence the previous viewer before changing its input destination.
+                    previous = chat["pty"]._ws
+                    if previous:
+                        chat["pty"].detach(previous)
+                        await previous.close(0)
+                    await self.select_view(chat, params["view_session"])
                 await peer.send({"attached": chat["id"], "truncated": chat["pty"].buffer.truncated})
                 chat["pty"].bridge.resize(int(params.get("cols", 80)), int(params.get("rows", 24)))
                 if not await chat["pty"].attach(peer):

@@ -3,7 +3,7 @@
 import asyncio
 from contextlib import closing
 
-from prompt_toolkit.application import Application, in_terminal, set_app
+from prompt_toolkit.application import Application, get_app, in_terminal, set_app
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.input import create_input
 from prompt_toolkit.key_binding import KeyBindings
@@ -23,10 +23,10 @@ class SessionPicker:
         self.limit = 50
         self.selected = 0
         self.rows = []
-        self.search = TextArea(height=1, multiline=False, prompt="Search: ")
+        self.search = TextArea(height=1, multiline=False, prompt="Search: ", style="class:input-area")
         self.search.buffer.on_text_changed += self._search_changed
         self.control = FormattedTextControl(self.fragments, get_cursor_position=lambda: Point(0, self.selected))
-        self.window = Window(self.control, height=12, wrap_lines=False, always_hide_cursor=True)
+        self.window = Window(self.control, height=lambda: min(12, max(1, get_app().output.get_size().rows - 9)), wrap_lines=False, always_hide_cursor=True)
         self.refresh()
 
     def refresh(self):
@@ -57,9 +57,20 @@ class SessionPicker:
         for index, row in enumerate(self.rows):
             age = relative_time(row.get("last_active"), session_id=row["id"])
             title = " ".join(sanitize_display_text(str(row.get("title") or "Untitled")).split())
-            style = "class:menu.completions.completion.current" if index == self.selected else ""
-            parts.append((style, f"{'›' if index == self.selected else ' '} {age:<12}  {title}\n"))
+            style = "class:clarify-selected" if index == self.selected else "class:clarify-choice"
+            parts.append((style, self._table_row(title, age, '◉' if index == self.selected else '○') + "\n"))
         return parts
+
+    @staticmethod
+    def _table_row(title, activity, marker=" "):
+        from rich.cells import set_cell_size
+        columns = get_app().output.get_size().columns
+        if columns < 60:
+            return f"{marker} {set_cell_size(title, max(1, columns - 3))}"
+        return f"{marker} {set_cell_size(title, columns - 17)}  {activity:<12}"
+
+    def heading(self):
+        return [("class:clarify-question", self._table_row("Conversation", "Activity"))]
 
     def application(self, *, input=None, output=None, style=None, before_render=None):
         kb = KeyBindings()
@@ -78,11 +89,11 @@ class SessionPicker:
 
         from sci_cli.native_profile_session import profile_label
         layout = HSplit([
-            Window(FormattedTextControl(f"Resume conversation · {profile_label()}"), height=1),
+            Window(FormattedTextControl([("class:clarify-title", f"Resume conversation · {profile_label()}")]), height=1),
             self.search,
-            Window(FormattedTextControl("  Updated       Conversation"), height=1),
+            Window(FormattedTextControl(self.heading), height=1),
             self.window,
-            Window(FormattedTextControl("↑/↓ navigate · type to search · Enter resume · Esc cancel"), height=1),
+            Window(FormattedTextControl([("class:clarify-hint", "↑/↓ navigate · type to search · Enter resume · Esc cancel")]), height=1),
         ])
         return Application(layout=Layout(layout, focused_element=self.search), key_bindings=kb,
                            full_screen=False, erase_when_done=True, input=input, output=output,

@@ -498,6 +498,8 @@ class CLISessionMixin:
             CLI_CONFIG, _parse_service_tier_config,
             _sync_process_session_id, datetime)
         from sci_cli.cli_model_switch_mixin import _resolve_cli_reasoning
+        from sci_cli.session_browser import require_empty_input_queue
+        require_empty_input_queue(self)
         old_session_id = self.session_id
         _boundary_snapshot = None
         if self.agent:
@@ -621,6 +623,12 @@ class CLISessionMixin:
             return True
         self._handle_resume_command(f"/resume {index}")
         return True
+
+    def _handle_export_chat_command(self, command: str = "/export-chat"):
+        """Export this conversation as a readable Markdown transcript."""
+        from sci_cli.chat_export import export_chat
+
+        return export_chat(self, command)
 
     def save_conversation(self, cmd: str = "/save"):
         """Handle ``/save [json|md|html] [filename] [redact]``.

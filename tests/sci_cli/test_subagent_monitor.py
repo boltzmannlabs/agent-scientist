@@ -32,7 +32,8 @@ def test_dock_scopes_children_and_fits_short_narrow_terminal(monkeypatch):
         approval_widget=None, clarify_widget=None, spacer='spacer', status_bar='status',
         input_rule_top='top', image_bar=None, input_area='composer', input_rule_bot='bottom',
         voice_status_bar=None, completions_menu=None)
-    assert children.index('dock') < children.index('status') < children.index('composer')
+    # The current CLI keeps live work above input and the status bar below it.
+    assert children.index('dock') < children.index('composer') < children.index('status')
 
 
 def test_monitor_controls_recheck_ownership_and_keep_selection(monkeypatch):

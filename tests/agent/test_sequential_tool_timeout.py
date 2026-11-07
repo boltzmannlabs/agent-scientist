@@ -117,6 +117,47 @@ def _clarify_call(call_id: str = "clarify-1"):
     )
 
 
+def test_tool_owned_wait_blocks_following_calls_past_generic_deadline(tmp_path, monkeypatch):
+    from agent.tool_dispatch_helpers import _plan_tool_batch_segments
+    from tools.registry import registry
+
+    agent = _make_agent(tmp_path)
+    entry = registry.get_entry("web_extract")
+    monkeypatch.setattr(entry, "manages_timeout", True)
+    monkeypatch.setenv("SCI_CONCURRENT_TOOL_TIMEOUT_S", "0.1")
+    started, release = threading.Event(), threading.Event()
+    order = []
+
+    def release_after_start():
+        if started.wait(10):
+            release.wait(2.1)  # Deliberately beyond the generic deadline.
+        release.set()
+
+    def dispatch(_name, _args, _task_id, *, tool_call_id, **kwargs):
+        order.append(tool_call_id)
+        if tool_call_id == "waiting":
+            started.set()
+            assert release.wait(10)
+            order.append("completed")
+        return "completed result"
+
+    calls = [_tool_call("waiting"), _tool_call("next")]
+    bridge = SimpleNamespace(id="bridge", function=SimpleNamespace(
+        name="tool_call", arguments=json.dumps({"name": "web_extract", "arguments": {}})))
+    assert all(kind == "sequential" for kind, _ in _plan_tool_batch_segments([bridge, *calls]))
+    controller = threading.Thread(target=release_after_start)
+    controller.start()
+    messages = []
+    try:
+        with patch("model_tools.handle_function_call", side_effect=dispatch):
+            execute_tool_calls_sequential(agent, SimpleNamespace(tool_calls=calls), messages, "task")
+    finally:
+        release.set()
+        controller.join(10)
+    assert order == ["waiting", "completed", "next"]
+    assert [m["content"] for m in messages] == ["completed result", "completed result"]
+
+
 def test_sequential_tool_timeout_emits_result_and_continues(tmp_path, monkeypatch):
     agent = _make_agent(tmp_path)
     first_started = threading.Event()

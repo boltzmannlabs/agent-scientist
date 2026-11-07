@@ -1,6 +1,16 @@
 import { useContext, useEffect, useRef } from 'react'
 
-import { CLEAR_TAB_STATUS, supportsTabStatus, tabStatus, wrapForMultiplexer } from '../termio/osc.js'
+import { isProgressReportingAvailable } from '../terminal.js'
+import {
+  CLEAR_TAB_STATUS,
+  ITERM2,
+  OSC,
+  osc,
+  PROGRESS,
+  supportsTabStatus,
+  tabStatus,
+  wrapForMultiplexer
+} from '../termio/osc.js'
 import type { Color } from '../termio/types.js'
 import { TerminalWriteContext } from '../useTerminalNotification.js'
 
@@ -46,6 +56,19 @@ const TAB_STATUS_PRESETS: Record<TabStatusKind, { indicator: Color; status: stri
 export function useTabStatus(kind: TabStatusKind | null): void {
   const writeRaw = useContext(TerminalWriteContext)
   const prevKindRef = useRef<TabStatusKind | null>(null)
+
+  useEffect(() => {
+    if (!writeRaw || !isProgressReportingAvailable()) {return}
+    const clear = () => writeRaw(wrapForMultiplexer(osc(OSC.ITERM2, ITERM2.PROGRESS, PROGRESS.CLEAR, '')))
+
+    if (kind === 'busy') {
+      writeRaw(wrapForMultiplexer(osc(OSC.ITERM2, ITERM2.PROGRESS, PROGRESS.INDETERMINATE, '')))
+
+      return clear
+    }
+
+    clear()
+  }, [kind, writeRaw])
 
   useEffect(() => {
     // When kind transitions from non-null to null (e.g. user toggles off

@@ -2,17 +2,21 @@
 # Windows twin of install-sci.sh; the setup engine is setup-sci.ps1.
 param(
     [switch]$NonInteractive,
+    [switch]$NoLaunch,
+    [switch]$InstallPrerequisites,
     [switch]$Help,
     [Parameter(ValueFromRemainingArguments = $true)][string[]]$Rest
 )
 $ErrorActionPreference = 'Stop'
 
 function Show-Usage {
-    Write-Output 'Usage: .\install-sci.ps1 [-NonInteractive] [-Help]'
+    Write-Output 'Usage: .\install-sci.ps1 [-NonInteractive] [-NoLaunch] [-InstallPrerequisites] [-Help]'
     Write-Output ''
     Write-Output 'Installs the managed Python/tools, application dependencies, SCI launchers'
-    Write-Output 'and bundled skills. Interactive mode then opens model/provider setup.'
+    Write-Output 'and bundled skills. Interactive mode configures a provider, then launches SCI.'
     Write-Output '-NonInteractive installs the software without asking for credentials.'
+    Write-Output '-NoLaunch completes setup without opening chat.'
+    Write-Output '-InstallPrerequisites explicitly approves missing Git installation using WinGet.'
 }
 if ($Help) { Show-Usage; exit 0 }
 if ($Rest) {
@@ -27,7 +31,7 @@ if ([System.Environment]::OSVersion.Platform -ne [System.PlatformID]::Win32NT) {
 }
 
 $sourceDir = $PSScriptRoot
-foreach ($file in 'setup-sci.ps1', 'pyproject.toml', 'uv.lock', 'pm/lock.json') {
+foreach ($file in 'setup-sci.ps1', 'scripts/source-install-preflight.ps1', 'pyproject.toml', 'uv.lock', 'pm/lock.json') {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceDir $file))) {
         [Console]::Error.WriteLine("Incomplete SCI checkout: $file is missing. Obtain the complete repository and retry.")
         exit 1
@@ -35,9 +39,11 @@ foreach ($file in 'setup-sci.ps1', 'pyproject.toml', 'uv.lock', 'pm/lock.json') 
 }
 
 $setup = -not $NonInteractive
+$launch = -not ($NonInteractive -or $NoLaunch)
 if ($setup -and ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected)) {
     Write-Output 'No interactive terminal detected; installing software without credential setup.'
     $setup = $false
+    $launch = $false
 }
 
 # Mirrors install-sci.sh's ERR trap: every failure names its stage and
@@ -50,6 +56,11 @@ function Stop-Install([int]$Code) {
     exit $Code
 }
 
+trap {
+    [Console]::Error.WriteLine($_.Exception.Message)
+    Stop-Install 1
+}
+
 Write-Output 'Agent Scientist installation'
 Write-Output "Source: $sourceDir"
 
@@ -57,7 +68,10 @@ $script:stage = 'installing runtime and dependencies'
 # A child process (not dot-sourcing or &) keeps the engine's exit/throw
 # behavior out of this wrapper and preserves its exact exit code.
 $psHost = (Get-Process -Id $PID).Path
-& $psHost -NoProfile -ExecutionPolicy Bypass -File (Join-Path $sourceDir 'setup-sci.ps1') -UserInstall
+$engineOptions = @('-UserInstall')
+if (-not $setup) { $engineOptions += '-NonInteractive' }
+if ($InstallPrerequisites) { $engineOptions += '-InstallPrerequisites' }
+& $psHost -NoProfile -ExecutionPolicy Bypass -File (Join-Path $sourceDir 'setup-sci.ps1') @engineOptions
 if ($LASTEXITCODE -ne 0) { Stop-Install $LASTEXITCODE }
 
 $script:stage = 'checking the installed CLI'
@@ -72,20 +86,37 @@ if (-not $installedCli) {
 & $installedCli --help > $null
 if ($LASTEXITCODE -ne 0) { Stop-Install $LASTEXITCODE }
 
-if ($setup) {
+# The engine registered persistent User PATH. Refresh this PowerShell process too.
+$binDir = if ($env:SCI_HOME) { Join-Path $env:SCI_HOME 'bin' } else { Join-Path $env:LOCALAPPDATA 'sci\bin' }
+$env:Path = "$binDir;$env:Path"
+$script:stage = 'checking model configuration'
+function Test-InstalledProvider {
+    & $installedCli --run-module sci_cli.install_status
+    $code = $LASTEXITCODE
+    if ($code -ne 0 -and $code -ne 3) { Stop-Install $code }
+    $script:providerReady = $code -eq 0
+}
+Test-InstalledProvider
+if ($setup -and -not $script:providerReady) {
     $script:stage = 'configuring your model provider'
     & $installedCli setup
     if ($LASTEXITCODE -ne 0) { Stop-Install $LASTEXITCODE }
-} else {
-    Write-Output ''
-    Write-Output 'Software installed. Configure your model before chatting: sci setup'
+    Test-InstalledProvider
 }
 
-$binDir = if ($env:SCI_HOME) { Join-Path $env:SCI_HOME 'bin' } else { Join-Path $env:LOCALAPPDATA 'sci\bin' }
 Write-Output ''
 Write-Output 'Agent Scientist is installed.'
-Write-Output 'Start: agent-sci'
-Write-Output 'If the command is not found, open a new terminal or add this directory to PATH:'
-Write-Output "  $binDir"
+Write-Output 'Start: sci (agent-sci is also available).'
+Write-Output 'User PATH is registered. This PowerShell process can use sci immediately.'
+Write-Output 'If invoked from a separate child PowerShell or CMD process, open a new terminal for its updated PATH.'
 Write-Output "Keep this source checkout at: $sourceDir"
+if (-not $script:providerReady) {
+    Write-Output 'Model setup is incomplete; software is installed. Run sci setup before chatting.'
+    $launch = $false
+}
 Write-Output 'Optional service credentials are configured separately inside SCI.'
+if ($launch) {
+    $script:stage = 'launching SCI'
+    & $installedCli
+    if ($LASTEXITCODE -ne 0) { Stop-Install $LASTEXITCODE }
+}

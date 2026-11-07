@@ -2007,6 +2007,8 @@ def _update_fallback_context_compressor(agent) -> None:
     if not compressor:
         return
     from agent.model_metadata import get_model_context_length
+    from agent.context_budget import output_reservation
+    from agent.context_compressor import ContextCompressor
     fb_context_length = get_model_context_length(
         agent.model, base_url=agent.base_url,
         api_key=agent.api_key if isinstance(agent.api_key, str) else "",  # callable (Entra ID) → probes need str
@@ -2017,6 +2019,9 @@ def _update_fallback_context_compressor(agent) -> None:
     compressor.update_model(  # callable api_key preserved → call_llm
         model=agent.model, context_length=fb_context_length, base_url=agent.base_url,
         api_key=getattr(agent, "api_key", ""), provider=agent.provider, api_mode=agent.api_mode,
+        **({"max_tokens": output_reservation(
+            agent.model, agent.provider, agent.base_url, getattr(agent, "max_tokens", None)
+        ) or 0} if isinstance(compressor, ContextCompressor) else {}),
     )
     # Fallback activation is an error path: refresh an EXISTING verdict eagerly (the ceiling was voided by
     # update_model()), but a session that never probed keeps its lazy compaction-time probe rather than

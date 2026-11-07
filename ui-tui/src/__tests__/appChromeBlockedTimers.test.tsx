@@ -210,6 +210,8 @@ let nowSpy: ReturnType<typeof vi.spyOn<typeof Date, 'now'>>
 beforeEach(() => {
   resetOverlayState()
   resetUiState()
+  // These cases exercise overlays covering the explicitly selected top bar.
+  patchUiState({ statusBar: 'top' })
   nowSpy = vi.spyOn(Date, 'now').mockReturnValue(T0)
   intervalSpy = vi.spyOn(globalThis, 'setInterval')
 })

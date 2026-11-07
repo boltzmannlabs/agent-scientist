@@ -608,6 +608,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Publish source-install launchers.")
     parser.add_argument("out_dir", type=Path)
+    parser.add_argument("--register-path", action="store_true")
     args = parser.parse_args()
     repo_root = Path(__file__).resolve().parents[1]
     if resolve_store_python(repo_root) is None:
@@ -616,4 +617,8 @@ if __name__ == "__main__":
     written = ensure_install_launchers(repo_root, args.out_dir)
     if len(written) != len(ENTRY_POINTS):
         parser.exit(1, "sci: launcher publication failed\n")
+    if args.register_path:
+        from sci_cli.install_paths import register_user_path
+
+        register_user_path(args.out_dir)
     print("\n".join(written))

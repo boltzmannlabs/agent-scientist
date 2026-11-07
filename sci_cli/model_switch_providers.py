@@ -937,6 +937,7 @@ def _lap_canonical_rows(b: _PickerBuild) -> None:
     """Section 2b: CANONICAL_PROVIDERS missed by sections 1/2."""
     from sci_cli.auth import PROVIDER_REGISTRY
     from sci_cli.models import CANONICAL_PROVIDERS
+    from providers import get_provider_profile
     for cp in CANONICAL_PROVIDERS:
         if _skip(b.seen_slugs, b.excluded, cp.slug):
             continue
@@ -962,7 +963,14 @@ def _lap_canonical_rows(b: _PickerBuild) -> None:
                 has_creds = bool(get_external_process_provider_status(cp.slug).get("configured"))
             except Exception as exc:
                 logger.debug("External-process check failed for %s: %s", cp.slug, exc)
+        profile = get_provider_profile(cp.slug)
+        if profile is not None and profile.credential_scope == "profile":
+            owned = profile.resolve_credentials(strict=False)
+            has_creds = bool(owned and owned.get("api_key"))
         if not has_creds:
+            if profile is not None and profile.picker_visible_when_locked:
+                b.add_builtin_row(cp.slug, cp.label + " — login required", cp.slug == b.current_provider,
+                                  list(profile.fallback_models), "canonical", uncapped_ok=False)
             continue
         if _is_aws_sdk(cp_config):
             model_ids = _aws_live_or_curated_ids(cp.slug, b.curated, non_blocking=b.non_blocking_catalogs)

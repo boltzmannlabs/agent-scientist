@@ -45,6 +45,10 @@ def singleton_row(provider, state, label):
 
 
 def publish(provider, *, base_url="", preferred_token=""):
+    from providers import get_provider_profile
+    profile = get_provider_profile(provider)
+    if profile is not None and profile.credential_scope == "profile":
+        return  # A service account is authorized independently by each owning profile.
     from sci_constants import get_sci_home, get_default_sci_root
     from sci_cli.provider_removal import _homes, _read, _definitions, _aliases, _url
     from sci_cli.providers import custom_provider_aliases, ALIASES

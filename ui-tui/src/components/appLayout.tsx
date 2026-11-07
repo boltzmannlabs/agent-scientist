@@ -37,6 +37,7 @@ import { Journey } from './journey.js'
 import { MessageLine } from './messageLine.js'
 import { PetKitty, PetSprite } from './petSprite.js'
 import { QueuedMessages } from './queuedMessages.js'
+import { ScienceWelcome } from './scienceDesign.js'
 import { LiveTodoPanel, StreamingAssistant } from './streamingAssistant.js'
 import { type InputCursorSnapshot, TextInput, type TextInputMouseApi } from './textInput.js'
 
@@ -194,13 +195,20 @@ const TranscriptPane = memo(function TranscriptPane({
 
       {transcript.virtualRows.slice(transcript.virtualHistory.start, transcript.virtualHistory.end).map(row => (
         <Box flexDirection="column" key={row.key} ref={transcript.virtualHistory.measureRef(row.key)}>
-          {row.msg.role === 'user' && firstUserIdx >= 0 && row.index > firstUserIdx && (
+          {row.msg.role === 'user' && row.msg.kind && firstUserIdx >= 0 && row.index > firstUserIdx && (
             <Box marginTop={1}>
               <Text color={ui.theme.color.border}>───</Text>
             </Box>
           )}
 
-          {row.msg.kind === 'intro' ? (
+          {row.msg.kind === 'intro' && !ui.theme.bannerLogo && !ui.theme.bannerHero ? (
+            <ScienceWelcome
+              animateLogo={firstUserIdx < 0 && !composer.input && !composer.inputBuf.length}
+              cols={Math.max(1, bodyCols - 4)}
+              info={row.msg.info}
+              t={ui.theme}
+            />
+          ) : row.msg.kind === 'intro' ? (
             nativeMode ? null : (
               <Box flexDirection="column" paddingTop={1}>
                 <Banner maxWidth={Math.max(1, composer.cols - 2)} t={ui.theme} />
@@ -410,8 +418,14 @@ const ComposerPane = memo(function ComposerPane({
       <AmbientDock placement="dock-top" />
 
       <Box
+        backgroundColor={ui.theme.surfaces?.elevated}
+        borderColor={ui.theme.surfaces?.inputRule ?? ui.theme.color.accent}
+        borderLeft={false}
+        borderRight={false}
+        borderStyle="single"
         flexDirection="column"
         marginTop={nativeMode || ui.statusBar === 'top' ? 0 : 1}
+        paddingY={1}
         position={nativeMode ? undefined : 'relative'}
       >
         {!nativeMode && <FloatingOverlays {...floatingOverlayProps} />}
@@ -447,7 +461,7 @@ const ComposerPane = memo(function ComposerPane({
                 ) : composer.inputBuf.length ? (
                   <Text color={ui.theme.color.prompt}>{promptBlank}</Text>
                 ) : (
-                  <PromptPrefix bold color={ui.theme.color.prompt} promptText={promptText} width={promptWidth} />
+                  <PromptPrefix bold color={ui.theme.color.accent} promptText={promptText} width={promptWidth} />
                 )}
               </Box>
 
@@ -468,7 +482,7 @@ const ComposerPane = memo(function ComposerPane({
                   // poles even when polarity detection is wrong (transparent
                   // terminals lie about their background); anything blended
                   // toward the resolved surface inherits that wrong polarity.
-                  placeholderColor={ui.theme.color.muted}
+                  placeholderColor={ui.theme.surfaces?.hint ?? ui.theme.color.muted}
                   value={composer.input}
                   voiceRecordKey={composer.voiceRecordKey}
                 />
@@ -524,17 +538,24 @@ const StatusRulePane = memo(function StatusRulePane({
 }: Pick<AppLayoutProps, 'composer' | 'status'> & { at: 'bottom' | 'top'; nativeMode: boolean }) {
   const ui = useStore($uiState)
 
-  if (ui.statusBar === 'off' || (nativeMode ? at !== 'top' : ui.statusBar !== at)) {
+  if (ui.statusBar === 'off' || ui.statusBar !== at) {
     return null
   }
 
+  const profile = ui.info?.profile_name
+  const name = !profile || profile === 'default' ? 'main' : profile
+  const label = `[${name.length > 16 ? name.slice(0, 15) + '…' : name}] │ `
+
   return (
-    <Box marginTop={at === 'top' ? 1 : 0}>
+    <Box backgroundColor={ui.theme.color.statusBg} marginTop={1}>
+      <Text bold color={ui.theme.color.primary}>
+        {label}
+      </Text>
       <StatusRule
         battery={ui.battery ? ui.batteryStatus : null}
         bgCount={ui.bgTasks.size}
         busy={ui.busy}
-        cols={composer.cols}
+        cols={Math.max(12, composer.cols - label.length)}
         compacting={ui.compacting}
         cwdLabel={status.cwdLabel}
         focusView={ui.focusView}
@@ -585,7 +606,12 @@ export const AppLayout = memo(function AppLayout({
 
   return (
     <Shell {...shellProps}>
-      <Box flexDirection="column" flexGrow={1} position={NATIVE_MODE ? undefined : 'relative'}>
+      <Box
+        backgroundColor={ui.theme.surfaces?.canvas}
+        flexDirection="column"
+        flexGrow={1}
+        position={NATIVE_MODE ? undefined : 'relative'}
+      >
         <Box flexDirection="row" flexGrow={1}>
           {!overlay.agents && !overlay.journey && <AmbientRail side="left" />}
           {overlay.agents ? (

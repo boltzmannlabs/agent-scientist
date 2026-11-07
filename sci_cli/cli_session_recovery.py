@@ -118,6 +118,12 @@ def prepare_resume(session_id, ui, *, registry_home=None):
         if entry is None:
             return True
         ui.show(describe_owner(entry))
+        if entry.get("surface") == "side":
+            ui.show("This side chat is still open in its parent CLI. Return to that terminal and use "
+                    "Ctrl+/ or /btw to view it. Ctrl+Q inside the side view closes only that side chat; "
+                    "then /resume can open its saved history here. Older running runtimes must be "
+                    "restarted normally to support moving side views. No ownership changed.")
+            return False
         if entry.get("surface") != "cli" or os.name != "posix" or entry.get("pid") == os.getpid():
             ui.show("Close this chat in its owning application, then resume it here. No ownership changed.")
             return False

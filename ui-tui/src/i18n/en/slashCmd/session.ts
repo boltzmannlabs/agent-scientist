@@ -65,11 +65,6 @@ export const slashCmdSessionEn = {
       defaultValue: 'default',
       switched: (skin: string) => `skin → ${skin}`
     },
-    theme: {
-      current: (theme: string) => `theme: ${theme}`,
-      switched: (theme: string) => `theme → ${theme}`,
-      usage: 'usage: /theme [auto|light|dark]'
-    },
     usage: {
       balanceTitle: 'Balance',
       compressions: (count: string) => `Compressions: ${count}`,

@@ -48,10 +48,10 @@ function ProfileChat({ profile, isActive }: ProfileChatProps) {
     setParams(p => { const next = new URLSearchParams(p); next.delete('resume'); return next; });
     setTarget(''); setVersion(v => v + 1);
   }
-  return <ChatConversation key={`${target}:${version}`} profile={profile} resume={target} workspace={workspace} onWorkspace={cwd => { setWorkspace(cwd); writeStoredWorkspace(profile, cwd); }} onNew={newChat} />;
+  return <ChatConversation key={`${target}:${version}`} active={isActive} profile={profile} resume={target} workspace={workspace} onWorkspace={cwd => { setWorkspace(cwd); writeStoredWorkspace(profile, cwd); }} onNew={newChat} />;
 }
-interface ChatConversationProps { profile: string; resume: string; workspace: string; onWorkspace: (cwd: string) => void; onNew: () => void }
-function ChatConversation({ profile, resume, workspace, onWorkspace, onNew }: ChatConversationProps) {
+interface ChatConversationProps { active: boolean; profile: string; resume: string; workspace: string; onWorkspace: (cwd: string) => void; onNew: () => void }
+function ChatConversation({ active, profile, resume, workspace, onWorkspace, onNew }: ChatConversationProps) {
   const [cwd] = useState(workspace);
   const chat = useWebChat({ profile, resume, cwd });
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -66,7 +66,7 @@ function ChatConversation({ profile, resume, workspace, onWorkspace, onNew }: Ch
         <button className="chat-icon-button" aria-label="New chat" title="New chat" onClick={onNew}><MessageSquarePlus size={21} /></button>
       </header>
       {(!chat.online || chat.loading) && <div className="chat-connection" role="status"><span>{chat.loading ? 'Connecting to your workspace…' : 'Chat disconnected. Reconnect to check the latest state.'}</span>{!chat.loading && <button onClick={() => void chat.reconnect()}><RefreshCw size={14} />Reconnect</button>}</div>}
-      <ChatTranscript state={chat.state} onSuggestion={chat.setPrefill}>
+      <ChatTranscript state={chat.state} onSuggestion={chat.setPrefill} active={active}>
         {chat.connection && chat.online && <ChatConnection key={chat.connection.op_id} operation={chat.connection} onAnswer={chat.answerConnection} />}
         {activeRequest && chat.online && <ChatRequest key={activeRequest.id} request={activeRequest} onAnswer={result => chat.answer(activeRequest, result)} />}
       </ChatTranscript>

@@ -10,8 +10,7 @@
 .chat-history-toggle { display: none; }
 .chat-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .chat-transcript { max-width: 820px; margin: 0 auto; padding: 32px 28px; overflow-wrap: anywhere; }
-.chat-welcome { padding: clamp(24px, 8vh, 110px) 0 55px; text-align: center; }
-.chat-welcome-icon { display: inline-flex; color: #c5a8d6; padding: 17px; border: 1px solid #353036; border-radius: 22px; margin-bottom: 28px; }
+.chat-welcome { padding: clamp(12px, 3vh, 28px) 0 40px; text-align: center; }
 .chat-eyebrow { font-size: 11px; letter-spacing: .18em; color: #999; margin-bottom: 14px; }
 .chat-welcome h1 { font-size: clamp(28px, 3vw, 42px); line-height: 1.2; font-weight: 400; margin-bottom: 16px; }
 .chat-welcome > p:not(.chat-eyebrow) { color: #aaa; font-size: 17px; }

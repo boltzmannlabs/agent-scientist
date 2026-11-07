@@ -226,7 +226,7 @@ export function SkillsHub({ gw, maxWidth, onClose, t }: SkillsHubProps) {
           return (
             <Text color={t.color.muted} {...chipRowProps(t, catIdx === idx)} key={row} wrap="truncate-end">
               {catIdx === idx ? '▸ ' : '  '}
-              {i + 1}. {row}
+              {row}
             </Text>
           )
         })}
@@ -258,7 +258,7 @@ export function SkillsHub({ gw, maxWidth, onClose, t }: SkillsHubProps) {
           return (
             <Text color={t.color.muted} {...chipRowProps(t, skillIdx === idx)} key={row} wrap="truncate-end">
               {skillIdx === idx ? '▸ ' : '  '}
-              {i + 1}. {row}
+              {row}
             </Text>
           )
         })}

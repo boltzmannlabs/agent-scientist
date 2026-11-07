@@ -11,6 +11,7 @@ from prompt_toolkit.utils import get_cwidth
 from agent.i18n import t
 from sci_cli import cli_process_dock as procs
 from sci_cli import cli_session_dock as session_rows
+from sci_cli import cli_job_dock as job_rows
 
 
 def _clip(value, width):
@@ -31,6 +32,9 @@ class SubagentMonitor:
         self.cli = cli
         self.entries = []
         self.processes = []
+        self.jobs = []
+        self._job_dock = job_rows.JobDock()
+        self._snapshot_time = 0
         self.goal = ''
         self.queued = []
         self.selected_id = None
@@ -42,7 +46,7 @@ class SubagentMonitor:
 
     @property
     def has_rows(self):
-        return bool(self.entries or self.processes or self.goal or self.queued)
+        return bool(self.entries or self.processes or self.jobs or self.goal or self.queued)
 
     @property
     def roster(self):
@@ -77,13 +81,17 @@ class SubagentMonitor:
             row['key'] = row['subagent_id']
             row.pop('running_seconds', None)
         processes = procs.process_rows(now)
+        jobs = self._job_dock.snapshot(getattr(self.cli, 'session_id', '') or getattr(parent, 'session_id', ''), now)
         goal = session_rows.goal_line(self.cli)
         queued = session_rows.queued_prompts(self.cli)
-        signature = json.dumps([entries, processes, goal, queued], sort_keys=True, default=str)
+        # The clock advances only while a live job panel is present, never at idle.
+        signature = json.dumps([entries, processes, jobs, int(now) if jobs else None, goal, queued], sort_keys=True, default=str)
         changed = signature != self._signature
         self._signature = signature
         self.entries = entries
         self.processes = processes
+        self.jobs = jobs
+        self._snapshot_time = now
         self.goal = goal
         self.queued = queued
         if self.selected is None:
@@ -144,6 +152,8 @@ class SubagentMonitor:
                            'cli.subagents.goal_paused' if self.goal.startswith('⏸') else 'cli.subagents.goal_active'))
         if session and self.queued:
             parts.append(t('cli.subagents.count_queued', count=len(self.queued)))
+        if session and self.jobs:
+            parts.append(t('cli.jobs.count', count=len(self.jobs)))
         return ' · '.join(parts)
 
     def _title(self):
@@ -163,6 +173,8 @@ class SubagentMonitor:
             return self._agent_activity(self.entries[0])
         if self.processes:
             return procs.process_activity(self.processes[0])
+        if self.jobs:
+            return f"{self.jobs[0]['title']} · {self.jobs[0]['status']}"
         return self.goal or t('cli.subagents.next_queued', text=self.queued[0])
 
     def dock_text(self, *, columns, rows):
@@ -223,6 +235,9 @@ class SubagentMonitor:
             if len(self.processes) > proc_count:
                 lines.append(_clip(
                     ' ' + t('cli.subagents.more_processes', count=len(self.processes) - proc_count), columns))
+        if self.jobs:
+            lines.extend(_clip(' ' + line, columns) for line in job_rows.dock_lines(
+                self.jobs, now=self._snapshot_time, rows=rows))
         if self.queued:
             # Last, so the next prompt to run sits right above the input it came from.
             shown = min(len(self.queued), session_rows.QUEUE_ROWS if rows >= 24 else 1)

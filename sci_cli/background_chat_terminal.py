@@ -10,7 +10,7 @@ import sys
 from sci_cli.background_chats import FRAME_LIMIT, connect, send
 
 
-def _attach_once(chat_id, *, home=None, takeover=False):
+def _attach_once(chat_id, *, home=None, takeover=False, view_session=None):
     if os.name != "posix" or not sys.stdin.isatty() or not sys.stdout.isatty():
         raise RuntimeError("Attach requires an interactive Linux/macOS/WSL terminal.")
     import termios
@@ -18,9 +18,10 @@ def _attach_once(chat_id, *, home=None, takeover=False):
 
     outcome = {}
     with connect(home) as sock:
+        sock.settimeout(12)  # View selection needs the worker's two-second heartbeat/ack.
         size = os.get_terminal_size()
         send(sock, {"action": "attach", "id": chat_id, "takeover": takeover,
-                    "cols": size.columns, "rows": size.lines})
+                    "cols": size.columns, "rows": size.lines, "view_session": view_session})
         # Keep all bytes after the handshake: the server may replay output in the same packet.
         pending = bytearray()
         while b"\n" not in pending:
@@ -130,12 +131,25 @@ def _attach_once(chat_id, *, home=None, takeover=False):
     return outcome
 
 
-def attach(chat_id, *, home=None, takeover=False):
-    from sci_cli.background_chats import find_worker
+def attach(chat_id, *, home=None, takeover=False, view_session=None):
+    from sci_cli.background_chats import find_view_worker, find_worker
     from sci_cli.cli_runtime_refresh import refresh_attached_worker
     from sci_cli.skill_add import Cancelled
     worker = find_worker(chat_id, home=home)
-    if worker:
+    wire_view_session = view_session
+    if worker and view_session != worker.get('session_id') and view_session is not None:
+        selected = find_view_worker(view_session, home=home)
+        if not selected or selected['id'] != worker['id']:
+            raise RuntimeError('The side chat owner changed. Retry resume; no conversation was restarted.')
+        if selected.get('legacy_side_view'):
+            wire_view_session = None
+            print('This older background runtime cannot select a side view automatically. '
+                  'Connecting to its existing parent CLI; press Ctrl+/ or use /btw to open the side chat. '
+                  'The parent, saved history and running work remain unchanged.')
+        else:
+            print('Reopening the existing side view. Its owning runtime and main chat keep running; '
+                  'source updates apply after that runtime is closed normally.')
+    elif worker:
         try:
             refreshed = refresh_attached_worker(worker, home=home)
         except Cancelled:
@@ -143,10 +157,12 @@ def attach(chat_id, *, home=None, takeover=False):
             return
         if refreshed['id'] != worker['id']:
             chat_id, takeover = refreshed['id'], False
+            view_session = None
+            wire_view_session = None
     while True:
-        outcome = _attach_once(chat_id, home=home, takeover=takeover)
+        outcome = _attach_once(chat_id, home=home, takeover=takeover, view_session=wire_view_session)
         worker = find_worker(chat_id, home=home)
-        session = worker.get("session_id") if worker else None
+        session = (view_session or worker.get("session_id")) if worker else None
         command = f"sci --resume {session}" if session else f"sci background attach {chat_id}"
         if outcome.get("suspend"):
             print(f"\nTerminal interface suspended; the task stays on the server. Use fg or {command}.", flush=True)

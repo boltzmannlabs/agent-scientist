@@ -1,4 +1,4 @@
-"""Temporary multi-turn discussion over an immutable parent snapshot.
+"""Independent, resumable discussion over an immutable parent snapshot.
 
 The parent keeps running. No side turn is persisted into its transcript or used for
 automatic memory extraction. The normal provider owns request
@@ -8,6 +8,8 @@ timeouts; failures never start a second request through an auxiliary provider.
 from copy import deepcopy
 from threading import Event, Lock
 from uuid import uuid4
+
+from agent.side_persistence import capture_context, pending_context, attach_saved_branch, flush_branch
 
 
 BOUNDARY = (
@@ -31,10 +33,18 @@ def completed_snapshot(history):
 
 
 class SideConversation:
-    def __init__(self, parent, history, *, configure=None):
+    def __init__(self, parent, history, *, configure=None, session_db=None, require_durable=False):
         self.parent = parent
+        self.parent_id = parent.session_id
+        self.db = session_db if session_db is not None else getattr(parent, '_session_db', None)
+        if require_durable and self.db is None:
+            from agent.side_persistence import SidePersistenceError
+            raise SidePersistenceError('Saved conversation storage is unavailable. Restore SCI storage '
+                                       'before opening a side conversation; main is unchanged.')
         self.id = "side-" + uuid4().hex
-        self.history = completed_snapshot(history)
+        captured = capture_context(parent, history, self.db)
+        self.history = completed_snapshot(captured)
+        self.context_note = BOUNDARY + pending_context(captured[len(self.history):])
         self.prompt = getattr(parent, "_cached_system_prompt", None)
         self.tools = deepcopy(getattr(parent, "tools", []))
         self.transcript = []
@@ -44,6 +54,9 @@ class SideConversation:
         self.closed = Event()
         self.configure = configure
         self.last_result = None
+        self.saved = False
+        self.save_error = None
+        self.lease = None
 
     def _build(self):
         from agent.background_review import build_cache_parity_fork
@@ -67,6 +80,7 @@ class SideConversation:
         fork.run_budget_seconds = getattr(self.parent, "run_budget_seconds", None)
         fork._fallback_chain = []
         fork._fallback_model = None
+        fork.skip_background_review = True
         # The review helper's aggregate cap belongs to a single automatic review;
         # an interactive discussion instead uses normal per-turn/context limits.
         fork._review_input_token_budget = None
@@ -86,6 +100,8 @@ class SideConversation:
         try:
             if self.closed.is_set():
                 raise ValueError("This side conversation is closed.")
+            if self.save_error is not None:
+                raise self.save_error
             if self._agent is None:
                 fork = self._build()
                 with self._state:
@@ -94,11 +110,15 @@ class SideConversation:
                 raise ValueError("This side conversation is closed.")
             message = question
             if not self.transcript:
-                message = (f"{BOUNDARY}\n\n{question}" if isinstance(question, str) else
-                           [{"type": "text", "text": BOUNDARY}, *question])
+                message = (f"{self.context_note}\n\n{question}" if isinstance(question, str) else
+                           [{"type": "text", "text": self.context_note}, *question])
+            if not self.saved:
+                attach_saved_branch(self, self._agent, question)
             result = self._agent.run_conversation(
-                user_message=message, conversation_history=deepcopy(self.history))
+                user_message=message, conversation_history=deepcopy(self.history),
+                persist_user_message=question)
             self.last_result = result
+            flush_branch(self, result)
             if self.closed.is_set():
                 return ""
             answer = (result or {}).get("final_response") or ""
@@ -122,7 +142,13 @@ class SideConversation:
         try:
             if fork is not None:
                 fork.close()
+            if self.saved:
+                self.db.end_session(self.id, 'side_closed')
         finally:
+            if self.lease is not None:
+                from sci_cli.active_sessions import release_active_session
+                release_active_session(self.lease)
+                self.lease = None
             self.history.clear()
             self.transcript.clear()
 

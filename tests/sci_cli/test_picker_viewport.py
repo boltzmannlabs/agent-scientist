@@ -23,7 +23,7 @@ def test_clarify_long_list_stops_without_growing_past_terminal(monkeypatch):
             CLITuiMixin._tui_clarify_down(cli, event)
             rendered = ''.join(text for _, text in CLITuiMixin._get_clarify_display_fragments(cli))
             assert len(rendered.splitlines()) <= 18
-            assert '❯' in rendered
+            assert '◉' in rendered
         assert state['selected'] == len(choices) - 1
         assert 'Cancel' in rendered
         last = rendered

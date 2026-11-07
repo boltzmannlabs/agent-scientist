@@ -28,6 +28,83 @@ display:
   skin: neon-theme
 ```
 
+The native CLI and TUI use the dark burgundy palette exclusively. Terminal
+appearance hints and legacy light-mode settings are ignored. `/skin` can change
+the accent palette while keeping the interface dark.
+
+Both `agent-sci` and `agent-sci --tui` use a black canvas with rose controls,
+the Agent Scientist title artwork, and a welcome card with the Boltzmann logo
+on the left and profile details on the right. Narrow windows use a compact card.
+The welcome heading reads `Agent Scientist` without a leading icon.
+On a fresh interactive welcome screen, the dotted Boltzmann logo slowly rotates
+in three dimensions. The profile details stay still. Typing stops the animation
+face-on; submitting input leaves one static card in scrollback. Resumed chats,
+compact classic terminals (under 85 columns or 28 rows), redirected output and
+custom artwork remain static. Frames are display-only and never enter chat
+history, exports or model context. The classic CLI and React TUI share the same
+frames; regenerate them after artwork changes with `python -m sci_cli.logo_animation`.
+VS Code receives native terminal progress signals (`OSC 9;4`) while SCI works,
+so its tab list can show the built-in animated indicator. Progress clears when
+SCI waits for input, becomes idle, or exits. On other terminals, title updates
+use moving dots during work, a still dot when idle, and `?` when input is needed.
+VS Code needs the progress field in its tab-title template. Its default
+`${process}` template hides both application titles and progress, even when SCI
+emits the correct signals. Set these in VS Code User Settings (or Remote
+Settings for SSH/remote terminals):
+
+```json
+{
+  "terminal.integrated.tabs.title": "${progress} ${sequence}",
+  "terminal.integrated.tabs.enableAnimation": true
+}
+```
+
+Workspace settings override user/remote settings, so check the active
+workspace if the title still shows `python`. A manually renamed terminal also
+overrides the template; reset its name or create a new terminal. No SCI restart
+is needed for a tab-template change;
+SCI must already be running a version that emits native progress. Codex and a
+few other CLIs receive special title handling from VS Code; SCI uses the
+standard configurable template.
+The footer reads `agent-sci`. User messages have a clear label, answers use
+horizontal borders, and the status bar sits below the composer. The card
+shows the actual selected model, workspace and capability counts; use
+`/capabilities` for the inventory. Custom skins with artwork retain their banners.
+
+Pickers, masked-key entry, approvals and login confirmations use the same palette.
+Picker options have no visible numeric prefixes. `/activate` uses radio-style
+choices with full-row highlighting. Plain-text fallbacks accept option labels. Skill and tool
+selection shows checked items alongside the existing Select all, Clear selection
+and Done controls. Arrow keys navigate, Enter selects, and Escape cancels;
+long lists scroll within the terminal height.
+The Boltzmann account card highlights the verified email, credits and frozen
+credits. Secret entry stays masked and setup changes still apply at the existing
+conversation boundary.
+
+The model picker uses compact, highlighted choice rows instead of padding short
+catalogs with empty entries. Login prompts distinguish the platform link, field
+label, and masked input. Account confirmation has its own green surface; balances
+are service-reported values. Resume lists show conversation title and last activity, hiding the activity
+column on narrow terminals. Selected rows,
+approval commands, queued messages, and specialist activity share the dark
+palette. These are native terminal adaptations of the approved HTML
+design; browser fonts, shadows, and pixel spacing depend on the terminal.
+
+On interactive terminals that support OSC 10/11, SCI sets the default foreground
+and background so unused screen space is black too, then restores the terminal's
+configured defaults on normal exit. Terminals that reject these color controls retain
+their own canvas; set that terminal profile's background to black. Redirected
+classic-CLI output does not receive these controls.
+
+The React TUI also remains dark-only. `/statusbar top` and `/statusbar bottom`
+change status-bar placement. Appearance changes do not alter model context,
+permissions, authentication, tools, or saved conversation contents.
+
+Browser shadows, blur, fractional font sizes and window controls are not terminal
+features; the terminal application still controls the font. Use a true-color
+terminal and a monospace font for the closest match. The HTML design is a
+reference, not a separate interface or runtime dependency.
+
 ## Built-in skins
 
 | Skin | Description | Agent branding | Visual character |
@@ -36,8 +113,6 @@ display:
 | `ares` | War-god theme — crimson and bronze | `Ares Agent` | Deep crimson borders with bronze accents. Aggressive spinner verbs ("forging", "marching", "tempering steel"). Custom sword-and-shield ASCII art banner. |
 | `mono` | Monochrome — clean grayscale | `Sci Agent` | All grays — no color. Borders are `#555555`, text is `#c9d1d9`. Ideal for minimal terminal setups or screen recordings. |
 | `slate` | Cool blue — developer-focused | `Sci Agent` | Royal blue borders (`#4169e1`), soft blue text. Calm and professional. No custom spinner — uses default faces. |
-| `daylight` | Light theme for bright terminals with dark text and cool blue accents | `Sci Agent` | Designed for white or bright terminals. Dark slate text with blue borders, pale status surfaces, and a light completion menu that stays readable in light terminal profiles. |
-| `warm-lightmode` | Warm brown/gold text for light terminal backgrounds | `Sci Agent` | Warm parchment tones for light terminals. Dark brown text with saddle-brown accents, cream-colored status surfaces. An earthy alternative to the cooler daylight theme. |
 | `poseidon` | Ocean-god theme — deep blue and seafoam | `Poseidon Agent` | Deep blue to seafoam gradient. Ocean-themed spinners ("charting currents", "sounding the depth"). Trident ASCII art banner. |
 | `sisyphus` | Sisyphean theme — austere grayscale with persistence | `Sisyphus Agent` | Light grays with stark contrast. Boulder-themed spinners ("pushing uphill", "resetting the boulder", "enduring the loop"). Boulder-and-hill ASCII art banner. |
 | `charizard` | Volcanic theme — burnt orange and ember | `Charizard Agent` | Warm burnt orange to ember gradient. Fire-themed spinners ("banking into the draft", "measuring burn"). Dragon-silhouette ASCII art banner. |
@@ -61,10 +136,10 @@ Controls all color values throughout the CLI. Values are hex color strings.
 | `banner_text` | Body text in the banner (tool names, skill names) | `#FFE3ED` |
 | `ui_accent` | General UI accent color (highlights, active elements) | `#FF3F79` |
 | `ui_label` | UI labels and tags | `#E965AF` |
-| `ui_ok` | Success indicators (checkmarks, completion) | `#D1F2CD` |
-| `ui_error` | Error indicators (failures, blocked) | `#FF385A` |
+| `ui_ok` | Success indicators (design's readable success ink) | `#7CE38B` |
+| `ui_error` | Error indicators (design's readable error ink) | `#FF5C77` |
 | `ui_warn` | Warning indicators (caution, approval prompts) | `#FFB17D` |
-| `prompt` | Interactive prompt symbol color (typed text inherits terminal foreground) | `#FFE8F0` |
+| `prompt` | Prompt text fallback; the layered composer uses `ui_accent` for its symbol | `#FFE8F0` |
 | `input_rule` | Horizontal rule above the input area | `#F52566` |
 | `response_border` | Border around the agent's response box (ANSI escape) | `#B93586` |
 | `session_label` | Session label color | `#FF8FB6` |
@@ -113,9 +188,29 @@ Text strings used throughout the CLI interface.
 | `banner_hero` | string | Rich-markup hero art (replaces the default caduceus art) | `""` |
 | `customCSS` | string | Raw CSS injected into the desktop app and web dashboard while the skin is active (GUI surfaces only; ignored by the CLI/TUI). Capped at 32 KiB. | `""` |
 
+### Optional native surfaces
+
+These dark color roles are opt-in for custom skins. Omitting them preserves the
+terminal's existing background rather than inheriting the default's black canvas.
+Authored `dark_colors` overlays apply to native CLI colors and the React TUI.
+
+| Key | Purpose | Default |
+|-----|---------|----------------------|
+| `background` | Full terminal canvas (OSC 11) | `#000000` |
+| `terminal_bg` | Answer-panel canvas | `#000000` |
+| `terminal_elevated` | Composer, dialogs and banner surface | `#11080F` |
+| `account_bg` | Verified-account card surface | `#0D1E12` |
+| `account_border` | Verified-account card outline | `#40784A` |
+| `hint_text` | Placeholder and helper text | `#A2788D` |
+| `choice_text` | Unselected dialog options | `#D7B4C5` |
+| `meter_foreground` | Context-meter accent | `#FF3F79` |
+| `meter_background` | Context-meter surface | `#1E0B16` |
+
 ## Custom skins
 
-Create YAML files under `~/.sci/skins/`. User skins inherit missing values from the built-in `neon-theme` skin, so you only need to specify the keys you want to change.
+Create YAML files under `~/.sci/skins/`. User skins inherit missing palette values
+from `neon-theme`, except the optional surface roles above, so you only need to
+specify the keys you want to change.
 
 ### Full custom skin YAML template
 

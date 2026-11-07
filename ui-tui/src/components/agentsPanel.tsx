@@ -106,7 +106,7 @@ export function AgentsPanelView({
 
   return (
     <Box
-      backgroundColor={mix(t.color.statusBg, t.color.shellDollar, 0.12)}
+      backgroundColor={t.surfaces?.elevated ?? mix(t.color.statusBg, t.color.shellDollar, 0.12)}
       flexDirection="column"
       flexShrink={0}
       width={cols}

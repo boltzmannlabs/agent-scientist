@@ -38,7 +38,7 @@ class TestCliSkinPromptIntegration:
 
         set_active_skin("ares")
         frags = cli._get_tui_prompt_fragments()
-        assert frags[0][0] == "class:sudo-prompt"
+        assert frags[0][0] == "class:secret-prompt"
         assert get_active_skin().get_branding("prompt_symbol").strip() in frags[0][1]
 
 

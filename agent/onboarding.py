@@ -22,11 +22,11 @@ PROFILE_BUILD_FLAG = "profile_build_offered"
 
 
 # Busy-input hints are keyed by the effective busy_input_mode that was just
-# applied so the message matches reality; "interrupt" is the default branch.
+# applied so the message matches reality; ordinary input defaults to queue.
 _BUSY_INPUT_HINTS_GATEWAY = {
     "queue": (
-        "💡 First-time tip — I queued your message instead of interrupting. Send `/busy interrupt` to make new messages "
-        "stop the current task immediately, or `/busy status` to check. This notice won't appear again."
+        "💡 Your message will run after the current task. Use `/queue list` to review pending messages, "
+        "or `/steer <correction>` to explicitly adjust the current task. This tip only shows once."
     ),
     "steer": (
         "💡 First-time tip — I steered your message into the current run; it will arrive after the next tool "
@@ -47,8 +47,8 @@ _BUSY_INPUT_HINT_GATEWAY_DEFAULT = (
 
 _BUSY_INPUT_HINTS_CLI = {
     "queue": (
-        "(tip) Your message was queued for the next turn. Use /busy interrupt to make Enter stop the current "
-        "run instead, or /busy steer to inject mid-run. This tip only shows once."
+        "(tip) Your message will run after the current task. Use /queue list to review pending messages, "
+        "or /steer <correction> to explicitly adjust the current task. This tip only shows once."
     ),
     "steer": (
         "(tip) Your message was steered into the current run; it arrives after the next tool call. Use /busy "

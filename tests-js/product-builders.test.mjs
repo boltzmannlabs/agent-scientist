@@ -321,6 +321,7 @@ test('TUI freshness invalidates source, configuration and compiler inputs and da
     'ui-tui/package.json', 'ui-tui/packages/sci-ink/package.json', 'apps/shared/package.json',
     'tsconfig.json', 'package.json', 'package-lock.json', '.npmrc', 'pm/lock.json',
     'scripts/build/tui.mjs', 'scripts/build/frontend-common.mjs', 'scripts/build/freshness.mjs',
+    'sci_cli/data/science-terminal-art.json',
   ]) {
     const file = path.join(source, name)
     const previous = existsSync(file) ? readFileSync(file) : null

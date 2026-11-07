@@ -31,13 +31,12 @@ def test_resume_and_live_reply_share_presentation(monkeypatch):
         return output.getvalue()
 
     assert rendered(live[0]) == rendered(replay[1])
-    assert '● question' in rendered(replay[0])
+    assert '● You: question' in rendered(replay[0])
     # The accent belongs to the bullet, not the Text object's inherited body style.
     segments = list(Console(width=80).render(replay[0]))
     body = next(segment for segment in segments if segment.text == 'question')
-    bullet = next(segment for segment in segments if segment.text == '● ')
+    bullet = next(segment for segment in segments if segment.text == '● You: ')
     assert body.style.color is None
     assert bullet.style.color is not None
-    assert 'You:' not in rendered(replay[0])
     assert '◆ Sci' not in rendered(replay[1])
     assert all('hidden tool details' not in rendered(item) for item in replay)

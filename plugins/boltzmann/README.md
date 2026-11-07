@@ -2,16 +2,33 @@
 
 The custom Agent Scientist distribution includes this connector, **not a credential or a subscription**.
 The CLI setup command is available even when this plugin is not enabled in a profile.
-Seeing `/add_boltzmann` does not authorize any scientific tools. Successful explicit setup enables
+Seeing `/boltzmann_login` or `/add_boltzmann` does not authorize any scientific tools. Successful explicit setup enables
 only Boltzmann, preserving unrelated plugin selections.
 
-In the interactive CLI, run `/add_boltzmann` (case-insensitive). Enter the key in the masked prompt,
-not as an argument or a chat message. Validation makes one read-only request to
-`https://nodeapis.boltzmann.co/api/get-projects`, with a 15-second timeout and no redirects.
-On success the key is saved through Sci credential storage in the active profile; a
+Quick Setup offers **Boltzmann login** before model-provider and terminal setup. You can skip it
+and connect later. In the interactive CLI, run `/boltzmann_login` or `/add_boltzmann`
+(case-insensitive). Both commands share the same setup and account display.
+
+Log in at [Boltzmann](https://app.boltzmann.co/user-profile) to obtain an API key. The terminal displays
+a clickable link and captures the key in a masked prompt, never as an argument or chat message.
+If a key already exists, choose **Verify existing key**, **Enter a replacement key**, or **Cancel**.
+`--replace` goes directly to masked replacement entry. Failed verification preserves the saved key.
+
+Verification sends one read-only `GET` to
+`https://nodejsdev.grsmano.shop/api/agent-authenticate` with JSON body `{"apiToken": "<key>"}`,
+a 15-second timeout and no redirects or automatic retries. Tokens never appear in URLs.
+HTTP 200 alone is insufficient: the response must contain boolean `success: true`.
+On success SCI shows the returned email, `credits` and `freezedCredits` (frozen credits).
+These are service-reported values at verification time, not a calculated balance or spending
+approval. Zero credits is a valid authenticated account; missing account fields are shown as
+not provided. The raw response and token are not logged or sent to the model.
+
+The key is saved as `BOLTZMANN_API_KEY` through Sci credential storage in the active profile's `.env`; a
 profile-and-key-bound activation receipt contains only a hash. No job is submitted by setup.
 
-Restart `agent-sci` after success. All five operations (submit, status, download, upload,
+During initial setup, continue through model/terminal setup and launch SCI normally. Inside an
+existing conversation, choose **Start a new conversation now** or use `/new` after saving.
+The old conversation remains saved. All five operations (submit, status, download, upload,
 fetch-tool-log) are enabled together. The ordinary setup command does not mutate the current
 conversation's tools, skills, or prompt. Existing `--now` explicitly opts into immediate refresh
 for native profiles. Legacy isolated science profiles always defer activation until the next
@@ -19,7 +36,13 @@ session; their reviewed policy adds only the five Boltzmann operations, with per
 access approval. Local sandbox restrictions and pending local setup remain unchanged.
 Missing, changed, removed, rejected, or revoked credentials block execution, including
 status reads and signed-file downloads. Service outages also fail closed. A saved key alone
-does not authorize the connector: `/add_boltzmann` must complete in each owning profile.
+does not authorize the connector: `/boltzmann_login` or `/add_boltzmann` must complete in each owning profile.
+
+Profile creation and execution checks use this same verification endpoint. Upload, submission and
+result endpoints are unchanged. Scientific workflow allowlists remain enforced; logging in does
+not widen a restricted profile's grants or configure an LLM. Boltzmann-hosted models are not part
+of this login feature. If authentication succeeds but storage/enablement fails, SCI reports the
+retained key or partial settings and does not claim successful activation.
 
 The optional stdio MCP adapter uses the same gate. It must run with the owning profile's
 `SCI_HOME` and the Sci runtime with MCP support. Nothing here creates a remote MCP
@@ -55,6 +78,15 @@ domain and module rather than the five connector operations. All-tools requests
 list active catalog entries; entries without an established executable request
 are listed separately with their missing information. Listing requires no scientific job or upload.
 Catalog membership does not establish account entitlement or execution readiness.
+`/boltzmann_tools` opens module pickers for Protein Engineering, Small Molecule
+Design, Synthetic Chemistry, RNA Design, Simulation tools, and All. Simulation
+tools combines the existing DFT and molecular-dynamics catalog categories for
+browsing. Tool names and their groups appear inside the picker; Search, Back,
+Done, and page controls remain available there. Selecting a tool shows catalog
+details without running or enabling it. Search stays within the chosen module;
+All searches across the catalog, including entries marked unavailable. Direct
+filters such as `/boltzmann_tools protein-engineering` and
+`/boltzmann_tools search enzyme` remain supported.
 This guidance is loaded in a fresh conversation; existing cached prompts remain
 unchanged. Helper descriptions are reserved for explicit integration questions.
 
@@ -142,3 +174,49 @@ protected or inside retention, stop new uploads and reconcile the unresolved wor
 validation, delete protected records, or repeatedly upload the same input. After an update,
 restart processes using the old connector before resuming work so old code cannot keep writing
 legacy receipts into `state.json`.
+
+## Gateway model context and automatic compaction
+
+`qwen`, `discoveryrsi`, `glm` and `codex` are gateway aliases, not public model IDs with
+guaranteed context windows. SCI checks the authorized profile's gateway metadata and uses
+the selected alias's limit for both `/model` and compaction. `/model` labels the source
+and shows the effective automatic-compaction trigger. Metadata lookups do not run inference
+or deduct credits, and their five-minute cache is scoped to profile, endpoint and key.
+
+The gateway should return the **deployed** limits in `GET /v1/models`, for each alias:
+
+```json
+{"data": [{"id": "qwen", "context_length": 250000, "max_output_tokens": 8000}]}
+```
+
+These numbers illustrate the format; the gateway operator must supply the actual limits
+for all four deployments. An ID-only response cannot verify a context window. Until verified
+metadata or configuration is available, SCI retains its existing fallback and labels it
+`estimate; gateway context limit unavailable`. A displayed fallback is not proof that a
+large request will fit.
+
+For a deployment whose limit is confirmed out of band, use the active profile's `config.yaml`:
+
+```yaml
+model_overrides:
+  boltzmann_models:
+    qwen:
+      context_window: 250000  # Use only the limit confirmed for your deployment.
+compression:
+  threshold: 0.90
+auxiliary:
+  compression:
+    provider: auto
+    model: ""                # Follow the active chat model instead of a pinned old helper.
+```
+
+Explicit settings win over metadata and are not overwritten by setup. A 90% threshold
+applies to the usable input budget after output reservation; a configured absolute cap or
+smaller compression helper may lower the trigger. The Codex gateway route ignores
+`max_tokens`, so its reported server output limit is reserved even when a smaller client
+cap was requested. If that output limit is missing, SCI cannot infer it.
+
+Switching to a smaller budget checks inherited history before the next model request.
+Compaction retains a summary and recent context; the retained transcript remains available
+through resume. Compression failures still surface normally; a missing or inaccurate gateway
+limit, unavailable helper or irreducible input cannot be guaranteed to fit.

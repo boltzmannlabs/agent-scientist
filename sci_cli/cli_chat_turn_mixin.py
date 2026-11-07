@@ -725,4 +725,18 @@ class CLIChatTurnMixin:
         if not isinstance(usage, dict):
             return
         from agent.turn_usage import format_turn_usage
+        from providers import get_provider_profile
+        profile = get_provider_profile(self._agent_or_self("provider"))
+        snapshot = None
+        if profile is not None and profile.show_account_usage_after_turn is True:
+            from agent.account_usage import fetch_account_usage, render_account_usage_lines
+            snapshot = fetch_account_usage(profile.name, base_url=self._agent_or_self("base_url"))
+            if snapshot is not None and snapshot.after_turn_lines is not None:
+                for line in snapshot.after_turn_lines:
+                    _cprint(f"  {_DIM}{line}{_RST}")
+                return
         _cprint(f"  {_DIM}{format_turn_usage(usage)}{_RST}")
+        if profile is not None and profile.show_account_usage_after_turn is True:
+            lines = render_account_usage_lines(snapshot) or ["Account balance unavailable; the model response is unchanged."]
+            for line in lines:
+                _cprint(f"  {_DIM}{line}{_RST}")

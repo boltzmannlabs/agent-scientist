@@ -143,10 +143,8 @@ export function useComposerSubmit({
   //
   // Busy: a request from a card the user just clicked must not be dropped
   // because the agent is mid-sentence — that gap is exactly when they click.
-  // Steer the live turn (the same stop-and-correct a typed message gets), and
-  // if the turn has already ended, or a steer is not possible, queue it so it
-  // runs next. This holds for hidden setup notes and for visible messages a
-  // button sends on the user's behalf alike.
+  // Visible requests queue behind the current task. Hidden setup notes retain
+  // their existing internal delivery path; they are not new user tasks.
   const externalSubmitRef = useRef({ busy, compacting, dispatchSubmit, onSteer, onSteerHidden })
   externalSubmitRef.current = { busy, compacting, dispatchSubmit, onSteer, onSteerHidden }
 
@@ -192,23 +190,7 @@ export function useComposerSubmit({
             return
           }
 
-          if (
-            current.onSteer &&
-            !current.compacting &&
-            !hasBlockingPromptRequest(sessionId) &&
-            text.trim() &&
-            !SLASH_COMMAND_RE.test(text.trim())
-          ) {
-            void Promise.resolve(current.onSteer(text))
-              .then(accepted => {
-                if (!accepted) {
-                  enqueue()
-                }
-              })
-              .catch(enqueue)
-          } else {
-            enqueue()
-          }
+          enqueue()
         }
       }),
     [activeQueueSessionKeyRef, inputDisabled, paneVisible, scope.target, sessionId, surfaceId]
@@ -277,7 +259,6 @@ export function useComposerSubmit({
     // it through resolves the prompt to empty and ends the turn as "Operation
     // interrupted." — the message looks eaten. Queue the words as the next turn
     // instead; the prompt stays answerable and the queue drains on settle.
-    const blockingPrompt = !queueEdit && hasBlockingPromptRequest(sessionId)
 
     if (queueEdit) {
       exitQueuedEdit('save')
@@ -293,16 +274,8 @@ export function useComposerSubmit({
         triggerHaptic('submit')
         clearDraft()
         dispatchSubmit(text)
-      } else if (!compacting && !blockingPrompt && !attachments.length && text.trim()) {
-        // Cursor-style stop-and-correct: interrupt the live turn and redirect
-        // it with this text. redirect() preserves the shown reasoning/work; if
-        // the turn already ended, steerDraft re-queues so nothing is lost.
-        steerDraft()
       } else if (payloadPresent) {
-        // Attachments can't ride a redirect (no tool-result image carriage) —
-        // queue the whole payload for the next turn. Same for a turn parked on
-        // an approval/sudo/secret prompt: a steer can't reach the model while
-        // the tool batch is blocked, so the message runs as the next turn.
+        // A normal follow-up runs after the current task; steering is explicit.
         queueCurrentDraft()
       } else {
         // Stop button (the only way to reach here while busy with an empty
@@ -334,7 +307,14 @@ export function useComposerSubmit({
 
     // Guard on live editor state, not the render-lagged `canSteer`: a redirect
     // fired on a fast Enter must not be dropped because state hasn't synced.
-    if (!onSteer || !text || attachments.length > 0 || SLASH_COMMAND_RE.test(text)) {
+    if (
+      !onSteer ||
+      compacting ||
+      hasBlockingPromptRequest(sessionId) ||
+      !text ||
+      attachments.length > 0 ||
+      SLASH_COMMAND_RE.test(text)
+    ) {
       return
     }
 

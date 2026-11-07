@@ -120,7 +120,7 @@ def test_finite_chat_joins_parallel_children_before_final_response(tmp_path, mod
     env.update(HOME=str(tmp_path), USERPROFILE=str(tmp_path), SCI_HOME=str(home),
                SCI_MANAGED_DIR=str(tmp_path / "managed"), TERMINAL_CWD=str(tmp_path),
                OPENAI_BASE_URL=url, OPENAI_API_KEY="local-test-only", PYTHONPATH=str(REPO_ROOT),
-               PYTHONDONTWRITEBYTECODE="1", LANG="C.UTF-8")
+               PYTHONDONTWRITEBYTECODE="1", LANG="C.UTF-8", SCI_DISABLE_LAZY_INSTALLS="1")
     mode_flags = {"quiet": ["-Q"], "oneshot": ["--oneshot"], "redirected": []}
     command = [
         sys.executable, "-c", "from sci_cli.main import main; main()", "chat",
@@ -147,8 +147,8 @@ def test_finite_chat_joins_parallel_children_before_final_response(tmp_path, mod
 
 
 @pytest.mark.parametrize("query,image", [("Delegate a task", None), (None, "image.png")])
-def test_tty_seeded_chat_keeps_background_delegation(monkeypatch, query, image):
-    """A TTY -q (or image seed) still owns a later-turn completion consumer."""
+def test_tty_seeded_chat_waits_for_delegation(monkeypatch, query, image):
+    """TTY seeds join children in the active turn instead of dispatching late replies."""
     import cli
     import tools.delegate_tool as dt
     from gateway.session_context import reset_session_vars
@@ -168,11 +168,13 @@ def test_tty_seeded_chat_keeps_background_delegation(monkeypatch, query, image):
         "model": "test-model", "provider": "custom", "base_url": None, "api_key": None,
         "api_mode": None, "command": None, "args": None,
     })
-    dispatched = []
+    def dispatch(*args, **kwargs):
+        pytest.fail("Model-facing delegation was handed to the background")
 
-    def dispatch(unit, unit_id, slot_key, routing):
-        dispatched.append(unit)
-        return {"status": "dispatched", "delegation_id": "interactive-delegation"}
+    monkeypatch.setattr(dt, "_run_single_child", lambda *a, **kw: {
+        "task_index": 0, "status": "completed", "summary": "finished in this turn",
+        "api_calls": 1, "duration_seconds": 0.1, "model": "test-model",
+    })
 
     monkeypatch.setattr("tools.delegate_tool_dispatch._dispatch_unit", dispatch)
     seeded = SimpleNamespace(run=lambda: AIAgent._dispatch_delegate_task(
@@ -182,8 +184,8 @@ def test_tty_seeded_chat_keeps_background_delegation(monkeypatch, query, image):
         result = cli._run_single_query_mode(seeded, query, image, False, False)
         assert isinstance(result, str)
         payload = json.loads(result)
-        assert payload["status"] == "dispatched"
-        assert len(dispatched) == 1
+        assert payload.get("mode") != "background"
+        assert payload["results"][0]["summary"] == "finished in this turn"
         assert "SCI_SINGLE_QUERY_SESSION" not in os.environ
     finally:
         reset_session_vars()

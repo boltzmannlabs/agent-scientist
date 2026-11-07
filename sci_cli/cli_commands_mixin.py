@@ -1319,6 +1319,8 @@ class CLICommandsMixin(ScienceWorkspaceCommandsMixin):
             from sci_cli.skill_add import WizardUI
             try:
                 request_resume(self, target_id, WizardUI(self))
+            except ValueError as exc:
+                _cp(str(exc))
             except Exception:
                 _cp("Could not prepare a safe resume. Current session unchanged; check the session store.")
             return
@@ -1915,9 +1917,11 @@ class CLICommandsMixin(ScienceWorkspaceCommandsMixin):
         self._queue_add_request(cmd, "tool", "https://github.com/bio-tools/biotoolsLLMAnnotate")
 
     def _handle_add_boltzmann_command(self, cmd: str):
-        from sci_cli.boltzmann_setup import run
-        from cli import _cprint
-        _cprint(run(self, _command_arg(cmd)))
+        from sci_cli.boltzmann_setup import result_display, run
+        run(self, _command_arg(cmd), report=lambda message: self._console_print(result_display(message)))
+
+    def _handle_boltzmann_login_command(self, cmd: str):
+        self._handle_add_boltzmann_command(cmd)
 
     def _queue_add_request(self, cmd: str, kind: str, example: str):
         """Hand the user's request to the ordinary agent turn, without a setup wizard."""
@@ -2612,7 +2616,7 @@ class CLICommandsMixin(ScienceWorkspaceCommandsMixin):
         arg = _command_arg(cmd, lower=True)
         usage = _dim_line(_t("busy.usage"))
         if not arg or arg == "status":
-            mode = self.busy_input_mode if self.busy_input_mode in _BUSY_MODES else "interrupt"
+            mode = self.busy_input_mode if self.busy_input_mode in _BUSY_MODES else "queue"
             return _cp(_accent_line(_t("busy.status", mode=self.busy_input_mode)),
                        _dim_line(_t("busy.enter_while_busy", behavior=_t(f"busy.short_{mode}"))), usage)
         if arg not in _BUSY_MODES:

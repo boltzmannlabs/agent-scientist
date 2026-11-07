@@ -259,7 +259,7 @@ class TestCliBrandingHelpers:
         assert overrides["sudo-prompt"] == f"{skin.get_color('ui_error')} bold"
         assert overrides["approval-title"] == f"{skin.get_color('ui_warn')} bold"
 
-        set_active_skin("daylight")
+        set_active_skin("poseidon")
         skin = get_active_skin()
         overrides = get_prompt_toolkit_style_overrides()
         assert overrides["status-bar"] == f"bg:{skin.get_color('status_bar_bg')} {skin.get_color('banner_text')}"

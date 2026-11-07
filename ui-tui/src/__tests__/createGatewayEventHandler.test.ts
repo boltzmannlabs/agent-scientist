@@ -944,7 +944,7 @@ describe('createGatewayEventHandler', () => {
     expect(ctx.gateway.rpc).not.toHaveBeenCalled()
   })
 
-  it('picks the polarity-matching paired palette from gateway.ready skins', async () => {
+  it('uses only dark_colors overlays and ignores light palette/environment hints', async () => {
     const appended: Msg[] = []
 
     const skin = {
@@ -952,15 +952,40 @@ describe('createGatewayEventHandler', () => {
       light_colors: { banner_title: '#8B0000', banner_text: '#22201C' }
     }
 
-    // Dark terminal (clean env): the dark-authored `colors` block wins.
-    vi.stubEnv('SCI_TUI_BACKGROUND', '')
-    createGatewayEventHandler(buildCtx(appended))({ payload: skin, type: 'skin.changed' } as any)
-    expect(getUiState().theme.color.primary).toBe('#00FF88')
-
-    // Light terminal: the hand-tuned light_colors block wins over adaptation.
     vi.stubEnv('SCI_TUI_BACKGROUND', '#ffffff')
+    vi.stubEnv('SCI_TUI_THEME', 'light')
     createGatewayEventHandler(buildCtx(appended))({ payload: skin, type: 'skin.changed' } as any)
-    expect(getUiState().theme.color.primary).toBe('#8B0000')
+    expect(getUiState().theme.color.primary).not.toBe('#8B0000')
+
+    // Host appearance hints cannot select the light_colors block.
+    createGatewayEventHandler(buildCtx(appended))({ payload: skin, type: 'skin.changed' } as any)
+    expect(getUiState().theme.color.primary).not.toBe('#8B0000')
+    vi.unstubAllEnvs()
+  })
+
+  it('keeps the dark skin canvas despite an obsolete light-mode environment value', () => {
+    vi.stubEnv('SCI_TUI_THEME', 'light')
+    const appended: Msg[] = []
+    const skin = {
+      name: 'neon-theme',
+      colors: {
+        background: '#000000',
+        banner_title: '#FF7AA7',
+        banner_text: '#FFE3ED',
+        terminal_elevated: '#11080F'
+      },
+      light_colors: {
+        background: '#FFFFFF',
+        banner_title: '#9C174C',
+        banner_text: '#2A0F1D',
+        terminal_elevated: '#FFF9FB'
+      }
+    }
+
+    createGatewayEventHandler(buildCtx(appended))({ payload: skin, type: 'skin.changed' } as any)
+
+    expect(getUiState().theme.color.primary).not.toBe('#9C174C')
+    expect(getUiState().theme.surfaces?.canvas).toBe('#101014')
     vi.unstubAllEnvs()
   })
 
@@ -1000,20 +1025,6 @@ describe('createGatewayEventHandler', () => {
         Object.defineProperty(process.stdout, 'isTTY', tty)
       }
     }
-  })
-
-  it('infers polarity from the OSC-10 foreground only when the answer is decisive', async () => {
-    const { polarityBackgroundFromForeground } = await import('../app/createGatewayEventHandler.js')
-
-    // Bright foreground = dark theme; dark foreground = light theme.
-    expect(polarityBackgroundFromForeground('#cccccc')).toBe('#1e1e1e')
-    expect(polarityBackgroundFromForeground('#333333')).toBe('#ffffff')
-
-    // Unset-default fingerprints and ambiguous mid-grays commit nothing.
-    expect(polarityBackgroundFromForeground('#000000')).toBeUndefined()
-    expect(polarityBackgroundFromForeground('#ffffff')).toBeUndefined()
-    expect(polarityBackgroundFromForeground('#808080')).toBeUndefined()
-    expect(polarityBackgroundFromForeground('not-a-color')).toBeUndefined()
   })
 
   it('claims wake-word ownership when the gateway becomes ready', () => {

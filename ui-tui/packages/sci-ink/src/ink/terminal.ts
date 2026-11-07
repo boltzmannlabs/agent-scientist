@@ -31,6 +31,11 @@ export function isProgressReportingAvailable(): boolean {
     return false
   }
 
+  // VS Code renders OSC 9;4 as native progress in its terminal tabs.
+  if (process.env.TERM_PROGRAM === 'vscode') {
+    return true
+  }
+
   // Explicitly exclude Windows Terminal, which interprets OSC 9;4 as
   // notifications rather than progress indicators
   if (process.env.WT_SESSION) {

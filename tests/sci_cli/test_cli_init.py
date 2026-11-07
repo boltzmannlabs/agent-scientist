@@ -171,17 +171,27 @@ class TestBusyInputMode:
 
 
 
-    def test_interrupt_mode_routes_busy_enter_to_interrupt(self):
-        """In interrupt mode (default), Enter while busy goes to _interrupt_queue."""
-        cli = _make_cli()
-        cli._agent_running = True
-        text = "redirect"
-        if cli.busy_input_mode == "queue":
-            cli._pending_input.put(text)
+    @pytest.mark.parametrize("mode", [None, "invalid", "interrupt", "steer"])
+    def test_busy_enter_defaults_to_fifo_without_interrupting(self, mode):
+        config = {"display": {}} if mode is None else {"display": {"busy_input_mode": mode}}
+        obj = _make_cli(config_overrides=config)
+        obj._agent_running = True
+        obj.agent = MagicMock()
+        obj.agent._supports_active_turn_redirect = True
+        obj.agent.redirect.return_value = True
+        obj.agent.steer.return_value = True
+        for text in ("second task", "third task"):
+            obj._tui_enter_while_busy(text, [], text)
+        if mode == "interrupt":
+            assert obj.agent.redirect.call_count == 2
+        elif mode == "steer":
+            assert obj.agent.steer.call_count == 2
         else:
-            cli._interrupt_queue.put(text)
-        assert cli._interrupt_queue.get_nowait() == "redirect"
-        assert cli._pending_input.empty()
+            assert obj._pending_input_items() == ["second task", "third task"]
+            obj.agent.redirect.assert_not_called()
+            obj.agent.steer.assert_not_called()
+            obj.agent.interrupt.assert_not_called()
+            assert obj._interrupt_queue.empty()
 
 
 class TestPromptToolkitTerminalCompatibility:

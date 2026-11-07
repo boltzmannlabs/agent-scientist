@@ -63,8 +63,8 @@ def _strip_provider_prefix(model: str) -> str:
 _model_metadata_cache: Dict[str, Dict[str, Any]] = {}
 _model_metadata_cache_time: float = 0
 _MODEL_CACHE_TTL = 3600
-# In-memory memo keyed by (base_url, api-key fingerprint): per-key gateways return a per-key catalog, and
-# in a multiplexed process two profiles may share a URL with different keys. The disk memo stays per URL.
+# Both memos are scoped to endpoint, profile home and credential fingerprint: gateway
+# deployments and account limits must not leak between profiles or credential rotations.
 _endpoint_model_metadata_cache: Dict[Tuple[str, str], Dict[str, Dict[str, Any]]] = {}
 _endpoint_model_metadata_cache_time: Dict[Tuple[str, str], float] = {}
 _ENDPOINT_MODEL_CACHE_TTL = 300
@@ -1005,8 +1005,10 @@ def _apply_llamacpp_props(cache: Dict[str, Dict[str, Any]], request_candidate: s
 
 def _endpoint_memo_key(normalized: str, api_key: object) -> Tuple[str, str]:
     from agent.credential_persistence import fingerprint_secret_value
+    from sci_constants import get_sci_home
     # Callable (minted) keys are not fingerprinted here: doing so would mint on every cache hit.
-    return normalized, (fingerprint_secret_value(api_key) or "") if isinstance(api_key, str) else ""
+    key = api_key if isinstance(api_key, str) else ""
+    return normalized, fingerprint_secret_value(str(get_sci_home().resolve()) + "\0" + key) or ""
 
 
 def _remember_endpoint_models(memo_key: Tuple[str, str], cache: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
@@ -1031,11 +1033,12 @@ def fetch_endpoint_model_metadata(base_url: str, api_key: str = "", force_refres
         return {}
     local = is_local_endpoint(normalized)
     memo_key = _endpoint_memo_key(normalized, api_key)
+    disk_key = json.dumps(memo_key)
     if not force_refresh:
         cached = _endpoint_model_metadata_cache.get(memo_key)
         if cached is not None and (time.time() - _endpoint_model_metadata_cache_time.get(memo_key, 0)) < _ENDPOINT_MODEL_CACHE_TTL:
             return cached
-        memo = _endpoint_disk_cache_get(normalized) if not local else None
+        memo = _endpoint_disk_cache_get(disk_key) if not local else None
         if memo is not None:
             return _remember_endpoint_models(memo_key, memo)
     # Blackholed: return empty WITHOUT caching so it is retried once the entry expires.
@@ -1073,7 +1076,7 @@ def fetch_endpoint_model_metadata(base_url: str, api_key: str = "", force_refres
                 with contextlib.suppress(Exception):
                     _apply_llamacpp_props(cache, request_candidate, headers, verify)
             if cache and not local:
-                _endpoint_disk_cache_put(normalized, cache)
+                _endpoint_disk_cache_put(disk_key, cache)
             return _remember_endpoint_models(memo_key, cache)
         except Exception as exc:
             last_error = exc
@@ -1688,7 +1691,10 @@ def _query_anthropic_context_length(model: str, base_url: str, api_key: Any) -> 
 # Codex OAuth `context_window` values (what Codex enforces — lower than the direct API for the same
 # slugs). Fallback when the live probe fails; longest-key-first. gpt-5.3-codex-spark is listed so "gpt-5.3-codex" doesn't win.
 _CODEX_OAUTH_CONTEXT_FALLBACK: Dict[str, int] = {
-    "gpt-6-astra": 272_000, "gpt-6.1-sol": 272_000, "gpt-6-sol": 272_000, "gpt-6-luna": 272_000,
+    # Documented Codex default; the authenticated catalog still takes precedence.
+    # https://developers.openai.com/api/docs/models/gpt-6.1-sol
+    "gpt-6.1-sol": 500_000,
+    "gpt-6-astra": 272_000, "gpt-6-sol": 272_000, "gpt-6-luna": 272_000,
     "gpt-5.1-codex-max": 272_000, "gpt-5.1-codex-mini": 272_000, "gpt-5.3-codex": 272_000,
     "gpt-5.3-codex-spark": 128_000, "gpt-5.2-codex": 272_000, "gpt-5.4-mini": 272_000,
     "gpt-5.6-sol": 272_000, "gpt-5.6-terra": 272_000, "gpt-5.6-luna": 272_000, "gpt-daybreak-blue-latest": 272_000,

@@ -14,7 +14,7 @@ import { asRpcResult, rpcErrorMessage } from '../lib/rpc.js'
 import type { Theme } from '../theme.js'
 
 import { OverlayHint, useOverlayKeys, windowItems } from './overlayControls.js'
-import { chipRowProps, clampOverlayWidth } from './overlayPrimitives.js'
+import { clampOverlayWidth, MenuRow } from './overlayPrimitives.js'
 
 const VISIBLE = 12
 const MIN_WIDTH = 40
@@ -111,7 +111,13 @@ export function ModelPicker({
   // has an actual constraint to truncate against. Optional maxWidth lets
   // grid layouts hand the picker its cell budget.
   const preferredWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, (stdout?.columns ?? 80) - 6))
-  const width = clampOverlayWidth(preferredWidth, maxWidth)
+  const width = clampOverlayWidth(
+    preferredWidth,
+    Math.min(maxWidth ?? MAX_WIDTH, Math.max(1, (stdout?.columns ?? 80) - 6))
+  )
+  // Reserve space for the dialog, filter, scope and keyboard hints. Small
+  // catalogs should not leave twelve empty rows between choices and controls.
+  const visibleRows = Math.max(1, Math.min(VISIBLE, (stdout?.rows ?? 24) - 14))
 
   // "persist: global · ^g toggle" / "persist: session only" footer shared by the list stages.
   const persistLine =
@@ -680,7 +686,7 @@ export function ModelPicker({
       return `${authMark} ${name} · ${suffix}`
     })
 
-    const { items, offset } = windowItems(rows, providerIdx, VISIBLE)
+    const { items, offset } = windowItems(rows, providerIdx, visibleRows)
     const noMatches = !!filter.trim() && rows.length === 0
 
     return (
@@ -711,32 +717,16 @@ export function ModelPicker({
             {M.provider.noMatches}
           </Text>
         ) : (
-          Array.from({ length: VISIBLE }, (_, i) => {
-            const row = items[i]
+          items.map((row, i) => {
             const idx = offset + i
             const p = filteredProviderRows[idx]?.provider
-            const dimmed = p?.authenticated === false
 
-            return row ? (
-              <Text
-                color={dimmed ? t.color.label : t.color.muted}
-                {...chipRowProps(t, providerIdx === idx)}
-                key={p?.slug ?? `row-${idx}`}
-                wrap="truncate-end"
-              >
-                {providerIdx === idx ? '▸ ' : '  '}
-                {idx + 1}. {row}
-              </Text>
-            ) : (
-              <Text color={t.color.muted} key={`pad-${i}`} wrap="truncate-end">
-                {' '}
-              </Text>
-            )
+            return <MenuRow active={providerIdx === idx} key={p?.slug ?? `row-${idx}`} label={row} t={t} truncate />
           })
         )}
 
         <Text color={t.color.muted} wrap="truncate-end">
-          {offset + VISIBLE < rows.length ? C.moreBelow(rows.length - offset - VISIBLE) : ' '}
+          {offset + visibleRows < rows.length ? C.moreBelow(rows.length - offset - visibleRows) : ' '}
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">
@@ -760,15 +750,7 @@ export function ModelPicker({
         </Text>
 
         {reasoningRows.map((row, idx) => (
-          <Text
-            color={t.color.muted}
-            {...chipRowProps(t, reasoningIdx === idx)}
-            key={row.value || 'keep'}
-            wrap="truncate-end"
-          >
-            {reasoningIdx === idx ? '▸ ' : '  '}
-            {idx + 1}. {row.label}
-          </Text>
+          <MenuRow active={reasoningIdx === idx} key={row.value || 'keep'} label={row.label} t={t} truncate />
         ))}
 
         <Text color={t.color.muted} wrap="truncate-end">
@@ -780,17 +762,17 @@ export function ModelPicker({
   }
 
   // ── Model selection stage ────────────────────────────────────────────
-  const { items, offset } = windowItems(models, modelIdx, VISIBLE)
+  const { items, offset } = windowItems(models, modelIdx, visibleRows)
   const noModelMatches = !!filter.trim() && models.length === 0
 
   return (
     <Box flexDirection="column" width={width}>
       <Text bold color={t.color.accent} wrap="truncate-end">
-        {M.modelStage.title}
+        {filteredProviderRows[providerIdx]?.name || M.modelStage.unknownProvider}
       </Text>
 
-      <Text color={t.color.muted} wrap="truncate-end">
-        {M.modelStage.subtitle(filteredProviderRows[providerIdx]?.name || M.modelStage.unknownProvider)}
+      <Text bold color={t.color.text} wrap="truncate-end">
+        {M.modelStage.title}
       </Text>
       <Text color={filter ? t.color.accent : t.color.muted} wrap="truncate-end">
         {filter ? `${C.filter(filter)}▎` : M.provider.filterHint}
@@ -802,39 +784,25 @@ export function ModelPicker({
         {offset > 0 ? C.moreAbove(offset) : ' '}
       </Text>
 
-      {Array.from({ length: VISIBLE }, (_, i) => {
-        const row = items[i]
+      {items.length === 0 && (
+        <Text color={t.color.muted}>{noModelMatches ? M.modelStage.noMatches : M.modelStage.noneListed}</Text>
+      )}
+      {items.map((row, i) => {
         const idx = offset + i
 
-        if (!row) {
-          return (!allModels.length || noModelMatches) && i === 0 ? (
-            <Text color={t.color.muted} key="empty" wrap="truncate-end">
-              {noModelMatches ? M.modelStage.noMatches : M.modelStage.noneListed}
-            </Text>
-          ) : (
-            <Text color={t.color.muted} key={`pad-${i}`} wrap="truncate-end">
-              {' '}
-            </Text>
-          )
-        }
-
-        const prefix = modelIdx === idx ? '▸ ' : row === currentModel ? '* ' : '  '
-
         return (
-          <Text
-            color={t.color.muted}
-            {...chipRowProps(t, modelIdx === idx)}
+          <MenuRow
+            active={modelIdx === idx}
             key={`${provider?.slug ?? 'prov'}:${idx}:${row}`}
-            wrap="truncate-end"
-          >
-            {prefix}
-            {idx + 1}. {row}
-          </Text>
+            label={`${row}${row === currentModel ? ' ✓' : ''}`}
+            t={t}
+            truncate
+          />
         )
       })}
 
       <Text color={t.color.muted} wrap="truncate-end">
-        {offset + VISIBLE < models.length ? C.moreBelow(models.length - offset - VISIBLE) : ' '}
+        {offset + visibleRows < models.length ? C.moreBelow(models.length - offset - visibleRows) : ' '}
       </Text>
 
       <Text color={t.color.muted} wrap="truncate-end">

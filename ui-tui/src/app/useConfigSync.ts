@@ -9,7 +9,6 @@ import { t } from '../i18n/runtime.js'
 import { DEFAULT_VOICE_RECORD_KEY, type ParsedVoiceRecordKey, parseVoiceRecordKey } from '../lib/platform.js'
 import { asRpcResult } from '../lib/rpc.js'
 
-import { applyConfiguredTuiTheme } from './createGatewayEventHandler.js'
 import {
   type BusyInputMode,
   DEFAULT_INDICATOR_STYLE,
@@ -28,7 +27,13 @@ const STATUSBAR_ALIAS: Record<string, StatusBarMode> = {
 }
 
 export const normalizeStatusBar = (raw: unknown): StatusBarMode =>
-  raw === false ? 'off' : typeof raw === 'string' ? (STATUSBAR_ALIAS[raw.trim().toLowerCase()] ?? 'top') : 'top'
+  raw === false
+    ? 'off'
+    : raw === true
+      ? 'top'
+      : typeof raw === 'string'
+        ? (STATUSBAR_ALIAS[raw.trim().toLowerCase()] ?? 'bottom')
+        : 'bottom'
 
 // `display.status_bar.fields` — the SAME key the classic CLI bar honors
 // (PR #98250). A non-empty list filters status-rule segments; missing/empty/
@@ -46,13 +51,8 @@ export const normalizeStatusBarFields = (raw: unknown): null | ReadonlySet<strin
 
 const BUSY_MODES = new Set<BusyInputMode>(['interrupt', 'queue', 'steer'])
 
-// TUI defaults to `queue` even though the framework default
-// (`sci_cli/config.py`) is `interrupt`.  Rationale: in a full-screen
-// TUI you're typically authoring the next prompt while the agent is
-// still streaming, and an unintended interrupt loses work.  Set
-// `display.busy_input_mode: interrupt` (or `steer`) explicitly to
-// opt out per-config; CLI / messaging adapters keep their `interrupt`
-// default unchanged.
+// Queue normal follow-ups across CLI, TUI and gateway surfaces.
+// An explicit per-profile busy mode can opt into steering or redirection.
 const TUI_BUSY_DEFAULT: BusyInputMode = 'queue'
 
 export const normalizeBusyInputMode = (raw: unknown): BusyInputMode => {
@@ -283,8 +283,6 @@ export const applyDisplay = (
 
   setBellOnPrompt?.(!!d.bell_on_prompt)
 
-  applyConfiguredTuiTheme(d.tui_theme)
-
   // Only push the voice record key when the RPC actually returned a
   // config payload. ``quietRpc()`` collapses failures to ``null``; if we
   // reset the cached shortcut on every null we would clobber a custom
@@ -375,7 +373,7 @@ export function useConfigSync({
         }
 
         // Reload MCP only when the MCP-relevant config actually changed.
-        // Cosmetic writes (/skin, /statusbar, /theme) bump mtime constantly;
+        // Cosmetic writes (/skin, /statusbar) bump mtime constantly;
         // reconnecting every MCP server for those costs seconds and made
         // skin switching feel glacial. The handshake runs on EVERY poll tick
         // (not just mtime changes) so a failed reload retries until the

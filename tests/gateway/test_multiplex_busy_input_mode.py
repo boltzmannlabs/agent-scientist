@@ -373,18 +373,20 @@ async def test_default_busy_mode_is_unchanged_by_secondary_profile(tmp_path, mon
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("secondary_mode", [None, "not-a-mode"])
-async def test_missing_or_invalid_secondary_mode_falls_back_to_gateway_default(
+@pytest.mark.parametrize("main_mode", ["queue", "steer", "interrupt"])
+async def test_missing_or_invalid_secondary_mode_queues_independently_of_main(
     tmp_path,
     secondary_mode,
+    main_mode,
 ):
-    runner = _runner(default_mode="queue")
+    runner = _runner(default_mode=main_mode)
     await _load_profile_snapshot(runner, tmp_path / "research", secondary_mode)
     source = _event(profile="research").source
 
     assert runner._effective_busy_input_mode(source) == "queue"
     assert runner._effective_busy_text_mode(source) == "queue"
-    assert runner._busy_input_mode == "queue"
-    assert runner._busy_text_mode == "queue"
+    assert runner._busy_input_mode == main_mode
+    assert runner._busy_text_mode == ("queue" if main_mode == "queue" else "interrupt")
 
 
 def test_profile_route_and_nonmultiplexed_resolution_preserve_boundaries(

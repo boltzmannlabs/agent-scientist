@@ -6,6 +6,35 @@ from threading import Event, Thread
 from types import SimpleNamespace
 
 
+def test_side_diagnostic_renders_once_without_event_name_or_replay():
+    from agent.conversation_compression import replay_compression_warning
+    from agent.status_output import StatusOutputMixin
+    from sci_cli.cli_stream_mixin import CLIStreamMixin
+    from sci_cli.side_surface import configure_agent
+
+    class Surface(CLIStreamMixin):
+        streaming_enabled = _inline_diffs_enabled = show_reasoning = False
+        _clarify_callback = _connection_callback = _on_tool_progress = None
+        _on_thinking = _on_notice = _on_notice_clear = None
+
+    class Agent(StatusOutputMixin):
+        session_id = "side-test"
+        model = "test-model"
+        provider = "test-provider"
+        log_prefix = ""
+        status_callback = None
+
+    shown = []
+    agent = Agent()
+    configure_agent(SimpleNamespace(ui=Surface(), emit=shown.append), agent)
+    warning = "Compression helper is smaller; lowering this session's trigger."
+    agent._compression_warning = warning
+    agent._emit_diagnostic_status(warning)
+    replay_compression_warning(agent)
+
+    assert shown == [warning]
+
+
 def test_fragmented_tool_output_and_late_cancelled_worker_never_reach_main(monkeypatch):
     from sci_cli import side_commands
     from sci_cli.side_surface import tool_output_scope

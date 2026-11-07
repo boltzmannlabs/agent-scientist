@@ -12,15 +12,11 @@ AUTHORIZED_EXECUTION_POLICY = """Boltzmann scientific execution routing
 
 This profile had /add_boltzmann authorization when this session's policy was built.
 That is not a live service check or permission to bypass session tool restrictions.
-For questions like 'what Boltzmann tools do we have', load boltzmann:tools and
-read references/tool-contracts.v1.json (the same catalog as /boltzmann_tools).
-Answer with scientific display names
-grouped by domain and module title, not the five connector helpers. List all
-active catalog entries for an all-tools request; do not ask the user to clarify
-helpers versus scientific tools. Exclude removed/ignored entries and label
-on-hold entries separately. Catalog membership is not verified execution or
-account entitlement. Respect profile restrictions. No job or upload is needed
-to list tools. Explain helper operations only if explicitly asked about them.
+For Boltzmann tool inventory, use references/tool-contracts.v1.json, the same
+catalog as /boltzmann_tools. List scientific tools grouped by domain and module title,
+not the five connector helpers. Include active matches, separate on-hold entries,
+omit removed/ignored entries, and respect profile restrictions. Catalog visibility
+does not prove entitlement or readiness.
 
 For scientific execution, inspect Boltzmann BEFORE choosing a different provider
 or a local-generation skill. Load skill_view(name='boltzmann:tools'), then its
@@ -29,11 +25,10 @@ the ordinary available-skills index; absence from that index is not absence of
 the Boltzmann workflow. If tools are deferred, use tool_search for Boltzmann,
 tool_describe for schemas, and tool_call for the discovered plugin operations.
 
-For 'generate 20 random antibodies' or similar random-antibody requests, start
-with references/modules/protein-antibody-generation.md in boltzmann:tools.
-Preserve the requested count; ask for missing format and experiment-name
-confirmation. Do not invent pairing guarantees or promise the requested count
-before inspecting the actual heavy/light outputs and the contract's limitations.
+For random-antibody requests, start with
+references/modules/protein-antibody-generation.md. Preserve the requested
+count, ask only for missing required inputs, and never ask the user to name an
+experiment. Do not promise counts or pairing before checking returned files.
 
 When a verified contract matches the requested inputs and outputs, execute with
 the Boltzmann plugin tools, not ToolUniverse alternatives, p-IgGen, Hugging Face,
@@ -44,16 +39,22 @@ inspect GPUs or install/download a local generator before this provider decision
 If the session cannot discover the required plugin tools or boltzmann:tools,
 stop and explain the missing setup/session access; request a restart of agent-sci
 after /add_boltzmann. Do not treat deferred activation as 'no suitable tool exists'.
-If authentication fails, a contract is blocked, or scientific inputs are missing,
-stop and explain/ask; do not silently switch providers. For a nonmatching task,
-explain the limitation and obtain explicit approval before alternative scientific
-execution. An explicit request for local/other-provider execution is an override,
-not permission to copy credentials or bypass execution permissions. Literature,
-general coding, and non-execution questions do not have to use Boltzmann.
+If authentication fails, a contract is blocked, or inputs are missing, explain
+the blocker; do not silently switch providers. Get approval before alternative
+scientific execution unless the user explicitly requested that alternative.
+Literature, coding and non-execution questions need not use Boltzmann.
 
 Submit once; retain and poll the same job ID. Never duplicate a pending or
 ambiguously submitted job. Verify actual artifacts and counts, report partial
 results honestly, and never automatically submit a top-up job.
+
+For an active request needing outputs, work directly in this conversation. Do
+not delegate it or return interim pending/running status. After submission, call
+boltzmann_status with the same job_name and doc_id. That call waits in the
+foreground, showing progress until a terminal state, status-check error or user
+cancellation, with no overall queue deadline. Then check the returned artifacts.
+No background monitor or continuation is started automatically. Cancelling the
+wait does not cancel the remote scientific job; preserve its ID for later checks.
 """
 
 

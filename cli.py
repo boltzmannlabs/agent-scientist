@@ -82,8 +82,6 @@ from sci_cli.cli_render import (  # noqa: F401,E402
     _DIM,
     _FALSE_RE,
     _LIGHT_DEFAULT_TERM_PROGRAMS,
-    _LIGHT_MODE_REMAP,
-    _LIGHT_MODE_REMAP_UPPER,
     _REASONING_TAGS,
     _RST,
     _STREAM_PAD,
@@ -105,10 +103,8 @@ from sci_cli.cli_render import (  # noqa: F401,E402
     _coerce_output_history_limit,
     _cprint,
     _d,
-    _detect_light_mode_uncached,
     _heal_cooked_mode_drift,
     _hex_to_ansi,
-    _install_skin_light_mode_hook,
     _line_rows,
     _luminance_from_hex,
     _maybe_remap_for_light_mode,
@@ -609,31 +605,9 @@ def _cleanup_worktree(info: Dict[str, str] = None) -> None:
     _cprint(f"\033[32m{_t('cli.worktree.cleaned_up', path=wt_path)}\033[0m")
 
 
-# Light/dark terminal detection (mirrors ui-tui/src/theme.ts detectLightMode()). Priority:
-# SCI_LIGHT/SCI_TUI_LIGHT env, SCI_TUI_THEME, SCI_TUI_BACKGROUND, COLORFGBG
-# (bg slot 7/15 = light), OSC 11 query, default dark. Cached so the terminal is queried once.
-_LIGHT_MODE_CACHE: bool | None = None
-
-
 def _detect_light_mode() -> bool:
-    global _LIGHT_MODE_CACHE
-    if _LIGHT_MODE_CACHE is not None:
-        return _LIGHT_MODE_CACHE
-    try:
-        result = _detect_light_mode_uncached()
-    except Exception:
-        result = False
-    _LIGHT_MODE_CACHE = result
-    return result
-
-
-_install_skin_light_mode_hook()
-
-
-# Prime the light-mode cache when interactive so OSC 11 happens before prompt_toolkit owns the tty.
-with suppress(Exception):
-    if sys.stdin.isatty() and sys.stdout.isatty():
-        _detect_light_mode()
+    """The native CLI uses its dark palette regardless of terminal settings."""
+    return False
 
 
 _OUTPUT_HISTORY_ENABLED = True

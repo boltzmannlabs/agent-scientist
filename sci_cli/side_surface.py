@@ -93,6 +93,8 @@ def configure_agent(controller, agent):
         return
     ui.agent = agent
     ui.session_id = agent.session_id
+    ui.model = agent.model
+    ui.provider = agent.provider
     # Wrapping each callback also covers calls dispatched by tool-pool workers.
     def wrapped(fn):
         def callback(*args, **kwargs):
@@ -104,7 +106,6 @@ def configure_agent(controller, agent):
         "connection_callback": ui._connection_callback,
         "tool_progress_callback": ui._on_tool_progress,
         "thinking_callback": ui._on_thinking,
-        "status_callback": ui._agent_status_print,
         "notice_callback": ui._on_notice,
         "notice_clear_callback": ui._on_notice_clear,
     }
@@ -117,6 +118,9 @@ def configure_agent(controller, agent):
     for name, callback in callbacks.items():
         if callback is not None:
             setattr(agent, name, wrapped(callback))
+    # CLI lifecycle diagnostics already use _print_fn. Forwarding the event callback
+    # to the same printer duplicates them and renders the event name ("lifecycle").
+    agent.status_callback = None
     agent.suppress_status_output = False
     agent._print_fn = wrapped(ui._agent_status_print)
 

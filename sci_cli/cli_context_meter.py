@@ -4,23 +4,25 @@ from math import cos, tau
 from time import monotonic
 from prompt_toolkit.utils import get_cwidth
 
-WHITE = "fg:#FFFFFF bg:#000000"
-EMPTY = WHITE + " dim"
-
-
 def context_meter(percent: float | None, width: int = 16) -> list:
     """Fill left-to-right from usage, never elapsed time; width includes all cells.
 
     Existing UI redraws drive a subtle boundary-only pulse. No animation state,
     timer, or interpolation may advance the occupied count beyond actual usage.
     """
+    from sci_cli.skin_engine import get_active_skin
+    skin = get_active_skin()
+    foreground = skin.get_color("meter_foreground", "#FFFFFF")
+    background = skin.get_color("meter_background", "#000000")
+    style = f"fg:{foreground} bg:{background}"
     percent = max(0, min(100, percent or 0))
     full = int(percent * width / 100)
-    fragments = [(WHITE, "▰" * full)]
+    fragments = [(style, "▰" * full)]
     if full < width:
-        brightness = round(215 + 40 * (1 + cos(tau * monotonic() / 1.2)) / 2)
-        fragments.append((f"fg:#{brightness:02X}{brightness:02X}{brightness:02X} bg:#000000", "▱"))
-        fragments.append((EMPTY, "·" * (width - full - 1)))
+        brightness = .75 + .25 * (1 + cos(tau * monotonic() / 1.2)) / 2
+        boundary = "#" + "".join(f"{round(int(foreground[i:i + 2], 16) * brightness):02X}" for i in (1, 3, 5))
+        fragments.append((f"fg:{boundary} bg:{background}", "▱"))
+        fragments.append((style + " dim", "·" * (width - full - 1)))
     return fragments
 
 

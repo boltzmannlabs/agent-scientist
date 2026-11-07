@@ -65,6 +65,13 @@ export interface Theme {
   brand: ThemeBrand
   bannerLogo: string
   bannerHero: string
+  surfaces?: {
+    canvas: string
+    elevated: string
+    inputRule: string
+    responseBorder: string
+    hint: string
+  }
 }
 
 // ── Color math ───────────────────────────────────────────────────────
@@ -375,8 +382,9 @@ export const DARK_SEEDS: ThemeSeeds = {
   activeRow: '#5E173C',
   bg: '#101014',
   border: '#8D123B',
-  error: '#FF385A',
-  ok: '#D1F2CD',
+  error: '#FF5C77',
+  ok: '#7CE38B',
+  muted: '#AF426B',
   primary: '#FF7AA7',
   prompt: '#FFE8F0',
   selection: '#753052',
@@ -396,33 +404,48 @@ export const LIGHT_SEEDS: ThemeSeeds = {
   activeRow: '#F7CBDD',
   bg: '#ffffff',
   border: '#B71A55',
-  error: '#C52549',
-  ok: '#367E39',
+  error: '#BE123C',
+  ok: '#146C2E',
+  muted: '#795065',
   primary: '#9C174C',
-  prompt: '#351627',
-  selection: '#F0B6D0',
-  shellDollar: '#9C174C',
-  statusBad: '#C52549',
-  statusCritical: '#C52549',
-  statusGood: '#367E39',
-  statusWarn: '#B71A55',
-  surface: '#FFF0F5',
-  text: '#351627',
-  warn: '#B71A55'
+  prompt: '#2A0F1D',
+  selection: '#F7CBDD',
+  shellDollar: '#B71A55',
+  statusBad: '#BE123C',
+  statusCritical: '#E11D48',
+  statusGood: '#166534',
+  statusWarn: '#B45309',
+  surface: '#FDF0F5',
+  text: '#2A0F1D',
+  warn: '#9A3412'
 }
 
 export const DARK_THEME: Theme = {
   color: buildPalette(DARK_SEEDS, false),
   brand: BRAND,
   bannerLogo: '',
-  bannerHero: ''
+  bannerHero: '',
+  surfaces: {
+    canvas: '#080408',
+    elevated: '#11080F',
+    inputRule: '#F52566',
+    responseBorder: '#B93586',
+    hint: '#A2788D'
+  }
 }
 
 export const LIGHT_THEME: Theme = {
   color: buildPalette(LIGHT_SEEDS, true),
   brand: BRAND,
   bannerLogo: '',
-  bannerHero: ''
+  bannerHero: '',
+  surfaces: {
+    canvas: '#FFFCFD',
+    elevated: '#FFF9FB',
+    inputRule: '#B71A55',
+    responseBorder: '#92276B',
+    hint: '#795065'
+  }
 }
 
 // ── Background-aware readability adaptation ─────────────────────────
@@ -539,14 +562,8 @@ function adaptColorsToBackground(colors: ThemeColors, isLight: boolean, base: Th
 /** The background hex adaptation measures contrast against: the OSC-11
  *  answer when known (cached in SCI_TUI_BACKGROUND), else the mode's
  *  assumed pole. */
-function referenceBackground(isLight: boolean, env: NodeJS.ProcessEnv = process.env): string {
-  const cached = (env.SCI_TUI_BACKGROUND ?? '').trim()
-
-  if (cached && backgroundLuminance(cached) !== null) {
-    return cached.startsWith('#') ? cached : `#${cached}`
-  }
-
-  return isLight ? '#ffffff' : '#101014'
+function referenceBackground(_isLight: boolean, _env: NodeJS.ProcessEnv = process.env): string {
+  return '#101014'
 }
 
 // ── Derived tone ladder (the desktop color-mix system) ──────────────
@@ -632,22 +649,6 @@ export function deriveTones(seeds: {
   }
 }
 
-const TRUE_RE = /^(?:1|true|yes|on)$/
-const FALSE_RE = /^(?:0|false|no|off)$/
-
-// TERM_PROGRAM fallback allow-list for terminals whose default profile is
-// light and which may not expose COLORFGBG. This currently includes Apple
-// Terminal. Explicit SCI_TUI_THEME / COLORFGBG signals above still win,
-// so dark Apple Terminal profiles that advertise a dark background stay dark.
-const LIGHT_DEFAULT_TERM_PROGRAMS = new Set<string>(['Apple_Terminal'])
-
-// Best-effort RGB → luminance check.  Currently only accepts a 3- or
-// 6-digit hex value (with or without a leading `#`); the env var name
-// `SCI_TUI_BACKGROUND` is intentionally generic so a future OSC11
-// query helper can cache its answer there too, but additional formats
-// (rgb()/hsl()/named colours) would need explicit parsing here first.
-const LUMA_LIGHT_THRESHOLD = 0.6
-
 // Strict allow-list: parseInt(..., 16) silently truncates at the first
 // non-hex character (e.g. `fffgff` would parse as `fff` and yield a
 // false-positive "white" reading), so reject anything that doesn't match
@@ -678,83 +679,12 @@ function backgroundLuminance(raw: string): null | number {
   return (0.2126 * rgb[0]! + 0.7152 * rgb[1]! + 0.0722 * rgb[2]!) / 255
 }
 
-// Pick light vs dark with ordered, explainable signals (#11300):
-//
-//   1. `SCI_TUI_LIGHT` boolean — `1`/`true`/`yes`/`on` → light;
-//      `0`/`false`/`no`/`off` → dark.  Either explicit value wins
-//      regardless of any later signal.
-//   2. `SCI_TUI_THEME` named override — `light` / `dark` win over
-//      every signal below.
-//   3. `SCI_TUI_BACKGROUND` hex hint (3- or 6-digit) — luminance
-//      ≥ LUMA_LIGHT_THRESHOLD → light.
-//   4. `COLORFGBG` last field — XFCE / rxvt / Terminal.app emit
-//      slot 7 or 15 on light profiles; 0–15 ranges are otherwise
-//      treated as authoritatively dark so the TERM_PROGRAM
-//      allow-list below cannot override an explicit dark profile.
-//   5. `TERM_PROGRAM` light-default allow-list.
-//
-// Anything we can't decide stays dark — the default Sci palette
-// is the dark one.
+// SCI's native TUI is dark-only. Host theme signals do not switch its palette.
 export function detectLightMode(
-  env: NodeJS.ProcessEnv = process.env,
-  // Injectable so tests can prove the COLORFGBG-over-TERM_PROGRAM
-  // precedence rule even though the production allow-list is empty.
-  lightDefaultTermPrograms: ReadonlySet<string> = LIGHT_DEFAULT_TERM_PROGRAMS
+  _env: NodeJS.ProcessEnv = process.env,
+  _lightDefaultTermPrograms?: ReadonlySet<string>
 ): boolean {
-  const lightFlag = (env.SCI_TUI_LIGHT ?? '').trim().toLowerCase()
-
-  if (TRUE_RE.test(lightFlag)) {
-    return true
-  }
-
-  if (FALSE_RE.test(lightFlag)) {
-    return false
-  }
-
-  const themeFlag = (env.SCI_TUI_THEME ?? '').trim().toLowerCase()
-
-  if (themeFlag === 'light') {
-    return true
-  }
-
-  if (themeFlag === 'dark') {
-    return false
-  }
-
-  const bgHint = backgroundLuminance(env.SCI_TUI_BACKGROUND ?? '')
-
-  if (bgHint !== null) {
-    return bgHint >= LUMA_LIGHT_THRESHOLD
-  }
-
-  const colorfgbg = (env.COLORFGBG ?? '').trim()
-
-  if (colorfgbg) {
-    // Validate as a decimal integer before coercing — `Number('')` is 0,
-    // so a malformed `COLORFGBG='15;'` would otherwise look like an
-    // authoritative dark slot and incorrectly block the TERM_PROGRAM
-    // allow-list.  Anything that isn't pure digits falls through.
-    const lastField = colorfgbg.split(';').at(-1) ?? ''
-
-    if (/^\d+$/.test(lastField)) {
-      const bg = Number(lastField)
-
-      if (bg === 7 || bg === 15) {
-        return true
-      }
-
-      // Slots 0–6 and 8–14 are the dark half of the 0–15 ANSI range.
-      // When COLORFGBG is set we trust it as authoritative — a non-light
-      // value here shouldn't get overridden by the TERM_PROGRAM allow-list.
-      if (bg >= 0 && bg < 16) {
-        return false
-      }
-    }
-  }
-
-  const termProgram = (env.TERM_PROGRAM ?? '').trim()
-
-  return lightDefaultTermPrograms.has(termProgram)
+  return false
 }
 
 function shouldNormalizeAnsiLightTheme(env: NodeJS.ProcessEnv = process.env, isLight = detectLightMode(env)): boolean {
@@ -786,25 +716,13 @@ export function normalizeThemeForAnsiLightTerminal(
   return { ...theme, color }
 }
 
-const DEFAULT_LIGHT_MODE = detectLightMode()
-
-export const DEFAULT_THEME: Theme = normalizeThemeForAnsiLightTerminal(
-  DEFAULT_LIGHT_MODE ? LIGHT_THEME : DARK_THEME,
-  process.env,
-  DEFAULT_LIGHT_MODE
-)
+export const DEFAULT_THEME: Theme = DARK_THEME
 
 /**
- * The skinless theme for the CURRENT light-mode signals. Unlike the frozen
- * module-load DEFAULT_THEME, this re-reads the environment — so it picks up
- * the OSC-11 background answer cached into SCI_TUI_BACKGROUND after
- * startup. Used when the terminal background arrives before (or without) a
- * gateway skin.
+ * The fixed dark skinless theme. Host appearance hints never alter the palette.
  */
-export function defaultThemeForCurrentBackground(env: NodeJS.ProcessEnv = process.env): Theme {
-  const isLight = detectLightMode(env)
-
-  return normalizeThemeForAnsiLightTerminal(isLight ? LIGHT_THEME : DARK_THEME, env, isLight)
+export function defaultThemeForCurrentBackground(_env: NodeJS.ProcessEnv = process.env): Theme {
+  return DARK_THEME
 }
 
 // ── Skin → Theme ─────────────────────────────────────────────────────
@@ -816,19 +734,9 @@ const authoredBackground = (raw: string | undefined): null | string => {
   return backgroundLuminance(v) === null ? null : v.startsWith('#') ? v : `#${v}`
 }
 
-/**
- * A skin that authors a background OWNS its polarity: the TUI paints the
- * terminal with it (applySkin → OSC-11), so contrast adaptation, the derived
- * tone ladder, and ANSI light-terminal normalization must all run against the
- * skin's canvas — not the host profile the skin just covered. (A pure-black
- * skin on a light Apple Terminal otherwise gets its text remapped for a light
- * background it painted over: invisible.) Host detection still governs skins
- * without a background — they render on the terminal's own surface.
- */
-export function skinIsLight(colors: SkinColors, env: NodeJS.ProcessEnv = process.env): boolean {
-  const authored = backgroundLuminance(colors['background'] ?? '')
-
-  return authored === null ? detectLightMode(env) : authored >= LUMA_LIGHT_THRESHOLD
+/** The native TUI has a fixed dark palette and no light-polarity mode. */
+export function skinIsLight(_colors: SkinColors, _env: NodeJS.ProcessEnv = process.env): boolean {
+  return false
 }
 
 export function fromSkin(
@@ -839,11 +747,10 @@ export function fromSkin(
   toolPrefix = '',
   helpHeader = ''
 ): Theme {
-  // Polarity: the skin's own canvas when it authors one (see skinIsLight);
-  // otherwise live host detection (not the module-load snapshot — by the time
-  // the gateway skin arrives, the OSC-11 probe has usually answered and cached
-  // itself into SCI_TUI_BACKGROUND. See #applySkin / syncThemeToTerminalBackground).
-  const skinBg = authoredBackground(colors['background'])
+  // Skin fills and host appearance hints never switch the native palette.
+  const requestedSkinBg = authoredBackground(colors['background'])
+  const skinBg =
+    requestedSkinBg && (backgroundLuminance(requestedSkinBg) ?? 1) <= DARK_BG_MAX_LUMINANCE ? requestedSkinBg : null
   const isLight = skinIsLight(colors)
   const bg = skinBg ?? referenceBackground(isLight)
   const base = isLight ? LIGHT_SEEDS : DARK_SEEDS
@@ -957,7 +864,21 @@ export function fromSkin(
       },
 
       bannerLogo,
-      bannerHero
+      bannerHero,
+      surfaces: c('terminal_elevated')
+        ? {
+            canvas: bg,
+            elevated:
+              (backgroundLuminance(c('terminal_elevated')!) ?? 1) <= DARK_BG_MAX_LUMINANCE
+                ? c('terminal_elevated')!
+                : d.surfaces!.elevated,
+            inputRule: c('input_rule') ?? adapted.accent,
+            responseBorder: c('response_border') ?? adapted.border,
+            hint: c('hint_text') ?? adapted.muted
+          }
+        : hasSkinColors
+          ? undefined
+          : d.surfaces
     },
     process.env,
     isLight

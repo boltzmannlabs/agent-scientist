@@ -196,11 +196,11 @@ export function useSubmission(opts: UseSubmissionOptions) {
   )
 
   // Honors `display.busy_input_mode` from config.yaml (CLI parity):
-  //   - 'queue'     (legacy): append to queueRef; drains on busy → false
+  //   - 'queue'     (default): append to queueRef; drains on busy → false
   //   - 'steer'     : inject into the current turn via session.steer; falls
   //                   back to queue when steer is rejected (no agent / no
   //                   tool window).
-  //   - 'interrupt' (default): submit immediately; the backend redirects the
+  //   - 'interrupt' (opt-in): submit immediately; the backend redirects the
   //                   active model request (or safely steers after a tool),
   //                   with legacy interrupt + queue as its compatibility path.
   //

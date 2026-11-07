@@ -73,7 +73,6 @@ def _safe_parse_import_env(name: str, default: Any, converter, type_label: str):
 
 
 # Hard cap on foreground timeout; override via TERMINAL_MAX_FOREGROUND_TIMEOUT env var.
-FOREGROUND_MAX_TIMEOUT = _safe_parse_import_env("TERMINAL_MAX_FOREGROUND_TIMEOUT", 600, int, "integer")
 
 # Disk usage warning threshold (in GB)
 DISK_USAGE_WARNING_THRESHOLD_GB = _safe_parse_import_env("TERMINAL_DISK_WARNING_GB", 500.0, float, "number")
@@ -163,7 +162,7 @@ Do NOT use cat/head/tail (use read_file), grep/rg/find/ls (use search_files), se
 Environment state persists: activate a virtualenv or export variables once per session, not before every command.
 
 Foreground (default): returns INSTANTLY when the command finishes, even with a high timeout — set timeout generously for long builds and fixed waits.
-Background: set background=true (returns a session_id) only for commands that must keep running independently after this tool call returns; add notify=true for bounded tasks, leave silent only for servers/daemons that never exit. Do not start sleep, timers, cooldowns, delays, or polling loops with background=true — to wait a fixed time, run the wait as a normal foreground command with a high enough timeout. After starting a server, verify readiness with a health check in a separate call (no blind sleep loops); manage with process(action="poll"/"wait").
+Background: set background=true (returns a session_id) only when the user explicitly requests independent background work or a persistent service; add notify=true for bounded tasks, leave silent only for servers/daemons that never exit. Do not start sleep, timers, cooldowns, delays, or polling loops with background=true — to wait a fixed time, run the wait as a normal foreground command with a high enough timeout. After starting a server, verify readiness with a health check in a separate call (no blind sleep loops); manage with process(action="poll"/"wait").
 Working directory: use 'workdir' for per-command cwd; when a command changes the session cwd (cd, pushd), trust the result's "cwd" field instead of prefixing every command with 'cd'.
 PTY: pty=true + background=true for interactive CLIs (they hang without a terminal); drive them with process(action="write"/"submit"). Local backend only.
 Persist: background=true, persist_on_release=true keeps the job alive across agent lifecycle cleanup (session end, /new, compression, error recovery, stop-on-max-iterations). Use ONLY for long-running jobs the user explicitly wants to outlive the conversation; the user can still stop it on purpose.
@@ -855,7 +854,7 @@ from tools.terminal_tool_guards import (
     _foreground_background_guidance, _safe_command_preview, _validate_workdir,
     gateway_lifecycle_block, self_repo_block,
 )
-from tools.terminal_tool_background import _YIELDED_NOTE, spawn_background_process, yield_to_background_handler
+from tools.terminal_tool_background import spawn_background_process
 from tools.terminal_tool_result import finalize_foreground_result
 
 
@@ -1059,18 +1058,6 @@ class _ExecPlan:
     cwd: str
     host_cwd: Optional[str]
     effective_timeout: int
-    # Set when a foreground call asked for more than FOREGROUND_MAX_TIMEOUT and was promoted to a
-    # tracked background process instead of being refused (the requested seconds, for the note).
-    promoted_from_foreground_timeout: Optional[int] = None
-
-
-_PROMOTED_NOTE = (
-    "Requested foreground timeout {requested}s exceeds the {cap}s cap, so this command was started as a "
-    "tracked background process with notify_on_complete=true instead of being refused. Do NOT re-run it. "
-    "Its completion (exit code + output tail) arrives as a notification; poll with "
-    "process(action=\"poll\", session_id=...) if you need it sooner."
-)
-
 
 def _plan_execution(
     command: Any, *, task_id: Optional[str], timeout: Optional[int],
@@ -1079,7 +1066,7 @@ def _plan_execution(
     """Resolve backend, env-cache key, image, cwd and timeout for one call.
 
     Raises :class:`_Rejected` when the call is rejected up front (non-string
-    command, non-positive or over-cap timeout, a foreground command that must
+    command, non-positive timeout, a foreground command that must
     run in the background).
     """
     if not isinstance(command, str):
@@ -1135,48 +1122,16 @@ def _plan_execution(
     # value is truthy and would fire an immediate "-Ns" timeout.
     if timeout is not None and timeout <= 0:
         raise _Rejected(tool_error(f"timeout must be a positive number of seconds (got {timeout})."))
-    promoted = None
     if not background:
-        # An over-cap foreground timeout is a bounded job the caller wants to wait for (test suites,
-        # builds). Refusing it only bought a mechanical retry: 454 refusals in one run, every one
-        # re-sent lower/split/background. Promote to a tracked background process instead; the
-        # caller is told in the result. The `&`/nohup/server guidance below stays a refusal: those
-        # need the command itself rewritten, which the tool cannot do safely.
-        # The detachment guidance applies whether or not the call is promoted: a promoted `cmd &`
-        # would start a tracked shell that exits at once while its payload runs untracked.
+        # A detached shell can outlive its owner; require an explicit tracked process.
         guidance = _foreground_background_guidance(command)
         if guidance:
             raise _Rejected(_error_json(guidance, status="error"))
-        if timeout and timeout > FOREGROUND_MAX_TIMEOUT:
-            promoted = timeout
 
     return _ExecPlan(
         config=config, env_type=env_type, effective_task_id=effective_task_id,
         image=image, cwd=cwd, host_cwd=host_cwd, effective_timeout=timeout or config["timeout"],
-        promoted_from_foreground_timeout=promoted,
     )
-
-
-_PROMOTED_NOTE_POLL_ONLY = (
-    "Requested foreground timeout {requested}s exceeds the {cap}s cap, so this command was started as a "
-    "tracked background process instead of being refused. Do NOT re-run it. This session cannot receive "
-    "completion notifications, so poll it with process(action=\"poll\", session_id=...) until it exits."
-)
-
-
-def _with_promoted_note(result_json: str, requested_timeout: int) -> str:
-    """Attach the foreground->background promotion note to a spawn result (unchanged on error). The
-    note only promises a notification when the spawn actually kept notify_on_complete (finite sessions
-    such as one-shot runners cannot route one back; the spawn already said so and cleared the flag)."""
-    try:
-        data = json.loads(result_json)
-    except (TypeError, ValueError):
-        return result_json
-    if not isinstance(data, dict) or data.get("error"):
-        return result_json
-    template = _PROMOTED_NOTE if data.get("notify_on_complete") else _PROMOTED_NOTE_POLL_ONLY
-    data["promoted_from_foreground"] = template.format(requested=requested_timeout, cap=FOREGROUND_MAX_TIMEOUT)
-    return json.dumps(data, ensure_ascii=False)
 
 
 def _acquire_env(plan: _ExecPlan, task_id: Optional[str]) -> Any:
@@ -1229,12 +1184,6 @@ def _acquire_env(plan: _ExecPlan, task_id: Optional[str]) -> Any:
         return new_env
 
 
-def _yield_kwargs(command: str, **ctx) -> dict:
-    """``env.execute`` kwargs enabling yield-to-background (local backend only)."""
-    handler = yield_to_background_handler(command=command, **ctx)
-    return {"yield_handler": handler} if handler is not None else {}
-
-
 def _run_foreground(
     command: str, env: Any, plan: _ExecPlan, *,
     task_id: Optional[str], session_id: Optional[str], session_key: str,
@@ -1268,8 +1217,6 @@ def _run_foreground(
             # internal env.execute() consumers stay unbounded.
             result = env.execute(
                 command, timeout=effective_timeout, cwd=command_cwd, bounded_capture=True,
-                **_yield_kwargs(command, env_type=env_type, cwd=command_cwd, effective_task_id=eff,
-                                task_id=task_id, session_key=session_key),
             )
             break
         except Exception as e:
@@ -1288,12 +1235,6 @@ def _run_foreground(
                          max_retries, _safe_command_preview(command), type(e).__name__, e, eff, env_type)
             return _error_json(_redact_terminal_error_text(f"Command execution failed: {type(e).__name__}: {e}"))
 
-    if result.get("yielded_session_id"):  # handed to the background: no exit status yet
-        return json.dumps({
-            "output": result.get("output", ""), "exit_code": None, "error": None,
-            "status": "yielded_to_background", "session_id": result["yielded_session_id"],
-            "pid": result.get("pid"), "notify_on_complete": True, "note": _YIELDED_NOTE,
-        }, ensure_ascii=False)
     if metered:
         record_terminal_outcome(command, env_type, result)
     return finalize_foreground_result(
@@ -1453,10 +1394,6 @@ def terminal_tool(
         verdict = _run_approval_guards(command, env_type, plan.config, force=force)
 
         pty_disabled = pty and _command_requires_pipe_stdin(command)
-        if plan.promoted_from_foreground_timeout is not None:
-            # Promotion implies notify_on_complete; watch_patterns is a background-only flag the
-            # caller could not have meant for a foreground call, and the two are exclusive anyway.
-            background, notify_on_complete, watch_patterns = True, True, None
         if background:
             result = spawn_background_process(
                 command=command, env=env, env_type=env_type, effective_task_id=effective_task_id,
@@ -1469,8 +1406,6 @@ def terminal_tool(
                 heartbeat_seconds=heartbeat,
                 persist_on_release=persist_on_release,
             )
-            if plan.promoted_from_foreground_timeout is not None:
-                result = _with_promoted_note(result, plan.promoted_from_foreground_timeout)
             return _metered(None if _host_local else plan, result)
         return _metered(None if _host_local else plan, _run_foreground(
             command, env, plan,
@@ -1513,12 +1448,12 @@ TERMINAL_SCHEMA = {
             },
             "background": {
                 "type": "boolean",
-                "description": "Run in the background, returning a session_id. Pair with notify=true for anything with a defined end (tests, builds, deploys) — without it the process runs silently. Only servers/watchers/daemons that never exit should stay silent. Short commands: prefer foreground with a generous timeout.",
+                "description": "Use only for explicitly requested background work or persistent services. Returns a session_id; notify=true requests a later completion notice. Ordinary tasks stay in the foreground, including long builds, tests, and polling.",
                 "default": False
             },
             "timeout": {
                 "type": "integer",
-                "description": f"Max seconds to wait (default: 180, foreground max: {FOREGROUND_MAX_TIMEOUT}). Returns INSTANTLY when command finishes — set high for long tasks, you won't wait unnecessarily. A foreground timeout above {FOREGROUND_MAX_TIMEOUT}s runs the command as a tracked background process with notify_on_complete=true instead (the result says so; do not re-run it).",
+                "description": "Max seconds to wait (default: 180). Set a sufficiently high timeout for long tasks. The command stays in the foreground until it exits, is cancelled, or reaches this timeout; it is never automatically moved into the background.",
                 "minimum": 1
             },
             "workdir": {
@@ -1531,7 +1466,7 @@ TERMINAL_SCHEMA = {
                 "default": False
             },
             "notify": {
-                "description": "With background=true: notify=true fires exactly one notification when the process exits (the right choice for nearly every bounded task — builds, tests, deploys). notify=['pattern', ...] instead notifies when a line matches a pattern — ONLY for one-shot readiness signals on processes that never exit (e.g. ['Application startup complete']); rate-limited and auto-disabled if it over-fires. Omit for silent daemons.",
+                "description": "With background=true: notify=true fires a completion notification for explicitly backgrounded work. notify=['pattern', ...] instead notifies when a line matches a pattern — ONLY for one-shot readiness signals on processes that never exit (e.g. ['Application startup complete']); rate-limited and auto-disabled if it over-fires. Omit for silent daemons.",
                 "anyOf": [
                     {"type": "boolean"},
                     {"type": "array", "items": {"type": "string"}}
@@ -1636,4 +1571,5 @@ registry.register(
     check_fn=check_terminal_requirements,
     emoji="💻",
     max_result_size_chars=100_000,
+    manages_timeout=True,
 )

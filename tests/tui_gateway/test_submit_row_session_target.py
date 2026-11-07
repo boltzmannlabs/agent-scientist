@@ -343,9 +343,9 @@ def test_busy_queue_accept_row_lands_with_the_turn_and_is_addressed_there(monkey
         # The accept-time row is in the continuation, where the drained turn will write.
         assert [r for r in _rows(db, child) if "QUEUED-A" in r[1]]
 
-        # A text-only follow-up merges into the envelope: the already-written row must follow.
-        assert server._handle_busy_submit("r2", sid, session, "second", "ws-1",
-                                          queued=True, display_kind=None)["result"]["status"] == "queued"
+        # Rewriting a retained legacy envelope must still address its durable row correctly.
+        session["queued_prompt"]["text"] += "\n\nsecond"
+        server._persist_queued_user_row(session, session["queued_prompt"], None)
         assert session["queued_prompt"]["text"] == "first QUEUED-A\n\nsecond"
         merged = [r[1] for r in _rows(db, child) if r[0] == "user" and "QUEUED-A" in r[1]]
         assert merged == ["first QUEUED-A\n\nsecond"], f"merge update missed the row's session: {merged}"

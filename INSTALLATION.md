@@ -25,7 +25,10 @@ The installer checks prerequisites, downloads checksum-verified managed tools,
 installs the locked application dependencies, publishes `sci` and `agent-sci`
 launchers, synchronizes bundled skills, and checks that the CLI starts. It does
 not install developer/test dependency groups. In an interactive terminal it
-then opens the existing provider setup wizard. Authenticate your chosen model
+reuses detected provider configuration, or opens the existing provider setup
+wizard, then launches SCI. Use `--no-launch` (Windows: `-NoLaunch`) to configure
+without starting chat. If setup is cancelled, software stays installed and
+the installer reports that model setup is incomplete. Authenticate your chosen model
 provider; SCI does not require a separate account with its original upstream.
 Model charges and service usage remain subject to your providers' policies.
 
@@ -41,13 +44,48 @@ Optional model reasoning defaults to `medium`, with thinking text hidden
 effort with `/reasoning low`, `/reasoning medium`, or a level supported by your
 model. Updates preserve existing saved effort choices and per-model overrides.
 
-Keep the checkout in its installed location: the launchers refer to it. On
-completion, open a new terminal, or update this terminal's PATH:
+Keep the checkout in its installed location: the launchers refer to it. PATH is
+registered automatically for your login and interactive shell (Bash, Zsh or
+Fish); existing shell settings are preserved. The installer launches SCI by its
+absolute path immediately. Subsequent terminals can use `sci` or `agent-sci`.
+A script cannot change its parent Bash/Zsh process: if you skipped launch, open
+a new terminal before using the short command in that shell.
+
+### Prerequisite checks and recovery
+
+The source setup engines check Git, download/archive/hash tools, supported
+architecture, writable checkout/runtime/home/bin/temp directories, and at least
+**2 GiB free on each destination filesystem** before bootstrap. This is a
+bootstrap floor, not a guarantee for all dependencies: optional software,
+scientific models, caches and build products can require substantially more.
+HTTPS downloads test connectivity when needed; pinned cached artifacts are
+reused. Download, hash or dependency failures stop installation at the failed
+stage, rather than reporting success.
+
+On Linux/macOS, missing utilities can be installed through an existing APT,
+DNF, Pacman or Homebrew installation after confirmation. On Windows, missing
+Git can be installed through an existing WinGet after confirmation. If the
+package manager or permission is unavailable, the installer stops with manual
+instructions; it does not install a new package manager. Run the installer as
+your normal user; only OS package commands may request elevation.
+
+For explicit unattended approval of missing OS prerequisites:
 
 ```bash
-export PATH="$HOME/.local/bin:$PATH"
-agent-sci
+bash ./install-sci.sh --non-interactive --install-prerequisites
 ```
+
+```powershell
+.\install-sci.ps1 -NonInteractive -InstallPrerequisites
+```
+
+Without that option, unattended installation stops if an OS prerequisite is
+missing. Git and the appropriate shell must already exist to run the clone
+commands above; a script inside a checkout cannot repair a clone that never
+started. The managed uv, Python and Python packages need no manual installation.
+Model credentials are configured separately and are never invented or copied
+from another person's installation. Detecting model configuration does not
+prove that its credentials are currently accepted by the provider.
 
 The installer can be rerun after an interrupted installation. It uses managed
 package state rather than installing Python packages into your system Python.
@@ -61,9 +99,9 @@ are not distributed by this process.
 git clone https://github.com/boltzmannlabs/Agent-Scientist.git
 cd Agent-Scientist
 bash ./install-sci.sh --non-interactive
-export PATH="$HOME/.local/bin:$PATH"
+# Open a new terminal after unattended installation.
 sci setup
-agent-sci
+sci
 ```
 
 The `--non-interactive` installation installs software only. It does not configure model access,
@@ -86,11 +124,24 @@ checkout, runs the local `setup-sci.ps1` engine in user mode (managed runtime
 and locked dependencies without the developer/test groups), publishes the `sci`
 and `agent-sci` launchers into `%LOCALAPPDATA%\sci\bin` (or `%SCI_HOME%\bin`),
 synchronizes bundled skills, verifies that the CLI starts, and then opens the
-provider setup wizard in an interactive terminal. Use
+provider setup wizard when no model configuration is detected, then launches
+SCI in an interactive terminal. Use
 `.\install-sci.ps1 -NonInteractive` on unattended machines and run `sci setup`
-later. If `agent-sci` is not found afterwards, open a new terminal or add the
-launcher directory above to `PATH`. An error stops the installation and names
+later. The engine adds the launcher directory to your persistent **User PATH**,
+and the wrapper refreshes the current PowerShell PATH. No manual PATH edit is
+required. If you started the installer through a separate child PowerShell or
+CMD process, open a new terminal afterwards; child processes cannot change the
+parent terminal environment. An error stops the installation and names
 the failed stage; rerun the installer after an interruption.
+
+Interactive setup menus support **Up/Down** and **Enter**; multi-selection menus
+use **Space** to toggle items. Windows x64 receives the pinned `windows-curses`
+package automatically through SCI's managed dependencies. Native ARM64 has no
+upstream curses wheel, so SCI uses its bundled `prompt_toolkit` keyboard menu
+when curses is unavailable. That renderer preserves search, selection, Escape
+and setup's previous-step navigation. Numbered prompts remain a fallback for
+terminals that cannot run the keyboard interface; redirected input does not
+open an interactive picker. No separate pip command is required.
 
 Developers working on the source keep using `.\setup-sci.ps1` directly with
 `.\activate.ps1`, which additionally prepares the test environment and `.env`
@@ -180,6 +231,7 @@ references/scripts are shipped; optional skills remain opt-in. Existing users'
 activation choices are preserved. External services use their own credentials.
 
 ```text
+/boltzmann_login
 /add_boltzmann
 /Add_skill
 /Add_tool <request or official URL>
@@ -188,7 +240,12 @@ activation choices are preserved. External services use their own credentials.
 ```
 
 Boltzmann tools remain locked until a valid API key is authorized through
-`/add_boltzmann`. Use `/capabilities setup` for the optional portable ToolUniverse
+`/boltzmann_login` or `/add_boltzmann`. Quick Setup offers this same flow before model setup;
+it can be skipped. Obtain your key at [Boltzmann](https://app.boltzmann.co/home), enter it in the
+masked prompt, and check the reported account email and credits. The validated key is saved
+as `BOLTZMANN_API_KEY` in the active profile's `.env`. Start a fresh conversation after connecting.
+Boltzmann login enables scientific tools; it does not configure your LLM provider.
+Use `/capabilities setup` for the optional portable ToolUniverse
 and PubMed definitions. ToolUniverse requires approved managed dependency installation
 and separate execution approval; PubMed uses a reviewed third-party HTTPS MCP.
 Both require handshake verification and explicit tool selection before saving.
@@ -248,7 +305,7 @@ normally use a 24-hour cache and do not install anything automatically. Only
 reviewed source pushed to this repository's `main` branch is delivered. Back up
 your `~/.sci` state before maintenance; keep local code edits on a separate branch.
 
-- Command not found: open a new terminal or export the PATH shown above. The
+- Command not found: rerun the installer to register PATH, then open a new terminal. The
   checkout-local launcher is also available at `.sci/bin/agent-sci`.
 - Interrupted download/dependency build: rerun `bash ./install-sci.sh`; read
   the stage/error before retrying. Do not work around it using system `pip`.

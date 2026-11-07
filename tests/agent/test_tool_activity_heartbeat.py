@@ -325,7 +325,7 @@ def test_sequential_timeout_stops_abandoned_workers_heartbeat(monkeypatch):
     # The middleware's execution seam: ``_run_with_activity_heartbeat`` around ``execute`` on the worker.
     monkeypatch.setattr(
         te, "_run_agent_tool_execution_middleware",
-        lambda agent, execute, function_name="terminal", **kw: te._ManagedToolResult(
+        lambda agent, execute, function_name="web_extract", **kw: te._ManagedToolResult(
             result=te._run_with_activity_heartbeat(agent, function_name, lambda: execute({})),
             args={}, middleware_trace=[], blocked=False, dispatched=True,
         ),
@@ -350,7 +350,7 @@ def test_sequential_timeout_stops_abandoned_workers_heartbeat(monkeypatch):
     release = threading.Event()
     try:
         managed = te._run_sequential_tool_execution_middleware(
-            agent, function_name="terminal", function_args={}, effective_task_id="t",
+            agent, function_name="web_extract", function_args={}, effective_task_id="t",
             tool_call_id="tc1", execute=lambda args: release.wait() or "late",
         )
         abandoned_at = time.monotonic()

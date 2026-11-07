@@ -463,6 +463,34 @@ def test_no_replay_when_no_warning(mock_get_client, mock_ctx_len):
 # ── #67422: threshold suggestion must survive the small-context floor ────────
 
 
+@pytest.mark.parametrize("main_window,aux_window", [(500_000, 272_000), (200_000, 128_000)])
+def test_small_context_warning_offers_working_absolute_cap(main_window, aux_window):
+    """The advertised fix must survive the same floor that blocks a ratio-only fix."""
+    import re
+
+    agent = _make_agent(main_context=main_window)
+    agent.context_compressor = ContextCompressor(
+        "test-main-model", config_context_length=main_window, threshold_percent=0.85,
+        quiet_mode=True,
+    )
+    messages = []
+    agent._emit_status = messages.append
+    client = MagicMock(base_url="https://example.test/v1", api_key="fixture")
+    with patch("agent.auxiliary_client.get_text_auxiliary_client", return_value=(client, "helper")), \
+         patch("agent.model_metadata.get_model_context_length", return_value=aux_window):
+        agent._check_compression_model_feasibility()
+
+    suggested = re.search(r"threshold_tokens: (\d+)", str(messages[0]))
+    assert suggested, "A percentage floor must not hide the supported absolute-cap setting"
+    configured = ContextCompressor(
+        "test-main-model", config_context_length=main_window, threshold_percent=0.85,
+        threshold_tokens_cap=int(suggested[1]), quiet_mode=True,
+    )
+    assert configured.threshold_tokens <= aux_window < main_window
+    configured.update_model("another-main", context_length=main_window * 2)
+    assert configured.threshold_tokens <= aux_window
+
+
 
 
 @patch("agent.model_metadata.get_model_context_length", return_value=300_000)

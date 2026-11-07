@@ -983,6 +983,10 @@ def classify_api_error(
         anonymous=is_anonymous_request(provider, api_key),
     )
     verdict = next((v for v in (stage(c) for stage in _STAGES) if v is not None), _V_UNKNOWN)
+    from providers import get_provider_profile
+    profile = get_provider_profile(provider)
+    if profile is not None and profile.allow_fallback is False:
+        verdict = {**verdict, "should_fallback": False, "should_rotate_credential": False}
     message = _extract_message(error, body)
     if verdict["reason"] in (_R.auth, _R.auth_permanent):
         # An auth refusal from a non-stock route names the host, so a credential posted to the

@@ -19,9 +19,13 @@ set -e
 # pm.cli directly and never select it.
 runtime_only=false
 user_install=false
+sci_install_prerequisites=false
+sci_install_non_interactive=false
 test_environment="--test-environment"
 for option in "$@"; do
     case "$option" in
+        --non-interactive) sci_install_non_interactive=true ;;
+        --install-prerequisites) sci_install_prerequisites=true ;;
         --runtime-only) runtime_only=true ;;
         --user-install) user_install=true ;;
         --test-environment|--test-environment=*) test_environment="$option" ;;
@@ -37,6 +41,12 @@ NC='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
+
+# Activation only repairs the managed runtime; it must not prompt for OS packages.
+if [ "$runtime_only" = false ]; then
+    source "$SCRIPT_DIR/scripts/source-install-preflight.sh"
+    sci_source_preflight
+fi
 
 # Prevent uv from discovering config files (uv.toml, pyproject.toml) from the
 # wrong user's home directory when running under sudo -u <user>.  See #21269.
@@ -122,15 +132,16 @@ else
   tmp="$(mktemp -d "$store/.bootstrap-XXXXXX")"; trap 'rm -rf "$tmp"' EXIT
   archive="$tmp/${url##*/}"
   fetch_pinned() {
-    if curl -fsSL -o "$2" "$1"; then return 0; else _curl_status=$?; fi
+    if curl -fsSL --connect-timeout 15 --max-time 600 --retry 2 -o "$2" "$1"; then return 0; else _curl_status=$?; fi
     case "$_curl_status" in 5|6|7|18|22|28|52|55|56) ;; *) return "$_curl_status" ;; esac
     local mirror; mirror="$(mirror_url_for "$sha")" || return 1
-    curl -fsSL -o "$2" "$mirror" || return 1
+    curl -fsSL --connect-timeout 15 --max-time 600 --retry 2 -o "$2" "$mirror" || return 1
   }
   if ! fetch_pinned "$url" "$archive"; then
     _tried="$url"
     if _m="$(mirror_url_for "$sha")"; then _tried="$_tried or $_m"; fi
     echo -e "${RED}✗${NC} failed to download pinned uv from $_tried" >&2
+    echo "Check internet access, proxy settings and trusted TLS certificates, then rerun setup." >&2
     exit 1
   fi
   got="$( (sha256sum "$archive" 2>/dev/null || shasum -a 256 "$archive") | cut -d' ' -f1 | tr -d '\\')"
@@ -222,49 +233,11 @@ bin_dir="$HOME/.local/bin"
 if [ "$os" = win32 ]; then
     bin_dir="$(cygpath -am "${SCI_HOME:-${LOCALAPPDATA:-$HOME/AppData/Local}/sci}/bin")"
 fi
-if ! "$boot_py" -I -X utf8 sci_cli/_launchers.py "$bin_dir"; then
+if ! "$boot_py" -I -X utf8 sci_cli/_launchers.py "$bin_dir" --register-path; then
     echo -e "${RED}✗${NC} launcher publication failed" >&2
     exit 1
 fi
 echo -e "${GREEN}✓${NC} Published Sci commands in $bin_dir"
-
-if [ "$os" != win32 ]; then
-    # Determine the appropriate shell config file
-    SHELL_CONFIG=""
-    if [[ "$SHELL" == *"zsh"* ]]; then
-            SHELL_CONFIG="$HOME/.zshrc"
-        elif [[ "$SHELL" == *"bash"* ]]; then
-            SHELL_CONFIG="$HOME/.bashrc"
-            [ ! -f "$SHELL_CONFIG" ] && SHELL_CONFIG="$HOME/.bash_profile"
-        else
-            # Fallback to checking existing files
-            if [ -f "$HOME/.zshrc" ]; then
-                SHELL_CONFIG="$HOME/.zshrc"
-            elif [ -f "$HOME/.bashrc" ]; then
-                SHELL_CONFIG="$HOME/.bashrc"
-            elif [ -f "$HOME/.bash_profile" ]; then
-                SHELL_CONFIG="$HOME/.bash_profile"
-            fi
-        fi
-
-        if [ -n "$SHELL_CONFIG" ]; then
-            # Touch the file just in case it doesn't exist yet but was selected
-            touch "$SHELL_CONFIG" 2>/dev/null || true
-
-            if ! echo "$PATH" | tr ':' '\n' | grep -q "^$HOME/.local/bin$"; then
-                if ! grep -q '\.local/bin' "$SHELL_CONFIG" 2>/dev/null; then
-                    echo "" >> "$SHELL_CONFIG"
-                    echo "# Sci Agent — ensure ~/.local/bin is on PATH" >> "$SHELL_CONFIG"
-                    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_CONFIG"
-                    echo -e "${GREEN}✓${NC} Added ~/.local/bin to PATH in $SHELL_CONFIG"
-                else
-                    echo -e "${GREEN}✓${NC} ~/.local/bin already in $SHELL_CONFIG"
-                fi
-            else
-                echo -e "${GREEN}✓${NC} ~/.local/bin already on PATH"
-            fi
-        fi
-fi
 
 # ============================================================================
 # Seed bundled skills into ~/.sci/skills/
@@ -289,7 +262,7 @@ fi
 echo ""
 echo -e "${GREEN}✓ Setup complete!${NC}"
 if [ "$user_install" = true ]; then
-    echo "Start Agent Scientist with: agent-sci"
+    echo "Start Agent Scientist with: sci"
     exit 0
 fi
 echo ""

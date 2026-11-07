@@ -15,7 +15,7 @@
 # -UserInstall (install-sci.ps1, the end-user wrapper) skips the developer/test
 # dependency groups and the .env template — the same contract as
 # setup-sci.sh --user-install.
-param([switch]$RuntimeOnly, [switch]$UserInstall, [string]$TestExtras = '')
+param([switch]$RuntimeOnly, [switch]$UserInstall, [switch]$InstallPrerequisites, [switch]$NonInteractive, [string]$TestExtras = '')
 $ErrorActionPreference = 'Stop'
 
 Write-Host ''
@@ -23,11 +23,16 @@ Write-Host 'Sci Agent Setup' -ForegroundColor Cyan
 Write-Host ''
 
 $repo = $PSScriptRoot
+if (-not $RuntimeOnly) {
+    . (Join-Path $repo 'scripts/source-install-preflight.ps1')
+    Invoke-SciSourcePreflight -Repo $repo -InstallPrerequisites:$InstallPrerequisites -NonInteractive:$NonInteractive
+}
 $lockPath = Join-Path $repo 'pm/lock.json'
 if (-not (Test-Path $lockPath)) { throw 'pm/lock.json not found' }
 $lock = Get-Content -Raw $lockPath | ConvertFrom-Json
 
 $machineArch = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment').PROCESSOR_ARCHITECTURE
+if ($machineArch -notin @('ARM64', 'AMD64')) { throw "Unsupported Windows architecture: $machineArch. Use x64 or ARM64." }
 $arch = if ($machineArch -eq 'ARM64') { 'arm64' } else { 'x64' }
 $target = "win32-$arch"
 
@@ -55,7 +60,7 @@ if (Test-Path $uv) {
     New-Item -ItemType Directory -Path $tmp | Out-Null
     try {
         $archive = Join-Path $tmp ([uri]$artifact.url).Segments[-1]
-        Invoke-WebRequest -Uri $artifact.url -OutFile $archive
+        Invoke-WebRequest -UseBasicParsing -TimeoutSec 600 -Uri $artifact.url -OutFile $archive
         $got = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
         if ($got -ne $artifact.sha256) {
             throw "sha256 mismatch for uv (got $got, pinned $($artifact.sha256))"
@@ -123,7 +128,7 @@ if ($UserInstall) {
 # ---------------------------------------------------------------------------
 Write-Host 'Setting up sci command...' -ForegroundColor Cyan
 $binDir = if ($env:SCI_HOME) { Join-Path $env:SCI_HOME 'bin' } else { Join-Path $env:LOCALAPPDATA 'sci\bin' }
-& $bootPy.Trim() -I -X utf8 (Join-Path $repo 'sci_cli/_launchers.py') $binDir
+& $bootPy.Trim() -I -X utf8 (Join-Path $repo 'sci_cli/_launchers.py') $binDir --register-path
 if ($LASTEXITCODE -ne 0) { throw 'launcher publication failed' }
 Write-Host "Published Sci commands in $binDir" -ForegroundColor Green
 
@@ -148,7 +153,7 @@ Write-Host 'Skills synced' -ForegroundColor Green
 Write-Host ''
 Write-Host 'Setup complete!' -ForegroundColor Green
 if ($UserInstall) {
-    Write-Host 'Start Agent Scientist with: agent-sci'
+    Write-Host 'Start Agent Scientist with: sci'
     exit 0
 }
 Write-Host ''

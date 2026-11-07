@@ -63,9 +63,11 @@ class _NumberedNavigation(Enum):
 _NAV_ABORT = object()
 
 
-def _read_numbered_choice(prompt_text: str) -> int | None | object:
-    """Numbered-fallback choice as a 0-based index; ``None`` for empty input, ``_NAV_ABORT`` when
-    cancelled / backed out / interrupted / non-integer (scoped navigation is notified)."""
+def _read_numbered_choice(prompt_text: str, labels: List[str] | None = None) -> int | None | object:
+    """Resolve a text label or legacy numeric shortcut to its original index.
+
+    Empty input confirms; cancellation notifies the scoped navigation handler.
+    """
     try:
         val = _read_numbered_input(prompt_text)
     except (KeyboardInterrupt, EOFError):
@@ -76,6 +78,10 @@ def _read_numbered_choice(prompt_text: str) -> int | None | object:
         return _NAV_ABORT
     if not val.strip():
         return None
+    if labels is not None:
+        matches = [i for i, label in enumerate(labels) if label.casefold() == val.strip().casefold()]
+        if len(matches) == 1:
+            return matches[0]
     idx = _parse_int(val.strip(), default=None)
     return _NAV_ABORT if idx is None else idx - 1
 
@@ -139,7 +145,7 @@ def _addnstr(stdscr, y: int, x: int, text: str, n: int, attr) -> None:
 
 
 def _draw_title_and_hint(stdscr, title: str, hint: str, max_x: int, *, hint_row: int = 1) -> None:
-    """Bold/yellow menu title on row 0, dim key hint on ``hint_row``."""
+    """Skin-accented menu title on row 0, dim key hint on ``hint_row``."""
     import curses
     hattr = curses.A_BOLD | (curses.color_pair(2) if curses.has_colors() else 0)
     _addnstr(stdscr, 0, 0, title, max_x - 1, hattr)
@@ -186,9 +192,10 @@ def _draw_radio_item(
 
 
 def _draw_plain_row(stdscr, y: int, line: str, max_x: int, *, is_cursor: bool) -> None:
-    """Draw a plain menu row, bold green when it is the cursor row."""
+    """Paint the whole selected row, including the space after its label."""
     import curses
-    _addnstr(stdscr, y, 0, line, max_x - 1, _curses_style_attr(curses, None, is_cursor=is_cursor))
+    _addnstr(stdscr, y, 0, line.ljust(max(0, max_x - 1)) if is_cursor else line,
+             max_x - 1, _curses_style_attr(curses, None, is_cursor=is_cursor))
 
 
 _WORD_BOUNDARY = frozenset("-_/. ")
@@ -427,15 +434,32 @@ _CONSUMED = object()  # ``_route_key`` result: key eaten by the search prompt; r
 _RESOLVING = frozenset({NAV_SELECT, NAV_TOGGLE, NAV_CANCEL, NAV_INTERRUPT, NAV_BACK})
 
 
-def _init_colors(curses, extra_color_pairs: bool) -> None:
+def _init_colors(curses, extra_color_pairs: bool) -> int:
     curses.curs_set(0)
     if curses.has_colors():
+        from rich.color import Color, ColorSystem
+        from sci_cli.skin_engine import get_active_skin
+
         curses.start_color()
         curses.use_default_colors()
-        curses.init_pair(1, curses.COLOR_GREEN, -1)
-        curses.init_pair(2, curses.COLOR_YELLOW, -1)
+        skin = get_active_skin()
+        system = ColorSystem.EIGHT_BIT if curses.COLORS >= 256 else ColorSystem.STANDARD
+
+        def slot(role, fallback=-1):
+            value = skin.get_color(role)
+            if not value or value == "default":
+                return fallback
+            color = Color.parse(value).downgrade(system)
+            return color.number % curses.COLORS if color.number is not None else fallback
+
+        canvas = slot("background")
+        curses.init_pair(1, slot("banner_text", curses.COLOR_WHITE), slot("completion_menu_current_bg", canvas))
+        curses.init_pair(2, slot("banner_title", curses.COLOR_MAGENTA), canvas)
         if extra_color_pairs:
-            curses.init_pair(3, 8 if curses.COLORS > 8 else curses.COLOR_WHITE, -1)
+            curses.init_pair(3, slot("hint_text", curses.COLOR_WHITE), canvas)
+        curses.init_pair(4, slot("banner_text", curses.COLOR_WHITE), canvas)
+        return curses.color_pair(4)
+    return 0
 
 
 def _route_key(curses, stdscr, key: int, search: _SearchState, use_search: bool):
@@ -465,7 +489,7 @@ def _route_key(curses, stdscr, key: int, search: _SearchState, use_search: bool)
 def _run_curses_menu(
     *, initial_cursor, item_count, draw_header, draw_row, on_action, reserve_bottom=1,
     draw_footer=None, extra_color_pairs=False, fallback, cancel_value, searchable=False,
-    search_labels=None):
+    search_labels=None, keyboard_fallback=None):
     """Shared curses single-/multi-select event loop: non-TTY guard, ``curses.wrapper`` setup,
     clear/refresh cycle, scroll math, key dispatch with cursor wrap, KeyboardInterrupt /
     curses-unavailable fallback.
@@ -497,7 +521,13 @@ def _run_curses_menu(
     def _run_fallback():
         back_token = _NUMBERED_BACK_ENABLED.set(allow_back)
         try:
-            result = fallback()
+            if keyboard_fallback is not None and sys.stdout.isatty():
+                try:
+                    result = keyboard_fallback()
+                except (ImportError, OSError):
+                    result = fallback()
+            else:
+                result = fallback()
         finally:
             _NUMBERED_BACK_ENABLED.reset(back_token)
         _notify(MenuNavigationEvent.RESOLVE, result)
@@ -511,7 +541,9 @@ def _run_curses_menu(
         result_holder = [_KEEP]
 
         def _draw(stdscr):
-            _init_colors(curses, extra_color_pairs)
+            base_style = _init_colors(curses, extra_color_pairs)
+            if base_style:
+                stdscr.bkgd(" ", base_style)
             cursor, scroll_offset, search = initial_cursor, 0, _SearchState()
             while True:
                 stdscr.clear()
@@ -569,6 +601,11 @@ def _run_curses_menu(
         return _run_fallback()
 
 
+def _keyboard_menu(**kwargs):
+    from sci_cli.menu_fallback import run_keyboard_menu
+    return run_keyboard_menu(**kwargs)
+
+
 def curses_checklist(
     title: str, items: List[str], selected: Set[int], *, cancel_returns: Set[int] | None = None,
     status_fn: Optional[Callable[[Set[int]], str]] = None) -> Set[int]:
@@ -605,7 +642,12 @@ def curses_checklist(
         draw_row=_draw_row, on_action=_on_action, reserve_bottom=(2 if status_fn else 1),
         draw_footer=_draw_footer if status_fn else None, extra_color_pairs=bool(status_fn),
         fallback=lambda: _numbered_fallback(title, items, selected, cancel_returns, status_fn),
-        cancel_value=cancel_returns)
+        cancel_value=cancel_returns,
+        keyboard_fallback=lambda: _keyboard_menu(
+            title=title, labels=items, initial_cursor=0, on_action=_on_action,
+            render_row=lambda i, active: f" {'→' if active else ' '} [{'✓' if i in chosen else ' '}] {items[i]}",
+            cancel_value=cancel_returns, multiple=True,
+            status=(lambda: status_fn(chosen)) if status_fn else None))
 
 
 def _search_hint(search, searchable: bool, confirm: str, cancel: str, back_enabled: bool) -> str:
@@ -680,7 +722,12 @@ def curses_radiolist(
         extra_color_pairs=True,  # dim gray (pair 3) for unselected "was …" sale chrome
         fallback=lambda: _radio_numbered_fallback(title, items, selected, cancel_returns),
         cancel_value=cancel_returns, searchable=searchable,
-        search_labels=search_labels if searchable else None)
+        search_labels=search_labels if searchable else None,
+        keyboard_fallback=lambda: _keyboard_menu(
+            title=title, labels=[radio_item_plain(item) for item in items],
+            initial_cursor=selected, on_action=_on_action, cancel_value=cancel_returns,
+            render_row=lambda i, active: f" {'→' if active else ' '} ({'●' if i == selected else '○'}) {radio_item_plain(items[i])}",
+            description=description or '', searchable=searchable, search_labels=search_labels))
 
 
 _ANSI_STYLE = {"yellow": Colors.YELLOW, "dim": Colors.DIM}
@@ -696,14 +743,15 @@ def format_radio_item_ansi(item: RadioItem) -> str:
 
 def _radio_numbered_fallback(
     title: str, items: List[RadioItem], selected: int, cancel_returns: int) -> int:
-    """Text-based numbered fallback for radio selection."""
+    """Text-label fallback for radio selection."""
     print(color(f"\n  {title}", Colors.YELLOW))
-    print(color("  Select by number, Enter to confirm.\n", Colors.DIM))
+    print(color("  Type an option label, Enter to confirm.\n", Colors.DIM))
     for i, label in enumerate(items):
         marker = color("(\u25cf)", Colors.GREEN) if i == selected else "(\u25cb)"
-        print(f"  {marker} {i + 1:>2}. {format_radio_item_ansi(label)}")
+        print(f"  {marker} {format_radio_item_ansi(label)}")
     print()
-    idx = _read_numbered_choice(color(f"  Choice [default {selected + 1}]: ", Colors.DIM))
+    idx = _read_numbered_choice(color(f"  Choice [default {radio_item_plain(items[selected])}]: ", Colors.DIM),
+                                [radio_item_plain(item) for item in items])
     if idx is _NAV_ABORT:
         return cancel_returns
     return idx if idx is not None and 0 <= idx < len(items) else selected
@@ -734,16 +782,21 @@ def curses_single_select(
         draw_row=_draw_row, on_action=_on_action,
         fallback=lambda: _numbered_single_fallback(title, all_items, cancel_idx),
         cancel_value=None, searchable=searchable,
-        search_labels=list(all_items) if searchable else None)
+        search_labels=list(all_items) if searchable else None,
+        keyboard_fallback=lambda: _keyboard_menu(
+            title=title, labels=all_items, initial_cursor=min(default_index, len(all_items) - 1),
+            on_action=_on_action, cancel_value=None,
+            render_row=lambda i, active: f" {'→' if active else ' '} {all_items[i]}",
+            searchable=searchable))
 
 
 def _numbered_single_fallback(title: str, items: List[str], cancel_idx: int) -> int | None:
-    """Text-based numbered fallback for single-select."""
+    """Text-label fallback for single-select."""
     print(f"\n  {title}\n")
-    for i, label in enumerate(items, 1):
-        print(f"  {i}. {label}")
+    for label in items:
+        print(f"  ○ {label}")
     print()
-    idx = _read_numbered_choice(f"  Choice [1-{len(items)}]: ")
+    idx = _read_numbered_choice("  Choice (option label): ", items)
     return idx if isinstance(idx, int) and 0 <= idx < min(len(items), cancel_idx) else None
 
 
@@ -753,16 +806,16 @@ def _numbered_fallback(
     """Text-based toggle fallback for terminals without curses."""
     chosen = set(selected)
     print(color(f"\n  {title}", Colors.YELLOW))
-    print(color("  Toggle by number, Enter to confirm.\n", Colors.DIM))
+    print(color("  Type an option label to toggle, Enter to confirm.\n", Colors.DIM))
     while True:
         for i, label in enumerate(items):
             marker = color("[✓]", Colors.GREEN) if i in chosen else "[ ]"
-            print(f"  {marker} {i + 1:>2}. {label}")
+            print(f"  {marker} {label}")
         status_text = status_fn(chosen) if status_fn else ""
         if status_text:
             print(color(f"\n  {status_text}", Colors.DIM))
         print()
-        idx = _read_numbered_choice(color("  Toggle # (or Enter to confirm): ", Colors.DIM))
+        idx = _read_numbered_choice(color("  Toggle option (or Enter to confirm): ", Colors.DIM), items)
         if idx is _NAV_ABORT:
             return cancel_returns
         if idx is None:

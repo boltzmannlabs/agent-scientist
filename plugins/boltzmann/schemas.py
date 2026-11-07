@@ -36,8 +36,9 @@ SCHEMAS = [
         "name": "boltzmann_status",
         "description": (
             "Poll an existing Boltzmann platform-tools job. Use the exact job_name and doc_id "
-            "returned by boltzmann_submit. One bounded check returns promptly; durable monitoring "
-            "continues pending/running jobs without an overall queue deadline. Polling never creates another job."
+            "returned by boltzmann_submit. This foreground call keeps checking that same job until completion, "
+            "terminal failure, a status-check error, or user cancellation, without an overall waiting deadline. "
+            "Progress is shown while waiting. Polling never creates another job or background agent."
         ),
         "input_schema": {
             "type": "object",

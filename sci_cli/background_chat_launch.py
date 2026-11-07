@@ -44,13 +44,13 @@ def launch_interactive(args, *, use_tui=False):
     """Return True only if this call owned the client lifecycle (including errors)."""
     if not service_eligible(args, use_tui=use_tui):
         return False
-    from sci_cli.background_chats import ensure_server, find_worker, request, terminal_environment
+    from sci_cli.background_chats import ensure_server, find_view_worker, request, terminal_environment
     from sci_cli.background_chat_terminal import attach
     from sci_cli.cli_session_recovery import StartupRecoveryUI, prepare_resume
     from sci_cli.skill_add import Cancelled
     try:
         session_id = getattr(args, "resume", None)
-        worker = find_worker(session_id) if session_id else None
+        worker = find_view_worker(session_id) if session_id else None
         ui = StartupRecoveryUI()
         takeover = bool(worker and worker["attached"])
         if takeover:
@@ -64,7 +64,7 @@ def launch_interactive(args, *, use_tui=False):
             worker = request("start", session_id=session_id, cwd=os.getcwd(),
                              cols=size.columns, rows=size.lines, launch_args=worker_arguments(args),
                              terminal_env=terminal_environment())
-        attach(worker["id"], takeover=takeover)
+        attach(worker["id"], takeover=takeover, view_session=worker.get("view_session"))
     except (Cancelled, KeyboardInterrupt, EOFError):
         print("Connection cancelled. No task was restarted.")
     except (OSError, ValueError, RuntimeError) as exc:

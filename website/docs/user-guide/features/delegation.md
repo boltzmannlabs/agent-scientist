@@ -10,9 +10,14 @@ For reusable named specialists in main or a profile, see [Saved specialist subag
 
 The `delegate_task` tool spawns child AIAgent instances with isolated context, inherited tool access, and their own terminal sessions. Each child gets a fresh conversation and works independently — only its final summary enters the parent's context.
 
-Top-level model calls run in the background automatically. Sci returns a handle immediately so the conversation can continue, then posts the result back as a new message. An orchestrator subagent waits for its own workers so it can synthesize their results before returning.
+Model-facing calls wait in the current turn until their children finish. Ordinary
+tool execution and job polling run directly in the owning conversation; delegation
+is reserved for explicitly requested specialist or parallel-agent work.
 
-## Completion delivery
+## Explicit background completion delivery
+
+The delivery mechanisms below apply to explicitly backgrounded integrations and
+commands such as `/review`, not ordinary model-facing `delegate_task` calls.
 
 Messaging gateways acknowledge background completions only after their adapter actually
 schedules the event or inserts it into the session's queue. Missing handlers, mismatched
@@ -185,11 +190,13 @@ delegate_task(
 
 ## Batch Mode Details
 
-When a top-level agent provides a `tasks` array, Sci returns one background handle and runs the subagents in parallel. By default the call returns **one** consolidated message once every task has finished. Results are delivered only between the parent's turns: the parent should finish anything that does not depend on the children, then end its turn rather than polling transcripts, artifacts, or CI while it waits.
+When an agent provides a `tasks` array, children may run in parallel internally,
+but the call waits and returns their consolidated results in the current turn.
+No background handle or later completion message is produced by normal model calls.
 
-### Independent completions (opt-in)
+### Independent completions (explicit background integrations only)
 
-Set `delegation.independent_completions: true` to have results land **per completion unit** as each finishes instead. The model-facing `group` field and grouping guidance are only advertised when this option is enabled. Start a new session after changing it so the tool schema can reflect the setting without changing an existing conversation's cached prefix. Old calls containing `group` remain accepted; with the option off, the whole call still returns together.
+Set `delegation.independent_completions: true` to have results land **per completion unit** as each finishes instead. This setting applies to explicit background integrations only. Model-facing calls do not advertise `group` and always wait for the complete batch. Existing stored group values and internal background callers remain supported.
 
 When independent completions are enabled:
 
@@ -556,7 +563,9 @@ delegate_task(
 ## Lifetime and Durability
 
 :::warning Background completion durability is not durable execution
-Top-level model-facing `delegate_task` calls run in the background automatically where the session supports later delivery. Sci returns a handle immediately, and the result re-enters the conversation after the child or batch finishes. Orchestrator subagents wait for their workers in the current turn because they must synthesize those results before returning. Stateless request/response endpoints fall back to synchronous execution when they cannot deliver a detached result later.
+Model-facing `delegate_task` calls are synchronous at every depth. The parent
+waits for the children and receives their results in the current turn. Explicit
+background integrations retain the lifecycle described below.
 
 - Normal follow-up messages do not cancel background children. `/stop` on any surface (gateway `/stop` — also when the session is idle after the dispatching turn ended — CLI `/stop`, the Desktop/TUI Stop button, an ACP cancel) ends the session's running background delegations, and closing or resetting the owning session does the same.
 - Explicit session close/reset interrupts that session's background children. Closing a TUI viewer of a gateway-owned session does not kill the gateway's work.

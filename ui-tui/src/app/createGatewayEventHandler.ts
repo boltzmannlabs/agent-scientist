@@ -1,8 +1,5 @@
-import { execFile } from 'child_process'
-
-import { forceRedraw, onTerminalBackground, onTerminalForeground } from '@sci/ink'
+import { forceRedraw } from '@sci/ink'
 import { stripAnsi } from '@sci/shared/ansi'
-import { relativeLuminance } from '@sci/shared/color'
 import type { StreamDeltaPayload, SubagentStatus, Usage } from '@sci/shared/gateway-events'
 
 import { STARTUP_IMAGE, STARTUP_QUERY } from '../config/env.js'
@@ -24,8 +21,8 @@ import { rpcErrorMessage } from '../lib/rpc.js'
 import { topLevelSubagents } from '../lib/subagentTree.js'
 import { isPaintableHex, setTerminalBackground, setTerminalForeground } from '../lib/terminalModes.js'
 import { formatAbandonedClarify, formatToolCall } from '../lib/text.js'
-import { bootSeededPin, invalidateBootBackground, writeBootTheme } from '../lib/themeBoot.js'
-import { defaultThemeForCurrentBackground, fromSkin, skinIsLight, type Theme, themeToneHex } from '../theme.js'
+import { writeBootTheme } from '../lib/themeBoot.js'
+import { fromSkin, type Theme, themeToneHex } from '../theme.js'
 import type { Msg, SessionInfo, SubagentProgress } from '../types.js'
 
 import { applyConnectionRequest, applyConnectionUpdate } from './connectionOperationStore.js'
@@ -98,18 +95,10 @@ const statusFromBusy = () => (getUiState().busy ? 'running…' : 'ready')
 let lastSkin: GatewaySkin | null = null
 
 const themeForSkin = (s: GatewaySkin) => {
-  // Polarity overrides OVERLAY the base palette, they don't replace it: a skin
-  // can ship a fills-only `light_colors` (flip the dark navy menu/status fills
-  // to light on a light terminal) while its vivid foreground golds keep coming
-  // from `colors` and render raw through fromSkin's shim. A full paired block
-  // still works — it just overrides every key it lists. Polarity follows the
-  // skin's authored background when it has one (the skin paints the terminal
-  // with it), else the host's.
-  const paired = skinIsLight(s.colors ?? {}) ? s.light_colors : s.dark_colors
+  const paired = s.dark_colors
 
   const colors = paired && Object.keys(paired).length ? { ...(s.colors ?? {}), ...paired } : (s.colors ?? {})
-
-  return fromSkin(
+  const theme = fromSkin(
     colors,
     s.branding ?? {},
     s.banner_logo ?? '',
@@ -117,6 +106,14 @@ const themeForSkin = (s: GatewaySkin) => {
     s.tool_prefix ?? '',
     s.help_header ?? ''
   )
+
+  // The packaged design gives the React TUI its own warm canvas, while the
+  // classic CLI continues to use the terminal background from the skin.
+  if (s.name === 'neon-theme' && theme.surfaces) {
+    return { ...theme, surfaces: { ...theme.surfaces, canvas: '#101014' } }
+  }
+
+  return theme
 }
 
 // Patch the live theme AND persist it for the next launch's first frame
@@ -148,9 +145,7 @@ const commitTheme = (theme: Theme) => {
   // disagrees with the background, and caching one without the other
   // recreates the multi-stage flash on the next launch (light first frame →
   // dark skin resolve against the cached background → light config pin).
-  const pin = configPinnedTheme ? process.env.SCI_TUI_THEME : undefined
-
-  writeBootTheme(theme, process.env.SCI_TUI_BACKGROUND, pin === 'light' || pin === 'dark' ? pin : undefined)
+  writeBootTheme(theme)
 
   if (changed) {
     setTimeout(() => forceRedraw(process.stdout), 40).unref?.()
@@ -185,7 +180,8 @@ const themesEqual = (a: Theme, b: Theme) => {
 // The text tone resolves through themeToneHex because a limited-palette
 // terminal quantizes it to `ansi256(N)`, which OSC-10 cannot speak.
 const paintTerminalDefaults = (theme: Theme) => {
-  const background = lastSkin?.colors?.background ?? ''
+  // Use the resolved paired palette, including SCI's full-canvas surface.
+  const background = theme.surfaces?.canvas ?? lastSkin?.colors?.background ?? ''
 
   setTerminalBackground(background)
   setTerminalForeground(isPaintableHex(background) ? themeToneHex(theme.color.text) : '')
@@ -197,206 +193,6 @@ const applySkin = (s: GatewaySkin) => {
 
   commitTheme(theme)
   paintTerminalDefaults(theme)
-}
-
-/** Re-derive the theme from current detection signals (env overrides, cached
- *  OSC-11 answer) — used by /theme, config sync, and the OSC listener. */
-export function reapplyTheme(): void {
-  const theme = lastSkin ? themeForSkin(lastSkin) : defaultThemeForCurrentBackground()
-
-  commitTheme(theme)
-  // Polarity flips swap paired palettes, so the default fg must track the
-  // re-derived text tone even though the skin's background hasn't moved.
-  paintTerminalDefaults(theme)
-}
-
-/**
- * Apply the persisted mode pin (`display.tui_theme`). 'light'/'dark' bridge
- * to SCI_TUI_THEME — the priority-2 signal `detectLightMode` already
- * honors (only an explicit SCI_TUI_LIGHT env var outranks it); 'auto'
- * clears the pin so the OSC-11 probe + env heuristics decide. The pin exists
- * because the probe cannot always be trusted: xterm.js hosts report #000000
- * regardless of the painted background when the editor theme leaves the
- * terminal background unset.
- */
-// True once CONFIG (via light/dark) owns the SCI_TUI_THEME env pin, so an
-// 'auto' hydrate knows not to clobber a user's shell-exported pin. A pin the
-// boot cache replayed counts as config-owned — it originated from
-// display.tui_theme last session, and treating it as a shell export would
-// make a stale cached pin unclearable by 'auto'.
-let configPinnedTheme = bootSeededPin
-
-export function applyConfiguredTuiTheme(raw: unknown): void {
-  const mode = String(raw ?? '')
-    .trim()
-    .toLowerCase()
-
-  const current = process.env.SCI_TUI_THEME ?? ''
-
-  if (mode === 'light' || mode === 'dark') {
-    // Record config ownership BEFORE the match short-circuit — otherwise a
-    // pin that already matches (e.g. env and config agree at boot) leaves
-    // configPinnedTheme false, and a later 'auto' would refuse to clear it.
-    configPinnedTheme = true
-
-    if (current === mode) {
-      return
-    }
-
-    process.env.SCI_TUI_THEME = mode
-  } else {
-    // 'auto' clears only a pin CONFIG set — never a SCI_TUI_THEME the user
-    // exported in their shell, which is an explicit override that outranks
-    // auto-detection (see detectLightMode's priority order).
-    if (!current || !configPinnedTheme) {
-      return
-    }
-
-    configPinnedTheme = false
-    delete process.env.SCI_TUI_THEME
-  }
-
-  reapplyTheme()
-}
-
-let themeBackgroundSyncStarted = false
-
-/**
- * Re-derive the theme from the terminal's ACTUAL background color once the
- * OSC-11 probe answers. The env heuristics `detectLightMode` runs at module
- * load are blind in xterm.js hosts (VS Code / Cursor set no COLORFGBG), so a
- * light editor terminal otherwise gets the dark fallback palette. The answer
- * is cached into SCI_TUI_BACKGROUND — the slot `detectLightMode` already
- * reads (and child processes inherit) — then the current skin (or the
- * skinless default) is re-applied against the corrected base. Explicit
- * SCI_TUI_LIGHT / SCI_TUI_THEME overrides still win inside
- * detectLightMode, so users can pin a mode regardless of the probe.
- */
-/** Infer the terminal's polarity from its reported FOREGROUND (OSC 10).
- *  Transparent profiles lie about the background (unset default = pure
- *  black) but report the theme's real foreground — a bright foreground
- *  means a dark theme and vice versa. Returns a representative background
- *  for the inferred pole, or undefined when the answer is unusable
- *  (mid-gray foregrounds are ambiguous; #000000/#ffffff can be unset
- *  defaults themselves, so only clearly-toned answers count). */
-export function polarityBackgroundFromForeground(hex: string): string | undefined {
-  const luminance = relativeLuminance(hex)
-
-  if (luminance === null || hex === '#000000' || hex === '#ffffff') {
-    return undefined
-  }
-
-  if (luminance >= 0.45) {
-    return '#1e1e1e'
-  }
-
-  if (luminance <= 0.2) {
-    return '#ffffff'
-  }
-
-  return undefined
-}
-
-export function syncThemeToTerminalBackground(): void {
-  if (themeBackgroundSyncStarted) {
-    return
-  }
-
-  themeBackgroundSyncStarted = true
-
-  let resolved = false
-
-  onTerminalBackground(hex => {
-    // Exactly-#000000 is the "unset default" fingerprint, not a measurement:
-    // xterm.js reports it when the editor theme sets no terminal background
-    // (observed: pure black reported on a white Cursor terminal), and tmux
-    // answers OSC 11 with its own black fallback regardless of the outer
-    // terminal — and tmux also strips TERM_PROGRAM, so no host allow-list
-    // can catch it. Real dark themes report their actual surface (#1e1e1e,
-    // #282828, …). Distrusting pure black universally is safe: the OSC-10
-    // foreground below resolves the pole for transparent hosts, and a truly
-    // pure-black terminal lands on dark either way.
-    if (hex === '#000000') {
-      // The CURRENT terminal answered with an untrusted value — a background
-      // the boot cache seeded is from another era and must not keep
-      // outranking the live fallback chain (previous light session + new
-      // pure-black terminal stayed light forever: OSC-10 pure-white is also
-      // rejected, and the macOS fallback refuses to run while the slot is
-      // occupied). Clear the stale hint, give OSC-10 (same startup batch)
-      // first claim, then settle via env heuristics if nothing answered.
-      if (invalidateBootBackground()) {
-        setTimeout(() => {
-          if (!resolved) {
-            reapplyTheme()
-          }
-        }, 250).unref?.()
-      }
-
-      return
-    }
-
-    resolved = true
-    process.env.SCI_TUI_BACKGROUND = hex
-    reapplyTheme()
-  })
-
-  // Foreground tiebreaker for the distrusted-background case. The two OSC
-  // replies arrive in the same startup batch; this listener only commits when
-  // the background didn't (first-writer-wins via `resolved`), and an explicit
-  // user pin still outranks it inside detectLightMode.
-  onTerminalForeground(hex => {
-    if (resolved || process.env.SCI_TUI_THEME || process.env.SCI_TUI_LIGHT) {
-      return
-    }
-
-    const inferred = polarityBackgroundFromForeground(hex)
-
-    if (!inferred) {
-      return
-    }
-
-    resolved = true
-    process.env.SCI_TUI_BACKGROUND = inferred
-    reapplyTheme()
-  })
-
-  // Last-resort inference when the probe never answers (or answered with the
-  // untrusted default): on macOS, editor themes overwhelmingly track the
-  // system appearance, so `AppleInterfaceStyle` is a strong prior. Runs only
-  // when no explicit signal exists (env pins/COLORFGBG all beat the cache
-  // slot this writes), after giving the probe a beat to answer.
-  setTimeout(() => {
-    if (
-      resolved ||
-      process.platform !== 'darwin' ||
-      process.env.SCI_TUI_BACKGROUND ||
-      process.env.SCI_TUI_THEME ||
-      process.env.SCI_TUI_LIGHT ||
-      process.env.COLORFGBG
-    ) {
-      return
-    }
-
-    execFile('defaults', ['read', '-g', 'AppleInterfaceStyle'], (error, stdout) => {
-      if (resolved || process.env.SCI_TUI_BACKGROUND || process.env.SCI_TUI_THEME) {
-        return
-      }
-
-      // `defaults read` exits non-zero when the key is absent — which MEANS
-      // light mode; "Dark" means dark. Cache as an inferred background so
-      // every later signal (config pin, real OSC answer) still outranks it.
-      const dark = !error && stdout.trim() === 'Dark'
-
-      // Mark resolved so a LATE OSC-10 foreground reply (also an inference)
-      // can't re-flip this committed guess after the fact — visible churn.
-      // A real OSC-11 background answer still corrects it: that listener
-      // intentionally doesn't gate on `resolved` (a measurement outranks an
-      // inference).
-      resolved = true
-      process.env.SCI_TUI_BACKGROUND = dark ? '#1e1e1e' : '#ffffff'
-      reapplyTheme()
-    })
-  }, 1500).unref?.()
 }
 
 const dropBgTask = (taskId: string) =>
@@ -437,8 +233,6 @@ const normalizeSubagentStatus = (status: unknown, fallback: SubagentStatus): Sub
 }
 
 export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev: AnyGatewayEvent) => void {
-  syncThemeToTerminalBackground()
-
   const { gw, rpc } = ctx.gateway
   const { STARTUP_RESUME_ID, newSession, recoverSidRef, resumeById, setCatalog } = ctx.session
   const { bellOnComplete, bellOnPrompt, stdout, sys } = ctx.system

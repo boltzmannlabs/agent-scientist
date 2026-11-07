@@ -12,6 +12,7 @@ app's paired colors/darkColors contract.
 import pytest
 
 from sci_cli.skin_engine import _BUILTIN_SKINS
+from sci_cli.skin_defaults import SURFACE_COLOR_KEYS
 
 # Union of the color keys consumed by the TUI (fromSkin) and the classic CLI
 # (banner.py / display.py / prompt_toolkit overrides). completion_menu_meta_*
@@ -119,13 +120,9 @@ def contrast(a: str, b: str) -> float:
     return (hi + 0.05) / (lo + 0.05)
 
 
-# Light-authored built-ins (everything else is dark-authored). Paired
-# palettes are OPTIONAL, hand-authored refinements: cross-polarity rendering
-# is handled by the TUI's display shim (xterm-style hue-preserving contrast
-# lift), which reproduces exactly what minimumContrastRatio hosts display —
-# the look the maintainers standardized on. Generated paired palettes are
-# explicitly NOT wanted; only ship one when a human tuned it.
-LIGHT_AUTHORED = frozenset({"daylight", "warm-lightmode"})
+# Native CLI/TUI rendering has one dark palette. Shared light overlays may
+# remain in skin assets for non-terminal clients, but are never selected here.
+LIGHT_AUTHORED = frozenset()
 
 
 # A `light_colors`/`dark_colors` block is an OVERLAY on `colors`, not a full
@@ -200,7 +197,7 @@ def test_base_palette_contrast_and_polarity(skin, palette, is_light):
 
 @pytest.mark.parametrize(("skin", "block", "palette", "is_light"), OVERLAYS, ids=OVERLAY_IDS)
 def test_overlay_keys_and_fill_polarity(skin, block, palette, is_light):
-    unknown = palette.keys() - (REQUIRED_KEYS | {"completion_menu_meta_bg", "completion_menu_meta_current_bg"})
+    unknown = palette.keys() - (REQUIRED_KEYS | SURFACE_COLOR_KEYS | {"completion_menu_meta_bg", "completion_menu_meta_current_bg"})
     assert not unknown, f"{skin}.{block} has unknown keys: {sorted(unknown)}"
 
     problems = []

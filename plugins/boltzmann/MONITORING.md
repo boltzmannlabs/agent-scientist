@@ -1,4 +1,4 @@
-# Boltzmann queued jobs and durable monitoring
+# Boltzmann foreground waiting and legacy monitors
 
 A queued job is not a failed job. The result endpoint sometimes uses HTTP 404
 for documented `pending`, `running` and `failed` bodies. The connector accepts
@@ -9,13 +9,29 @@ usable body; a generic `status: error` missing-route response is not a failed jo
 
 ## Waiting and results
 
-Native SCI and the bundled MCP adapter save monitors for accepted jobs and jobs
-checked through `boltzmann_status`. A tool call uses a short result-check window
-(30 seconds; the separate authorization check has its existing 15-second timeout).
-The background worker normally checks every 30 seconds. Check failures back off
-up to 15 minutes, preserving the same job ID. There is **no overall queue/running
-deadline**. This avoids the agent executor's generic deadline and the plugin's
-outer safety deadline interrupting a long scientific wait.
+Native SCI and the bundled MCP adapter keep `boltzmann_status` in the foreground.
+Submission returns the accepted job ID; the agent immediately checks that same ID
+and waits for a terminal result before continuing the workflow. No detached monitor,
+continuation conversation, or asynchronous completion notification is started by
+these calls. Required output downloads and verification happen in the same turn.
+
+There is no overall queue/running deadline. Each status HTTP request has a
+60-second timeout; transient transport failures retry with bounded backoff.
+Authorization errors, malformed responses, and other definitive status-check
+errors return to the agent with the job outcome unresolved. The classic CLI's live
+status panel shows the latest five polling updates, including transient network
+retries. Each new check replaces the oldest visible entry without appending to
+scrollback. The view belongs to this chat and profile, and clears when the call
+ends. Normal updates include observed state, elapsed time, and job ID. Noninteractive
+clients without this panel receive the latest five updates on stderr when the call
+ends. Hiding older updates does not stop polling or hide the returned result, error,
+or cancellation. Ctrl+C or Stop interrupts polling;
+this does **not** cancel the remote job. Keep the ID for later inspection, never
+submit another job merely because waiting was interrupted.
+
+SCI must remain running for this foreground wait. External MCP clients may impose
+their own request deadlines. Existing workers started by older SCI sessions are
+not killed by a code update; inspect and stop those monitors explicitly if needed.
 
 `pending` and `running` remain nonterminal. Existing success, failure and
 cancellation spellings remain supported. A matching, explicit `deleted` or
@@ -28,10 +44,13 @@ The legacy Python `fetch_status()` helper still supports bounded polling and
 explicit `max_wait`. If its window ends, it preserves the last pending/running
 state and reports that the window ended. The old documented
 `BOLTZMANN_MAX_POLL_SECONDS` environment override was never implemented; it is not
-a supported setting. Native/MCP monitoring no longer depends on per-tool runtime
-estimates or repeated long status calls.
+a supported setting. Native/MCP foreground waiting does not depend on per-tool runtime estimates.
 
-## Inspect, stop and resume
+## Legacy monitors: inspect, stop and resume
+
+The sections below describe retained monitoring records and explicitly resumed
+legacy workers. Normal tool calls no longer create them, attach checkpoints, or
+register automatic restart/notification hooks.
 
 ```bash
 sci boltzmann-jobs status
@@ -57,14 +76,38 @@ subject to its notification settings. Closed/offline conversations retain their
 reports for status inspection and the next resumed turn. Notification queuing is
 not a guarantee that an offline client displayed the message.
 
+The original conversation owns the notification destination. Internal cron
+continuations and their dependent jobs cannot replace that destination. Existing
+CLI records with a stale continuation route are repaired from their saved source
+session when that conversation is reopened.
+
+`notice_queued` means the result was offered to the live notification queue;
+`notice_delivered` means the owning conversation produced a response to that
+notice. It does not prove that a person read it. A process lease prevents repeated
+offers while that process is alive. If the process exits before handling the
+notice, a resumed conversation can offer the saved report again after the lease
+expires (up to two minutes). A persisted reply is checked before replay, including
+compression/resume history. Retrying delivery never reruns the scientific job or
+its continuation. `notification_error` records failures while preserving results.
+
+Legacy remote-job monitoring uses a detached worker, not a `delegate_task`
+subagent. Saved legacy jobs do not appear in the foreground polling panel.
+Inspect their progress, worker health and storage errors explicitly with
+`sci boltzmann-jobs status`. Rendering the chat does not read or alter those
+records, start workers, poll the service, or acknowledge their results.
+
+`sci boltzmann-jobs status` retains detailed job state, continuation reports and
+delivery acknowledgement. A foreground reply may end while monitoring continues;
+completion or a blocker returns to the owning conversation when background-process
+notifications are enabled.
+
 Workers survive closing a terminal. No process can poll while the host is off;
-saved monitoring restarts when the owning SCI session starts, or through
-`sci boltzmann-jobs resume`. The live-session watcher also restarts a worker whose
-lease has expired. This feature does not install an operating-system boot service.
+saved monitoring can be restarted explicitly through
+`sci boltzmann-jobs resume`. Session startup no longer restarts it automatically. This feature does not install an operating-system boot service.
 
 ## Approved workflow continuation
 
-Native conversations checkpoint the task, recent user/assistant context, source
+Older native conversations checkpointed the task, recent user/assistant context, source
 model/provider and complete allowed tool names before API schema deferral. Only
 checkpoints attached to jobs are persisted. When all jobs for that checkpoint
 are terminal, a separate conversation uses SCI's existing cron execution path to
@@ -119,15 +162,24 @@ availability or scientific correctness.
 - `job_continuation.py`: approved task checkpoints, frozen tool permissions,
   duplicate-submission protection and existing cron execution integration.
 - `job_notifications.py`: session-owned outcome/blocker notifications using the
-  existing process notification channel; retained reports remain authoritative.
-- Native registration, MCP entry points and tool descriptions attach monitoring
-  without adding a core model tool. The generic `pre_api_request` observer adds
-  `available_tool_names`; it does not modify the model request or cached prompt.
+  existing process notification channel, acknowledged by the owning turn and
+  recoverable after restart; retained reports remain authoritative.
+- `job_routes.py`: immutable source destinations and resume-lineage ownership.
+- `polling_display.py`: profile- and chat-scoped latest-five foreground updates.
+- Native registration and MCP entry points wait in the current call without
+  attaching monitors or task checkpoints. The native status tool declares
+  `manages_timeout=True`; the executor keeps its wait sequential and interruptible.
+  The legacy continuation permission guard remains registered for explicitly
+  resumed older workers. New conversations receive the foreground instructions;
+  existing cached prompts are not rewritten.
 
 Focused regression checks:
 
 ```bash
-scripts/run_tests.sh tests/plugins/test_boltzmann_job_monitor.py \
+scripts/run_tests.sh tests/plugins/test_boltzmann_foreground.py \
+  tests/plugins/test_boltzmann_job_monitor.py \
+  tests/plugins/test_boltzmann_job_delivery.py \
+  tests/plugins/test_boltzmann_job_display.py \
   tests/plugins/test_boltzmann_authorization.py \
   tests/agent/test_api_request_tool_scope.py
 ```

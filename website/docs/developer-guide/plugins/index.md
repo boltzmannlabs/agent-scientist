@@ -603,6 +603,11 @@ def register(ctx):
 **What `register()` does:**
 - Called exactly once at startup
 - `ctx.register_tool()` puts your tool in the registry — the model sees it immediately
+- `ctx.register_tool(..., manages_timeout=True)` declares an interruptible operation
+  that owns its wait. SCI runs it sequentially without the generic tool deadline.
+  The handler must bound individual I/O requests and check
+  `tools.interrupt.is_interrupted()` between requests and during pauses. This does
+  not bypass authorization, approvals, or the session's explicit cancellation.
 - `ctx.register_hook()` subscribes to lifecycle events
 - `ctx.register_cli_command()` registers a CLI subcommand (e.g. `sci my-plugin <subcommand>`)
 - `ctx.register_command()` registers an in-session slash command (e.g. `/myplugin <args>` inside CLI / gateway chat) — see [Register slash commands](#register-slash-commands) below
@@ -1126,6 +1131,7 @@ Each hook is documented in full on the **[Event Hooks reference](../../user-guid
 
 | Hook | Fires when | Callback signature | Returns |
 |------|-----------|-------------------|---------|
+| `cli_background_jobs` | Classic CLI live-work refresh (at most once per second) | `session_id: str, now: float, **kwargs` | List of read-only job display records; see below |
 | [`pre_tool_call`](../../user-guide/features/hooks.md#pre_tool_call) | Before any tool executes | `tool_name: str, args: dict, task_id: str` | optional directive: `{"action": "block", "message": ...}` vetoes the call; `{"action": "approve", "message": ...}` escalates to the human-approval gate |
 | [`post_tool_call`](../../user-guide/features/hooks.md#post_tool_call) | After any tool returns | `tool_name: str, args: dict, result: str, task_id: str, duration_ms: int` | ignored |
 | [`pre_llm_call`](../../user-guide/features/hooks.md#pre_llm_call) | Once per turn, before the tool-calling loop | `session_id: str, user_message: str, conversation_history: list, is_first_turn: bool, model: str, platform: str` | [context injection](#pre_llm_call-context-injection) |
@@ -1144,7 +1150,22 @@ Each hook is documented in full on the **[Event Hooks reference](../../user-guid
 | `kanban_task_completed` | A kanban task completes (worker process) | `task_id, board, assignee, run_id, profile_name, summary: str \| None` | ignored |
 | `kanban_task_blocked` | A kanban task is blocked (worker process) | `task_id, board, assignee, run_id, profile_name, reason: str \| None` | ignored |
 
-Most hooks are fire-and-forget observers — their return values are ignored. The exceptions are `pre_llm_call`, which can inject context into the conversation, and `pre_tool_call`, which can return a block/approve directive.
+Most hooks are fire-and-forget observers — their return values are ignored. The exceptions include `pre_llm_call`, which can inject context into the conversation, `pre_tool_call`, which can return a block/approve directive, and the display snapshot hook below.
+
+`cli_background_jobs` supplies locally observed job status to the classic CLI dock.
+Callbacks run under the owning CLI's profile home and must filter by `session_id`
+(including legitimate resume descendants). Return a list of dictionaries with
+string `id`, `title` and `status`; optional fields are string `job_id`/`detail`,
+boolean `active`, and epoch-second `started_at`, `ended_at`, `last_checked_at` and
+`next_check_at`. Return `[]` when there is nothing relevant to display. Keep reads
+fast and bounded; report unavailable storage honestly. This hook must not make
+network/model calls, start work, read credentials, change conversation state or
+acknowledge result delivery. It uses the existing bounded callback mechanism and
+does not add tools to model requests. Foreground operations may set `foreground: true`
+and supply `recent_updates`, a list of strings. The dock displays its last five entries
+in place under the operation title, separately from background jobs. Return these
+rows only while the call is active and only for its owning profile and session.
+Boltzmann's foreground status calls use this view without starting background work.
 
 All callbacks should accept `**kwargs` for forward compatibility. If a hook callback crashes, it's logged and skipped. Other hooks and the agent continue normally.
 

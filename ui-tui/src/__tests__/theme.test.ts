@@ -13,7 +13,8 @@ function releasePalette(section: 'colors' | 'light_colors') {
     if (heading) {
       current = heading[1]!
     }
-    const entry = /^ {2}(\w+): "(#[0-9A-Fa-f]{6})"$/.exec(line)
+
+    const entry = /^ {2}(\w+): ['"](#[0-9A-Fa-f]{6})['"]$/.exec(line)
 
     if (current === section && entry) {
       colors[entry[1]!] = entry[2]!
@@ -62,7 +63,7 @@ afterEach(() => {
   vi.resetModules()
 })
 
-describe('LIGHT_THEME', () => {
+describe('non-selectable LIGHT_THEME data', () => {
   it('keeps the same shape as DARK_THEME', async () => {
     const { DARK_THEME, LIGHT_THEME } = await importThemeWithCleanEnv()
 
@@ -71,148 +72,33 @@ describe('LIGHT_THEME', () => {
   })
 })
 
-describe('DEFAULT_THEME aliasing', () => {
-  it('defaults to DARK_THEME when nothing signals light', async () => {
-    const { DEFAULT_THEME, DARK_THEME: DARK } = await importThemeWithCleanEnv()
+describe('dark-only TUI palette', () => {
+  it('always defaults to DARK_THEME regardless of host appearance signals', async () => {
+    const { DEFAULT_THEME, DARK_THEME } = await importThemeWithEnv({
+      SCI_TUI_LIGHT: '1',
+      SCI_TUI_THEME: 'light',
+      SCI_TUI_BACKGROUND: '#ffffff',
+      COLORFGBG: '0;15',
+      TERM_PROGRAM: 'Apple_Terminal'
+    })
 
-    expect(DEFAULT_THEME).toBe(DARK)
+    expect(DEFAULT_THEME).toBe(DARK_THEME)
   })
 
-  it('boots with the packaged release palette before skin discovery', async () => {
-    const { DARK_SEEDS, LIGHT_SEEDS } = await importThemeWithCleanEnv()
+  it('keeps the packaged release palette as the dark base', async () => {
+    const { DARK_SEEDS } = await importThemeWithCleanEnv()
+    const palette = releasePalette('colors')
 
-    const roles = {
-      accent: 'banner_accent',
-      primary: 'banner_title',
-      text: 'banner_text',
-      prompt: 'prompt',
-      surface: 'status_bar_bg',
-      activeRow: 'completion_menu_current_bg',
-      selection: 'selection_bg'
-    } as const
-
-    for (const [seeds, palette] of [
-      [DARK_SEEDS, releasePalette('colors')],
-      [LIGHT_SEEDS, releasePalette('light_colors')]
-    ] as const) {
-      for (const [seed, role] of Object.entries(roles)) {
-        expect(seeds[seed as keyof typeof roles]).toBe(palette[role])
-      }
-    }
+    expect(DARK_SEEDS.primary).toBe(palette.banner_title)
+    expect(DARK_SEEDS.text).toBe(palette.banner_text)
+    expect(DARK_SEEDS.accent).toBe(palette.banner_accent)
   })
 
-  it.each(['#000000', '#ffffff'])('keeps the released skin readable on host background %s', async background => {
-    const { contrastRatio, fromSkin } = await importThemeWithEnv({ SCI_TUI_BACKGROUND: background })
-    const colors = { ...releasePalette('colors'), ...(background === '#ffffff' ? releasePalette('light_colors') : {}) }
-    const theme = fromSkin(colors, {})
+  it('ignores light environment signals in the mode resolver', async () => {
+    const { detectLightMode, defaultThemeForCurrentBackground } = await importThemeWithCleanEnv()
 
-    for (const role of ['primary', 'accent', 'text', 'prompt'] as const) {
-      expect(contrastRatio(theme.color[role], background)!).toBeGreaterThanOrEqual(3.9)
-    }
-
-    for (const role of ['border', 'sessionBorder'] as const) {
-      expect(contrastRatio(theme.color[role], background)!).toBeGreaterThanOrEqual(2.0)
-    }
-  })
-})
-
-describe('detectLightMode', () => {
-  it('returns false on empty env', async () => {
-    const { detectLightMode } = await importThemeWithCleanEnv()
-
-    expect(detectLightMode({})).toBe(false)
-  })
-
-  it('defaults Apple Terminal to light when no stronger signal is present', async () => {
-    const { detectLightMode } = await importThemeWithCleanEnv()
-
-    expect(detectLightMode({ TERM_PROGRAM: 'Apple_Terminal' })).toBe(true)
-  })
-
-  it('honors SCI_TUI_LIGHT on/off', async () => {
-    const { detectLightMode } = await importThemeWithCleanEnv()
-
-    expect(detectLightMode({ SCI_TUI_LIGHT: '1' })).toBe(true)
-    expect(detectLightMode({ SCI_TUI_LIGHT: 'true' })).toBe(true)
-    expect(detectLightMode({ SCI_TUI_LIGHT: 'on' })).toBe(true)
-    expect(detectLightMode({ SCI_TUI_LIGHT: '0' })).toBe(false)
-    expect(detectLightMode({ SCI_TUI_LIGHT: 'off' })).toBe(false)
-  })
-
-  it('sniffs COLORFGBG bg slots 7 and 15 as light (#11300)', async () => {
-    const { detectLightMode } = await importThemeWithCleanEnv()
-
-    expect(detectLightMode({ COLORFGBG: '0;15' })).toBe(true)
-    expect(detectLightMode({ COLORFGBG: '0;default;15' })).toBe(true)
-    expect(detectLightMode({ COLORFGBG: '0;7' })).toBe(true)
-    expect(detectLightMode({ COLORFGBG: '15;0' })).toBe(false)
-    expect(detectLightMode({ COLORFGBG: '7;default;0' })).toBe(false)
-  })
-
-  it('falls through on malformed COLORFGBG with empty/non-numeric trailing field', async () => {
-    const { detectLightMode } = await importThemeWithCleanEnv()
-    // `Number('')` is 0, so `'15;'` would have been read as bg=0
-    // (authoritative dark) and incorrectly blocked TERM_PROGRAM.
-    // The strict /^\d+$/ guard makes these fall through instead.
-    const allowList = new Set(['Apple_Terminal'])
-
-    expect(detectLightMode({ COLORFGBG: '15;', TERM_PROGRAM: 'Apple_Terminal' }, allowList)).toBe(true)
-    expect(detectLightMode({ COLORFGBG: 'default;default', TERM_PROGRAM: 'Apple_Terminal' }, allowList)).toBe(true)
-    // Without an allow-list match, fall-through still defaults to dark.
-    expect(detectLightMode({ COLORFGBG: '15;' })).toBe(false)
-  })
-
-  it('lets SCI_TUI_LIGHT=0 override a light COLORFGBG', async () => {
-    const { detectLightMode } = await importThemeWithCleanEnv()
-
-    expect(detectLightMode({ COLORFGBG: '0;15', SCI_TUI_LIGHT: '0' })).toBe(false)
-  })
-
-  it('honors SCI_TUI_THEME=light/dark as a symmetric explicit override', async () => {
-    const { detectLightMode } = await importThemeWithCleanEnv()
-
-    expect(detectLightMode({ SCI_TUI_THEME: 'light' })).toBe(true)
-    expect(detectLightMode({ SCI_TUI_THEME: 'dark' })).toBe(false)
-    expect(detectLightMode({ COLORFGBG: '0;15', SCI_TUI_THEME: 'dark' })).toBe(false)
-    expect(detectLightMode({ COLORFGBG: '15;0', SCI_TUI_THEME: 'light' })).toBe(true)
-  })
-
-  it('uses SCI_TUI_BACKGROUND luminance when COLORFGBG is missing', async () => {
-    const { detectLightMode } = await importThemeWithCleanEnv()
-
-    expect(detectLightMode({ SCI_TUI_BACKGROUND: '#ffffff' })).toBe(true)
-    expect(detectLightMode({ SCI_TUI_BACKGROUND: '#000000' })).toBe(false)
-    expect(detectLightMode({ SCI_TUI_BACKGROUND: '#1e1e1e' })).toBe(false)
-    // Three-char hex normalises like CSS.
-    expect(detectLightMode({ SCI_TUI_BACKGROUND: '#fff' })).toBe(true)
-    // Garbage falls through to the default-dark path.
-    expect(detectLightMode({ SCI_TUI_BACKGROUND: 'not-a-colour' })).toBe(false)
-  })
-
-  it('rejects partially-invalid hex instead of silently truncating', async () => {
-    const { detectLightMode } = await importThemeWithCleanEnv()
-    // `parseInt('fffgff'.slice(2,4), 16)` would return 15 — the strict
-    // regex must reject these inputs so they fall through to default-
-    // dark instead of producing a false-positive light reading.
-    expect(detectLightMode({ SCI_TUI_BACKGROUND: '#fffgff' })).toBe(false)
-    expect(detectLightMode({ SCI_TUI_BACKGROUND: 'ffggff' })).toBe(false)
-    expect(detectLightMode({ SCI_TUI_BACKGROUND: '#xyz' })).toBe(false)
-    // Wrong length also rejected (no implicit padding/truncation).
-    expect(detectLightMode({ SCI_TUI_BACKGROUND: '#fffff' })).toBe(false)
-    expect(detectLightMode({ SCI_TUI_BACKGROUND: '#fffffff' })).toBe(false)
-  })
-
-  it('treats COLORFGBG as authoritative when present so it dominates the TERM_PROGRAM allow-list', async () => {
-    const { detectLightMode } = await importThemeWithCleanEnv()
-    // Injecting the allow-list keeps this precedence rule explicit even if
-    // production defaults change.
-    const allowList = new Set(['Apple_Terminal'])
-
-    // Sanity: the allow-list alone WOULD turn this terminal light.
-    expect(detectLightMode({ TERM_PROGRAM: 'Apple_Terminal' }, allowList)).toBe(true)
-
-    // Dark COLORFGBG must beat the allow-list.
-    expect(detectLightMode({ COLORFGBG: '15;0', TERM_PROGRAM: 'Apple_Terminal' }, allowList)).toBe(false)
+    expect(detectLightMode({ SCI_TUI_THEME: 'light', SCI_TUI_BACKGROUND: '#ffffff' })).toBe(false)
+    expect(defaultThemeForCurrentBackground({ SCI_TUI_LIGHT: '1' })).toBe((await import('../theme.js')).DARK_THEME)
   })
 })
 
@@ -234,16 +120,16 @@ describe('fromSkin', () => {
     expect(fromSkin({ banner_title: '#FF0000' }, {}).color.accent).toBe(DEFAULT_THEME.color.accent)
   })
 
-  it('derives completion current background from resolved completion background (polarity-compatible)', async () => {
-    // Light terminal + light-authored menu fill: the skin's fill is honored
-    // and the current-row derivation mixes off it.
-    const { fromSkin } = await importThemeWithEnv({ SCI_TUI_BACKGROUND: '#ffffff' })
+  it('keeps completion surfaces dark even when a skin provides a white fill', async () => {
+    const { fromSkin } = await importThemeWithEnv({ SCI_TUI_BACKGROUND: '#ffffff', SCI_TUI_THEME: 'light' })
+    const theme = fromSkin(
+      { banner_accent: '#000000', background: '#ffffff', terminal_elevated: '#ffffff', completion_menu_bg: '#ffffff' },
+      {}
+    )
 
-    const theme = fromSkin({ banner_accent: '#000000', completion_menu_bg: '#ffffff' }, {})
-
-    expect(theme.color.completionBg).toBe('#ffffff')
-    // Active row = authored surface mixed toward the accent — distinct from the fill.
-    expect(theme.color.completionCurrentBg).not.toBe(theme.color.completionBg)
+    expect(luminance(theme.color.completionBg)).toBeLessThanOrEqual(0.35)
+    expect(luminance(theme.surfaces!.canvas)).toBeLessThanOrEqual(0.35)
+    expect(luminance(theme.surfaces!.elevated)).toBeLessThanOrEqual(0.35)
   })
 
   it('rejects wrong-polarity fills even when skin-authored (terminal owns the canvas)', async () => {
@@ -306,29 +192,6 @@ describe('fromSkin', () => {
     expect(fromSkin({}, { prompt_symbol: '\n\t' }).brand.prompt).toBe(DEFAULT_THEME.brand.prompt)
   })
 
-  it('normalizes non-banner foregrounds on light Apple Terminal', async () => {
-    const { fromSkin } = await importThemeWithEnv({ TERM_PROGRAM: 'Apple_Terminal' })
-
-    const theme = fromSkin(
-      {
-        banner_accent: '#FFBF00',
-        banner_border: '#CD7F32',
-        banner_dim: '#B8860B',
-        banner_text: '#FFF8DC',
-        banner_title: '#FFD700',
-        prompt: '#FFF8DC'
-      },
-      {}
-    )
-
-    expect(theme.color.primary).toBe('#FFD700')
-    expect(theme.color.accent).toBe('#FFBF00')
-    expect(theme.color.border).toBe('#CD7F32')
-    expect(theme.color.muted).toBe('ansi256(245)')
-    expect(theme.color.text).toBe('ansi256(136)')
-    expect(theme.color.prompt).toBe('ansi256(136)')
-  })
-
   // ── A skin that authors a background OWNS its polarity ──────────────
   // The TUI paints the terminal with the skin's background (OSC-11), so
   // every adaptation pass must run against the skin's canvas, not the host
@@ -357,35 +220,11 @@ describe('fromSkin', () => {
     expect(luminance(theme.color.statusBg)).toBeLessThanOrEqual(0.35)
   })
 
-  it('skinIsLight: the authored background decides; host detection only when absent', async () => {
-    const { skinIsLight } = await importThemeWithEnv({ SCI_TUI_BACKGROUND: '#ffffff' })
+  it('never treats a light skin or terminal hint as a light-mode switch', async () => {
+    const { skinIsLight, fromSkin } = await importThemeWithEnv({ SCI_TUI_THEME: 'light' })
 
-    expect(skinIsLight({ background: '#000000' })).toBe(false)
-    expect(skinIsLight({ background: '#f5f5f5' })).toBe(true)
-    expect(skinIsLight({})).toBe(true) // no canvas of its own → host polarity
-  })
-
-  it('keeps truecolor light Apple Terminal in truecolor (adapting, not ansi256-bucketing)', async () => {
-    const { contrastRatio, fromSkin } = await importThemeWithEnv({
-      COLORTERM: 'truecolor',
-      TERM_PROGRAM: 'Apple_Terminal'
-    })
-
-    const theme = fromSkin({ banner_text: '#FFF8DC' }, {})
-
-    // No ansi256 bucketing on truecolor terminals — a truly invisible cream
-    // (1.08:1 on white) still gets the display shim's gentle light-mode rescue
-    // (floor 1.18: enough to make near-white text appear, not enough to crush
-    // the vivid golds into mud).
-    expect(theme.color.text).toMatch(/^#[0-9a-f]{6}$/i)
-    expect(contrastRatio(theme.color.text, '#ffffff')!).toBeGreaterThanOrEqual(1.18)
-  })
-
-  it('normalizes Apple Terminal names before matching', async () => {
-    const { fromSkin } = await importThemeWithEnv({ TERM_PROGRAM: ' Apple_Terminal ' })
-    const theme = fromSkin({ banner_text: '#FFF8DC' }, {})
-
-    expect(theme.color.text).toBe('ansi256(136)')
+    expect(skinIsLight({ background: '#ffffff' })).toBe(false)
+    expect(fromSkin({ background: '#000000', ui_text: '#ffa726' }, {}).color.text).toBe('#ffa726')
   })
 
   it('maps ui_ color keys + cascades to status', async () => {
@@ -482,81 +321,18 @@ describe('derived tone ladder', () => {
   })
 })
 
-describe('background-aware adaptation (OSC-11 light terminals)', () => {
-  it('renders a dark-authored skin on light like minimumContrastRatio hosts do (the standardized look)', async () => {
-    const { contrastRatio, fromSkin } = await importThemeWithEnv({ SCI_TUI_BACKGROUND: '#ffffff' })
-    const { color } = fromSkin(SLATE_COLORS, {})
+describe('dark-only skin rendering', () => {
+  it('keeps host appearance signals from changing the dark skin palette', async () => {
+    const { fromSkin, skinIsLight } = await importThemeWithEnv({
+      SCI_TUI_BACKGROUND: '#ffffff',
+      SCI_TUI_THEME: 'light',
+      SCI_TUI_LIGHT: '1'
+    })
+    const theme = fromSkin({ background: '#000000', ui_text: '#ffa726' }, {})
 
-    // The authored palette IS the design: slate's airy pastels (~1.5:1) pass
-    // through BYTE-IDENTICAL — that receded look is the standardized
-    // rendering, not a washout to fix.
-    expect(color.text.toLowerCase()).toBe('#c9d1d9')
-    expect(color.accent.toLowerCase()).toBe('#7eb8f6')
-    expect(color.muted.toLowerCase()).toBe('#4b5563')
-
-    // Light mode renders the authored palette essentially RAW: a transparent
-    // terminal (the common Cursor case) applies no contrast lift of its own,
-    // and the beloved classic look is the vivid palette, not a WCAG-darkened
-    // one. Foregrounds only clear the near-invisible floor (1.18).
-    for (const key of ['text', 'prompt', 'accent', 'label', 'primary', 'muted', 'border'] as const) {
-      expect(contrastRatio(color[key], '#ffffff'), `${key} ${color[key]}`).toBeGreaterThanOrEqual(1.18)
-    }
-
-    // Semantic alert colors carry meaning — firmer floor, still gentle on light.
-    for (const key of ['ok', 'error', 'warn', 'statusGood', 'statusCritical'] as const) {
-      expect(contrastRatio(color[key], '#ffffff'), `${key} ${color[key]}`).toBeGreaterThanOrEqual(1.6)
-    }
-
-    // Background roles the skin never defined must be light-polarity fills,
-    // not the dark base's navy.
-    for (const key of ['completionBg', 'completionCurrentBg', 'statusBg', 'selectionBg'] as const) {
-      expect(luminance(color[key]), `${key} ${color[key]}`).toBeGreaterThanOrEqual(0.4)
-    }
-  })
-
-  it('rescues near-invisible colors with a hue-preserving multiplicative lift', async () => {
-    const { contrastRatio, fromSkin } = await importThemeWithEnv({ SCI_TUI_BACKGROUND: '#ffffff' })
-    // The default dark cream (#FFF8DC, 1.08:1 on white) is genuinely invisible.
-    const { color } = fromSkin({ banner_text: '#FFF8DC' }, {})
-
-    expect(color.text.toLowerCase()).not.toBe('#fff8dc')
-    expect(contrastRatio(color.text, '#ffffff')!).toBeGreaterThanOrEqual(1.18)
-
-    // Multiplicative lift preserves channel ordering (warm stays warm).
-    const [r, g, b] = [1, 3, 5].map(i => parseInt(color.text.slice(i, i + 2), 16))
-
-    expect(r).toBeGreaterThanOrEqual(g!)
-    expect(g).toBeGreaterThanOrEqual(b!)
-  })
-
-  it('leaves the same skin untouched on a dark background', async () => {
-    const { fromSkin } = await importThemeWithEnv({ SCI_TUI_BACKGROUND: '#1e1e2e' })
-    const { color } = fromSkin(SLATE_COLORS, {})
-
-    expect(color.text).toBe('#c9d1d9')
-    expect(color.accent).toBe('#7eb8f6')
-    expect(luminance(color.completionBg)).toBeLessThanOrEqual(0.35)
-  })
-
-  it('base palettes are fixed points of the adaptation', async () => {
-    const dark = await importThemeWithCleanEnv()
-
-    expect(dark.fromSkin({}, {}).color).toEqual(dark.DARK_THEME.color)
-
-    const light = await importThemeWithEnv({ SCI_TUI_BACKGROUND: '#ffffff' })
-
-    expect(light.fromSkin({}, {}).color).toEqual(light.LIGHT_THEME.color)
-  })
-
-  it('defaultThemeForCurrentBackground follows a late SCI_TUI_BACKGROUND write', async () => {
-    const { DARK_THEME, DEFAULT_THEME, defaultThemeForCurrentBackground, LIGHT_THEME } = await importThemeWithCleanEnv()
-
-    // Module loaded dark (clean env)…
-    expect(DEFAULT_THEME.color.completionBg).toBe(DARK_THEME.color.completionBg)
-    expect(luminance(DEFAULT_THEME.color.completionBg)).toBeLessThanOrEqual(0.35)
-
-    // …then the OSC-11 answer lands and is cached into the env slot.
-    expect(defaultThemeForCurrentBackground({ SCI_TUI_BACKGROUND: '#ffffff' }).color).toEqual(LIGHT_THEME.color)
+    expect(skinIsLight({ background: '#ffffff' }, { SCI_TUI_THEME: 'light' })).toBe(false)
+    expect(theme.color.text).toBe('#ffa726')
+    expect(luminance(theme.color.completionBg)).toBeLessThanOrEqual(0.35)
   })
 
   it('gives tool + thinking their own keys, defaulting to accent + muted', async () => {

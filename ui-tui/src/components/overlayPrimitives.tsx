@@ -1,5 +1,5 @@
 import type { Key } from '@sci/ink'
-import { Text, useInput } from '@sci/ink'
+import { Box, Text, useInput } from '@sci/ink'
 import { mix } from '@sci/shared/color'
 import { type ReactNode, useState } from 'react'
 
@@ -80,10 +80,9 @@ export function useMenu(rows: MenuRowSpec[], onEscape: () => void, onKey?: (ch: 
 /**
  * THE selected-row treatment for every list surface (completions popover,
  * session switcher, pickers): a `selection` chip on the active row, nothing
- * painted otherwise. Panels never paint their own full background — floating
- * surfaces are `opaque` (terminal-native canvas) and only the active row
- * carries color, so list surfaces cannot disagree about "selected" and stay
- * correct on any terminal background. Callers own layout; this owns color.
+ * painted otherwise. The surrounding panel owns its optional elevated surface;
+ * this chip stays legible on both the SCI surface and a custom terminal canvas.
+ * Callers own layout; this owns color.
  */
 export function listRowStyle(t: Theme, active: boolean): { backgroundColor?: string; color?: string } {
   if (!active) {
@@ -108,36 +107,52 @@ export function chipRowProps(t: Theme, active: boolean): { backgroundColor?: str
   return { backgroundColor: row.backgroundColor, bold: active, ...(row.color ? { color: row.color } : {}) }
 }
 
-/** A numbered menu row with the ▸ cursor (mirrors ClarifyPrompt). Active rows
+/** An unnumbered menu row with a selection marker (mirrors ClarifyPrompt). Active rows
  *  carry the shared list-row selection chip — same treatment as completions
  *  and the session switcher — instead of `inverse`, whose contrast depends on
  *  the terminal's unknowable default colors. */
-export function MenuRow({ active, index, label, t }: { active: boolean; index: number; label: string; t: Theme }) {
+export function MenuRow({
+  active,
+  checked,
+  label,
+  t,
+  truncate = false
+}: {
+  active: boolean
+  checked?: boolean
+  label: string
+  t: Theme
+  truncate?: boolean
+}) {
   const row = listRowStyle(t, active)
 
   return (
-    <Text>
-      <Text
-        backgroundColor={row.backgroundColor}
-        bold={active}
-        color={active ? (row.color ?? t.color.label) : t.color.muted}
-      >
-        {active ? '▸ ' : '  '}
-        {index}. {label}
-      </Text>
-    </Text>
+    <Box backgroundColor={row.backgroundColor} paddingX={1}>
+      <Box flexShrink={0}>
+        <Text bold={active} color={row.color ?? t.color.label}>
+          {checked === undefined ? (active ? '● ' : '○ ') : checked ? '☑ ' : '☐ '}
+        </Text>
+      </Box>
+      <Box flexGrow={1} flexShrink={1}>
+        <Text bold={active} color={row.color ?? t.color.text} wrap={truncate ? 'truncate-end' : 'wrap'}>
+          {label}
+        </Text>
+      </Box>
+    </Box>
   )
 }
 
 /** Plain (non-numbered) action row with the ▸ cursor (confirm screens). */
 export function ActionRow({ active, label, color, t }: { active: boolean; label: string; color?: string; t: Theme }) {
+  const row = listRowStyle(t, active)
+
   return (
-    <Text>
-      <Text color={active ? t.color.accent : t.color.muted}>{active ? '▸ ' : '  '}</Text>
-      <Text bold={active} color={active ? (color ?? t.color.text) : t.color.muted}>
+    <Box backgroundColor={row.backgroundColor} paddingX={1}>
+      <Text color={color ?? t.color.text} {...chipRowProps(t, active)}>
+        {active ? '▸ ' : '  '}
         {label}
       </Text>
-    </Text>
+    </Box>
   )
 }
 

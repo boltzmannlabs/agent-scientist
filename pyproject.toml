@@ -71,6 +71,8 @@ dependencies = [
   "pydantic==2.13.4; python_version >= '3.14'",
   # Interactive CLI (prompt_toolkit is used directly by cli.py)
   "prompt_toolkit==3.0.52; python_version >= '3.14'",
+  # Native curses wheels cover x64; ARM64 uses the prompt_toolkit menu fallback.
+  "windows-curses==2.4.2; sys_platform == 'win32' and platform_machine == 'AMD64' and python_version >= '3.14'",
   # Cron scheduler (built-in feature — scheduled cron/interval jobs use croniter).
   "croniter==6.0.0; python_version >= '3.14'",
   # Snowball stemming for tool_search's BM25 (tools/tool_search.py) —

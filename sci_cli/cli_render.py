@@ -238,76 +238,13 @@ def _heal_cooked_mode_drift(fd: int) -> bool:
 
 
 def _detect_light_mode_uncached() -> bool:
-    """The detection ladder documented above; may raise (caller maps errors to dark)."""
-    from cli import _FALSE_RE, _LIGHT_DEFAULT_TERM_PROGRAMS, _TRUE_RE, _luminance_from_hex, _query_osc11_background
-    for var in ("SCI_LIGHT", "SCI_TUI_LIGHT"):
-        v = (os.environ.get(var) or "").strip().lower()
-        if _TRUE_RE.match(v):
-            return True
-        if _FALSE_RE.match(v):
-            return False
-    theme = (os.environ.get("SCI_TUI_THEME") or "").strip().lower()
-    if theme == "light":
-        return True
-    if theme == "dark":
-        return False
-    bg_lum = _luminance_from_hex(os.environ.get("SCI_TUI_BACKGROUND") or "")
-    if bg_lum is not None:
-        return bg_lum >= 0.5
-    last = (os.environ.get("COLORFGBG") or "").strip().split(";")[-1]
-    if last.isdigit() and 0 <= int(last) < 16:
-        return int(last) in {7, 15}
-    bg_color = _query_osc11_background()
-    if bg_color:
-        lum = _luminance_from_hex(bg_color)
-        if lum is not None:
-            return lum >= 0.5
-    return (os.environ.get("TERM_PROGRAM") or "").strip() in _LIGHT_DEFAULT_TERM_PROGRAMS
-
-
-# Light-mode equivalents of skin colors unreadable on cream backgrounds. Only colors used
-# as STANDALONE foregrounds: ones paired with a dark bg (status bar text on #1a1a2e) would
-# become invisible the other direction, hence #C0C0C0/#888888/#555555/#8B8682 are skipped.
-_LIGHT_MODE_REMAP: dict[str, str] = {
-    "#FFF8DC": "#1A1A1A", "#FFD700": "#9A6B00", "#FFBF00": "#8A5A00", "#B8860B": "#5C4500",
-    "#DAA520": "#6B4F00", "#F1E6CF": "#1A1A1A", "#c9d1d9": "#24292F", "#EAF7FF": "#0F1B26",
-    "#F5F5F5": "#1A1A1A", "#FFF0D4": "#1A1A1A", "#CD7F32": "#8A4F1A", "#FFEFB5": "#3A2A00",
-}
-
-
-_LIGHT_MODE_REMAP_UPPER = {k.upper(): v for k, v in _LIGHT_MODE_REMAP.items()}
+    """SCI's native terminal interface uses the dark palette exclusively."""
+    return False
 
 
 def _maybe_remap_for_light_mode(hex_color: str) -> str:
-    """In light mode, remap a dark-tuned color to its higher-contrast equivalent."""
-    from cli import _LIGHT_MODE_REMAP_UPPER, _detect_light_mode
-    if not _detect_light_mode():
-        return hex_color
-    if not hex_color or not hex_color.startswith("#"):
-        return hex_color
-    return _LIGHT_MODE_REMAP_UPPER.get(hex_color.upper(), hex_color)
-
-
-def _install_skin_light_mode_hook() -> None:
-    """Wrap SkinConfig.get_color so EVERY skin color read goes through the light-mode remap. Idempotent."""
-    from cli import _maybe_remap_for_light_mode
-    try:
-        from sci_cli.skin_engine import SkinConfig  # type: ignore[import]
-    except Exception:
-        return
-    if getattr(SkinConfig, "_sci_light_mode_hook_installed", False):
-        return
-    _orig_get_color = SkinConfig.get_color
-
-    def _wrapped_get_color(self, key, fallback=""):
-        value = _orig_get_color(self, key, fallback)
-        try:
-            return _maybe_remap_for_light_mode(value)
-        except Exception:
-            return value
-
-    SkinConfig.get_color = _wrapped_get_color  # type: ignore[method-assign]
-    SkinConfig._sci_light_mode_hook_installed = True  # type: ignore[attr-defined]
+    """Keep the dark palette's authored colors unchanged."""
+    return hex_color
 
 
 class _SkinAwareAnsi:
@@ -464,14 +401,17 @@ def assistant_message_panel(text: str, *, mode: str = "render", width: int | Non
         skin = get_active_skin()
         label = skin.get_branding("response_label", "☤ Sci")
         border, body = skin.get_color("response_border", "#B93586"), skin.get_color("banner_text", "#FFE3ED")
+        surface = skin.get_color("terminal_bg", "")
     except Exception:
-        label, border, body = "☤ Sci", "#B93586", "#FFE3ED"
+        label, border, body, surface = "☤ Sci", "#B93586", "#FFE3ED", ""
     color = _maybe_remap_for_light_mode(border)
     text_color = _maybe_remap_for_light_mode(body)
+    if surface:
+        text_color += f" on {surface}"
     return Panel(_render_final_assistant_content(text, mode=mode),
                  title=_RichText(label, style=color + " bold"), title_align="left",
                  border_style=color, style=text_color, box=box.HORIZONTALS,
-                 padding=(1, 0), width=width)
+                 padding=(1, 1), width=width)
 
 
 def _post_stream_transform_output(response: str, result: dict | None) -> str:
@@ -958,7 +898,9 @@ def _build_compact_banner() -> str:
     tiny_line = _skin.get_branding("agent_name", "Sci Agent") if _skin else "Sci Agent"
     line1 = t("cli.render.banner_tagline", name=tiny_line)
 
-    if os.environ.get("SCI_FAST_STARTUP_BANNER") == "1":
+    if _skin and _skin.name == "neon-theme":
+        version_line = "agent-sci"
+    elif os.environ.get("SCI_FAST_STARTUP_BANNER") == "1":
         from sci_cli import __release_date__ as _release_date
         from sci_cli.version_info import get_version_info
 
@@ -988,8 +930,9 @@ def _build_compact_banner() -> str:
 def _panel_box_width(title: str, content_lines: list[str], min_width: int = 46, max_width: int = 76) -> int:
     """Stable TUI panel width wide enough for the title and content (incl. borders)."""
     term_cols = shutil.get_terminal_size((100, 20)).columns
-    longest = max([len(title)] + [len(line) for line in content_lines] + [min_width - 4])
-    inner = min(max(longest + 4, min_width - 2), max_width - 2, max(24, term_cols - 6))
+    from rich.cells import cell_len
+    longest = max([cell_len(title)] + [cell_len(line) for line in content_lines] + [min_width - 4])
+    inner = min(max(longest + 4, min_width - 2), max_width - 2, max(8, term_cols - 6))
     return inner + 2  # leading/trailing space inside the borders
 
 
@@ -1004,7 +947,8 @@ _wrap_panel_text_keep_ws = functools.partial(_wrap_panel_text, keep_ws=True)
 
 
 def _append_panel_line(lines, border_style: str, content_style: str, text: str, box_width: int) -> None:
-    lines.extend(((border_style, "│ "), (content_style, text.ljust(max(0, box_width - 2))), (border_style, " │\n")))
+    from rich.cells import set_cell_size
+    lines.extend(((border_style, "│ "), (content_style, set_cell_size(text, max(0, box_width - 2))), (border_style, " │\n")))
 
 
 def _append_blank_panel_line(lines, border_style: str, box_width: int) -> None:

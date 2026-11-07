@@ -37,6 +37,7 @@ async def test_ctrl_c_copies_selected_side_text_before_any_cancel_or_exit(monkey
     owner.agent = SimpleNamespace(interrupt=Mock())
     owner._agent_running = running
     controller = SimpleNamespace(owner=(sci_home_key(), owner.session_id), active=True,
+                                 ui=view.surface, outcome='ready',
                                  running=running, conversation=SimpleNamespace(closed=Event()), close=Mock())
     owner._side_controller = controller
     with create_pipe_input() as pipe:
@@ -123,6 +124,19 @@ def test_view_preserves_composers_scroll_and_defers_parent_output(monkeypatch):
                 view.select(True)
                 view.side_buffer.text = 'side draft'
                 view.side_buffer.cursor_position = 4
+                owner._side_controller = SimpleNamespace(
+                    active=True, ui=view.surface, outcome='ready',
+                    conversation=SimpleNamespace(closed=Event()))
+                before_heading = view.heading()
+                owner._agent_running = owner._command_running = True
+                owner._spinner_text = 'MAIN_ONLY_TOOL'
+                owner._command_status = 'MAIN_ONLY_COMMAND'
+                assert view.heading() == before_heading and 'ready' in before_heading
+                assert not view.surface._agent_running and not view.surface._command_running
+                assert not view.surface._render_spinner_text()
+                assert 'MAIN_ONLY' not in view.surface._tui_placeholder_text()
+                owner._agent_running = owner._command_running = False
+                owner._side_controller = None
                 assert view.surface._attached_images == []
                 owner._capture_modal_input_snapshot()
                 assert view.side_buffer.text == 'side draft'

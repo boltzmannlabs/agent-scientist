@@ -1162,7 +1162,9 @@ def _is_profile_plugin_flow_provider(provider_id: str) -> bool:
     """True when *provider_id* is a registered profile whose auth_type the generic plugin flow handles."""
     from sci_cli.auth_plugin_providers import plugin_profile
     profile = plugin_profile(provider_id)
-    return profile is not None and profile.auth_type in _PLUGIN_FLOW_CREDENTIALS
+    from providers.base import ProviderProfile
+    return profile is not None and (profile.auth_type in _PLUGIN_FLOW_CREDENTIALS
+                                    or type(profile).setup_model is not ProviderProfile.setup_model)
 
 
 def _plugin_flow_live_rows(profile, api_key: str, base_url: str) -> tuple[list[str] | None, dict[str, str]]:
@@ -1184,8 +1186,9 @@ def _model_flow_plugin_provider(config, provider_id, current_model=""):
     catalog via ``merge_profile_catalog`` (live ``fetch_models()`` ⊕ ``fallback_models``), persist."""
     from sci_cli.auth_plugin_providers import plugin_profile
     from sci_cli.models import merge_profile_catalog
-    del config
     profile = plugin_profile(provider_id)
+    if profile.setup_model(config, current_model):
+        return
     creds = _PLUGIN_FLOW_CREDENTIALS[profile.auth_type](provider_id, profile)
     if creds is None:
         return

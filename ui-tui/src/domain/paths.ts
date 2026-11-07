@@ -64,5 +64,5 @@ export const composeTabTitle = (
 
   const segments = [shortName, model, cwd].filter(Boolean)
 
-  return segments.length ? `${marker} ${segments.join(' · ')}` : marker
+  return segments.length ? `${marker ? `${marker} ` : ''}${segments.join(' · ')}` : marker
 }

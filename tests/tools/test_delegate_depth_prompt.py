@@ -13,7 +13,7 @@ from tools.registry import registry
 @pytest.mark.parametrize("legacy_role", [None, "leaf", "orchestrator"])
 @pytest.mark.parametrize(
     "parent_depth,max_depth,enabled",
-    [(1, 5, True), (1, 3, True), (2, 3, True), (1, 5, False)],
+    [(0, 5, True), (1, 5, True), (1, 3, True), (2, 3, True), (1, 5, False)],
 )
 def test_dispatched_child_prompt_matches_depth_capability(
     tmp_path, monkeypatch, legacy_role, parent_depth, max_depth, enabled,
@@ -58,6 +58,7 @@ def test_dispatched_child_prompt_matches_depth_capability(
 
     child.run_conversation.assert_called_once()
     assert "error" not in result
+    assert result.get("mode") != "background"
     kwargs = agent_class.call_args.kwargs
     prompt = kwargs["ephemeral_system_prompt"]
     depth = parent_depth + 1

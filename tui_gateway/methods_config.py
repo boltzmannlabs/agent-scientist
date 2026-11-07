@@ -275,7 +275,6 @@ _CONFIG_GETTERS = {
     "details_mode": lambda params: {"value": _display_word("details_mode", "collapsed", _DETAIL_MODES)},
     "thinking_mode": _cfg_get_thinking_mode,
     "density": lambda params: {"value": "on" if bool(_display_raw().get("tui_compact", False)) else "off"},
-    "theme": lambda params: {"value": _display_word("tui_theme", "auto", {"auto", "light", "dark"})},
     "statusbar": lambda params: {"value": _coerce_statusbar(_display_cfg().get("tui_statusbar", "top"))},
     "focus": lambda params: {"value": "on" if bool(_display_cfg().get("focus_view", False)) else "off",
                              "tool_progress": _load_tool_progress_mode()},

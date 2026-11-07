@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from sci_constants import get_sci_home
-from sci_cli.skin_defaults import DEFAULT_COLORS, DEFAULT_LIGHT_COLORS, DEFAULT_SKIN_NAME
+from sci_cli.skin_defaults import DEFAULT_COLORS, DEFAULT_LIGHT_COLORS, DEFAULT_SKIN_NAME, SURFACE_COLOR_KEYS
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,17 @@ class SkinConfig:
     custom_css: str = ""     # Raw CSS injected as a <style> tag on the desktop GUI (32 KiB cap)
 
     def get_color(self, key: str, fallback: str = "") -> str:
-        return self.colors.get(key, fallback)
+        palette = {**self.colors, **self.dark_colors}
+        background = palette.get("background", palette.get("terminal_bg", ""))
+        if len(background) == 7 and background.startswith("#"):
+            try:
+                red, green, blue = (int(background[i:i + 2], 16) for i in (1, 3, 5))
+            except ValueError:
+                pass
+            else:
+                if (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255 > 0.5:
+                    return DEFAULT_COLORS.get(key, fallback)
+        return palette.get(key, fallback)
 
     def get_branding(self, key: str, fallback: str = "") -> str:
         return self.branding.get(key, fallback)
@@ -57,13 +67,13 @@ def _wings(*glyphs) -> List[List[str]]:
             for g in glyphs]
 
 
-# Branding shared by every Sci-named built-in (mono/daylight override help_header).
+# Branding shared by every Sci-named built-in (mono overrides help_header).
 _SCI_BRANDING: Dict[str, str] = _branding(
     "Sci", "☤", "Goodbye! ☤", prompt="❯", help_header="(^_^)? Available Commands")
 
 _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
     DEFAULT_SKIN_NAME: {
-        "name": DEFAULT_SKIN_NAME, "description": "Pink and magenta neon palette on velvet black",
+        "name": DEFAULT_SKIN_NAME, "description": "Layered rose and magenta surfaces with readable dark and light palettes",
         "colors": DEFAULT_COLORS,
         "light_colors": DEFAULT_LIGHT_COLORS,
         "spinner": {},  # empty = hardcoded defaults in display.py
@@ -144,42 +154,6 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
             "session_border": "#545E6B", "completion_menu_bg": "#151C2F",
             "completion_menu_current_bg": "#324867", "selection_bg": "#3A5375",
             "shell_dollar": "#7eb8f6", "voice_status_bg": "#151C2F"},
-        "spinner": {}, "branding": _SCI_BRANDING, "tool_prefix": "┊"},
-    "daylight": {
-        "name": "daylight",
-        "description": "Light theme for bright terminals with dark text and cool blue accents",
-        "colors": {
-            "banner_border": "#2563EB", "banner_title": "#0F172A", "banner_accent": "#1D4ED8",
-            "banner_dim": "#475569", "banner_text": "#111827", "ui_accent": "#2563EB",
-            "ui_label": "#0F766E", "ui_ok": "#15803D", "ui_error": "#B91C1C", "ui_warn": "#B45309",
-            "prompt": "#111827", "input_rule": "#6E94BE", "response_border": "#2563EB",
-            "status_bar_bg": "#E5EDF8", "status_bar_text": "#111827",
-            "status_bar_strong": "#2563EB", "status_bar_dim": "#838890",
-            "status_bar_good": "#15803D", "status_bar_warn": "#B45309", "status_bar_bad": "#B45309",
-            "status_bar_critical": "#B91C1C", "session_label": "#1D4ED8",
-            "session_border": "#64748B", "completion_menu_bg": "#F8FAFC",
-            "completion_menu_current_bg": "#DBEAFE", "completion_menu_meta_bg": "#EEF2FF",
-            "completion_menu_meta_current_bg": "#BFDBFE", "selection_bg": "#D3E0FB",
-            "shell_dollar": "#2563EB", "voice_status_bg": "#E5EDF8"},
-        "spinner": {},
-        "branding": {**_SCI_BRANDING, "help_header": "[?] Available Commands"},
-        "tool_prefix": "│"},
-    "warm-lightmode": {
-        "name": "warm-lightmode",
-        "description": "Warm light mode — dark brown/gold text for light terminal backgrounds",
-        "colors": {
-            "banner_border": "#8B6914", "banner_title": "#5C3D11", "banner_accent": "#8B4513",
-            "banner_dim": "#8B7355", "banner_text": "#2C1810", "ui_accent": "#8B4513",
-            "ui_label": "#5C3D11", "ui_ok": "#2E7D32", "ui_error": "#C62828", "ui_warn": "#E65100",
-            "prompt": "#2C1810", "input_rule": "#8B6914", "response_border": "#8B6914",
-            "status_bar_bg": "#F5F0E8", "status_bar_text": "#2C1810",
-            "status_bar_strong": "#8B4513", "status_bar_dim": "#8A8F98",
-            "status_bar_good": "#2E7D32", "status_bar_warn": "#E65100", "status_bar_bad": "#DA4D00",
-            "status_bar_critical": "#C62828", "session_label": "#5C3D11",
-            "session_border": "#A0845C", "completion_menu_bg": "#F5EFE0",
-            "completion_menu_current_bg": "#E8DCC8", "completion_menu_meta_bg": "#F0E8D8",
-            "completion_menu_meta_current_bg": "#DFCFB0", "selection_bg": "#E8DAD0",
-            "shell_dollar": "#8B4513", "voice_status_bg": "#F5F0E8"},
         "spinner": {}, "branding": _SCI_BRANDING, "tool_prefix": "┊"},
     "poseidon": {
         "name": "poseidon", "description": "Ocean-god theme — deep blue and seafoam",
@@ -369,13 +343,21 @@ def _build_skin_config(data: Dict[str, Any]) -> SkinConfig:
         return {}
 
     def merged(key: str) -> Dict[str, Any]:
-        return {**default.get(key, {}), **section(key)}
-    # Paired palettes are NOT merged over the default skin's blocks: an empty block means
-    # "no hand-tuned variant for that polarity" and consumers (the TUI) fall back to `colors`
-    # + automatic adaptation, rather than inheriting the default's pink under a crimson skin.
+        authored = section(key)
+        values = {**default.get(key, {}), **authored}
+        if key == "colors":
+            # Explicit surfaces must not paint a custom skin with the default's rose canvas.
+            if skin_name != DEFAULT_SKIN_NAME:
+                for role in SURFACE_COLOR_KEYS - authored.keys():
+                    values.pop(role, None)
+        return values
+    # Custom skins never inherit another skin's paired palette. Older copies of
+    # SCI's own default still inherit its new roles without rewriting user files.
     return SkinConfig(
         name=skin_name, description=data.get("description", ""), colors=merged("colors"),
-        light_colors=section("light_colors"), dark_colors=section("dark_colors"),
+        light_colors=({**DEFAULT_LIGHT_COLORS, **section("light_colors")}
+                      if skin_name == DEFAULT_SKIN_NAME else section("light_colors")),
+        dark_colors=section("dark_colors"),
         spinner=merged("spinner"), branding=merged("branding"),
         tool_prefix=data.get("tool_prefix", default.get("tool_prefix", "┊")),
         tool_emojis=section("tool_emojis"), banner_logo=data.get("banner_logo", ""),
@@ -491,13 +473,14 @@ _STYLE_PALETTE = (
     ("menu_bg", "completion_menu_bg", DEFAULT_COLORS["completion_menu_bg"]),
     ("menu_current_bg", "completion_menu_current_bg", DEFAULT_COLORS["completion_menu_current_bg"]),
     ("menu_meta_bg", "completion_menu_meta_bg", "@menu_bg"),
-    ("menu_meta_current_bg", "completion_menu_meta_current_bg", "@menu_current_bg"))
+    ("menu_meta_current_bg", "completion_menu_meta_current_bg", "@menu_current_bg"),
+    ("hint", "hint_text", "@dim"), ("choice", "choice_text", "@dim"))
 
 # prompt_toolkit style class -> format template over the resolved palette names.
 _STYLE_TEMPLATES = {
     "input-area": "",  # terminal default fg/bg — `prompt` styles the symbol, NOT typed text
-    "placeholder": "{dim} italic", "prompt": "{prompt}", "prompt-working": "{dim} italic",
-    "hint": "{dim} italic",
+    "placeholder": "{hint} italic", "prompt": "{prompt}", "prompt-working": "{dim} italic",
+    "hint": "{hint} italic",
     "status-bar": "bg:{status_bg} {status_text}", "status-bar-strong": "bg:{status_bg} {status_strong} bold",
     "status-bar-session-title": "bg:{badge_bg} {badge_fg} bold",
     "status-bar-dim": "bg:{status_bg} {status_dim}", "status-bar-good": "bg:{status_bg} {status_good} bold",
@@ -512,12 +495,17 @@ _STYLE_TEMPLATES = {
     "completion-menu.meta.completion": "bg:{menu_meta_bg} {dim}",
     "completion-menu.meta.completion.current": "bg:{menu_meta_current_bg} {label}",
     "clarify-border": "{input_rule}", "clarify-title": "{title} bold", "clarify-question": "{text} bold",
-    "clarify-choice": "{dim}", "clarify-selected": "{title} bold", "clarify-active-other": "{title} italic",
+    "clarify-choice": "{choice}", "clarify-selected": "{title} bold", "clarify-active-other": "{title} italic",
     "clarify-countdown": "{input_rule}",
+    "clarify-hint": "{hint} italic",
     "sudo-prompt": "{error} bold", "sudo-border": "{input_rule}", "sudo-title": "{error} bold",
     "sudo-text": "{text}",
+    "secret-prompt": "{title} bold", "secret-border": "{input_rule}",
+    "secret-title": "{title} bold", "secret-text": "{text}",
+    "secret-input": "bg:{menu_bg} {text}",
+    "secret-link": "{label} underline", "secret-label": "{label} bold",
     "approval-border": "{input_rule}", "approval-title": "{warn} bold", "approval-desc": "{text} bold",
-    "approval-cmd": "{dim} italic", "approval-choice": "{dim}", "approval-selected": "{title} bold",
+    "approval-cmd": "{dim} italic", "approval-choice": "{choice}", "approval-selected": "{title} bold",
     "voice-status": "bg:{voice_bg} {label}", "voice-status-recording": "bg:{voice_bg} {error} bold"}
 
 
@@ -532,8 +520,21 @@ def get_prompt_toolkit_style_overrides() -> Dict[str, str]:
     palette: Dict[str, str] = {}
     for name, key, fallback in _STYLE_PALETTE:
         palette[name] = skin.get_color(key, palette[fallback[1:]] if fallback.startswith("@") else fallback)
-    # This badge paints both sides; foreground-only light remapping destroys its contrast.
-    palette["badge_bg"] = skin.colors.get(
-        "status_bar_strong", skin.colors.get("banner_title", DEFAULT_COLORS["banner_title"]))
-    palette["badge_fg"] = skin.colors.get("status_bar_bg", DEFAULT_COLORS["status_bar_bg"])
-    return {cls: tpl.format(**palette) for cls, tpl in _STYLE_TEMPLATES.items()}
+    # Native CLI surfaces are dark-only; shared light palette data is for GUI clients.
+    paired = skin.dark_colors
+    badge_colors = {**skin.colors, **paired}
+    palette["badge_bg"] = badge_colors.get(
+        "status_bar_strong", badge_colors.get("banner_title", DEFAULT_COLORS["banner_title"]))
+    palette["badge_fg"] = badge_colors.get("status_bar_bg", DEFAULT_COLORS["status_bar_bg"])
+    styles = {cls: tpl.format(**palette) for cls, tpl in _STYLE_TEMPLATES.items()}
+    surface = skin.get_color("terminal_elevated")
+    if surface:
+        styles["input-area"] = f"bg:{surface} {palette['text']}"
+        styles["prompt"] = f"bg:{surface} {skin.get_color('ui_accent')} bold"
+        styles["status-bar-session-title"] = f"bg:{palette['status_bg']} {palette['status_dim']}"
+        for name in styles:
+            if name != "secret-input" and name.startswith(("clarify-", "approval-", "sudo-", "secret-")):
+                styles[name] = f"bg:{surface} {styles[name]}"
+        for name in ("clarify-selected", "approval-selected"):
+            styles[name] = f"bg:{palette['menu_current_bg']} {palette['title']} bold"
+    return styles

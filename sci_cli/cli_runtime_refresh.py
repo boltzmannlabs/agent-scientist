@@ -79,6 +79,12 @@ def refresh_attached_worker(worker, *, home=None, ui=None):
     ui.show(f'Application source changed since this chat started ({changed}). '
             'Reconnecting alone keeps the old loaded code. Reloading requires closing its existing runtime; '
             'saved conversation history is retained, and no request is automatically rerun.')
+    from sci_cli.active_sessions import active_session_registry_snapshot
+    owners = active_session_registry_snapshot(home, strict=True)
+    if sum(entry.get('pid') == worker['pid'] for entry in owners) > 1:
+        ui.show('Reconnecting to the existing runtime because it owns multiple open chats. '
+                'Close its side chats normally before reloading updated code. No running work was stopped.')
+        return worker
     choice = ui.choose('Which runtime should open?',
                        ['Reload saved conversation with updated code', 'Keep existing runtime', 'Cancel'])
     if choice == 'Keep existing runtime':

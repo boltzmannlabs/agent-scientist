@@ -147,9 +147,8 @@ def test_queued_prompt_survives_a_backend_restart(monkeypatch, tmp_path):
         db.close()
 
 
-def test_merged_queue_text_updates_the_written_row_in_place(monkeypatch, tmp_path):
-    """A text-only arrival merges into the queued envelope; the already-written row must not
-    lag the envelope, or cold readers see half the merged prompt and adoption stops matching."""
+def test_separate_queued_messages_keep_separate_durable_rows(monkeypatch, tmp_path):
+    """Each queued task has its own durable envelope and row in arrival order."""
     db = SessionDB(db_path=tmp_path / "state.db")
     sid, key = _desktop_session(monkeypatch, db)
     session = server._sessions[sid]
@@ -159,10 +158,24 @@ def test_merged_queue_text_updates_the_written_row_in_place(monkeypatch, tmp_pat
                                           queued=True, display_kind=None)["result"]["status"] == "queued"
         assert server._handle_busy_submit("r2", sid, session, "second", "ws-1",
                                           queued=True, display_kind=None)["result"]["status"] == "queued"
-        assert session["queued_prompt"]["text"] == "first QUEUED-MARKER-A\n\nsecond"
-        rows = [r for r in _active_rows(db, key) if r["role"] == "user"]
-        assert len(rows) == 1  # merge syncs the ONE row, never appends a second
-        assert rows[0]["content"] == session["queued_prompt"]["text"]
+        assert session["queued_prompt"]["text"] == "first QUEUED-MARKER-A"
+        assert session["queued_prompts"][0]["text"] == "second"
+        # Inspect storage without the model projection's consecutive-user repair.
+        rows = db.get_messages_as_conversation(key, repair_alternation=False, include_row_ids=True)
+        assert [r["content"] for r in rows if r["role"] == "user"] == ["first QUEUED-MARKER-A", "second"]
+        def run(rid, session_id, current, text, **kwargs):
+            _run_turn(current, db, key, text, "reply: " + text)
+            current["running"] = False
+        monkeypatch.setattr(server, "_run_prompt_submit", run)
+        session["running"] = False
+        server._clear_inflight_turn(session)
+        assert server._drain_queued_prompt("drain-1", sid, session)
+        assert server._drain_queued_prompt("drain-2", sid, session)
+        assert not server._drain_queued_prompt("empty", sid, session)
+        rows = db.get_messages_as_conversation(key, repair_alternation=False)
+        assert [(r["role"], r["content"]) for r in rows] == [
+            ("user", "first QUEUED-MARKER-A"), ("assistant", "reply: first QUEUED-MARKER-A"),
+            ("user", "second"), ("assistant", "reply: second")]
     finally:
         server._sessions.pop(sid, None)
         db.close()
@@ -290,7 +303,9 @@ def test_merge_after_in_place_compaction_updates_the_live_queued_row(monkeypatch
         _busy(session)
         server._handle_busy_submit("r1", sid, session, "first QUEUED-MARKER", "ws-1", queued=True, display_kind=None)
         _compact_in_place_while_queued(db, key)
-        server._handle_busy_submit("r2", sid, session, "second", "ws-1", queued=True, display_kind=None)
+        # A retained legacy envelope can still be rewritten after compaction.
+        session["queued_prompt"]["text"] += "\n\nsecond"
+        server._persist_queued_user_row(session, session["queued_prompt"], None)
 
         queued = [r["content"] for r in _active_rows(db, key) if "QUEUED-MARKER" in str(r["content"])]
         assert queued == ["first QUEUED-MARKER\n\nsecond"]

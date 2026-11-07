@@ -33,7 +33,7 @@ const buildUiState = (): UiState => ({
   showReasoning: false,
   sid: null,
   status: t('status.summoning'),
-  statusBar: 'top',
+  statusBar: 'bottom',
   storedSid: null,
   statusBarFields: null,
   streaming: true,

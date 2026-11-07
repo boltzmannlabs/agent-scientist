@@ -76,6 +76,39 @@ def render_sessions_export(sessions: Iterable[Dict[str, Any]], *, fmt: str = "js
     return "\n".join(lines) + "\n"
 
 
+def render_chat_export(session: Dict[str, Any]) -> str:
+    """Render the readable chat transcript without internal tool-call activity."""
+    title = _heading_text(_session_title_or_id(session))
+    lines = [f"# {title}", ""]
+    for key, label in (("model", "Model"), ("started_at", "Started")):
+        value = session.get(key)
+        if value:
+            rendered = _format_timestamp(value, _session_id(session)) if key == "started_at" else str(value)
+            lines.append(f"- {label}: `{rendered}`")
+    if any(line.startswith("- ") for line in lines):
+        lines.append("")
+    messages = []
+    for message in _messages(session):
+        if message.get("role") not in ("user", "assistant"):
+            continue
+        # Assistant tool-call records commonly have an empty content field. They
+        # are execution events, not visible chat turns, and should not become
+        # empty assistant headings in an exported transcript.
+        if not _message_text(message.get("content")).strip():
+            continue
+        messages.append(message)
+    if not messages:
+        lines.extend(["_No chat messages found._", ""])
+    for message in messages:
+        role = "You" if message.get("role") == "user" else "Sci Agent"
+        timestamp = _format_timestamp(message.get("timestamp"), _session_id(session))
+        suffix = f" — {timestamp}" if timestamp else ""
+        lines.extend([f"## {role}{suffix}", "", _message_text(message.get("content")), ""])
+    while lines and not lines[-1]:
+        lines.pop()
+    return "\n".join(lines) + "\n"
+
+
 def export_record_count(sessions: Iterable[Dict[str, Any]], *, only: Optional[str] = None) -> Tuple[int, str]:
     """Return ``(count, noun)`` for status messages after an export."""
     session_list = list(sessions)

@@ -143,8 +143,8 @@ delegation is process-local; work that must survive restart uses `cronjob` or
 `terminal(background=True, notify_on_complete=True)`. `heartbeat=N` on the same spawn emits a `heartbeat` event (type on the completion queue; delta output only, `HEARTBEAT_MIN_SECONDS` floor, one daemon timer thread for all sessions in `process_registry.py::ProcessRegistry._heartbeat_loop`) — every surface that renders `watch_match` must render `heartbeat` (`process_registry_notifications.py`, `gateway/run.py::_drain_gateway_watch_events`, `tui_gateway/session_notifications.py::_DEDUP_EXTRA_FIELDS`). **Stop fan-out:** a turn's hard interrupt reaches only
 `_active_children`; background units are detached at dispatch, so every stop surface (gateway `/stop` busy AND
 idle paths, TUI `session.interrupt`, ACP `cancel`, CLI `/stop` via `interrupt_all`) calls
-`async_delegation.interrupt_for_session` too. Depth>0 delegations are always synchronous
-(`_model_background_value`), so the stop recurses through the child's own `_active_children` fan-out; an
+`async_delegation.interrupt_for_session` too. Model-facing delegations are always synchronous
+(the registry handler and `AIAgent._dispatch_delegate_task`), so the stop recurses through the child's own `_active_children` fan-out; an
 interrupted entry's `summary` is the child's last real assistant text (`_build_result_entry`). API: `website/docs/developer-guide/subagent-lifecycle-api.md`.
 
 ## Tests

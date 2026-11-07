@@ -146,14 +146,13 @@ def _ac_inflight_original(session: dict) -> str:
 
 def _enqueue_prompt(session: dict, text: Any, transport: Any, image_paths: list[str] | None = None,
                     turn_author: dict | None = None) -> dict | None:
-    """Queue a message for the next turn. Text-only arrivals share a slot and merge losslessly (like the
-    consecutive-user merge in ``repair_message_sequence``); image-bearing and authored ones stay separate
-    envelopes so attachment chronology and the sender survive. ``transport`` is pinned so the drained turn
-    streams to its sender. Returns the envelope dict the text landed in (the merged head on a merge)
-    so the caller can attach durable state to it; None when the text was dropped as a duplicate."""
+    """Keep each submitted message in a separate FIFO envelope, pinned to its transport.
+
+    Return the envelope so the caller can persist it at acceptance. None means a duplicate
+    of the already-running prompt; that must not restart the original task on drain.
+    """
     image_paths = list(image_paths or [])
-    # Scrub live-turn self-duplicates first so the text merge below can't glue "{original}\n\n{later}" and re-fire the
-    # original after a correction settles.
+    # Scrub old merged/self-duplicate slots so draining cannot re-fire the original task.
     # See #84417.
     _drop_queued_duplicates_of_inflight_user(session)
     text_only = not image_paths and isinstance(text, str)
@@ -163,12 +162,6 @@ def _enqueue_prompt(session: dict, text: Any, transport: Any, image_paths: list[
     queued = {"text": text, "transport": transport, **({"image_paths": image_paths} if image_paths else {}),
               **({"turn_author": turn_author} if turn_author else {})}
     existing = session.get("queued_prompt")
-    if (existing and text_only and not turn_author and isinstance(existing.get("text"), str)
-            and not existing.get("image_paths") and not existing.get("turn_author")
-            and not session.get("queued_prompts")):
-        prev = existing["text"]
-        existing["text"] = f"{prev}\n\n{text}" if prev and text else (prev or text)
-        return existing
     if existing:
         session.setdefault("queued_prompts", []).append(queued)
     else:
@@ -398,7 +391,7 @@ def _replace_queued_user_row_for_turn(session: dict, queued: dict, is_dispatchin
 def _handle_busy_submit(rid, sid: str, session: dict, text: Any, transport: Any, queued: bool = False,
                         turn_author: dict | None = None, display_kind: str | None = None) -> dict | None:
     """Apply ``display.busy_input_mode`` to a mid-turn prompt instead of rejecting it (rejection made clients busy-retry
-    and drop sends): ``interrupt`` (default) → redirect, falling back to hard interrupt + queue; ``queue`` → queue only;
+    and drop sends): ``interrupt`` (explicit opt-in) → redirect, falling back to hard interrupt + queue; ``queue`` (default) → queue only;
     ``steer`` → inject after the current atomic action. ``queued=True`` (client queue drain) forces queue mode: a "run
     after" message must NEVER become a live correction."""
     mode = "queue" if queued else _load_busy_input_mode()

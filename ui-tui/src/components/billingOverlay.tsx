@@ -176,7 +176,7 @@ function OverviewScreen({ ctx, onClose, onPatch, s, t }: ScreenProps) {
 
       <Text />
       {items.map((label, i) => (
-        <MenuRow active={sel === i} index={i + 1} key={label} label={label} t={t} />
+        <MenuRow active={sel === i} key={label} label={label} t={t} />
       ))}
 
       <Text />
@@ -366,7 +366,7 @@ function BuyScreen({ ctx, onPatch, s, t }: ScreenProps) {
         <Text color={t.color.muted}>{B.buy.addCardOnce}</Text>
         <Text />
         {rows.map((label, i) => (
-          <MenuRow active={cSel === i} index={i + 1} key={label} label={label} t={t} />
+          <MenuRow active={cSel === i} key={label} label={label} t={t} />
         ))}
         {error && <Text color={t.color.error}>{error}</Text>}
         <Text />
@@ -383,7 +383,7 @@ function BuyScreen({ ctx, onPatch, s, t }: ScreenProps) {
       <Text color={t.color.muted}>{payLine}</Text>
       <Text />
       {rows.map((label, i) => (
-        <MenuRow active={cSel === i} index={i + 1} key={label} label={label} t={t} />
+        <MenuRow active={cSel === i} key={label} label={label} t={t} />
       ))}
       {error && <Text color={t.color.error}>{error}</Text>}
       <Text />
@@ -947,7 +947,7 @@ function LimitScreen({ ctx, onClose, onPatch, s, t }: ScreenProps) {
       <Text color={t.color.muted}>{B.limit.readOnly}</Text>
       <Text />
       {labels.map((label, i) => (
-        <MenuRow active={sel === i} index={i + 1} key={label} label={label} t={t} />
+        <MenuRow active={sel === i} key={label} label={label} t={t} />
       ))}
       <Text />
       {footer(B.limit.hint(labels.length), t)}
