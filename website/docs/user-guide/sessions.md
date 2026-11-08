@@ -243,7 +243,7 @@ the worker running. A pending approval remains unanswered; existing approval
 timeouts still apply. Detaching never approves an action. `/exit --delete` retains
 its explicit history-deletion behavior instead of detaching.
 
-**Ctrl+Z suspends the terminal interface**, not the worker. The shell's `fg`
+On Unix, **Ctrl+Z suspends the terminal interface**, not the worker. The shell's `fg`
 reattaches it. You can also open SCI elsewhere and resume the same conversation.
 If another viewer is attached, SCI asks before moving it; only one viewer can
 send input. Reconnecting never resubmits the task. The old terminal does not
@@ -280,8 +280,15 @@ Use `sci --no-daemon` for an explicitly foreground classic chat. Troubleshooting
 flags `--safe-mode` and `--ignore-user-config` also retain foreground execution. In that mode,
 Ctrl+C interrupts, a second quick press exits, and Ctrl+Z pauses the whole
 process until `fg`. A running foreground task cannot be migrated into a worker.
-Native Windows and the separate Ink TUI retain their existing foreground/runtime
-behavior; this persistent classic-CLI transport is POSIX-only.
+Native Windows uses the same persistent classic-CLI workflow through ConPTY. During a
+running task, press Ctrl+C with an empty composer and select Cancel task, Run in background,
+or Exit; Escape leaves the task running in the current viewer. Ctrl+] detaches directly.
+Reconnect through `/resume` or `sci --resume SESSION_ID`. Windows has no Unix `fg` job control.
+The Windows service listens only on loopback, authenticates every connection with a
+profile-scoped token, and stores that token with an owner-and-SYSTEM-only Windows ACL.
+No new LLM authentication is required. A normal stop requests worker cleanup through the
+existing heartbeat; a forced stop can terminate local execution, while already submitted
+remote scientific jobs may continue. The separate Ink TUI retains its own runtime behavior.
 
 The service survives terminal disconnects, not machine reboot, service failure,
 or OS policies that terminate user processes at logout. After a crash, resume

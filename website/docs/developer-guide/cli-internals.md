@@ -8,6 +8,22 @@ description: "How sci_cli is shaped: slash dispatch, config loaders, the skin en
 
 Companion to `sci_cli/AGENTS.md` (the rules) — this page holds the longer explanations.
 
+## Windows CLI handoffs
+
+Profile activation, saved-session resume, and CLI update finish terminal/session
+cleanup before relaunching. On Windows the original process waits for the new
+CLI, keeping PowerShell from reclaiming the terminal while that CLI is active.
+`sci_cli.cli_shutdown.pause_exit_watchdogs_for_relaunch` cancels the completed
+cleanup's signal and exit timers for this wait. It restores shutdown protection
+when the child exits or fails to start. Cleanup itself remains time-bounded;
+disabling the exit watchdog globally is not required.
+
+Opening an input overlay also retires the live welcome card through
+`CLIModalMixin._capture_modal_input_snapshot`. Inline commands such as `/model`
+bypass the normal input worker, so they must release the welcome widget's rows
+before the picker calculates its viewport. One still card remains in scrollback;
+the user's draft is preserved while the overlay is open.
+
 ## Update pipeline
 
 The stage-by-stage contract (`plan → snapshot → apply → restart-per-kind → verify → report`) and the

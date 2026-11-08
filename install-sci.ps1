@@ -31,7 +31,7 @@ if ([System.Environment]::OSVersion.Platform -ne [System.PlatformID]::Win32NT) {
 }
 
 $sourceDir = $PSScriptRoot
-foreach ($file in 'setup-sci.ps1', 'scripts/source-install-preflight.ps1', 'pyproject.toml', 'uv.lock', 'pm/lock.json') {
+foreach ($file in 'setup-sci.ps1', 'scripts/source-install-preflight.ps1', 'scripts/source-install-verify.ps1', 'pyproject.toml', 'uv.lock', 'pm/lock.json') {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceDir $file))) {
         [Console]::Error.WriteLine("Incomplete SCI checkout: $file is missing. Obtain the complete repository and retry.")
         exit 1
@@ -89,6 +89,9 @@ if ($LASTEXITCODE -ne 0) { Stop-Install $LASTEXITCODE }
 # The engine registered persistent User PATH. Refresh this PowerShell process too.
 $binDir = if ($env:SCI_HOME) { Join-Path $env:SCI_HOME 'bin' } else { Join-Path $env:LOCALAPPDATA 'sci\bin' }
 $env:Path = "$binDir;$env:Path"
+$script:stage = 'verifying public launchers and User PATH'
+. (Join-Path $sourceDir 'scripts/source-install-verify.ps1')
+$verified = Test-SciPublishedCommands -BinDirectory $binDir -UserPath ([Environment]::GetEnvironmentVariable('Path', 'User'))
 $script:stage = 'checking model configuration'
 function Test-InstalledProvider {
     & $installedCli --run-module sci_cli.install_status
@@ -107,8 +110,7 @@ if ($setup -and -not $script:providerReady) {
 Write-Output ''
 Write-Output 'Agent Scientist is installed.'
 Write-Output 'Start: sci (agent-sci is also available).'
-Write-Output 'User PATH is registered. This PowerShell process can use sci immediately.'
-Write-Output 'If invoked from a separate child PowerShell or CMD process, open a new terminal for its updated PATH.'
+Show-SciCommandInstructions $verified
 Write-Output "Keep this source checkout at: $sourceDir"
 if (-not $script:providerReady) {
     Write-Output 'Model setup is incomplete; software is installed. Run sci setup before chatting.'

@@ -27,6 +27,11 @@ def test_user_installer_order_and_failure(tmp_path, failure):
     shutil.copy2(ROOT / "install-sci.ps1", source / "install-sci.ps1")
     (source / "scripts").mkdir()
     shutil.copy2(ROOT / "scripts/source-install-preflight.ps1", source / "scripts/source-install-preflight.ps1")
+    (source / "scripts/source-install-verify.ps1").write_text(
+        "function Test-SciPublishedCommands { param($BinDirectory, $UserPath)\n"
+        "  'public-verification' | Add-Content -LiteralPath $env:CALL_LOG\n"
+        "  [pscustomobject]@{Sci='fixture.cmd'; AgentSci='fixture.cmd'; Version='fixture'}\n}\n"
+        "function Show-SciCommandInstructions { param($Verified) }\n", encoding="utf-8")
     for name in ("pyproject.toml", "uv.lock", "pm/lock.json"):
         (source / name).touch()
     log = tmp_path / "calls.txt"
@@ -39,9 +44,9 @@ def test_user_installer_order_and_failure(tmp_path, failure):
         'New-Item -ItemType Directory -Force -Path "$PSScriptRoot\\.sci\\bin" | Out-Null\n'
         "Copy-Item -LiteralPath $env:FIXTURE_CLI -Destination"
         ' "$PSScriptRoot\\.sci\\bin\\sci.cmd"\n'
-        "exit 0\n")
+        "exit 0\n", encoding="utf-8")
     cli = tmp_path / "fixture-cli.cmd"
-    cli.write_text('@echo off\r\n>> "%CALL_LOG%" echo cli:%*\r\nif "%1"=="--run-module" exit /b 3\r\nexit /b 0\r\n')
+    cli.write_text('@echo off\r\n>> "%CALL_LOG%" echo cli:%*\r\nif "%1"=="--run-module" exit /b 3\r\nexit /b 0\r\n', encoding='utf-8')
     env = {**os.environ, "CALL_LOG": str(log), "FIXTURE_CLI": str(cli),
            "SETUP_FAILURE": str(failure)}
     result = subprocess.run(
@@ -49,14 +54,14 @@ def test_user_installer_order_and_failure(tmp_path, failure):
          "-File", str(source / "install-sci.ps1"), "-NonInteractive"],
         env=env, text=True, capture_output=True, timeout=60)
     assert result.returncode == failure
-    calls = log.read_text().splitlines()
+    calls = log.read_text(encoding="utf-8-sig").splitlines()
     assert calls[0] == "setup:-UserInstall -NonInteractive"
     if failure:
         assert calls == ["setup:-UserInstall -NonInteractive"]
         assert "stopped during installing runtime and dependencies" in result.stderr
         assert "is installed" not in result.stdout
     else:
-        assert calls == ["setup:-UserInstall -NonInteractive", "cli:--help", "cli:--run-module sci_cli.install_status"]
+        assert calls == ["setup:-UserInstall -NonInteractive", "cli:--help", "public-verification", "cli:--run-module sci_cli.install_status"]
         assert "Agent Scientist is installed" in result.stdout
         assert "sci setup" in result.stdout
 

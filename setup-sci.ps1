@@ -151,7 +151,7 @@ Write-Host 'Skills synced' -ForegroundColor Green
 # Done
 # ---------------------------------------------------------------------------
 Write-Host ''
-Write-Host 'Setup complete!' -ForegroundColor Green
+Write-Host 'Runtime, launchers and bundled skills installed.' -ForegroundColor Green
 if ($UserInstall) {
     Write-Host 'Start Agent Scientist with: sci'
     exit 0

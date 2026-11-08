@@ -30,6 +30,30 @@ import pytest
 from sci_cli import win_pty_bridge
 from sci_cli.win_pty_bridge import PtyUnavailableError, WinPtyBridge
 
+
+@pytest.mark.platforms('windows')
+@pytest.mark.parametrize('code', [14, 15])
+@pytest.mark.asyncio
+async def test_native_control_keys_survive_conpty_input(code):
+    """SO/SI are keyboard input here, not VT character-set instructions."""
+    source = f'''
+import time
+from prompt_toolkit.input.win32 import ConsoleInputReader, raw_mode
+reader = ConsoleInputReader(recognize_paste=False)
+with raw_mode():
+    print('KEY_READY', flush=True)
+    deadline = time.monotonic() + 12
+    while time.monotonic() < deadline:
+        if any(key.data == chr({code}) for key in reader.read()):
+            print('KEY_DELIVERED', flush=True)
+            break
+        time.sleep(.01)
+'''
+    with WinPtyBridge.spawn([sys.executable, '-c', source]) as bridge:
+        assert b'KEY_READY' in _read_until(bridge, b'KEY_READY', timeout=30)
+        assert await bridge.write(bytes([code]))
+        assert b'KEY_DELIVERED' in _read_until(bridge, b'KEY_DELIVERED', timeout=20)
+
 # ``pytest.mark.platforms("windows")`` rather than a local ``skipif`` alias: the
 # dedicated Windows CI job selects its files by grepping for the marker name
 # and then filters with ``-m platforms("windows")``. A file-local skipif alias matched

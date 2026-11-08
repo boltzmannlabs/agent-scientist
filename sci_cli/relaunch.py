@@ -123,8 +123,10 @@ def relaunch(
     new_argv = build_relaunch_argv(extra_args, preserve_inherited=preserve_inherited, original_argv=original_argv)
     if sys.platform == "win32":
         import subprocess
+        from sci_cli.cli_shutdown import pause_exit_watchdogs_for_relaunch
         try:
-            result = subprocess.run(new_argv)
+            with pause_exit_watchdogs_for_relaunch():
+                result = subprocess.run(new_argv)
             sys.exit(result.returncode)
         except KeyboardInterrupt:
             sys.exit(130)

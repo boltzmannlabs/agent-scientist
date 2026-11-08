@@ -11,10 +11,32 @@ import os
 import sys
 import threading
 import time
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 
 # Log-record parity with the origin module.
 logger = logging.getLogger("cli")
+
+_exit_watchdogs: set[threading.Event] = set()
+_exit_watchdog_lock = threading.RLock()
+
+
+@contextmanager
+def pause_exit_watchdogs_for_relaunch():
+    """Completed cleanup must not kill a Windows parent waiting for its new CLI.
+
+    Cancel both cleanup and signal timers only after teardown has succeeded.
+    A fresh timer bounds the parent's final exit, including failed child starts.
+    """
+    with _exit_watchdog_lock:
+        armed = bool(_exit_watchdogs)
+        for cancelled in _exit_watchdogs:
+            cancelled.set()
+        _exit_watchdogs.clear()
+    try:
+        yield
+    finally:
+        if armed:
+            _cli()._arm_exit_watchdog()
 
 
 def _cli():
@@ -74,28 +96,35 @@ def _arm_exit_watchdog(timeout_s: float | None = None, *, from_signal: bool = Fa
     if os.environ.get("PYTEST_CURRENT_TEST"):
         return
 
-    def _watchdog():
-        time.sleep(timeout_s)
-        # The signal-armed watchdog yields to cleanup's own timer once cleanup is running.
-        if from_signal and _cli()._cleanup_in_progress:
-            return
+    cancelled = threading.Event()
 
-        try:
-            logger.warning(
-                "Exit watchdog fired after %.0fs — forcing process exit "
-                "(a cleanup step or non-daemon thread is wedged).",
-                timeout_s,
-            )
-        except Exception:
-            pass
-        _flush_logging_and_stdio()
-        # os._exit skips cleanup: a foreground command in its own process group would outlive us.
-        with suppress(Exception):
-            from tools.environments.base import kill_live_foreground_processes
-            kill_live_foreground_processes(now=True)
-        os._exit(0)
+    def _watchdog():
+        if cancelled.wait(timeout_s):
+            return
+        # Serialize expiry with handoff cancellation: a cancelled timer cannot
+        # pass this check just as the parent begins waiting for its child.
+        with _exit_watchdog_lock:
+            _exit_watchdogs.discard(cancelled)
+            if cancelled.is_set() or (from_signal and _cli()._cleanup_in_progress):
+                return
+            try:
+                logger.warning(
+                    "Exit watchdog fired after %.0fs — forcing process exit "
+                    "(a cleanup step or non-daemon thread is wedged).",
+                    timeout_s,
+                )
+            except Exception:
+                pass
+            _flush_logging_and_stdio()
+            # os._exit skips cleanup: foreground commands must not outlive us.
+            with suppress(Exception):
+                from tools.environments.base import kill_live_foreground_processes
+                kill_live_foreground_processes(now=True)
+            os._exit(0)
 
     with suppress(Exception):  # never block shutdown on watchdog setup
+        with _exit_watchdog_lock:
+            _exit_watchdogs.add(cancelled)
         threading.Thread(target=_watchdog, daemon=True, name="exit-watchdog").start()
 
 

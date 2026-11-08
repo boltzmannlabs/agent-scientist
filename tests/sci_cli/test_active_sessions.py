@@ -484,6 +484,9 @@ def test_unknown_sibling_liveness_only_fences_its_own_session(tmp_path, monkeypa
     sibling whose owner pid exists but whose start time cannot be read (LXC /proc after
     a backend restart, #113683); the SAME session id still fails closed."""
     home = tmp_path / ".sci"
+    from gateway import status
+    original_exists = status._pid_exists
+    monkeypatch.setattr(status, "_pid_exists", lambda pid: True if int(pid) == 1 else original_exists(pid))
     monkeypatch.setenv("SCI_HOME", str(home))
     state_path = home / "runtime" / "active_sessions.json"
     active_sessions._write_entries(state_path, [{
@@ -518,6 +521,9 @@ def test_unknown_sibling_does_not_block_guarded_release_or_orphan_sweep(tmp_path
     lease through ``release_active_session_liveness_guard``; that path and the
     orphan sweep must tolerate an unknowable, unrelated sibling as well (#113683)."""
     home = tmp_path / ".sci"
+    from gateway import status
+    original_exists = status._pid_exists
+    monkeypatch.setattr(status, "_pid_exists", lambda pid: True if int(pid) == 1 else original_exists(pid))
     monkeypatch.setenv("SCI_HOME", str(home))
     state_path = home / "runtime" / "active_sessions.json"
     active_sessions._write_entries(state_path, [{

@@ -104,6 +104,7 @@ def query_session_listing(
         limit=max(limit * 4, limit),
         search_query=search or None,
         order_by_last_active=order_by_last_active or bool(search),
+        include_side_conversations=include_all_sources or source != 'cli',
     )
     result: list[dict[str, Any]] = []
     for row in rows:

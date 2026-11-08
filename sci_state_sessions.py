@@ -1321,7 +1321,7 @@ class SessionSessionsMixin:
         order_by_last_active: bool = False, include_archived: bool = False, archived_only: bool = False,
         id_query: str = None, search_query: str = None, compact_rows: bool = False,
         include_pinned: bool = False, session_key: str = None, include_hidden: bool = False,
-        include_subagents: bool = False,
+        include_subagents: bool = False, include_side_conversations: bool = True,
     ) -> List[Dict[str, Any]]:
         """List sessions with preview and ``last_active`` in one query. ``order_by_last_active`` sorts
         by the chain TIP via a recursive CTE (the only path honouring ``id_query`` / ``search_query``);
@@ -1334,6 +1334,8 @@ class SessionSessionsMixin:
             exclude_sources=exclude_sources, cwd_prefix=cwd_prefix, min_message_count=min_message_count,
             archived_only=archived_only, include_archived=include_archived, include_subagents=include_subagents,
         )
+        if not include_side_conversations:
+            where_clauses.append(f"{_sql_json_extract('s.model_config', '$._side_from')} IS NULL")
         # The archived-only view is the recovery surface for rows that dropped out of every
         # default list: a session that is archived AND hidden (Bot Mode marks its sessions
         # hidden) must still be reachable there, or nothing but direct DB access can bring
@@ -1507,12 +1509,14 @@ class SessionSessionsMixin:
 
     def search_sessions(
         self, source: Union[str, Sequence[str], None] = None, limit: int = 20, offset: int = 0,
-        workspace_key: str = None,
+        workspace_key: str = None, include_side_conversations: bool = True,
     ) -> List[Dict[str, Any]]:
         """Sessions MRU-first with a computed ``last_active``; ``workspace_key`` scopes to one workspace
         so ``sci -c``/``--resume`` picks its last session. ``source`` may be one label or several."""
         where_clauses = []
         params: list = []
+        if not include_side_conversations:
+            where_clauses.append(f"{_sql_json_extract('s.model_config', '$._side_from')} IS NULL")
         if source:
             sources = [source] if isinstance(source, str) else list(source)
             where_clauses.append(f"s.source IN ({','.join('?' * len(sources))})")

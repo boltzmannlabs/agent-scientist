@@ -29,7 +29,7 @@ def worker_arguments(args):
 
 
 def service_eligible(args, *, use_tui=False):
-    return (not use_tui and os.name == "posix"
+    return (not use_tui and os.name in {"posix", "nt"}
             and getattr(args, "command", None) in (None, "chat")
             and not getattr(args, "no_daemon", False)
             and sys.stdin.isatty() and sys.stdout.isatty()

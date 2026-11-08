@@ -110,6 +110,10 @@ Run `sci setup` later in an interactive terminal before chatting.
 
 ## Windows
 
+Check `git --version` before cloning. Install missing Git from
+[Git for Windows](https://git-scm.com/download/win), or use
+`winget install --id Git.Git -e --source winget`, then reopen PowerShell.
+
 From a complete checkout in PowerShell:
 
 ```powershell
@@ -118,6 +122,15 @@ cd Agent-Scientist
 .\install-sci.ps1
 agent-sci
 ```
+
+If execution policy blocks the reviewed installer, use a temporary process override
+where company policy permits:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install-sci.ps1
+```
+
+Company Group Policy takes precedence; do not change machine-wide policy to install SCI.
 
 `install-sci.ps1` is the Windows counterpart of `install-sci.sh`: it checks the
 checkout, runs the local `setup-sci.ps1` engine in user mode (managed runtime
@@ -131,8 +144,20 @@ later. The engine adds the launcher directory to your persistent **User PATH**,
 and the wrapper refreshes the current PowerShell PATH. No manual PATH edit is
 required. If you started the installer through a separate child PowerShell or
 CMD process, open a new terminal afterwards; child processes cannot change the
-parent terminal environment. An error stops the installation and names
+parent terminal environment. Completely exit and reopen VS Code if it was already
+running. The installer verifies the published `sci` and `agent-sci` commands, checks
+persistent User PATH, and prints an absolute launch command (including custom paths).
+Use that command immediately if a stale shell or another installation hides `sci`.
+An error stops the installation and names
 the failed stage; rerun the installer after an interruption.
+
+The classic Windows CLI runs conversations in its persistent background service.
+During a task with an empty composer, **Ctrl+C** offers Cancel task, Run in
+background, or Exit. **Ctrl+]** detaches; reconnect with `/resume` or
+`sci --resume SESSION_ID`. Explicit `sci --no-daemon` keeps foreground behavior.
+Use `/btw` for a side discussion and **Ctrl+/** to switch views. Normal resume
+pickers list main conversations; saved side history remains accessible by its
+explicit session ID. See the [CLI guide](website/docs/user-guide/cli.md#saved-side-conversations).
 
 Interactive setup menus support **Up/Down** and **Enter**; multi-selection menus
 use **Space** to toggle items. Windows x64 receives the pinned `windows-curses`

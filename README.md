@@ -70,6 +70,9 @@ then run `sci setup` interactively before chatting.
 Prerequisites: Git for Windows and PowerShell. Run from a normal PowerShell
 window, not an administrator shell:
 
+First check `git --version`. If Git is missing, install [Git for Windows](https://git-scm.com/download/win)
+or run `winget install --id Git.Git -e --source winget`, then reopen PowerShell.
+
 ```powershell
 git clone https://github.com/boltzmannlabs/agent-scientist.git
 cd agent-scientist
@@ -92,8 +95,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install-sci.ps1
 
 This override is temporary. Do not bypass organization-enforced controls.
 
-When the installer runs through a separate child PowerShell/CMD process, open
-a new terminal for its updated PATH. Manual PATH editing is not required. Use
+The installer verifies both public launchers with `--version` and prints an absolute
+launch command. If VS Code was already open, completely exit all its windows and
+reopen it; creating another integrated terminal may retain the old PATH. Use
 `-NoLaunch` to skip chat, or `-InstallPrerequisites` to explicitly approve
 missing Git installation through WinGet. Without WinGet, the installer provides
 manual Git instructions.

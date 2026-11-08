@@ -3,7 +3,6 @@
 import base64
 import json
 import os
-import select
 import signal
 import sys
 
@@ -11,10 +10,9 @@ from sci_cli.background_chats import FRAME_LIMIT, connect, send
 
 
 def _attach_once(chat_id, *, home=None, takeover=False, view_session=None):
-    if os.name != "posix" or not sys.stdin.isatty() or not sys.stdout.isatty():
-        raise RuntimeError("Attach requires an interactive Linux/macOS/WSL terminal.")
-    import termios
-    import tty
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        raise RuntimeError("Attach requires an interactive terminal.")
+    from sci_cli.background_chat_console import terminal_console
 
     outcome = {}
     with connect(home) as sock:
@@ -37,28 +35,10 @@ def _attach_once(chat_id, *, home=None, takeover=False, view_session=None):
             raise RuntimeError(reply["error"])
         if reply.get("attached") != chat_id:
             raise RuntimeError("Unexpected background conversation identity.")
-        saved = termios.tcgetattr(sys.stdin.fileno())
-        stop, resize = [False], [False]
-        previous = {}
-
-        def disconnected(signum, frame):
-            stop[0] = True
-
-        def resized(signum, frame):
-            resize[0] = True
-
-        def suspended(signum, frame):
-            outcome["suspend"] = True
-            stop[0] = True
-
+        console = terminal_console(outcome)
+        stop = [False]
         try:
-            for sig in (signal.SIGTERM, signal.SIGHUP, signal.SIGINT):  # windows-footgun: ok — _attach_once rejects non-POSIX
-                previous[sig] = signal.signal(sig, disconnected)
-            previous[signal.SIGWINCH] = signal.signal(signal.SIGWINCH, resized)
-            previous[signal.SIGTSTP] = signal.signal(signal.SIGTSTP, suspended)
-            # Do not flush keys typed during attachment. Install input mode before
-            # replaying the chat, so an immediate detach is honored.
-            tty.setraw(sys.stdin.fileno(), when=termios.TCSANOW)
+            console.__enter__()
             # Each accepted attachment owns the visible transcript. Clear before
             # replay, including terminal scrollback, so previous chats cannot
             # accumulate above this one. Persisted histories remain untouched.
@@ -70,8 +50,12 @@ def _attach_once(chat_id, *, home=None, takeover=False, view_session=None):
                 print("Live terminal replay is limited to its recent tail. Ctrl+O opens the saved transcript.\r", flush=True)
             pending = bytearray(tail)
             sock.settimeout(2)
-            while not stop[0]:
-                while not stop[0] and b"\n" in pending:
+            while not stop[0] and not console.stopped:
+                # Large replays and frequent paint events must yield to input
+                # and resizing; draining the entire queue can starve a viewer.
+                frames = 0
+                while not stop[0] and not console.stopped and b"\n" in pending and frames < 8:
+                    frames += 1
                     raw, _, rest = pending.partition(b"\n")
                     pending = bytearray(rest)
                     event = json.loads(raw)
@@ -88,23 +72,23 @@ def _attach_once(chat_id, *, home=None, takeover=False, view_session=None):
                         raise RuntimeError(event["error"])
                 if stop[0]:
                     break
-                if resize[0]:
-                    resize[0] = False
+                if console.resized:
+                    console.resized = False
                     size = os.get_terminal_size()
                     send(sock, {"action": "resize", "cols": size.columns, "rows": size.lines})
-                readable, _, _ = select.select([sock, sys.stdin], [], [], 0.2)
-                if sock in readable:
+                socket_ready, input_data = console.poll(sock, timeout=0 if b"\n" in pending else None)
+                if socket_ready:
                     chunk = sock.recv(65536)
                     if not chunk:
                         break
                     pending.extend(chunk)
                     if len(pending) > FRAME_LIMIT and b"\n" not in pending:
                         raise RuntimeError("Invalid oversized background event.")
-                if sys.stdin in readable:
-                    chunk = os.read(sys.stdin.fileno(), 8192)
+                if input_data is not None:
+                    chunk = input_data
                     if not chunk or b"\x1d" in chunk:  # Ctrl+] is the explicit detach shortcut.
                         break
-                    if chunk == b"\x1a":
+                    if os.name == "posix" and chunk == b"\x1a":
                         outcome["suspend"] = True
                         break
                     send(sock, {"action": "input", "data": base64.b64encode(chunk).decode()})
@@ -118,12 +102,7 @@ def _attach_once(chat_id, *, home=None, takeover=False, view_session=None):
                 sys.stdout.flush()
             except OSError:
                 pass  # A terminal closed by its owner cannot accept mode resets.
-            for sig, handler in previous.items():
-                signal.signal(sig, handler)
-            try:
-                termios.tcsetattr(sys.stdin.fileno(), termios.TCSANOW, saved)
-            except termios.error:
-                pass  # A closed terminal cannot be restored.
+            console.__exit__()
             try:
                 send(sock, {"action": "detach"})
             except OSError:

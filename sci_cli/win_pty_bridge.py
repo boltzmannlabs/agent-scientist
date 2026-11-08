@@ -1,9 +1,10 @@
-"""Windows ConPTY bridge for the `sci dashboard` chat tab."""
+"""Windows ConPTY bridge for dashboard terminals and persistent classic CLI chats."""
 
 from __future__ import annotations
 
 import asyncio
 import logging
+import select
 import sys
 import time
 from typing import Optional, Sequence
@@ -48,6 +49,7 @@ class WinPtyBridge:
     def __init__(self, proc: "PtyProcess") -> None:  # type: ignore[name-defined]
         self._proc = proc
         self._closed = False
+        self._process = None
 
     @classmethod
     def is_available(cls) -> bool:
@@ -68,7 +70,10 @@ class WinPtyBridge:
             if env is None else dict(env))
         spawn_env["TERM"] = spawn_env.get("TERM") or "xterm-256color"
         # pywinpty mirrors ptyprocess: dimensions=(rows, cols).
-        return cls(PtyProcess.spawn(list(argv), cwd=cwd, env=spawn_env, dimensions=(rows, cols)))  # type: ignore[union-attr]
+        bridge = cls(PtyProcess.spawn(list(argv), cwd=cwd, env=spawn_env, dimensions=(rows, cols)))  # type: ignore[union-attr]
+        import psutil
+        bridge._process = psutil.Process(bridge.pid)
+        return bridge
 
     @property
     def pid(self) -> int:
@@ -85,6 +90,10 @@ class WinPtyBridge:
         if self._closed:
             return None
         try:
+            # pywinpty 3.x exposes its UTF-8 output through a socket. Bound idle
+            # reads so the shared session drain can detach and close promptly.
+            if hasattr(self._proc, "fileobj") and not select.select([self._proc.fileobj], [], [], timeout)[0]:
+                return b"" if self.is_alive() else None
             data = self._proc.read(65536)  # pywinpty returns str
         except Exception:
             return None
@@ -183,7 +192,25 @@ class WinPtyBridge:
             return
         self._closed = True
         try:
-            self._proc.terminate(force=True)
+            if self._process is not None:
+                import psutil
+                # A venv redirector has an interpreter child with the same
+                # command. Close that chain, not detached background services
+                # which also retain this process as their historical parent.
+                try:
+                    command = self._process.cmdline()
+                    for child in self._process.children(recursive=True):
+                        try:
+                            if child.cmdline() == command:
+                                child.kill()
+                        except psutil.NoSuchProcess:
+                            pass
+                    self._process.kill()
+                except psutil.NoSuchProcess:
+                    pass
+                self._proc.close(force=True)
+            else:
+                self._proc.terminate(force=True)
         except Exception:
             pass
 

@@ -1242,6 +1242,10 @@ class CLIModalMixin:
         """Temporarily clear the input buffer and save the user's in-progress draft."""
         if getattr(self, "_modal_input_snapshot", None) is not None or not getattr(self, "_app", None):
             return
+        # Inline commands such as /model bypass the ordinary input worker that
+        # retires the welcome widget. Give every overlay the full row budget.
+        if welcome := getattr(self, "_welcome_animation", None):
+            welcome.dismiss(self)
         try:
             buf = self._modal_buffer()
             self._modal_input_snapshot = {"text": buf.text, "cursor_position": buf.cursor_position}

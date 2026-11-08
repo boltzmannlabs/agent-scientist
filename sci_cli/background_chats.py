@@ -58,6 +58,12 @@ def read_server(home=None):
 
 
 def _connection_endpoints(home, record, endpoint):
+    if os.name == "nt":
+        address = record.get("endpoint")
+        if (not isinstance(address, list) or len(address) != 2 or address[0] != "127.0.0.1"
+                or type(address[1]) is not int or not 0 < address[1] < 65536):
+            raise RuntimeError("Invalid Windows background service endpoint; refusing to send credentials.")
+        return [tuple(address)]
     if record.get("endpoint"):
         return [str(record["endpoint"])]
     # Pre-endpoint records belong to live older services. Keep them reachable
@@ -73,11 +79,11 @@ def _connection_endpoints(home, record, endpoint):
 def connect(home=None):
     home, _, endpoint = locations(home)
     record = read_server(home)
-    if not record or endpoint is None:
+    if not record or (endpoint is None and os.name != "nt"):
         raise RuntimeError("No background chat service is running in this profile.")
     endpoints = _connection_endpoints(home, record, endpoint)
     for endpoint in endpoints:
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock = socket.socket(socket.AF_INET if os.name == "nt" else socket.AF_UNIX, socket.SOCK_STREAM)
         sock.settimeout(5)
         try:
             sock.connect(endpoint)
@@ -90,7 +96,7 @@ def connect(home=None):
             raise
     raise RuntimeError(
         f"Background chat service PID {record['pid']} is alive, but its socket is missing or refusing connections. "
-        f"Profile: {home}. Checked: {', '.join(endpoints)}. "
+        f"Profile: {home}. Checked: {', '.join(map(str, endpoints))}. "
         "No replacement was started; existing work may still be running. "
         "Recover the existing service before resuming its chats. "
         "Use `sci --no-daemon` for a separate foreground chat."
@@ -119,14 +125,16 @@ def request(action, *, home=None, **params):
 
 
 def ensure_server(home=None):
-    if os.name != "posix":
-        raise RuntimeError("Persistent CLI chats currently require Linux/macOS or WSL.")
     from sci_cli.active_sessions import _FileLock
     from tools.environments.local import served_profile_child_env
     from sci_cli._launchers import runtime_command
     home, root, _ = locations(home)
-    root.mkdir(parents=True, exist_ok=True, mode=0o700)
-    os.chmod(root, 0o700)
+    if os.name == "nt":
+        from sci_cli.windows_ssh_runtime import _ensure_directory
+        _ensure_directory(root)
+    else:
+        root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(root, 0o700)
     with _FileLock(root / "start.lock"):
         if read_server(home):
             request("status", home=home)  # A live but unreachable service must not be duplicated.
@@ -136,9 +144,19 @@ def ensure_server(home=None):
         with os.fdopen(log_fd, "ab") as log:
             repo = Path(__file__).resolve().parents[1]
             command = runtime_command(repo, [str(home)], module="sci_cli.background_chat_service", home=home)
-            child = subprocess.Popen(command,
-                cwd=repo, env=env, stdin=subprocess.DEVNULL,
-                stdout=log, stderr=log, start_new_session=True, close_fds=True)
+            options = {"start_new_session": True}
+            if os.name == "nt":
+                from sci_cli._subprocess_compat import windows_detach_flags, windows_detach_flags_without_breakaway
+                options = {"creationflags": windows_detach_flags()}
+            try:
+                child = subprocess.Popen(command, cwd=repo, env=env, stdin=subprocess.DEVNULL,
+                                         stdout=log, stderr=log, close_fds=True, **options)
+            except PermissionError:
+                if os.name != "nt":
+                    raise
+                child = subprocess.Popen(command, cwd=repo, env=env, stdin=subprocess.DEVNULL,
+                                         stdout=log, stderr=log, close_fds=True,
+                                         creationflags=windows_detach_flags_without_breakaway())
         deadline = time.monotonic() + 15
         while time.monotonic() < deadline:
             if child.poll() is not None:
@@ -227,6 +245,14 @@ def publish_cli_state(cli):
                         background_tasks=tasks, view_sessions=views,
                         view_ack=getattr(cli, "_background_view_ack", None))
         cli._background_managed = bool(reply.get("managed"))
+        if reply.get("stop_requested"):
+            from agent.interrupt_compat import request_hard_interrupt
+            if getattr(cli, "agent", None) and getattr(cli, "_agent_running", False):
+                request_hard_interrupt(cli.agent)
+            cli._should_exit = True
+            app = getattr(cli, "_app", None)
+            if app is not None and app.loop is not None:
+                app.loop.call_soon_threadsafe(app.exit)
         receive_selection(cli, reply.get("select_view"))
     except (OSError, ValueError, RuntimeError, psutil.Error):
         # Service loss closes its PTY; normal terminal-loss handling owns shutdown.

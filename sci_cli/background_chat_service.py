@@ -24,7 +24,10 @@ import psutil
 
 from sci_cli.background_chats import FRAME_LIMIT, TERMINAL_ENV_KEYS, locations
 from sci_cli.pty_session import PtySession
-from sci_cli.pty_bridge import PtyUnavailableError
+if os.name == "nt":
+    from sci_cli.win_pty_bridge import WinPtyBridge as PtyBridge, PtyUnavailableError
+else:
+    from sci_cli.pty_bridge import PtyBridge, PtyUnavailableError
 from utils import atomic_json_write
 
 
@@ -55,8 +58,6 @@ class Peer:
 
 class ChatService:
     def __init__(self, home, *, worker_factory=None):
-        if os.name != "posix":
-            raise RuntimeError("Persistent CLI chats currently require Linux/macOS or WSL.")
         self.home, self.root, self.endpoint = locations(home)
         self.token = secrets.token_urlsafe(32)
         self.chats = {}
@@ -72,7 +73,6 @@ class ChatService:
             raise ValueError("session.background_idle_timeout must be non-negative.")
 
     def _spawn(self, session_id, cwd, cols, rows, launch_args=None, terminal_env=None):
-        from sci_cli.pty_bridge import PtyBridge
         from tools.environments.local import served_profile_child_env
         from sci_cli._launchers import runtime_command
         args = list(launch_args or ["--cli", "--no-daemon", "chat"])
@@ -95,10 +95,29 @@ class ChatService:
     def _lookup(self, key=None, pid=None):
         matches = [chat for chat in self.chats.values()
                    if (key is not None and key in (chat["id"], chat["session_id"]))
-                   or (pid is not None and pid == chat["process"].pid)]
+                   or (pid is not None and self._worker_pid_matches(chat, pid))]
         if matches:
             return next((chat for chat in matches if chat["pty"].alive), matches[-1])
         raise ValueError("No matching background chat in this profile.")
+
+    def _worker_pid_matches(self, chat, pid):
+        launcher = chat["process"]
+        runtime = chat.get("runtime_process", launcher)
+        if pid == runtime.pid:
+            return runtime.is_running()
+        if os.name != "nt" or "runtime_process" in chat:
+            return False
+        # A Windows venv redirector remains alive while the real interpreter
+        # runs. Accept only its descendant with the identical launch command,
+        # never an arbitrary child tool or a process from another profile.
+        try:
+            candidate = psutil.Process(pid)
+            if launcher in candidate.parents() and candidate.cmdline() == launcher.cmdline():
+                chat["runtime_process"] = candidate
+                return True
+        except psutil.NoSuchProcess:
+            return False
+        return False
 
     def snapshot(self):
         result = []
@@ -107,7 +126,7 @@ class ChatService:
             state = c["state"] if alive else "stopped"
             if alive and state not in ("starting", "stopping") and time.monotonic() - c["reported"] > 10:
                 state = "worker alive; execution status unavailable"
-            result.append({"id": c["id"], "session_id": c["session_id"], "pid": c["process"].pid,
+            result.append({"id": c["id"], "session_id": c["session_id"], "pid": c.get("runtime_process", c["process"]).pid,
                            "alive": alive, "state": state, "attached": c["pty"].attached,
                            "background_tasks": c["background_tasks"],
                            "view_sessions": c.get("view_sessions", [])})
@@ -185,10 +204,16 @@ class ChatService:
         process = chat["process"]
         try:
             if force:
-                process.kill()
+                if os.name == "nt":
+                    from sci_cli.process_identity import _kill_process_tree_windows
+                    await asyncio.to_thread(_kill_process_tree_windows, process)
+                else:
+                    process.kill()
+            elif os.name == "nt":
+                chat["stop_requested"] = True  # Worker heartbeat requests ordinary CLI cleanup.
             else:
                 process.send_signal(signal.SIGTERM)
-            if process.status() == psutil.STATUS_STOPPED:
+            if os.name == "posix" and process.status() == psutil.STATUS_STOPPED:
                 process.send_signal(signal.SIGCONT)
             await asyncio.to_thread(process.wait, timeout=5)
         except psutil.NoSuchProcess:
@@ -233,8 +258,9 @@ class ChatService:
             ack = params.get("view_ack") or {}
             if ack.get("id") == selection["request"]["id"] and not selection["ready"].done():
                 selection["ready"].set_result(ack.get("selected") is True)
-            return {"managed": True, "select_view": selection["request"]}
-        return {"managed": True}
+            return {"managed": True, "select_view": selection["request"],
+                    "stop_requested": chat.get("stop_requested", False)}
+        return {"managed": True, "stop_requested": chat.get("stop_requested", False)}
 
     async def select_view(self, chat, session_id):
         selection = {"request": {"id": uuid.uuid4().hex, "session_id": session_id,
@@ -359,20 +385,35 @@ class ChatService:
             self.persist()
 
     async def run(self):
-        self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
-        os.chmod(self.root, 0o700)
-        if self.endpoint.exists():
-            info = self.endpoint.lstat()
-            if not stat.S_ISSOCK(info.st_mode) or info.st_uid != os.getuid():  # windows-footgun: ok — constructor requires POSIX
-                raise ValueError("Unsafe existing background socket; refusing to replace it.")
-            self.endpoint.unlink()
-        server = await asyncio.start_unix_server(self.handle, path=str(self.endpoint), limit=FRAME_LIMIT)
-        os.chmod(self.endpoint, 0o600)
-        atomic_json_write(self.root / "server.json", {"pid": os.getpid(), "started": psutil.Process().create_time(),
-                          "token": self.token, "endpoint": str(self.endpoint)}, mode=0o600)
+        if os.name == "nt":
+            from sci_cli.windows_ssh_runtime import _ensure_directory
+            _ensure_directory(self.root)
+            server = await asyncio.start_server(self.handle, host="127.0.0.1", port=0, limit=FRAME_LIMIT)
+            endpoint = list(server.sockets[0].getsockname())
+        else:
+            self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
+            os.chmod(self.root, 0o700)
+            server = await self._listen_unix()
+            endpoint = str(self.endpoint)
+        record = {"pid": os.getpid(), "started": psutil.Process().create_time(),
+                  "token": self.token, "endpoint": endpoint}
+        if os.name == "nt":
+            from sci_cli.windows_ssh_runtime import write_private_file
+            temporary = self.root / (uuid.uuid4().hex + ".json")
+            try:
+                write_private_file(temporary, json.dumps(record).encode())
+                from utils import atomic_replace
+                atomic_replace(temporary, self.root / "server.json")
+            finally:
+                temporary.unlink(missing_ok=True)
+        else:
+            atomic_json_write(self.root / "server.json", record, mode=0o600)
         loop = asyncio.get_running_loop()
         for sig in (signal.SIGTERM, signal.SIGINT):
-            loop.add_signal_handler(sig, self.stopping.set)  # windows-footgun: ok — constructor requires POSIX
+            if os.name == "posix":
+                loop.add_signal_handler(sig, self.stopping.set)  # windows-footgun: ok — guarded by os.name == 'posix'
+            else:
+                signal.signal(sig, lambda *_: loop.call_soon_threadsafe(self.stopping.set))
         reaper = asyncio.create_task(self.reap())
         try:
             async with server:
@@ -387,7 +428,18 @@ class ChatService:
                     await self.close_worker(chat)
             self.persist()
             (self.root / "server.json").unlink(missing_ok=True)
-            self.endpoint.unlink(missing_ok=True)
+            if os.name == "posix":
+                self.endpoint.unlink(missing_ok=True)
+
+    async def _listen_unix(self):
+        if self.endpoint.exists():
+            info = self.endpoint.lstat()
+            if not stat.S_ISSOCK(info.st_mode) or info.st_uid != os.getuid():  # windows-footgun: ok — POSIX listener only
+                raise ValueError("Unsafe existing background socket; refusing to replace it.")
+            self.endpoint.unlink()
+        server = await asyncio.start_unix_server(self.handle, path=str(self.endpoint), limit=FRAME_LIMIT)
+        os.chmod(self.endpoint, 0o600)
+        return server
 
 
 def main():

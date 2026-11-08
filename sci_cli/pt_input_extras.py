@@ -193,6 +193,10 @@ def install_modify_other_keys_aliases() -> int:
     ``Keys.Ignore`` so they are consumed instead of leaking as literal text. kitty emits these CSI-u forms
     even in legacy mode for keys that have no legacy encoding.
     """
+    from sci_platform.host.facts import os_family
+    if os_family() == 'win32':
+        from sci_cli.windows_console_input import install_ctrl_slash_alias
+        install_ctrl_slash_alias()
     return _install(_modify_other_keys_aliases, overwrite=False)
 
 

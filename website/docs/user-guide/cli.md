@@ -453,13 +453,15 @@ The first time you press Enter while Sci is working, Sci prints a one-line remin
 
 ### Background tasks and terminal suspension
 
-The classic CLI on Linux/macOS/WSL starts its background service automatically.
+The classic CLI on Linux, macOS and native Windows starts its background service automatically.
 Press **Ctrl+C** during a task with an empty composer and choose **Cancel task**,
 **Run in background**, or **Exit**. Reconnect with `sci --resume SESSION_ID` or the
 normal `/resume` picker. `/background`, `/detach`, `/exit`, and closing the terminal
 leave the task running. Use `sci background status` to inspect actual task states.
 
-**Ctrl+Z** suspends the terminal viewer; `fg` returns to it. The worker continues
+On Unix, **Ctrl+Z** suspends the terminal viewer; `fg` returns to it. On Windows,
+use **Ctrl+]** or the **Run in background** choice to detach, then `/resume` to return.
+The worker continues
 independently. With explicit `sci --no-daemon`, Ctrl+Z instead suspends the entire
 foreground process. See [background execution and reconnecting](./sessions.md#background-execution-and-reconnecting)
 for stopping, idle cleanup, profile scope and platform limitations.
@@ -585,7 +587,9 @@ chat even while main is visible. Closing side discards its later display output;
 it does not undo completed external actions.
 
 - Ctrl+/: switch between main and the existing side conversation without cancelling either.
-  Terminals sending Ctrl+_ for this key are supported too.
+  Terminals sending Ctrl+_ for this key are supported too. Native Windows also supports
+  Ctrl+/ key events without a Unicode character, using the current keyboard layout.
+  If your terminal or editor intercepts the shortcut, use `/btw` to open side.
 - `/btw` or `/side`: open or return to the side conversation; optional text asks a question.
 - Ctrl+C with no transcript selection: close side and return to main, even with an unfinished draft. Requests cancellation
   of side work without cancelling main. There are no back, close, or status subcommands.
@@ -605,8 +609,12 @@ Only the conversations are separated; files, credentials, and services are share
 made with tools have real effects. Closing cannot undo completed actions or remote jobs.
 Closing returns immediately; opening another side waits for its cancelled worker to finish.
 After the first question, the fork and its subsequent conversation/tool activity are saved
-in the active profile's session store. Use `/resume` or `/sessions` and select its `Side:`
-title to continue it. If it is already open in this CLI, resume selects its existing view.
+in the active profile's session store. Normal `/resume` and `/sessions` pickers show main
+conversations; side branches are hidden, including in search and pagination. Automatic
+profile restoration and `sci --continue` also skip side branches. Their saved history is
+preserved: use `sci sessions list --source cli` from the shell to find an older side's ID,
+then `/resume SIDE_SESSION_ID` to open it explicitly. `/btw` returns to the current side.
+If it is already open in this CLI, an explicit resume selects its existing view.
 For a persistent CLI in another terminal, confirm moving the viewer: the same runtime
 opens the selected side view, detaches the old viewer, and keeps the parent chat running.
 Input is enabled only after the owning CLI confirms the view selection; no request is replayed

@@ -52,7 +52,7 @@ def request_switch(cli, name, ui):
         from sci_state import SessionDB
         db = SessionDB(home / "state.db", read_only=True)
         try:
-            sessions = db.search_sessions(source="cli", limit=1)
+            sessions = db.search_sessions(source="cli", limit=1, include_side_conversations=False)
         finally:
             db.close()
         if sessions:
@@ -93,7 +93,10 @@ def relaunch_profile(cli):
     if workspace.is_dir() and config.get("terminal", {}).get("backend", "local") == "local":
         os.chdir(workspace)
     if sys.platform == "win32":
-        raise SystemExit(subprocess.call(argv, env=env))
+        from sci_cli.cli_shutdown import pause_exit_watchdogs_for_relaunch
+        with pause_exit_watchdogs_for_relaunch():
+            result = subprocess.call(argv, env=env)
+        raise SystemExit(result)
     from sci_cli.observability.shared_metrics_startup import mark_in_place_relaunch
     mark_in_place_relaunch()
     os.execvpe(argv[0], argv, env)
