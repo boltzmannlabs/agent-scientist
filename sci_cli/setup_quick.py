@@ -109,8 +109,8 @@ def _run_first_time_quick_setup(config: dict, sci_home, is_existing: bool):
     # Finally offer messaging gateway setup.
     print()
     gateway_choice = prompt_choice("Connect a messaging platform? (Telegram, Discord, etc.)", [
-        "Set up messaging now (recommended)", "Skip — set up later with 'sci setup gateway'",
-    ], 0)
+        "Set up messaging now", "Skip for now (recommended) — set up later with 'sci setup gateway'",
+    ], 1)
     if gateway_choice == 0:
         setup_gateway(config)
         save_config(config)

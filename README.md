@@ -76,24 +76,25 @@ or run `winget install --id Git.Git -e --source winget`, then reopen PowerShell.
 ```powershell
 git clone https://github.com/boltzmannlabs/agent-scientist.git
 cd agent-scientist
-.\install-sci.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install-sci.ps1 -NoLaunch
+$env:Path = "$env:LOCALAPPDATA\sci\bin;$env:Path"
+sci
 ```
 
-Follow provider setup; SCI opens automatically. The installer registers User
-PATH and refreshes the current PowerShell PATH. To launch again:
+Follow provider setup and wait for installation to finish successfully before
+running the last two commands. `-NoLaunch` completes setup without opening chat;
+the final `sci` command launches it. Omit `-NoLaunch` if you prefer the installer
+to open SCI automatically.
 
-```powershell
-agent-sci
-```
+The installer registers User PATH, but the child PowerShell process cannot refresh
+the terminal you launched it from. The `$env:Path` line makes SCI available in that
+terminal immediately and gives the new launcher priority over older installations.
+If you set a custom `SCI_HOME`, use `$env:Path = "$env:SCI_HOME\bin;$env:Path"`
+instead. To launch again later, run `sci` or `agent-sci`.
 
-If PowerShell blocks the local script, review it first. Where your organization's
-policy permits, run it with a process-only execution-policy override:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install-sci.ps1
-```
-
-This override is temporary. Do not bypass organization-enforced controls.
+Review the installer before running it. The execution-policy override above applies
+only to the installer process. Use it where your organization's policy permits;
+it does not override organization-enforced controls.
 
 The installer verifies both public launchers with `--version` and prints an absolute
 launch command. If VS Code was already open, completely exit all its windows and
