@@ -18,6 +18,47 @@
 param([switch]$RuntimeOnly, [switch]$UserInstall, [switch]$InstallPrerequisites, [switch]$NonInteractive, [string]$TestExtras = '')
 $ErrorActionPreference = 'Stop'
 
+# Bootstrap runs before Python/PM exists. Keep its downloads pinned and bounded.
+function Get-SciBootstrapArchive([string]$Uri, [string]$Sha256, [string]$OutFile) {
+    $curl = Get-Command curl.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    try {
+        if ($curl) {
+            Write-Host "Downloading uv with curl.exe: $Uri"
+            & $curl.Source --fail --location --retry 3 --retry-delay 5 --connect-timeout 20 --max-time 600 --output $OutFile --url $Uri
+            if ($LASTEXITCODE -ne 0) { throw "curl.exe exited with code $LASTEXITCODE" }
+        } else {
+            Write-Host "curl.exe unavailable; downloading uv with PowerShell: $Uri"
+            for ($attempt = 1; $attempt -le 4; $attempt++) {
+                try {
+                    Invoke-WebRequest -UseBasicParsing -TimeoutSec 600 -Uri $Uri -OutFile $OutFile -ErrorAction Stop
+                    break
+                } catch {
+                    $failure = $_.Exception
+                    $status = if ($failure.Response) { [int]$failure.Response.StatusCode } else { 0 }
+                    $transient = $status -in @(408, 429, 500, 502, 503, 504)
+                    if (-not $status) {
+                        $transient = ($failure -is [System.Net.WebException] -and $failure.Status -in @(
+                            'Timeout', 'ConnectFailure', 'ConnectionClosed', 'ReceiveFailure', 'SendFailure', 'NameResolutionFailure')) -or
+                            ($failure.InnerException -is [System.Net.Sockets.SocketException]) -or
+                            ($failure.InnerException -is [System.TimeoutException])
+                    }
+                    if (-not $transient -or $attempt -eq 4) { throw }
+                    if (Test-Path -LiteralPath $OutFile) { Remove-Item -LiteralPath $OutFile -Force }
+                    Write-Warning "uv download attempt $attempt failed; retrying in 5 seconds (maximum 4 attempts)."
+                    Start-Sleep -Seconds 5
+                }
+            }
+        }
+        $got = (Get-FileHash -Algorithm SHA256 -LiteralPath $OutFile).Hash.ToLowerInvariant()
+        if ($got -ne $Sha256.ToLowerInvariant()) {
+            throw "sha256 mismatch for uv (got $got, pinned $Sha256)"
+        }
+    } catch {
+        if (Test-Path -LiteralPath $OutFile) { Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue }
+        throw "uv bootstrap download failed from ${Uri}: $($_.Exception.Message). Check network/proxy access and rerun the installer."
+    }
+}
+
 Write-Host ''
 Write-Host 'Sci Agent Setup' -ForegroundColor Cyan
 Write-Host ''
@@ -60,11 +101,7 @@ if (Test-Path $uv) {
     New-Item -ItemType Directory -Path $tmp | Out-Null
     try {
         $archive = Join-Path $tmp ([uri]$artifact.url).Segments[-1]
-        Invoke-WebRequest -UseBasicParsing -TimeoutSec 600 -Uri $artifact.url -OutFile $archive
-        $got = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
-        if ($got -ne $artifact.sha256) {
-            throw "sha256 mismatch for uv (got $got, pinned $($artifact.sha256))"
-        }
+        Get-SciBootstrapArchive -Uri $artifact.url -Sha256 $artifact.sha256 -OutFile $archive
         $tree = Join-Path $tmp 'tree'
         Expand-Archive -Path $archive -DestinationPath $tree
         # flatten a single wrapping dir
