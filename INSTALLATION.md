@@ -117,20 +117,39 @@ Check `git --version` before cloning. Install missing Git from
 From a complete checkout in PowerShell:
 
 ```powershell
-git clone https://github.com/boltzmannlabs/Agent-Scientist.git
-cd Agent-Scientist
-.\install-sci.ps1
-agent-sci
+git clone https://github.com/boltzmannlabs/agent-scientist.git
+cd agent-scientist
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+& .\install-sci.ps1 -NoLaunch
+if ($LASTEXITCODE -ne 0) { throw 'SCI installation failed; see the error above.' }
+sci
 ```
 
-If execution policy blocks the reviewed installer, use a temporary process override
-where company policy permits:
+Run the commands in order, proceeding only after each succeeds. Complete provider
+setup when prompted. `&` invokes the installer in the current PowerShell process:
+it updates this terminal's PATH and saves permanent User PATH, then verifies both
+short commands in another PowerShell using the saved Windows environment. The
+final `sci` starts chat immediately. No manual PATH assignment is needed.
+
+The execution-policy override applies only to this PowerShell session and ends
+when it closes. Review
+the installer first and use the override where company policy permits. Company
+Group Policy takes precedence; do not change machine-wide policy to install SCI.
+If your existing policy permits scripts, the `Set-ExecutionPolicy` line can be
+omitted.
+
+For later launches in a fresh PowerShell terminal:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install-sci.ps1
+sci
 ```
 
-Company Group Policy takes precedence; do not change machine-wide policy to install SCI.
+`-NoLaunch` completes setup without opening chat, so the last command opens it
+once. Omit `-NoLaunch` and the final `sci` command to let the installer launch it.
+The alternative `powershell -NoProfile -ExecutionPolicy Bypass -File
+.\install-sci.ps1` still saves User PATH, but runs in a child process and cannot
+refresh the terminal that invoked it. Use the same-process commands above when
+you want the short `sci` command available immediately in that terminal.
 
 `install-sci.ps1` is the Windows counterpart of `install-sci.sh`: it checks the
 checkout, runs the local `setup-sci.ps1` engine in user mode (managed runtime
@@ -140,12 +159,16 @@ synchronizes bundled skills, verifies that the CLI starts, and then opens the
 provider setup wizard when no model configuration is detected, then launches
 SCI in an interactive terminal. Use
 `.\install-sci.ps1 -NonInteractive` on unattended machines and run `sci setup`
-later. The engine adds the launcher directory to your persistent **User PATH**,
-and the wrapper refreshes the current PowerShell PATH. No manual PATH edit is
-required. If you started the installer through a separate child PowerShell or
-CMD process, open a new terminal afterwards; child processes cannot change the
-parent terminal environment. Completely exit and reopen VS Code if it was already
-running. The installer verifies the published `sci` and `agent-sci` commands, checks
+later. The engine adds the launcher directory to your persistent **User PATH** for
+the current Windows account, which survives sign-out and reboot. The wrapper also
+refreshes the PowerShell process running it. No manual persistent PATH edit is
+required after a successful installation. If you started the installer through a
+separate child PowerShell or CMD process, it cannot change the parent terminal's
+environment. For VS Code, finish any terminal work, close the old terminal tabs
+with their trash icons, exit all VS Code windows, then reopen from the Windows Start
+menu and create a new terminal. Restored terminals can retain their original PATH
+even after VS Code restarts. The installer verifies the published `sci` and
+`agent-sci` commands, checks
 persistent User PATH, and prints an absolute launch command (including custom paths).
 Use that command immediately if a stale shell or another installation hides `sci`.
 An error stops the installation and names
@@ -182,6 +205,63 @@ claim that signed Windows/macOS release packages have been produced or tested
 on this Linux host. From CMD in a complete checkout, `scripts\install.cmd` runs
 the same local `install-sci.ps1` script. It does not download another
 application's installer.
+
+### Windows PATH repair
+
+`$env:Path = "$env:LOCALAPPDATA\sci\bin;$env:Path"` adds SCI to the **current
+PowerShell process** only. The installer separately saves User PATH for future
+processes. Do not shorten it to `$env:Path = ";$env:LOCALAPPDATA\sci\bin"`:
+that replaces the current PATH and removes other command directories for that
+session. Neither assignment updates the permanent User PATH.
+
+If SCI is installed but sometimes reports "not recognized", open a **new PowerShell
+window from the Windows Start menu** under the Windows account that installed SCI.
+For a custom installation, set `SCI_HOME` to the same home used during installation.
+Run this one-time repair; no administrator shell is required:
+
+```powershell
+$sciBin = if ($env:SCI_HOME) { Join-Path $env:SCI_HOME 'bin' } else { Join-Path $env:LOCALAPPDATA 'sci\bin' }
+if (-not ((Test-Path -LiteralPath "$sciBin\sci.exe" -PathType Leaf) -or
+          (Test-Path -LiteralPath "$sciBin\sci.cmd" -PathType Leaf))) {
+    throw "SCI launcher missing in $sciBin. Rerun install-sci.ps1 from the installed checkout."
+}
+
+# Preserve existing User PATH; never save the combined process PATH into it.
+$sciUserPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+$sciPathEntries = @($sciUserPath -split ';' | ForEach-Object {
+    [Environment]::ExpandEnvironmentVariables($_.Trim().Trim('"')).TrimEnd('\', '/')
+})
+if ($sciPathEntries -notcontains $sciBin.TrimEnd('\', '/')) {
+    [Environment]::SetEnvironmentVariable('Path', "$sciBin;$sciUserPath", 'User')
+}
+
+# Also make SCI available immediately in this PowerShell window.
+$env:Path = "$sciBin;$env:Path"
+Get-Command sci -All
+sci --version
+```
+
+After the repair:
+
+1. Finish any work in existing VS Code terminals, then close those tabs with the
+   trash icon. Hiding the terminal panel does not close a terminal.
+2. Completely exit all VS Code windows. Reopen VS Code from the Windows Start menu,
+   rather than launching it from an old shell with an outdated PATH.
+3. Create a new PowerShell terminal and run `sci --version`, then `sci`.
+
+VS Code can revive terminals using their original environment, so a restored tab
+may still have the old PATH after a restart. If a fresh terminal still has an old
+environment, sign out of Windows and sign in again after saving your work. Inspect
+PowerShell profile scripts and VS Code's `terminal.integrated.env.windows` setting
+for a PATH override if the problem persists. These behaviors are documented by
+[Microsoft PowerShell](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_environment_variables)
+and [VS Code](https://code.visualstudio.com/docs/terminal/advanced).
+
+Successful User PATH registration survives restarts for this Windows account;
+it does not install SCI in another account, WSL, a container, or an SSH host. Keep
+the checkout in its installed location. If `sci --version` fails when using the
+absolute launch command printed by the installer, repair that installation first;
+PATH changes cannot repair a missing or broken launcher.
 
 ## Check the installation
 

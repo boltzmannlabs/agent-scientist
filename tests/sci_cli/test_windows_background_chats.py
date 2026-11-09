@@ -41,7 +41,7 @@ def finish_service(home):
 @pytest.mark.live_system_guard_bypass  # Only the recorded daemon and ConPTYs under this temp home.
 @pytest.mark.parametrize('action', ['background', 'cancel_task', 'exit', 'close'])
 @pytest.mark.asyncio
-async def test_windows_ctrl_c_detach_and_resume_keep_the_same_task(tmp_path, action):
+async def test_windows_ctrl_c_detach_and_resume_keep_the_same_task(tmp_path, monkeypatch, action):
     home = tmp_path / '.sci'
     viewers = []
     release = threading.Event()
@@ -110,7 +110,18 @@ async def test_windows_ctrl_c_detach_and_resume_keep_the_same_task(tmp_path, act
                 wait_for(lambda: find_worker(worker['id'], home)['state'] == 'idle')
                 assert find_worker(worker['id'], home)['pid'] == worker['pid']
                 output.clear()
-                resumed = launch(['--resume', worker['session_id']])
+                resumed = launch([] if action == 'background' else ['--resume', worker['session_id']])
+                if action == 'background':
+                    until(resumed, lambda: '❯'.encode() in output, seconds=180)
+                    await resumed.write(b'/resume')
+                    until(resumed, lambda: b'/resume' in output)
+                    time.sleep(.2)
+                    await resumed.write(b'\r')
+                    until(resumed, lambda: b'Resume conversation' in output)
+                    await resumed.write(worker['session_id'].encode())
+                    until(resumed, lambda: worker['session_id'].encode() in output)
+                    time.sleep(.2)
+                    await resumed.write(b'\r')
                 # Backend attachment precedes the viewer entering console raw
                 # mode. Wait for the replayed prompt before sending shortcuts.
                 until(resumed, lambda: '❯'.encode() in output and find_worker(worker['id'], home)['attached'], seconds=180)
@@ -127,6 +138,40 @@ async def test_windows_ctrl_c_detach_and_resume_keep_the_same_task(tmp_path, act
                 await resumed.write(b'q')
                 await resumed.write(b'\x1d')
                 until(resumed, lambda: not resumed.is_alive())
+                if action == 'background':
+                    from sci_cli import cli_runtime_refresh as refresh
+                    from sci_state import SessionDB
+                    monkeypatch.setenv('SCI_HOME', str(home))
+                    monkeypatch.setattr(Path, 'home', lambda: tmp_path)
+                    monkeypatch.setattr(refresh, 'newer_source', lambda _: Path('changed.py'))
+                    with SessionDB(home / 'state.db', read_only=True) as db:
+                        saved = db.get_messages(worker['session_id'])
+                        prompt = db.get_session(worker['session_id'])['system_prompt']
+
+                    class UI:
+                        def __init__(self, answer='Reload saved conversation with updated code'):
+                            self.answer = answer
+                        def show(self, message):
+                            print(message)
+                        def choose(self, question, choices):
+                            if self.answer in choices:
+                                return self.answer
+                            return 'Close previous window and resume here'
+
+                    from sci_cli.skill_add import Cancelled
+                    with pytest.raises(Cancelled):
+                        refresh.refresh_attached_worker(worker, home=home, ui=UI('Cancel'))
+                    assert refresh.refresh_attached_worker(worker, home=home, ui=UI('Keep existing runtime')) == worker
+                    assert find_worker(worker['id'], home)['pid'] == worker['pid']
+                    replacement = refresh.refresh_attached_worker(worker, home=home, ui=UI())
+                    ready = wait_for(lambda: (row if (row := find_worker(replacement['id'], home))
+                                             and row['session_id'] == worker['session_id']
+                                             and row['state'] == 'idle' else None), seconds=180)
+                    assert ready['pid'] != worker['pid']
+                    assert find_worker(worker['id'], home) is None
+                    with SessionDB(home / 'state.db', read_only=True) as db:
+                        assert db.get_messages(worker['session_id']) == saved
+                        assert db.get_session(worker['session_id'])['system_prompt'] == prompt
             assert len(model.main_requests()) == 1
         finally:
             release.set()

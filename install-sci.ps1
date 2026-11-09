@@ -122,3 +122,6 @@ if ($launch) {
     & $installedCli
     if ($LASTEXITCODE -ne 0) { Stop-Install $LASTEXITCODE }
 }
+# The provider probe may return 3 for an installed-but-unconfigured model.
+# Direct invocation must report installation success to the caller as well.
+exit 0

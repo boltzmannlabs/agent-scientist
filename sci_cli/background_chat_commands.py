@@ -35,6 +35,10 @@ def attach_on_resume(cli):
     from sci_cli.cli_session_recovery import StartupRecoveryUI
     from sci_cli.skill_add import Cancelled
     try:
+        # A Windows venv launcher and its Python worker have different PIDs.
+        # Let the service verify that chain before deciding this is another owner.
+        from sci_cli.background_chats import publish_cli_state
+        publish_cli_state(cli)
         worker = find_view_worker(cli.session_id)
         if not worker or worker["pid"] == os.getpid():
             return False

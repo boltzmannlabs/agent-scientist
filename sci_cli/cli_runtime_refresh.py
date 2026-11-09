@@ -63,6 +63,36 @@ def newer_source(started, root=None):
     return None
 
 
+def _stop_windows_worker_for_refresh(worker, process, home, ui):
+    """Use the owning service's graceful stop, never a Windows SIGTERM kill."""
+    from sci_cli.background_chats import find_worker, request
+    from sci_cli.cli_session_recovery import _wait_for_exit
+    from sci_cli.active_sessions import active_session_registry_snapshot
+
+    ui.show('Reloading closes this chat runtime and interrupts its local work. Saved messages are retained. '
+            'Already submitted remote jobs may continue; no request will be rerun.')
+    if ui.choose('Reload this background chat?',
+                 ('Cancel', 'Close previous window and resume here')) != 'Close previous window and resume here':
+        return False
+    current = find_worker(worker['id'], home=home)
+    if current is None:
+        return True
+    if (current['pid'] != process.pid or current['session_id'] != worker['session_id']
+            or not process.is_running()):
+        raise ValueError('The background owner changed during review. Retry resume; no process was stopped.')
+    owners = active_session_registry_snapshot(home, strict=True)
+    if any(entry.get('pid') == process.pid and entry.get('session_id') != worker['session_id']
+           for entry in owners):
+        raise ValueError('This runtime also owns another conversation. Close its side chats before reloading.')
+    request('stop', home=home, id=worker['id'])
+    # CLI cleanup has a 30-second watchdog; allow its normal drain to finish.
+    if not _wait_for_exit(process, ui, 45):
+        ui.show('Reload stopped: the old worker has not exited. No replacement was started. '
+                'Check background status before trying again.')
+        return False
+    return True
+
+
 def refresh_attached_worker(worker, *, home=None, ui=None):
     """Offer reviewed stop/resume when attaching to code loaded before a source edit."""
     from sci_cli.background_chats import find_worker, request, terminal_environment
@@ -95,6 +125,9 @@ def refresh_attached_worker(worker, *, home=None, ui=None):
     if not session_id:
         raise ValueError('This worker has not saved a conversation yet. Wait for startup before refreshing.')
     cwd = process.cwd()
+    from sci_platform.host.facts import os_family
+    if os_family() == 'win32' and not _stop_windows_worker_for_refresh(worker, process, home, ui):
+        raise Cancelled()
     # Existing recovery checks PID identity, reviews interruption of local work,
     # waits for exit and leaves the normal session lease checks in force.
     if not prepare_resume(session_id, ui, registry_home=home):

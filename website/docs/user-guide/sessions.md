@@ -220,7 +220,7 @@ manual deletion of `runtime/active_sessions.json` is needed for normal recovery.
 
 ### Background execution and reconnecting
 
-On Linux, macOS and WSL, normal interactive `sci` / `agent-sci` classic-CLI launches
+On Linux, macOS, WSL and native Windows, normal interactive `sci` / `agent-sci` classic-CLI launches
 connect to a profile-local background service automatically. There is no separate
 mode to enable before starting a task. The terminal is a viewer; the persistent
 worker owns the conversation, prompt cache and task.
@@ -253,6 +253,17 @@ silently take ownership back after `fg`.
 at a safe turn boundary. The departing worker keeps its own conversation and
 cached prompt. `/new` starts a new conversation with the usual new-session
 configuration boundary. Profile credentials and state remain separate.
+
+Terminal replay is decoded across UTF-8 frame boundaries and rendered in small
+chunks, so reconnecting on Windows preserves text and keeps keyboard input responsive.
+
+If the application source changed while a chat was running, reconnecting offers
+**Keep existing runtime** or **Reload saved conversation with updated code**.
+Keeping the runtime preserves ongoing work. Reloading requires confirmation,
+stops that chat's local worker gracefully, and waits for it to exit before opening
+the saved conversation. On Windows this uses the owning background service.
+If shutdown does not finish, no replacement is started. Submitted remote jobs
+may continue; reload never resubmits a request.
 
 For inspection or explicit termination:
 

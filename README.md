@@ -76,30 +76,45 @@ or run `winget install --id Git.Git -e --source winget`, then reopen PowerShell.
 ```powershell
 git clone https://github.com/boltzmannlabs/agent-scientist.git
 cd agent-scientist
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install-sci.ps1 -NoLaunch
-$env:Path = "$env:LOCALAPPDATA\sci\bin;$env:Path"
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+& .\install-sci.ps1 -NoLaunch
+if ($LASTEXITCODE -ne 0) { throw 'SCI installation failed; see the error above.' }
 sci
 ```
 
-Follow provider setup and wait for installation to finish successfully before
-running the last two commands. `-NoLaunch` completes setup without opening chat;
-the final `sci` command launches it. Omit `-NoLaunch` if you prefer the installer
-to open SCI automatically.
+Run these commands in order, proceeding only after each succeeds. Complete provider
+setup when prompted. `&` runs the installer inside the current PowerShell process,
+so it refreshes this terminal's PATH as well as saving permanent User PATH. The
+final `sci` command works immediately, including in an already-open VS Code terminal.
+`-NoLaunch` avoids opening chat twice; omit it and the final `sci` command if you
+prefer the installer to launch chat itself.
 
-The installer registers User PATH, but the child PowerShell process cannot refresh
-the terminal you launched it from. The `$env:Path` line makes SCI available in that
-terminal immediately and gives the new launcher priority over older installations.
-If you set a custom `SCI_HOME`, use `$env:Path = "$env:SCI_HOME\bin;$env:Path"`
-instead. To launch again later, run `sci` or `agent-sci`.
+The installer permanently registers SCI in **User PATH** for the Windows account
+running it, preserves existing entries, and tests both short commands in a child
+PowerShell using only saved Windows PATH before reporting success. This survives
+sign-out and reboot. No manual PATH command is required for
+this installation flow. A custom `SCI_HOME` automatically uses that home's `bin`
+directory instead of `%LOCALAPPDATA%\sci\bin`.
+
+For later launches in a fresh terminal, run:
+
+```powershell
+sci
+```
 
 Review the installer before running it. The execution-policy override above applies
-only to the installer process. Use it where your organization's policy permits;
+only to this PowerShell session and ends when it closes. Use it where your organization's policy permits;
 it does not override organization-enforced controls.
 
 The installer verifies both public launchers with `--version` and prints an absolute
-launch command. If VS Code was already open, completely exit all its windows and
-reopen it; creating another integrated terminal may retain the old PATH. Use
-`-NoLaunch` to skip chat, or `-InstallPrerequisites` to explicitly approve
+launch command. If VS Code was already open, finish any terminal work, close the old
+terminal tabs with their trash icons, exit **all** VS Code windows, then reopen VS
+Code from the Windows Start menu and create a new terminal. Restored terminal tabs
+can reuse their original PATH even after VS Code restarts. You can then run `sci`
+from any directory without repeating installation or PATH commands. If it still
+says "not recognized", follow the
+[Windows PATH repair](INSTALLATION.md#windows-path-repair) steps. Use
+`-InstallPrerequisites` to explicitly approve
 missing Git installation through WinGet. Without WinGet, the installer provides
 manual Git instructions.
 

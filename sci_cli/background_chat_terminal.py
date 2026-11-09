@@ -1,6 +1,7 @@
 """Attach a real terminal to a persistent PtySession; Ctrl+] only detaches."""
 
 import base64
+import codecs
 import json
 import os
 import signal
@@ -49,19 +50,22 @@ def _attach_once(chat_id, *, home=None, takeover=False, view_session=None):
             if reply.get("truncated"):
                 print("Live terminal replay is limited to its recent tail. Ctrl+O opens the saved transcript.\r", flush=True)
             pending = bytearray(tail)
+            output_pending = memoryview(b"")
+            # Service frame boundaries can split UTF-8. Windows console byte
+            # writes can stall flushing an incomplete character; keep decoder
+            # state across both frames and bounded replay chunks.
+            decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
             sock.settimeout(2)
             while not stop[0] and not console.stopped:
-                # Large replays and frequent paint events must yield to input
-                # and resizing; draining the entire queue can starve a viewer.
-                frames = 0
-                while not stop[0] and not console.stopped and b"\n" in pending and frames < 8:
-                    frames += 1
+                # A replay frame can contain 32 KiB of terminal output. ConPTY
+                # can wait for input while rendering it: yield between bounded
+                # writes, not just between service frames, so keys keep flowing.
+                if not output_pending and b"\n" in pending:
                     raw, _, rest = pending.partition(b"\n")
                     pending = bytearray(rest)
                     event = json.loads(raw)
                     if "output" in event:
-                        sys.stdout.buffer.write(base64.b64decode(event["output"], validate=True))
-                        sys.stdout.buffer.flush()
+                        output_pending = memoryview(base64.b64decode(event["output"], validate=True))
                     elif "relaunch" in event:
                         outcome = event
                         stop[0] = True
@@ -72,12 +76,16 @@ def _attach_once(chat_id, *, home=None, takeover=False, view_session=None):
                         raise RuntimeError(event["error"])
                 if stop[0]:
                     break
+                if output_pending:
+                    sys.stdout.write(decoder.decode(output_pending[:4096]))
+                    sys.stdout.flush()
+                    output_pending = output_pending[4096:]
                 if console.resized:
                     console.resized = False
                     size = os.get_terminal_size()
                     send(sock, {"action": "resize", "cols": size.columns, "rows": size.lines})
-                socket_ready, input_data = console.poll(sock, timeout=0 if b"\n" in pending else None)
-                if socket_ready:
+                socket_ready, input_data = console.poll(sock, timeout=0 if output_pending or b"\n" in pending else None)
+                if socket_ready and not output_pending and b"\n" not in pending:
                     chunk = sock.recv(65536)
                     if not chunk:
                         break
@@ -86,12 +94,18 @@ def _attach_once(chat_id, *, home=None, takeover=False, view_session=None):
                         raise RuntimeError("Invalid oversized background event.")
                 if input_data is not None:
                     chunk = input_data
-                    if not chunk or b"\x1d" in chunk:  # Ctrl+] is the explicit detach shortcut.
+                    if not chunk:
                         break
+                    # Windows can deliver the last typed key and Ctrl+] together.
+                    # Forward that prefix (e.g. q to close history) before detach.
+                    chunk, detach, _ = chunk.partition(b"\x1d")
                     if os.name == "posix" and chunk == b"\x1a":
                         outcome["suspend"] = True
                         break
-                    send(sock, {"action": "input", "data": base64.b64encode(chunk).decode()})
+                    if chunk:
+                        send(sock, {"action": "input", "data": base64.b64encode(chunk).decode()})
+                    if detach:
+                        break
         finally:
             from sci_cli.cli_terminal_input import _TERMINAL_INPUT_MODE_RESET_SEQ
             try:
