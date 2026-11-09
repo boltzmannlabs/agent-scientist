@@ -394,7 +394,7 @@ class Store:
                 progress(done, total, {urls[key]: rows for key, rows in ranges.items()})
 
         try:
-            Download(sources, pause_event=pause_event).run(progress=tick)
+            Download(sources, pause_event=pause_event, native_archive_transport=True).run(progress=tick)
         finally:
             # Only finalized, hash-verified files can exist at these paths.
             for source in sources:

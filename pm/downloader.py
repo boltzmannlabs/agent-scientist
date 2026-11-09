@@ -247,6 +247,7 @@ class Download:
         connections: int = CONNECTIONS,
         partials_dir: Optional[Path] = None,
         pause_event: Optional[threading.Event] = None,
+        native_archive_transport: bool = False,
     ):
         self.sources = [Source(s.url, Path(s.dest), s.sha256, tuple(s.fallbacks)) for s in sources]
         self.resume = resume
@@ -259,6 +260,14 @@ class Download:
             self.partials_dir = paths.partials_root()
         self._owns_pause_event = pause_event is None
         self._paused = pause_event if pause_event is not None else threading.Event()
+        from pm.downloader_curl import windows_curl
+
+        self._curl = windows_curl() if native_archive_transport else None
+
+    def _use_curl(self, source: Source) -> bool:
+        # Only pinned archives use the Windows transport. Model downloads keep
+        # their existing range/ETag resume protocol.
+        return bool(self._curl and re.fullmatch(r"[a-f0-9]{64}", source.sha256))
 
     def pause(self) -> None:
         """Request a stop between chunks; run() raises DownloadPaused."""
@@ -294,7 +303,11 @@ class Download:
                 remote = _Remote(source.dest.stat().st_size, False)
                 covered = [(0, remote.total)]
             else:
-                source, remote = self._try_sources(source, lambda candidate: self._probe(candidate.url), failures[key])
+                source, remote = self._try_sources(
+                    source,
+                    lambda candidate: _Remote(0, False) if self._use_curl(candidate) else self._probe(candidate.url),
+                    failures[key],
+                )
                 covered = []
                 with partial_lock(self.partials_dir, self._key(source.url), wait=False) as acquired:
                     if acquired and remote.ranged:
@@ -352,6 +365,19 @@ class Download:
             self._check_pause()
             if _existing_dest_ok(source):
                 return source.dest.stat().st_size
+            if self._use_curl(source):
+                from pm.downloader_curl import fetch_archive
+
+                # Discard the sparse bitmap before starting a contiguous stream.
+                # Keep the shared partial key so GC respects this owner's lock.
+                key = self._key(source.url)
+                part = self.partials_dir / f"{key}.part"
+                side = self.partials_dir / f"{key}.ranges"
+                side.unlink(missing_ok=True)
+                size = fetch_archive(self._curl, source.url, part, self._paused,
+                                     tick, self._wait_retry)
+                self._finalize(source, part, side)
+                return size
             # Recheck identity after waiting for another process's partial.
             remote = self._probe(source.url)
             tick(self._partial_ranges(source, remote) if remote.ranged else [], remote.total)

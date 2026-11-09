@@ -20,8 +20,11 @@ from tests.pm._range_server import RangeHandler, dl_server, url  # noqa: F401
 
 @pytest.fixture
 def upstream(dl_server, monkeypatch):
+    from pm import downloader_curl
     from sci_cli import urllib_security
 
+    # These fixtures route urllib requests to the local upstream server.
+    monkeypatch.setattr(downloader_curl, "windows_curl", lambda: None)
     calls = []
     failures = {}
     original_get = RangeHandler.do_GET

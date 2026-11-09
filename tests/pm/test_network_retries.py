@@ -21,6 +21,11 @@ from tests.pm._range_server import RangeHandler, dl_server, url  # noqa: F401
                                    "interrupted", "single-interrupted")
 ] + [("ranged", "stage")])
 def test_install_recovers_from_transient_http_failure(tmp_path, dl_server, monkeypatch, failure_phase, install_path):
+    from pm import downloader_curl
+
+    # This suite exercises urllib probe/range recovery, including on Windows
+    # without curl. Native archive transport has its own real-curl coverage.
+    monkeypatch.setattr(downloader_curl, "windows_curl", lambda: None)
     payload = io.BytesIO()
     with zipfile.ZipFile(payload, "w") as archive:
         archive.writestr("tool.txt", b"verified tool bytes")

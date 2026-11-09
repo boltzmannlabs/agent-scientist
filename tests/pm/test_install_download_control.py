@@ -44,6 +44,11 @@ def realize(request):
 
 @pytest.mark.parametrize("cached", [False, True])
 def test_install_pause_preserves_archives_and_resumes_the_same_pin(tmp_path, monkeypatch, dl_server, realize, cached):
+    from pm import downloader_curl
+
+    # Range-specific progress/resume contract; curl cancellation is covered in
+    # test_download_curl through the real subprocess and publication path.
+    monkeypatch.setattr(downloader_curl, "windows_curl", lambda: None)
     root = tmp_path / "store"
     lock_path = tmp_path / "lock.json"
     monkeypatch.setenv("SCI_HOME", str(tmp_path / "home"))

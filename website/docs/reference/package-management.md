@@ -552,6 +552,20 @@ launchers, and invokes native packaging. Maintainers can read
 
 ## Network retries
 
+On Windows, pinned PM archives use `curl.exe` when it is available, matching
+the uv bootstrap transport. This avoids Python-specific proxy/download failures
+and the preliminary byte-range probe. TLS verification, lockfile SHA-256 checks,
+download ownership and atomic publication still apply. If curl is absent, PM
+uses its Python downloader. Local-model downloads keep the existing Python
+range transport on every platform.
+
+The curl path uses a 20-second connection timeout and a 600-second limit per
+attempt. Progress shows transferred bytes until the total becomes known at
+completion. Interrupted curl archive transfers restart from the beginning;
+completed, verified archives are reused. Pause stops the curl child process.
+A persistent HTTP 504 can still require fixing the network/proxy or waiting for
+the upstream host; changing transport cannot guarantee upstream availability.
+
 PM retries transient HTTP failures during tool downloads, artifact hashing and
 version lookups. Each probe or transfer gets at most four attempts. Backoff
 waits are 1, 2 and 4 seconds. A `Retry-After` header can extend a wait, up to

@@ -16,6 +16,10 @@ from tests.pm._range_server import dl_server as dl_server
 
 
 def test_store_fetch_resumes_interrupted_download(tmp_path, dl_server, monkeypatch):
+    from pm import downloader_curl
+
+    # Exercise the range transport, also used when native curl is unavailable.
+    monkeypatch.setattr(downloader_curl, "windows_curl", lambda: None)
     # Isolate the store root (and thus the managed partials area) to tmp_path.
     runtime = tmp_path / "runtime"
     monkeypatch.setenv("SCI_RUNTIME_DIR", str(runtime))
