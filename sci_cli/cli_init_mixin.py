@@ -30,7 +30,7 @@ class CLIInitMixin:
         self.console = Console()
         self.config = CLI_CONFIG
         display = CLI_CONFIG["display"]
-        self.compact = compact if compact is not None else display.get("compact", False)
+        self.compact = compact if compact is not None else display.get("compact", True)
         # tool_progress: "off" | "new" | "all" | "verbose"; YAML 1.1 parses bare `off` as False.
         _raw_tp = display.get("tool_progress", "all")
         self.tool_progress_mode = "off" if _raw_tp is False else str(_raw_tp)

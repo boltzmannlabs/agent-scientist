@@ -371,7 +371,7 @@ def _terminal_width_for_streaming() -> int:
 def _render_final_assistant_content(text: str, mode: str = "render"):
     """Render final assistant content as markdown, stripped text, or raw text."""
     from cli import _preserve_windows_dot_segments_for_markdown, _rich_text_from_ansi, _strip_markdown_syntax, _terminal_columns, realign_markdown_tables
-    from rich.markdown import Markdown
+    from sci_cli.terminal_links import terminal_markdown
 
     # 1 border cell each side + margin so resize races don't push a borderline table into soft-wrap.
     panel_width = max(20, _terminal_columns() - 4)
@@ -387,7 +387,7 @@ def _render_final_assistant_content(text: str, mode: str = "render"):
     plain = _rich_text_from_ansi(text or "").plain
     plain = _preserve_windows_dot_segments_for_markdown(plain)
     plain = realign_markdown_tables(plain, panel_width)
-    return Markdown(plain)
+    return terminal_markdown(plain)
 
 
 def assistant_message_panel(text: str, *, mode: str = "render", width: int | None = None):
@@ -545,8 +545,9 @@ def _terminal_reflows() -> bool | None:
 
 def _line_rows(line: str, columns: int) -> int:
     """Rows ``line`` fills when the terminal soft-wraps it at ``columns``."""
-    from prompt_toolkit.formatted_text import ANSI, fragment_list_width, to_formatted_text
-    width = fragment_list_width(to_formatted_text(ANSI(line)))
+    from prompt_toolkit.formatted_text import fragment_list_width, to_formatted_text
+    from sci_cli.terminal_links import TerminalANSI
+    width = fragment_list_width(to_formatted_text(TerminalANSI(line)))
     return max(1, -(-width // columns)) if columns and columns > 0 else 1
 
 
@@ -865,13 +866,18 @@ class ChatConsole:
         self._buffer = StringIO()
         self._inner = Console(file=self._buffer, force_terminal=True, color_system="truecolor", highlight=False)
 
+    @property
+    def width(self):
+        return shutil.get_terminal_size((80, 24)).columns
+
     def print(self, *args, **kwargs):
-        from cli import _OSC_ESCAPE_RE, _cprint
+        from cli import _cprint
+        from sci_cli.terminal_links import terminal_hyperlinks
         self._buffer.seek(0)
         self._buffer.truncate()
-        self._inner.width = shutil.get_terminal_size((80, 24)).columns
+        self._inner.width = self.width
         self._inner.print(*args, **kwargs)
-        for line in _OSC_ESCAPE_RE.sub("", self._buffer.getvalue()).rstrip("\n").split("\n"):
+        for line in terminal_hyperlinks(self._buffer.getvalue()).rstrip("\n").split("\n"):
             _cprint(line)
 
     @contextmanager
@@ -913,17 +919,17 @@ def _build_compact_banner() -> str:
         return f"\n[{title_color}]{tiny_line}[/] [dim {dim_color}]- Boltzmann Labs[/]\n"
 
     inner = w - 2  # inside the box border
-    bar = "═" * w
+    bar = "─" * inner
     content_width = inner - 2
 
     line1 = line1[:content_width].ljust(content_width)
     line2 = version_line[:content_width].ljust(content_width)
 
     return (
-        f"\n[bold {border_color}]╔{bar}╗[/]\n"
-        f"[bold {border_color}]║[/] [{title_color}]{line1}[/] [bold {border_color}]║[/]\n"
-        f"[bold {border_color}]║[/] [dim {dim_color}]{line2}[/] [bold {border_color}]║[/]\n"
-        f"[bold {border_color}]╚{bar}╝[/]\n"
+        f"\n[bold {border_color}]╭{bar}╮[/]\n"
+        f"[bold {border_color}]│[/] [{title_color}]{line1}[/] [bold {border_color}]│[/]\n"
+        f"[bold {border_color}]│[/] [dim {dim_color}]{line2}[/] [bold {border_color}]│[/]\n"
+        f"[bold {border_color}]╰{bar}╯[/]\n"
     )
 
 

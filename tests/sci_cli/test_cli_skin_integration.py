@@ -104,6 +104,11 @@ class TestCompactBannerSkinIntegration:
         assert skin.get_color("banner_title") in banner
         assert skin.get_color("banner_dim") in banner
 
+        from rich.text import Text
+        widths = [Text.from_markup(line).cell_len for line in banner.strip().splitlines()]
+        assert len(set(widths)) == 1
+        assert max(widths) <= 90
+
 
 
 class TestAnsiRichTextHelper:
@@ -114,3 +119,34 @@ class TestAnsiRichTextHelper:
     def test_strips_ansi_but_keeps_plain_text(self):
         text = _rich_text_from_ansi("\x1b[31mred\x1b[0m")
         assert text.plain == "red"
+
+
+def test_compact_cli_uses_disk_preference_unless_explicitly_overridden(tmp_path, monkeypatch):
+    import cli as cli_module
+    import pytest
+    from sci_cli.config_defaults import DEFAULT_CONFIG
+
+    monkeypatch.setenv("SCI_HOME", str(tmp_path))
+    monkeypatch.setattr(cli_module, "_sci_home", tmp_path)
+    monkeypatch.delenv("SCI_IGNORE_USER_CONFIG", raising=False)
+
+    class DisplayInitialized(Exception):
+        pass
+
+    def stop_before_model_setup(self, *args):
+        raise DisplayInitialized
+
+    monkeypatch.setattr(SciCLI, "_init_model_routing", stop_before_model_setup)
+
+    def shell_for(**kwargs):
+        monkeypatch.setattr(cli_module, "CLI_CONFIG", cli_module.load_cli_config())
+        shell = SciCLI.__new__(SciCLI)
+        with pytest.raises(DisplayInitialized):
+            shell.__init__(**kwargs)
+        return shell
+
+    assert shell_for().compact is DEFAULT_CONFIG["display"]["compact"]
+    for preference in (False, True):
+        (tmp_path / "config.yaml").write_text(f"display:\n  compact: {str(preference).lower()}\n")
+        assert shell_for().compact is preference
+        assert shell_for(compact=not preference).compact is not preference

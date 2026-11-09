@@ -1,6 +1,7 @@
 """Logo motion stays in owned UI, preserving the artwork and chat surface."""
 
 import asyncio
+import os
 from io import StringIO
 from types import MethodType, SimpleNamespace
 import time
@@ -36,20 +37,21 @@ def test_rotation_preserves_face_and_canvas_while_turning_edge_on():
 
 
 @pytest.mark.asyncio
-async def test_real_application_animates_stops_on_input_and_preserves_one_still_card(tmp_path):
+@pytest.mark.parametrize("columns", [80, 110])
+async def test_real_application_animates_stops_on_input_and_preserves_one_still_card(tmp_path, columns):
     class Terminal(StringIO):
         def isatty(self):
             return True
 
     stream = Terminal()
-    console = Console(file=stream, width=110, height=40, force_terminal=True)
+    console = Console(file=stream, width=columns, height=40, force_terminal=True)
     params = dict(skin=load_skin(DEFAULT_SKIN_NAME), profile='fixture', model='fixture-model',
-                  provider='fixture', cwd=str(tmp_path), tool_count=2, skill_count=3, width=110)
+                  provider='fixture', cwd=str(tmp_path), tool_count=2, skill_count=3, width=columns)
     welcome = WelcomeAnimation()
     assert not welcome.capture(Console(file=StringIO(), width=110, height=40), params)
     assert not welcome.capture(Console(file=stream, width=60, height=40, force_terminal=True), params)
     assert welcome.capture(console, params)
-    size = [Size(rows=40, columns=110)]
+    size = [Size(rows=40, columns=columns)]
     output = Vt100_Output(stream, lambda: size[0], term='xterm', enable_cpr=False)
     async def until(predicate):
         async def poll():
@@ -146,3 +148,62 @@ async def test_model_overlay_releases_welcome_space_and_keeps_one_still_card(tmp
         finally:
             app.exit()
             await task
+
+
+@pytest.mark.parametrize("columns", [32, 80, 110])
+def test_compact_cli_startup_and_redraw_keep_welcome_details(tmp_path, monkeypatch, columns):
+    import cli as cli_module
+    import sci_cli.banner as banner
+    from sci_cli.skin_engine import set_active_skin
+
+    monkeypatch.setenv("SCI_HOME", str(tmp_path))
+    monkeypatch.setenv("SCI_DEFER_AGENT_STARTUP", "1")
+    monkeypatch.setattr(cli_module, "get_tool_definitions", lambda **_: [])
+    monkeypatch.setattr(banner, "compute_toolset_availability", lambda _: {})
+    monkeypatch.setattr(banner, "get_available_skills", lambda: {})
+    monkeypatch.setattr(banner, "get_update_result", lambda **_: 0)
+    monkeypatch.setattr(banner, "load_banner_snapshot", lambda _: None)
+    set_active_skin(DEFAULT_SKIN_NAME)
+
+    output = StringIO()
+    shell = cli_module.SciCLI.__new__(cli_module.SciCLI)
+    shell.console = Console(file=output, width=columns, height=40, force_terminal=True)
+    shell.compact = True
+    shell.model = "fixture-model"
+    shell.provider = "fixture"
+    shell.agent = None
+    shell.session_id = "fixture-session"
+    shell.enabled_toolsets = []
+    shell.disabled_toolsets = []
+    shell.conversation_history = []
+    shell._welcome_animation = WelcomeAnimation()
+
+    shell.show_banner()
+
+    welcome = shell._welcome_animation
+    if columns >= 70:
+        assert welcome.params is not None
+        text = ''.join(fragment[1] for fragment in welcome.render())
+        assert "BOLTZMANN LABS" in text
+    else:
+        text = output.getvalue()
+    from rich.text import Text
+    normalized = ''.join(Text.from_ansi(text).plain.translate(str.maketrans('', '', '╭╮╰╯│─')).split())
+    assert "fixture-model" in normalized and "Workspace" in normalized and "Capabilities" in normalized
+    assert shell.compact and shell.conversation_history == []
+
+    # /clear prints through the command-safe console while the application is live.
+    printed = []
+    monkeypatch.setattr(cli_module, "_cprint", printed.append)
+    monkeypatch.setattr("shutil.get_terminal_size", lambda *args: os.terminal_size((columns, 40)))
+    safe_console = cli_module.ChatConsole()
+    assert not shell._use_compact_banner(safe_console)
+    banner.build_welcome_banner(
+        console=safe_console, model=shell.model, provider=shell.provider,
+        cwd=str(tmp_path), tools=[], enabled_toolsets=[],
+        get_toolset_for_tool=lambda _: None, availability={}, skills_by_category={}, compact=True,
+    )
+    if columns >= 70:
+        assert "BOLTZMANN LABS" in ''.join(printed)
+    else:
+        assert "Workspace" in ''.join(printed)

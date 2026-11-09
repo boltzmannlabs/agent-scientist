@@ -10,7 +10,6 @@ from __future__ import annotations
 import concurrent.futures
 import logging
 import os
-import shutil
 import threading
 import time
 
@@ -96,6 +95,22 @@ class CLIInfoMixin:
     """Informational views and reload flows for the interactive CLI: banner, help, tools, usage,
     insights, MCP/skills reload, bang shell."""
 
+    def _handle_boltzmann_status_command(self, cmd_original: str):
+        from sci_cli.boltzmann_status import run
+
+        run(self, cmd_original)
+
+    def _use_compact_banner(self, console):
+        from sci_cli.skin_defaults import DEFAULT_SKIN_NAME
+        from sci_cli.skin_engine import get_active_skin
+
+        skin = get_active_skin()
+        science_welcome = skin.name == DEFAULT_SKIN_NAME and not (skin.banner_logo or skin.banner_hero)
+        # Density controls spacing; the original brand artwork stays in the welcome.
+        if science_welcome:
+            return False
+        return console.width < 80
+
     def show_banner(self):
         """Display the welcome banner in Claude Code style."""
         from cli import _build_compact_banner, get_tool_definitions, logger
@@ -107,8 +122,7 @@ class CLIInfoMixin:
         from agent.context_pin import is_context_pinned
         ctx_pinned = is_context_pinned(ctx_len, getattr(getattr(self, "agent", None), "_config_context_length", None))
 
-        # Auto-compact for narrow terminals — the full banner needs ~80 columns to avoid wrapping.
-        if self.compact or shutil.get_terminal_size().columns < 80:
+        if self._use_compact_banner(self.console):
             self._console_print(_build_compact_banner())
             self._show_status()
         else:
@@ -126,7 +140,8 @@ class CLIInfoMixin:
             banner_kw = dict(
                 console=self.console, model=self.model, cwd=cwd,
                 enabled_toolsets=self.enabled_toolsets, session_id=self.session_id,
-                context_length=ctx_len, provider=self.provider, context_pinned=ctx_pinned)
+                context_length=ctx_len, provider=self.provider, context_pinned=ctx_pinned,
+                compact=self.compact)
             if welcome := getattr(self, '_welcome_animation', None):
                 banner_kw['welcome_handler'] = welcome.capture
 

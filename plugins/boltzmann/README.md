@@ -1,6 +1,29 @@
 # Boltzmann connector for Agent Scientist
 
 The custom Agent Scientist distribution includes this connector, **not a credential or a subscription**.
+
+## Permanent experiment outputs
+
+`boltzmann_download(download_url)` saves artifacts in the active profile's
+`<workspace>/outputs/` directory. The directory is created on the first download.
+For a configured local `terminal.cwd`, that directory is the workspace; relative
+workspace settings resolve beneath `<SCI_HOME>/workspace`. If no workspace is
+configured (including `.`, `auto`, or `cwd`), the persistent fallback is
+`<SCI_HOME>/workspace/outputs/`. Non-local terminal backends also use this local
+profile workspace because the connector downloads on the SCI host.
+
+Outputs survive session exits and are not subject to temporary-file or receipt
+retention cleanup. An explicitly requested `output_folder` is honored; relative
+destinations resolve against the owning profile's workspace. Existing files are
+never overwritten: repeated filenames receive numbered suffixes. Failed downloads
+remove only their incomplete file, and an unavailable destination produces an
+error instead of silently falling back to temporary storage. The result reports
+absolute `output_folder` and `output_paths`; save conversions and verification
+reports alongside them. The same default applies in specialists and background
+continuations through the shared download handler. Existing results are not moved.
+
+## Authorization
+
 The CLI setup command is available even when this plugin is not enabled in a profile.
 Seeing `/boltzmann_login` or `/add_boltzmann` does not authorize any scientific tools. Successful explicit setup enables
 only Boltzmann, preserving unrelated plugin selections.

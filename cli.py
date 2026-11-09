@@ -214,7 +214,7 @@ try:
 except ImportError:  # partial prompt_toolkit stubs in tests
     EditingMode = None
 from prompt_toolkit import print_formatted_text as _pt_print
-from prompt_toolkit.formatted_text import ANSI as _PT_ANSI
+from sci_cli.terminal_links import TerminalANSI as _PT_ANSI
 try:
     from prompt_toolkit.cursor_shapes import CursorShape
     _STEADY_CURSOR = CursorShape.BLOCK
@@ -685,10 +685,6 @@ _strip_leaked_bracketed_paste_wrappers = _lazy_shim(
 )
 
 
-# OSC sequences (e.g. OSC-8 links): pt's ANSI parser strips the ESC but leaks the payload as text.
-_OSC_ESCAPE_RE = re.compile(r"\x1b\][\s\S]*?(?:\x07|\x1b\\)")
-
-
 def _looks_like_slash_command(text: str) -> bool:
     """``/help`` yes, ``/Users/x/file.md`` no: a command's first word has no further ``/``."""
     if not text or not text.startswith("/"):
@@ -879,7 +875,7 @@ class SciCLI(CLISpecialistMixin, CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNot
         max_turns: int = None,
         run_budget: float = None,
         verbose: Optional[bool] = None,
-        compact: bool = False,
+        compact: Optional[bool] = None,
         resume: str = None,
         checkpoints: bool = False,
         pass_session_id: bool = False,
@@ -1692,7 +1688,7 @@ def main(
     run_budget: float = None,
     verbose: Optional[bool] = None,
     quiet: bool = False,
-    compact: bool = False,
+    compact: Optional[bool] = None,
     list_tools: bool = False,
     list_toolsets: bool = False,
     gateway: bool = False,
@@ -1725,7 +1721,7 @@ def main(
         base_url: Base URL for the API
         max_turns: Maximum tool-calling iterations (default: 60)
         verbose: Enable verbose logging
-        compact: Use compact display mode
+        compact: Override display.compact when provided
         list_tools: List available tools and exit
         list_toolsets: List available toolsets and exit
         resume: Resume a previous session by its ID (e.g., 20260225_143052_a1b2c3)

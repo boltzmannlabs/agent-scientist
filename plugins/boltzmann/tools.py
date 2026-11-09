@@ -21,6 +21,7 @@ from .auth import current_key, require_authorized
 from .contracts import ContractStore
 from .preflight import decision, preflight_submission, validated_upload
 from .receipt_store import ReceiptStore, ReceiptStorageError, GUIDANCE
+from .output_paths import output_directory
 
 # Permanently retired platform jobs. Keep this enforcement at the submission
 # boundary so stale conversations or manually supplied job names cannot invoke
@@ -247,7 +248,7 @@ def _handle_boltzmann_status_inner(**kwargs):
 
     conv_id = _get_conv_id(kwargs)
     token = _get_api_key()
-    output_folder = kwargs.get("output_folder") or os.getenv("output_folder") or None
+    output_folder = str(output_directory(kwargs.get("output_folder")))
 
     # Always refresh from the service: completed responses may contain expiring
     # signed artifact URLs. A terminal-state cache is not an artifact URL cache.
@@ -270,7 +271,7 @@ def _handle_boltzmann_status_inner(**kwargs):
         return json.dumps(result)
 
     if isinstance(result, dict):
-        return json.dumps(result)
+        return json.dumps({**result, "output_folder": output_folder})
     return result
 
 
@@ -281,16 +282,20 @@ def handle_boltzmann_status(**kwargs):
 def _handle_boltzmann_download_inner(**kwargs):
     """Inner logic — extracted so _run_with_timeout can wrap it."""
     download_url = kwargs.get("download_url")
-    output_folder = kwargs.get("output_folder")
-    if not download_url or not output_folder:
-        missing = [k for k in ("download_url", "output_folder") if not kwargs.get(k)]
-        return json.dumps({"error": f"Missing required arguments: {', '.join(missing)}"})
-    output_folder = os.path.expanduser(output_folder)
-    os.makedirs(output_folder, exist_ok=True)
+    if not download_url:
+        return json.dumps({"error": "Missing required argument: download_url"})
+    try:
+        output_folder = str(output_directory(kwargs.get("output_folder")))
+        os.makedirs(output_folder, exist_ok=True)
+    except (OSError, ValueError) as exc:
+        from .results import safe_detail
+        return json.dumps({"error": "Download was not started: cannot prepare the output directory. "
+                           + safe_detail(str(exc), current_key()),
+                           "stage": "download", "status": "not_started"})
     token = _get_api_key()
     result = download_from_signed_url([download_url], output_folder, token=token)
     if isinstance(result, dict):
-        return json.dumps(result)
+        return json.dumps({**result, "output_folder": output_folder})
     return result
 
 

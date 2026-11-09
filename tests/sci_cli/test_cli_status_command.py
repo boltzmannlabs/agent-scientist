@@ -1,8 +1,11 @@
 """Tests for CLI /status command behavior."""
 from datetime import datetime
+from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
+
+from rich.console import Console
 
 from cli import SciCLI
 from agent.i18n import t
@@ -72,14 +75,23 @@ def test_show_session_status_prints_gateway_style_summary():
     with patch("sci_constants.display_sci_home", return_value="~/.sci"):
         cli_obj._show_session_status()
 
-    printed = "\n".join(str(call.args[0]) for call in cli_obj.console.print.call_args_list)
+    stream = StringIO()
+    console = Console(file=stream, width=120, color_system=None)
+    for call in cli_obj.console.print.call_args_list:
+        console.print(call.args[0])
+    printed = stream.getvalue()
     assert t("cli.session.status_title") in printed
-    assert "Session ID: session-123" in printed
-    assert "Path: ~/.sci" in printed
-    assert "Title: My titled session" in printed
-    assert "Model: openai/gpt-5.4 (openai)" in printed
-    assert "Tokens: 321" in printed
-    assert "Agent Running: No" in printed
+    rows = {}
+    for line in printed.splitlines():
+        cells = line.split("│")
+        if len(cells) == 4:
+            rows[cells[1].strip()] = cells[2].strip()
+    assert rows["Session ID"] == "session-123"
+    assert rows["Path"] == "~/.sci"
+    assert rows["Title"] == "My titled session"
+    assert rows["Model"] == "openai/gpt-5.4 (openai)"
+    assert rows["Tokens"] == "321"
+    assert rows["Agent Running"] == "No"
     _, kwargs = cli_obj.console.print.call_args
     assert kwargs.get("highlight") is False
     assert kwargs.get("markup") is False

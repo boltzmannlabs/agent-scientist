@@ -59,7 +59,7 @@ def boltzmann_status(
 
 
 @mcp.tool()
-def boltzmann_download(download_url: str, output_folder: str) -> str:
+def boltzmann_download(download_url: str, output_folder: str | None = None) -> str:
     """Download one signed output artifact from a completed Boltzmann job."""
     return handle_boltzmann_download(
         download_url=download_url,

@@ -8,7 +8,7 @@ from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout import Window, FormattedTextControl, ConditionalContainer
 from rich.console import Console
 
-from sci_cli.banner_science import science_welcome_panel
+from sci_cli.banner_science import SCIENCE_LOGO_MIN_COLUMNS, science_welcome_panel
 from sci_cli.logo_animation import logo_frames
 
 
@@ -29,7 +29,7 @@ class WelcomeAnimation:
         )
 
     def capture(self, console, params):
-        if self.params is not None or self.dismissed or not console.is_terminal or console.width < 85 or console.height < 28:
+        if self.params is not None or self.dismissed or not console.is_terminal or console.width < SCIENCE_LOGO_MIN_COLUMNS or console.height < 28:
             return False
         self.params = params
         return True
@@ -73,7 +73,7 @@ class WelcomeAnimation:
         width = size.columns if size else self.params['width']
         # Keep the composer visible when a formerly tall terminal is shrunk.
         if size and size.rows < 28:
-            width = min(width, 84)
+            width = min(width, SCIENCE_LOGO_MIN_COLUMNS - 1)
         key = (width, self.frame)
         if key != self.cache_key:
             stream = StringIO()

@@ -8,6 +8,22 @@ from typing import Callable, Dict, List, Optional
 
 MAX_CHOICES = 4  # the UI always appends an "Other (type your answer)" row
 MAX_QUESTIONS = 5  # independent questions per call
+
+# Shared prompt guidance must not depend on a workflow skill being freshly read.
+INPUT_DIALOG_GUIDANCE = (
+    "Input dialogs: In an interactive conversation, when a tool or workflow needs "
+    "required inputs or a user decision that cannot be resolved from the request, "
+    "call clarify instead of ending with questions in plain text. This applies "
+    "to every tool/provider and profile. Ask only for missing values. Use choices "
+    "for documented allowed options (the UI opens a picker); omit choices for "
+    "free text, numbers, identifiers and file paths (the UI opens text entry). "
+    "Batch independent questions together. Do not invent scientific options or "
+    "treat a recommended/default choice as the user's answer. Skipped, cancelled "
+    "or timed-out questions do not supply inputs or approval; stop dependent work. "
+    "If the dialog is unavailable or undelivered, explain that and ask in plain "
+    "text. Headless tasks with no user must report missing required inputs "
+    "without waiting for a dialog."
+)
 # Per-choice cap. Surfaces wrap long choice text (newlines kept), so anything longer is rejected here, at the
 # source, instead of a surface silently dropping a choice that ``choices_offered`` still reports as shown.
 MAX_CHOICE_CHARS = 8000
@@ -178,7 +194,9 @@ CLARIFY_SCHEMA = {
     "name": "clarify",
     "description": (
         "Ask the user one or more questions when you need a decision, "
-        "clarification, or feedback before proceeding. Pass every question "
+        "clarification, or feedback before proceeding. In interactive sessions, "
+        "collect missing required tool/workflow inputs with this dialog, rather "
+        "than asking for them in the final text response. Pass every question "
         f"in `questions` (1-{MAX_QUESTIONS} entries) — a single question is a "
         "one-entry array, and several INDEPENDENT questions belong in ONE "
         "call (one form beats a chain of clarify calls; if one answer would "

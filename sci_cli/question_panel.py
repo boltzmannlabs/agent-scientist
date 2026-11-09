@@ -23,7 +23,7 @@ def render_questions(self):
     header = _tn("cli.tui.clarify_question_count", len(questions_list))
 
     catalog = "Clear selection" in choices or "Clear matching" in choices
-    spacious = _term_rows() >= 32
+    spacious = not getattr(self, "compact", False) and _term_rows() >= 32
 
     def _status_rows(width):
         rows = []
@@ -56,8 +56,6 @@ def render_questions(self):
                 label = f"  {cursor} {cb}{display_choice}"
                 for wrapped in _wrap_panel_text(label, width, subsequent_indent="      "):
                     rows.append((style, wrapped))
-                if spacious:
-                    rows.append(('class:clarify-choice', ""))
             if choices and state.get("allow_other", True):
                 other_idx = len(choices)
                 mid = ""

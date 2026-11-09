@@ -193,7 +193,8 @@ TARGETS: list[tuple[str, str, object]] = [
     ("website/static/img/apple-touch-icon.png", "png", 180),
     ("website/static/img/favicon.ico", "ico", [16, 32, 48]),
     ("website/static/img/favicon.svg", "svg_copy", None),
-    ("web/public/favicon.ico", "ico", [16, 32, 48]),
+    ("web/public/favicon.ico", "web_ico", [16, 32, 48]),
+    ("web/public/boltzmann-favicon.svg", "web_svg", None),
 ]
 
 # ─── girl art extraction ────────────────────────────────────────────────────
@@ -203,6 +204,7 @@ class IconArt:
 
     def __init__(self, source: Path, *, colors: tuple[str, str] | None = None, commit: str = ""):
         assets = source / "assets"
+        self.web_favicon = assets / "boltzmann-favicon.svg"
         self.colors = colors
         self.commit = commit
         self.girls = {color: assets / f"sci-mark-{color}.svg" for color in ("black", "white")}
@@ -449,6 +451,13 @@ def build_logo_image(art: IconArt, dark: bool = False) -> Image.Image:
 
 def target_bytes(art: IconArt, kind: str, arg: object) -> bytes:
     """Produce the exact bytes for one target. Shared by write + check."""
+    if kind == "web_svg":
+        return art.web_favicon.read_bytes()
+    if kind == "web_ico":
+        buf = io.BytesIO()
+        img = render(art.web_favicon.read_text(encoding="utf-8"), max(arg))
+        img.save(buf, format="ICO", sizes=[(s, s) for s in arg])
+        return buf.getvalue()
     if kind == "svg":
         return art.master.encode("utf-8")
     if kind == "svg_dark":
@@ -539,11 +548,11 @@ def cmd_write(source: Path, out: Path) -> int:
     for rel, kind, arg in TARGETS:
         path = out / rel
         try:
-            if kind in ("svg", "svg_dark", "svg_copy"):
+            if kind in ("svg", "svg_dark", "svg_copy", "web_svg"):
                 print(f"  {rel}: {path.stat().st_size} bytes SVG")
                 continue
             im = Image.open(path)
-            if kind in ("ico", "ico_dark"):
+            if kind in ("ico", "ico_dark", "web_ico"):
                 sizes = []
                 try:
                     for i in range(im.n_frames):
@@ -624,6 +633,7 @@ def cmd_check(source: Path, out: Path) -> int:
         ("apps/desktop/assets/icon.ico", [16, 24, 32, 48, 64, 128, 256]),
         ("apps/desktop/assets/icon-dark.ico", [16, 24, 32, 48, 64, 128, 256]),
         ("apps/bootstrap-installer/src-tauri/icons/icon.ico", [16, 32, 64, 128, 256]),
+        ("web/public/favicon.ico", [16, 32, 48]),
     ):
         path = out / rel
         if not path.exists():

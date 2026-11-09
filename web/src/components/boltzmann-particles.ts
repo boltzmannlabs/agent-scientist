@@ -1,4 +1,5 @@
 import art from '../../../sci_cli/data/science-terminal-art.json';
+import { moveParticle, type LogoPointer, type ParticleMotion } from './boltzmann-particle-motion';
 
 interface Particle { x: number; y: number; seed: number }
 const dots = [[1, 8], [2, 16], [4, 32], [64, 128]];
@@ -19,7 +20,8 @@ export const logoParticles: Particle[] = art.boltzmann.flatMap((line, row) =>
   )),
 );
 
-export function drawLogoParticles(ctx: CanvasRenderingContext2D, size: number, time: number) {
+export function drawLogoParticles(ctx: CanvasRenderingContext2D, size: number, time: number,
+  motions: ParticleMotion[], pointer: LogoPointer | null, seconds: number) {
   const height = size / 1.2;
   const cx = size / 2, cy = height / 2;
   const scale = size * 0.78;
@@ -34,7 +36,7 @@ export function drawLogoParticles(ctx: CanvasRenderingContext2D, size: number, t
   const yaw = Math.sin(time * 0.35) * 0.22;
   const colors = ['#f5d9ed', '#a5d9f5', '#ff8fbb', '#d5ecff'];
 
-  for (const p of logoParticles) {
+  for (const [index, p] of logoParticles.entries()) {
     const phase = p.seed * Math.PI * 2;
     const radius = Math.hypot(p.x, p.y);
     const turn = arrival * (2 + radius * 3);
@@ -43,8 +45,11 @@ export function drawLogoParticles(ctx: CanvasRenderingContext2D, size: number, t
     const x = Math.cos(angle) * radius * expansion;
     const y = Math.sin(angle) * radius * expansion;
     const drift = Math.sin(time * 0.7 + phase) * 0.004;
-    const px = cx + (x * Math.cos(yaw) + drift) * scale;
-    const py = cy + (y + Math.cos(time * 0.5 + phase) * 0.003) * scale;
+    const home = { x: x * Math.cos(yaw) + drift, y: y + Math.cos(time * 0.5 + phase) * 0.003 };
+    const motion = motions[index];
+    moveParticle(motion, home, pointer, seconds, p.seed);
+    const px = cx + (home.x + motion.x) * scale;
+    const py = cy + (home.y + motion.y) * scale;
     const glow = 0.5 + 0.5 * Math.sin(time * 1.2 + phase * 9);
     const bright = p.seed < 0.035;
     ctx.globalAlpha = bright ? 0.55 + glow * 0.45 : 0.5 + glow * 0.45;

@@ -54,26 +54,32 @@ def catalog(home, config):
 
 def credential(cli, ui, name, existing):
     from sci_cli.callbacks import prompt_for_secret
-    choices = (["Use existing key from source profile"] if existing else []) + [
-        "Enter new key for this profile", "Remove service", "Cancel"]
-    choice = ui.choose(f"Credential {name} (values hidden; an approved copy is independent of the source)", choices)
-    if choice == "Remove service":
-        return None, "removed"
-    if choice.startswith("Use existing"):
-        return existing, "existing copy"
-    snapshot = getattr(cli, "_capture_modal_input_snapshot", None)
-    restore = getattr(cli, "_restore_modal_input_snapshot", None)
-    if snapshot:
-        snapshot()
-    try:
-        result = prompt_for_secret(cli, name, f"New {name} for this profile", persist=False)
-    finally:
-        if restore:
-            restore()
-    value = result.get("value")
-    if not result.get("success") or not value:
-        raise Cancelled()
-    return value, "new"
+    while True:
+        cancel = getattr(cli, "_science_cancel", None)
+        if cancel is not None and cancel.is_set():
+            raise Cancelled()
+        choices = (["Use existing key from source profile"] if existing else []) + [
+            "Enter new key for this profile", "Remove service", "Cancel"]
+        choice = ui.choose(f"Credential {name} (values hidden; an approved copy is independent of the source)", choices)
+        if choice == "Remove service":
+            return None, "removed"
+        if choice.startswith("Use existing"):
+            return existing, "existing copy"
+        snapshot = getattr(cli, "_capture_modal_input_snapshot", None)
+        restore = getattr(cli, "_restore_modal_input_snapshot", None)
+        if snapshot:
+            snapshot()
+        try:
+            result = prompt_for_secret(cli, name, f"New {name} for this profile", persist=False)
+        finally:
+            if restore:
+                restore()
+        value = result.get("value")
+        if not result.get("success") or not isinstance(value, str) or not value.strip():
+            ui.show(f"No usable {name} was entered. Nothing saved. "
+                    "Choose an existing key, enter a key again, or remove this service to continue without it.")
+            continue
+        return value, "new"
 
 
 def setup_boltzmann(cli, ui, home, manifest):

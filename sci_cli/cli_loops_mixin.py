@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import logging
 import os
-import shutil
 import threading
 import time
 
@@ -110,7 +109,7 @@ class CLILoopsMixin:
         out.cursor_goto(0, 0)
         out.flush()
         cc = ChatConsole()
-        if self.compact or shutil.get_terminal_size().columns < 80:
+        if self._use_compact_banner(cc):
             cc.print(_build_compact_banner())
         else:
             tools = get_tool_definitions(enabled_toolsets=self.enabled_toolsets,
@@ -124,7 +123,8 @@ class CLILoopsMixin:
                 console=cc, model=self.model, cwd=os.getenv("TERMINAL_CWD", os.getcwd()),
                 tools=tools, enabled_toolsets=self.enabled_toolsets, session_id=self.session_id,
                 context_length=ctx_len, provider=self.provider,
-                context_pinned=is_context_pinned(ctx_len, getattr(agent, "_config_context_length", None)))
+                context_pinned=is_context_pinned(ctx_len, getattr(agent, "_config_context_length", None)),
+                compact=self.compact)
         _cprint(_fresh_start())
         self._print_random_tip()
 

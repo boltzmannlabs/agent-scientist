@@ -289,7 +289,12 @@ def _tool_guidance_block(agent: Any) -> Optional[str]:
     _kanban_guidance = getattr(agent, "_kanban_worker_guidance", None)
     if _kanban_guidance is None and "kanban_show" in names and owned_kanban_task():
         _kanban_guidance = KANBAN_GUIDANCE
+    input_guidance = None
+    if "clarify" in names:
+        from tools.clarify_tool import INPUT_DIALOG_GUIDANCE
+        input_guidance = INPUT_DIALOG_GUIDANCE
     tool_guidance = [
+        input_guidance,
         memory_guidance,
         SESSION_SEARCH_GUIDANCE if "session_search" in names else None,
         SKILLS_GUIDANCE if "skill_manage" in names else None,

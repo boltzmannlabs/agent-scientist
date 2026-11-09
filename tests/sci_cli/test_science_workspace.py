@@ -181,8 +181,8 @@ def test_new_commands_are_routed_and_inventory_does_not_probe(homes, monkeypatch
             registry.register(name="fixture_no_probe", toolset="fixture", schema={"parameters": {}},
                               handler=lambda _: "{}", check_fn=probe, scope=str(home.resolve()))
             rows = inventory(SimpleNamespace(agent=None))
-            assert any(r[1] == "fixture_no_probe" for r in rows)
-            assert any(r[0] == "default MCP" and r[1] == "pubmed" for r in rows)
+            assert any(r.name == "fixture_no_probe" for r in rows)
+            assert any(r.kind == "default MCP" and r.name == "pubmed" for r in rows)
     probe.assert_not_called()
 
 

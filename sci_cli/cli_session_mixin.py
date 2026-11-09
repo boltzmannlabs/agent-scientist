@@ -294,12 +294,13 @@ class CLISessionMixin:
         except Exception:
             ctx_label = None
 
-        lines = [t("cli.session.status_title"), "", *status_lines(fields, "session_id", "path", "title", "model")]
+        rows = [tuple(line.split(": ", 1)) for line in status_lines(fields, "session_id", "path", "title", "model")]
+        free_tier_notice = None
         try:
             from sci_cli.anon_auth import free_tier_route
 
             if free_tier_route():
-                lines.append(t("gateway.status.free_tier"))
+                free_tier_notice = t("gateway.status.free_tier")
         except Exception:
             pass
         optional = ((t("cli.session.label_reasoning"), reasoning_label),
@@ -307,9 +308,15 @@ class CLISessionMixin:
                     (t("cli.session.label_context"), ctx_label))
         for label, value in optional:
             if value:
-                lines.append(t("cli.shared.label_value", label=label, value=value))
-        lines.extend(status_lines(fields, "created", "last_activity", "tokens", "agent_running"))
-        self._console_print("\n".join(lines), highlight=False, markup=False)
+                rows.append((label, value))
+        rows.extend(tuple(line.split(": ", 1)) for line in status_lines(fields, "created", "last_activity", "tokens", "agent_running"))
+        from rich.console import Group
+        from rich.text import Text
+        from sci_cli.skin_engine import get_active_skin
+        from sci_cli.terminal_tables import key_value_table
+
+        table = key_value_table(rows, skin=get_active_skin(), title=t("cli.session.status_title"))
+        self._console_print(Group(table, Text(free_tier_notice)) if free_tier_notice else table, highlight=False, markup=False)
 
     def _list_recent_sessions(self, limit: int = 10) -> list[dict[str, Any]]:
         """Return recent CLI sessions for in-chat browsing/resume affordances."""

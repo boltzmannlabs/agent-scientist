@@ -47,7 +47,7 @@ SCHEMAS = [
                 "doc_id": {"type": "string"},
                 "output_folder": {
                     "type": "string",
-                    "description": "Optional local results directory used by the active session.",
+                    "description": "Optional user-requested local results directory. Defaults to the owning profile's persistent workspace/outputs folder.",
                 },
             },
             "required": ["job_name", "doc_id"],
@@ -66,10 +66,10 @@ SCHEMAS = [
                 },
                 "output_folder": {
                     "type": "string",
-                    "description": "Local directory in which to save the artifact.",
+                    "description": "Omit to save in the owning profile's persistent workspace/outputs folder. Set only for a destination explicitly requested by the user. Relative paths are resolved within that profile's workspace. Never choose a temporary directory for final results.",
                 },
             },
-            "required": ["download_url", "output_folder"],
+            "required": ["download_url"],
             "additionalProperties": False,
         },
     },

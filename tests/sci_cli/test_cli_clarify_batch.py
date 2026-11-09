@@ -68,6 +68,14 @@ class TestClarifyBatchPanel:
         try:
             rendered = "".join(text for _, text in cli._get_clarify_display_fragments())
             assert "Other" not in rendered
+            with patch("sci_cli.cli_tui_mixin._term_rows", return_value=40):
+                cli.compact = False
+                roomy = "".join(text for _, text in cli._get_clarify_display_fragments())
+                cli.compact = True
+                compact = "".join(text for _, text in cli._get_clarify_display_fragments())
+            assert len(compact.splitlines()) < len(roomy.splitlines())
+            assert "Approve download" in compact and "Cancel" in compact
+            assert cli._clarify_state is state and state["selected"] == 0
             cli._tui_clarify_down(event)
             cli._tui_clarify_down(event)
             assert state["selected"] == 1

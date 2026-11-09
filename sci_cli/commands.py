@@ -279,6 +279,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("boltzmann_login", "Log in to Boltzmann, show account credits and enable its tools",
                "Tools & Skills", args_hint="[--replace] [--now]",
                argument_mode="options", cli_only=True, desktop="terminal"),
+    CommandDef("boltzmann_status", "Check this profile's Boltzmann login and account credits",
+               "Info", cli_only=True, desktop="terminal"),
     CommandDef("add_mcp", "Ask Sci to connect an MCP service from your request/link",
                "Tools & Skills", aliases=("Add_mcp",), args_hint="[request or URL]",
                cli_only=True, desktop="terminal"),

@@ -80,7 +80,8 @@ def test_paired_surfaces_follow_the_profile_without_leaking_into_custom_skins(
             assert f"bg:{paired['terminal_elevated']}" in styles["input-area"]
             assert paired["banner_text"] in styles["input-area"]
             assert paired["status_bar_bg"] in styles["status-bar"]
-            assert f"bg:{paired['terminal_elevated']}" in styles["clarify-choice"]
+            assert f"bg:{paired['panel_bg']}" in styles["clarify-choice"]
+            assert f"bg:{paired['completion_menu_current_bg']}" in styles["clarify-selected"]
             panel = assistant_message_panel("Fixture answer", width=60)
             from sci_cli.banner_science import science_welcome_panel
             for width in (32, 100):

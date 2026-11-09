@@ -4,7 +4,6 @@ from copy import deepcopy
 import json
 from pathlib import Path
 import shlex
-import tempfile
 import threading
 
 from sci_cli.native_profile_creation import PROJECT, Service, profile_scope
@@ -160,6 +159,7 @@ def update_wizard(cli, command, ui=None):
     from sci_cli.config import read_user_config_raw, is_managed
     from sci_cli.profiles import list_profile_names, get_profile_dir, _get_default_sci_home
     from sci_cli.science_profiles_catalog import science_skill_choices, select_science_items, skill_identifiers
+    from sci_cli.native_profile_review import review_workspace
     from sci_cli.native_profile_services import choose_services
     from sci_cli.native_profile_wizard import choose_sources
     ui = ui or WizardUI(cli)
@@ -193,7 +193,7 @@ def update_wizard(cli, command, ui=None):
                    not skill_identifiers(n, skill_sources[n]) & disabled]
         chosen = select_science_items(ui, "Scientific skills", labels, selected=initial)
         existing = existing_services(original, meta)
-        with tempfile.TemporaryDirectory(prefix="sci-profile-update-") as scratch:
+        with review_workspace(ui, prefix="sci-profile-update-") as scratch:
             services = choose_services(cli, ui, home, original, Path(scratch), existing=existing,
                                        additional_home=_get_default_sci_home())
             sources = choose_sources(ui, meta.get("sources", []))

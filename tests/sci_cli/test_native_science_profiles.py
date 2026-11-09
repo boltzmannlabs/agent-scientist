@@ -62,6 +62,7 @@ def test_publish_real_profiles_and_switch_a_b_a_without_leaking_state(root, tmp_
             assert 'delegation' in selected
             definitions = get_tool_definitions(sorted(selected), quiet_mode=True, skip_tool_search_assembly=True)
             assert 'delegate_task' in {t['function']['name'] for t in definitions}
+            assert 'clarify' in {t['function']['name'] for t in definitions}
             assert cfg["terminal"]["cwd"] == str(homes[name] / "workspace")
             assert "PRIVATE_SERVICE_TOKEN" not in (homes[name] / ".env").read_text()
             assert (homes[name] / "skills/science/evidence/reference.md").read_text() == "A supporting reference."
@@ -133,3 +134,116 @@ def test_wizard_existing_new_keys_cancel_invalid_key_and_duplicate_are_transacti
     assert (saved / "config.yaml").read_bytes() == original
     create_wizard(cli, '/Create_profile "cancelled"', ui)
     assert not get_profile_dir("cancelled").exists()
+
+
+@pytest.mark.parametrize("action", ["retry", "skip", "cancel"])
+def test_empty_key_keeps_review_and_closes_only_staged_logs(root, monkeypatch, action):
+    import shutil
+    from sci_constants import get_sci_home, sci_home_key
+    from sci_cli import native_profile_services as services, native_profile_wizard as wizard
+    from sci_cli.profiles import get_profile_dir
+    from sci_cli.skill_add import Cancelled
+    from tools.mcp_tool_config import _get_mcp_stderr_log, _close_mcp_stderr_logs
+    from plugins.boltzmann.authentication import AuthenticationResult
+
+    manifest = SimpleNamespace(source="bundled", path="unused", description="Fixture")
+    monkeypatch.setattr(services, "catalog", lambda *_: {
+        "mcp:fixture": ("mcp", "fixture", {"url": "https://fixture.invalid/mcp"}),
+        "plugin:boltzmann": ("plugin", "boltzmann", manifest),
+    })
+    monkeypatch.setattr("sci_cli.science_integrations.missing_defaults", lambda *_: {})
+    monkeypatch.setattr(wizard, "select_science_items", lambda *_: [])
+    monkeypatch.setattr(services, "select_science_items", lambda ui, title, items, **_: list(items))
+    staged = []
+
+    def probe(*args, **kwargs):
+        staged.append((get_sci_home(), _get_mcp_stderr_log()))
+        staged[-1][1].write("Controlled discovery, no external calls.\n")
+        return [("inspect", "Fixture tool")]
+
+    monkeypatch.setattr("sci_cli.mcp_config._probe_single_server", probe)
+    capture = Mock(side_effect=[{"success": True, "skipped": True, "reason": "cancelled"},
+                                {"success": True, "value": "new-fixture"}])
+    monkeypatch.setattr("sci_cli.callbacks.prompt_for_secret", capture)
+    authenticate = Mock(return_value=AuthenticationResult(True, "Fixture"))
+    monkeypatch.setattr("plugins.boltzmann.nodeapi_helpers.authenticate_api_key", authenticate)
+    choices = ["Check connection", "Enter new key for this profile"]
+    choices += {"retry": ["Enter new key for this profile", "Validate key"],
+                "skip": ["Remove service"], "cancel": [Cancelled()]}[action]
+    if action != "cancel":
+        choices += ["Done", "Create profile", "Stay in current profile"]
+    ui = SimpleNamespace(show=Mock(), choose=Mock(side_effect=choices))
+    before = (root / "config.yaml").read_bytes(), (root / ".env").read_bytes()
+    with profile_scope(root):
+        main_log = _get_mcp_stderr_log()
+    remove = shutil.rmtree
+
+    def checked_remove(path, *args, **kwargs):
+        for home, handle in staged:
+            if Path(path) == home:
+                assert handle.closed  # Invariant needed by Windows, on every host.
+                assert not main_log.closed
+        return remove(path, *args, **kwargs)
+
+    monkeypatch.setattr(shutil, "rmtree", checked_remove)
+    try:
+        wizard.create_wizard(SimpleNamespace(), '/Create_profile "recovered"', ui)
+        assert staged and all(handle.closed and not home.exists() for home, handle in staged)
+        with profile_scope(root):
+            assert _get_mcp_stderr_log() is main_log and not main_log.closed
+        assert before == ((root / "config.yaml").read_bytes(), (root / ".env").read_bytes())
+        saved = get_profile_dir("recovered")
+        assert saved.exists() is (action != "cancel")
+        if action != "cancel":
+            metadata = json.loads((saved / "science-project.json").read_text())
+            assert "fixture" in {item["name"] for item in metadata["services"]}
+            assert ("boltzmann" in {item["name"] for item in metadata["services"]}) is (action == "retry")
+        assert authenticate.call_count == (1 if action == "retry" else 0)
+        if action == "retry":
+            authenticate.assert_called_once_with("new-fixture")
+        displayed = "\n".join(str(c.args[0]) for c in ui.show.call_args_list)
+        assert "No usable BOLTZMANN_API_KEY" in displayed
+        assert "new-fixture" not in displayed and "Profile creation failed" not in displayed
+    finally:
+        _close_mcp_stderr_logs(scope=sci_home_key(root))
+
+
+@pytest.mark.parametrize("cancelled,retry", [(False, True), (False, False), (True, True), (True, False)])
+def test_review_cleanup_failure_preserves_outcome_and_requires_explicit_retry(tmp_path, monkeypatch, cancelled, retry):
+    import shutil
+    from sci_cli.native_profile_review import review_workspace
+    from sci_cli.skill_add import Cancelled
+    from tools.mcp_tool_config import _get_mcp_stderr_log
+
+    remove = shutil.rmtree
+    attempts = []
+    handle = None
+
+    def fail_once(path, *args, **kwargs):
+        assert handle.closed
+        attempts.append(path)
+        if len(attempts) == 1:
+            raise PermissionError("Fixture external file lock")
+        return remove(path, *args, **kwargs)
+
+    monkeypatch.setattr(shutil, "rmtree", fail_once)
+    ui = SimpleNamespace(show=Mock(), choose=Mock(return_value="Retry cleanup" if retry else "Keep temporary files for now"))
+    try:
+        try:
+            with review_workspace(ui, prefix=str(tmp_path / "review-")) as scratch:
+                with profile_scope(scratch):
+                    handle = _get_mcp_stderr_log()
+                if cancelled:
+                    raise Cancelled()
+        except Cancelled:
+            assert cancelled
+        else:
+            assert not cancelled
+        assert len(attempts) == (2 if retry else 1)
+        ui.choose.assert_called_once()
+        assert scratch.exists() is not retry
+        assert "does not undo a saved profile" in ui.show.call_args.args[0]
+        assert str(scratch) in ui.show.call_args.args[0]
+    finally:
+        if scratch.exists():
+            remove(scratch)

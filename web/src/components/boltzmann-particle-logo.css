@@ -4,7 +4,7 @@
   aspect-ratio: 1.2;
   margin: 0 auto 12px;
   isolation: isolate;
-  pointer-events: none;
+  cursor: default;
 }
 .boltzmann-particle-logo canvas,
 .boltzmann-particle-logo__still { position: absolute; inset: 0; width: 100%; height: 100%; }

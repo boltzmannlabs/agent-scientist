@@ -25,6 +25,14 @@ the ordinary available-skills index; absence from that index is not absence of
 the Boltzmann workflow. If tools are deferred, use tool_search for Boltzmann,
 tool_describe for schemas, and tool_call for the discovered plugin operations.
 
+Collect missing scientific inputs with the clarify tool when it is available in
+an interactive session, not a plain-text list of questions. Batch independent
+questions in one form. Use documented choices for enum fields and open-ended
+questions for text, numbers and file paths; never invent scientific options.
+If clarify is unavailable or its result is undelivered, explain that the input
+dialog is unavailable and ask in plain text. A skipped, cancelled or timed-out
+question is not an answer or approval; stop work that depends on that input.
+
 For random-antibody requests, start with
 references/modules/protein-antibody-generation.md. Preserve the requested
 count, ask only for missing required inputs, and never ask the user to name an
@@ -47,6 +55,10 @@ Literature, coding and non-execution questions need not use Boltzmann.
 Submit once; retain and poll the same job ID. Never duplicate a pending or
 ambiguously submitted job. Verify actual artifacts and counts, report partial
 results honestly, and never automatically submit a top-up job.
+Download final artifacts with boltzmann_download without output_folder unless
+the user requested a location. Its default is the owning profile's persistent
+workspace/outputs directory. Keep conversions there too, never in temporary
+storage, and report the actual saved paths.
 
 For an active request needing outputs, work directly in this conversation. Do
 not delegate it or return interim pending/running status. After submission, call

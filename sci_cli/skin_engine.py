@@ -532,9 +532,10 @@ def get_prompt_toolkit_style_overrides() -> Dict[str, str]:
         styles["input-area"] = f"bg:{surface} {palette['text']}"
         styles["prompt"] = f"bg:{surface} {skin.get_color('ui_accent')} bold"
         styles["status-bar-session-title"] = f"bg:{palette['status_bg']} {palette['status_dim']}"
+        panel_surface = skin.get_color("panel_bg", surface)
         for name in styles:
             if name != "secret-input" and name.startswith(("clarify-", "approval-", "sudo-", "secret-")):
-                styles[name] = f"bg:{surface} {styles[name]}"
+                styles[name] = f"bg:{panel_surface} {styles[name]}"
         for name in ("clarify-selected", "approval-selected"):
             styles[name] = f"bg:{palette['menu_current_bg']} {palette['title']} bold"
     return styles

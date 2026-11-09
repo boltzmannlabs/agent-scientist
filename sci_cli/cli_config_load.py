@@ -204,7 +204,7 @@ def _cli_config_defaults():
             "personalities": {},  # user overrides merged by name over sci_cli.personality builtins
         },
         "display": {
-            "compact": False,
+            "compact": True,
             "show_reasoning": False, "reasoning_full": False, "streaming": True, "busy_input_mode": "queue",
             "persistent_output": True, "persistent_output_max_lines": 200,
             # Also clear scrollback on redraw/resize recovery; off because users prefer history.

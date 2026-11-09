@@ -36,10 +36,17 @@ Both `agent-sci` and `agent-sci --tui` use a black canvas with rose controls,
 the Agent Scientist title artwork, and a welcome card with the Boltzmann logo
 on the left and profile details on the right. Narrow windows use a compact card.
 The welcome heading reads `Agent Scientist` without a leading icon.
+
+The classic CLI defaults to compact spacing, with rounded welcome/status tables
+and tighter question pickers. The logo and existing color palette are preserved.
+Set `display.compact: false` in `config.yaml` to use roomier spacing; an explicitly
+saved preference takes precedence over the default. This setting does not change
+the web, desktop, or React TUI layout.
+
 On a fresh interactive welcome screen, the dotted Boltzmann logo slowly rotates
 in three dimensions. The profile details stay still. Typing stops the animation
 face-on; submitting input leaves one static card in scrollback. Resumed chats,
-compact classic terminals (under 85 columns or 28 rows), redirected output and
+small classic terminals (under 70 columns or 28 rows), redirected output and
 custom artwork remain static. Frames are display-only and never enter chat
 history, exports or model context. The classic CLI and React TUI share the same
 frames; regenerate them after artwork changes with `python -m sci_cli.logo_animation`.
@@ -198,7 +205,8 @@ Authored `dark_colors` overlays apply to native CLI colors and the React TUI.
 |-----|---------|----------------------|
 | `background` | Full terminal canvas (OSC 11) | `#000000` |
 | `terminal_bg` | Answer-panel canvas | `#000000` |
-| `terminal_elevated` | Composer, dialogs and banner surface | `#11080F` |
+| `terminal_elevated` | Composer and banner surface | `#11080F` |
+| `panel_bg` | Burgundy fill inside picker and approval boxes | `#260D1A` |
 | `account_bg` | Verified-account card surface | `#0D1E12` |
 | `account_border` | Verified-account card outline | `#40784A` |
 | `hint_text` | Placeholder and helper text | `#A2788D` |

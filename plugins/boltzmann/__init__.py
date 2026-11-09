@@ -33,7 +33,7 @@ def register(ctx):
     from .execution_policy import render_execution_policy
     from .onboarding import register_skills
     ctx.register_system_prompt_section("boltzmann.execution", render_execution_policy,
-                                       max_chars=3500)
+                                       max_chars=4000)
     if available():
         register_skills(ctx)
     for schema in SCHEMAS:

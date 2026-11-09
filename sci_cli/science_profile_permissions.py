@@ -8,6 +8,9 @@ def install_gate(agent, ask, *, allow_local=True, external_tools=()):
     base = {"terminal", "read_file", "write_file", "patch", "search_files", "skill_view", "skills_list"}
     if not allow_local:
         base = {"skill_view", "skills_list"}
+    # Asking the user grants no execution or data-transfer permission. The CLI
+    # includes this only when an interactive question transport is available.
+    base.add("clarify")
     base.update(external_tools)
     permitted = frozenset(t["function"]["name"] for t in agent.tools
                           if t["function"]["name"] in base or t["function"]["name"].startswith("mcp_"))

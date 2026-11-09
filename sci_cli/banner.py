@@ -912,7 +912,7 @@ def build_welcome_banner(
     console: "Console", model: str, cwd: str, tools: List[dict] = None, enabled_toolsets: List[str] = None,
     session_id: str = None, get_toolset_for_tool=None, context_length: int = None, provider: str = None,
     availability: Dict[str, Any] = None, skills_by_category: Dict[str, List[str]] = None,
-    context_pinned: bool = False, welcome_handler=None,
+    context_pinned: bool = False, welcome_handler=None, compact: bool = False,
 ):
     """Build and print a welcome banner with caduceus on left and info on right.
 
@@ -952,7 +952,7 @@ def build_welcome_banner(
             skill_count=sum(len(names) for names in skills.values()),
             context_length=context_length, context_pinned=context_pinned,
             yolo=bool(os.getenv("SCI_YOLO_MODE")),
-            width=console.width,
+            width=console.width, compact=compact,
         )
         if welcome_handler is None or not welcome_handler(console, welcome_params):
             console.print(science_welcome_panel(**welcome_params))

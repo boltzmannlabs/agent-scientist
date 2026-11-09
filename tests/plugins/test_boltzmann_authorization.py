@@ -1255,6 +1255,8 @@ def test_execution_policy_is_authorized_profile_local_and_frozen(tmp_path, monke
             assert "references/tool-contracts.v1.json" in policy
             assert "grouped by domain and module title" in policy
             assert "not the five connector helpers" in policy
+            assert "clarify tool" in policy and "open-ended" in policy
+            assert "undelivered" in policy and "not an answer or approval" in policy
             from model_tools import get_tool_definitions
             definitions = get_tool_definitions(enabled_toolsets=["skills", "boltzmann"], quiet_mode=True,
                                                skip_tool_search_assembly=True)
@@ -1269,6 +1271,7 @@ def test_execution_policy_is_authorized_profile_local_and_frozen(tmp_path, monke
             assert "## Listing Scientific Tools" in instructions
             assert "`module_id`" in instructions and "`display_name`" in instructions
             assert "account-entitlement" in instructions
+            assert "`clarify`" in instructions and "omit `choices`" in instructions
             registry = json.loads((skill.parent / "references/tool-contracts.v1.json").read_text(encoding="utf-8-sig"))
             antibody = next(entry for entry in registry["modules"]
                             if entry["path"] == "modules/protein-antibody-generation.md")
@@ -1288,3 +1291,76 @@ def test_execution_policy_is_authorized_profile_local_and_frozen(tmp_path, monke
         finally:
             manager.unload()
     assert set(state["calls"]) == {"/api/agent-authenticate"}  # no scientific jobs or remote services
+
+
+def test_download_defaults_survive_profile_switches_and_do_not_use_worker_cwd(tmp_path, monkeypatch, auth_server):
+    state, endpoint = auth_server
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("output_folder", str(tmp_path / "ambient-output"))
+    base = endpoint.removesuffix("/api/agent-authenticate")
+    a, b = tmp_path / "profile-a", tmp_path / "profile-b"
+    custom = tmp_path / "configured-workspace"
+    saved = []
+    for home, workspace in ((a, a / "workspace"), (b, custom), (a, a / "workspace")):
+        monkeypatch.setenv("SCI_HOME", str(home))
+        with profile(home):
+            if home == b:
+                save_config({"terminal": {"backend": "local", "cwd": str(custom)}})
+            manager, module = discover(monkeypatch, endpoint)
+            try:
+                capture(manager, monkeypatch, "fixture-valid")
+                # Authorization refreshes plugin discovery. Exercise the fresh
+                # handlers, not the module from before that refresh.
+                manager.unload()
+                manager, module = discover(monkeypatch, endpoint)
+                helpers = sys.modules[module.__name__ + ".nodeapi_helpers"]
+                monkeypatch.setattr(helpers, "_FETCH_URL", base + "/result")
+                status = json.loads(module.tools.handle_boltzmann_status(job_name="Random_Antibody_Generation", doc_id="fixture-job"))
+                assert "output_folder" in status, status
+                assert status["output_folder"] == str(workspace / "outputs")
+                # The real handler spawns a context-carrying worker, as it does
+                # for foreground, specialist and resumed background downloads.
+                result = json.loads(module.tools.handle_boltzmann_download(download_url=base + "/artifact.csv"))
+                assert result["status"] == "downloaded"
+                path = Path(result["output_paths"][0])
+                assert path.is_absolute() and path.parent == workspace / "outputs"
+                assert result["output_folder"] == str(path.parent)
+                assert path.read_bytes() == b"id,value\nfixture-1,1\nfixture-2,2\n"
+                saved.append(path)
+            finally:
+                manager.unload()
+    assert len(set(saved)) == 3
+    assert all(path.exists() for path in saved)
+    assert saved[0].read_bytes() == saved[2].read_bytes()
+    assert not (tmp_path / "outputs").exists()
+    assert not (tmp_path / "ambient-output").exists()
+    assert "/submit" not in state["calls"]
+
+
+def test_download_honors_user_paths_and_never_falls_back_when_storage_fails(tmp_path, monkeypatch, auth_server):
+    state, endpoint = auth_server
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    home = tmp_path / "profile"
+    monkeypatch.setenv("SCI_HOME", str(home))
+    monkeypatch.chdir(tmp_path)
+    with profile(home):
+        manager, module = discover(monkeypatch, endpoint)
+        try:
+            capture(manager, monkeypatch, "fixture-valid")
+            url = endpoint.removesuffix("/api/agent-authenticate") + "/artifact.csv"
+            for requested, expected in ((str(tmp_path / "chosen"), tmp_path / "chosen"),
+                                        ("exported", home / "workspace/exported")):
+                result = json.loads(module.tools.handle_boltzmann_download(download_url=url, output_folder=requested))
+                assert Path(result["output_paths"][0]).parent == expected
+            blocked = home / "workspace/outputs"
+            blocked.write_text("preserve this file")
+            before = state["calls"].count("/artifact.csv")
+            result = json.loads(module.tools.handle_boltzmann_download(download_url=url))
+            assert result["status"] == "not_started" and result["stage"] == "download"
+            assert "cannot prepare the output directory" in result["error"]
+            assert state["calls"].count("/artifact.csv") == before
+            assert blocked.read_text() == "preserve this file"
+            assert not (tmp_path / "outputs").exists()
+        finally:
+            manager.unload()

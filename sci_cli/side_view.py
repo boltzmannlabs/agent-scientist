@@ -4,13 +4,14 @@ import asyncio
 
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition
-from prompt_toolkit.formatted_text import ANSI, to_formatted_text
+from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.layout import DynamicContainer, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.lexers import Lexer
 from prompt_toolkit.keys import Keys
 from sci_cli.side_scroll import SideScrollFrame, TranscriptControl, TranscriptWindow
 from sci_cli.side_surface import create_surface, output_scope
+from sci_cli.terminal_links import TerminalANSI
 from prompt_toolkit.widgets import TextArea
 
 
@@ -105,13 +106,13 @@ class SideView:
         def update():
             self._ansi += text + "\n"
             lines = [[]]
-            for style, body, *_ in to_formatted_text(ANSI(self._ansi)):
+            for style, body, *_ in to_formatted_text(TerminalANSI(self._ansi)):
                 for index, part in enumerate(body.split("\n")):
                     if index:
                         lines.append([])
                     lines[-1].append((style, part))
             self.lexer.lines = lines
-            content = "\n".join("".join(part for _, part in line) for line in lines)
+            content = "\n".join("".join(part for style, part in line if "[ZeroWidthEscape]" not in style) for line in lines)
             buf = self.transcript.buffer
             selection = buf.selection_state
             cursor = len(content) if self.follow else buf.cursor_position

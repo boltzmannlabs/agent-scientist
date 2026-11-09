@@ -151,6 +151,12 @@ Use that command immediately if a stale shell or another installation hides `sci
 An error stops the installation and names
 the failed stage; rerun the installer after an interruption.
 
+The initial pinned `uv` download prefers `curl.exe`, with three retries for
+transient download failures. If curl is unavailable, PowerShell provides the
+same four-attempt limit. The archive must pass its pinned SHA-256 check before
+installation. A 504 indicates a download gateway timeout; failed downloads
+are discarded, and the installer reports the URL and stops after its retry budget.
+
 The classic Windows CLI runs conversations in its persistent background service.
 During a task with an empty composer, **Ctrl+C** offers Cancel task, Run in
 background, or Exit. **Ctrl+]** detaches; reconnect with `/resume` or

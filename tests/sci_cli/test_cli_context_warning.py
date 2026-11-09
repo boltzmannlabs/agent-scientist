@@ -31,6 +31,7 @@ def cli_obj(_isolate):
         obj.enabled_toolsets = ["sci-core"]
         obj.compact = False
         obj.console = MagicMock()
+        obj.console.width = 110
         obj.session_id = None
         obj.api_key = "test"
         obj.base_url = ""
@@ -103,9 +104,10 @@ class TestLowContextWarning:
     def test_compact_banner_does_not_crash_on_narrow_terminal(self, cli_obj):
         """Compact mode should still have ctx_len defined for warning logic."""
         cli_obj.agent.context_compressor.context_length = 4096
+        cli_obj.console.width = 60
 
-        with patch("shutil.get_terminal_size", return_value=os.terminal_size((70, 40))), \
-             patch("cli._build_compact_banner", return_value="compact banner"):
+        with patch("shutil.get_terminal_size", return_value=os.terminal_size((60, 40))), \
+             patch("sci_cli.banner.build_welcome_banner"):
             cli_obj.show_banner()
 
         calls = [str(c) for c in cli_obj.console.print.call_args_list]

@@ -18,6 +18,18 @@ Sci also ships a modern TUI with modal overlays, mouse selection, and non-blocki
 
 ## Running the CLI
 
+Result file links in the classic CLI support Windows drive paths, UNC network
+shares, and Linux/macOS absolute paths. Markdown links and backticked absolute
+paths are emitted as terminal hyperlinks, with spaces and Unicode encoded in
+the target URL. Links are preserved in resumed transcripts and `/side` views.
+Use Ctrl+click in Windows Terminal or VS Code; support and keybindings depend
+on the terminal. Plain-text modes and terminals without hyperlink support retain
+the visible text. SCI does not open a file automatically.
+
+The target belongs to the machine running SCI. A Linux path printed over plain
+SSH is not a local Windows file: use remote editor integration or transfer the
+file first. SCI does not guess Windows drive mappings for SSH or WSL paths.
+
 ```bash
 # Start an interactive session (default)
 sci

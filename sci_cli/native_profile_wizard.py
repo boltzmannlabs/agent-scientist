@@ -2,10 +2,10 @@
 
 from pathlib import Path
 import shlex
-import tempfile
 import threading
 
 from sci_cli.skill_add import WizardUI, Cancelled
+from sci_cli.native_profile_review import review_workspace
 from sci_cli.science_profiles_ui import PERSONA
 from sci_cli.science_profiles_catalog import science_skill_choices, select_science_items
 
@@ -86,8 +86,7 @@ def create_wizard(cli, command, ui=None, source_home=None):
                 "LLM login uses the existing shared authentication mechanism.")
         labels, skill_sources = science_skill_choices(home)
         skills = select_science_items(ui, "Scientific skills", labels)
-        with tempfile.TemporaryDirectory(prefix="sci-profile-review-") as scratch_dir:
-            scratch = Path(scratch_dir)
+        with review_workspace(ui, prefix="sci-profile-review-") as scratch:
             services = choose_services(cli, ui, service_home, service_config, scratch)
             sources = choose_sources(ui, initial_sources)
             terminal = prepare_environment(service_config, get_profile_dir(name), ui, cli._science_cancel)

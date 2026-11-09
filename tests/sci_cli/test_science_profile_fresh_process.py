@@ -10,13 +10,13 @@ import pytest
 from tests.fakes.fake_llm_provider import FakeLLMServer, Text, write_sci_home
 
 
-@pytest.mark.parametrize("mode", ["legacy-worker", "native", "native-reference", "legacy-cli"])
+@pytest.mark.parametrize("mode", ["legacy-worker", "native", "native-reference", "legacy-cli", "native-cli"])
 def test_fresh_profile_worker_turns_restart_and_a_b_a_isolation(tmp_path, monkeypatch, mode):
     from sci_cli.science_profiles import ProfileSpec, create
     from sci_cli.science_profile_commands import activate
     from types import SimpleNamespace
     from unittest.mock import Mock
-    native = mode in {"native", "native-reference"}
+    native = mode.startswith("native")
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setenv("HOME", str(tmp_path))
@@ -37,7 +37,7 @@ def test_fresh_profile_worker_turns_restart_and_a_b_a_isolation(tmp_path, monkey
                 with (home / ".env").open("a") as env_file:
                     env_file.write("\nSCI_FIXTURE_LLM_KEY=sk-shared-profile-test\n")
             atomic_config_replace(home / "config.yaml", cfg)
-            if mode == "native":
+            if mode in {"native", "native-cli"}:
                 (home / "auth.json").write_text(json.dumps({"version": 1, "credential_pool": {
                     "fixture-provider": [{"id": "fixture", "label": "shared fixture", "auth_type": "api_key",
                         "priority": 0, "source": "manual", "access_token": "sk-shared-profile-test"}]}}))
@@ -51,6 +51,12 @@ def test_fresh_profile_worker_turns_restart_and_a_b_a_isolation(tmp_path, monkey
             if native:
                 profiles.append(create_native(name, home, ["science/fixture"], [], [],
                     {"backend": "local", "cwd": str(get_profile_dir(name) / "workspace")}, "Cite evidence. " + purpose))
+                if mode == "native-cli":
+                    # Simulate an existing installation that never enabled dialogs.
+                    cfg = read_user_config_raw(profiles[-1] / "config.yaml")
+                    cfg["platform_toolsets"]["cli"].remove("clarify")
+                    cfg.setdefault("agent", {})["disabled_toolsets"] = ["clarify"]
+                    atomic_config_replace(profiles[-1] / "config.yaml", cfg)
             else:
                 profiles.append(create(ProfileSpec(name, purpose, "Cite evidence", "", setup_pending=True,
                                                    skills=["science/fixture"]), home))
@@ -95,7 +101,7 @@ def loopback_only(sock, address):
     return connect(sock, address)
 socket.socket.connect = loopback_only
 """
-            if mode == "legacy-cli":
+            if mode in {"legacy-cli", "native-cli"}:
                 script += """
 import contextlib, json, sys
 with contextlib.redirect_stdout(sys.stderr):
@@ -141,6 +147,8 @@ with contextlib.redirect_stdout(sys.stderr):
             assert requests[0]["tools"] == requests[1]["tools"]
             names = {t["function"]["name"] for t in requests[0]["tools"]}
             assert "skill_view" in names
+            if mode in {"legacy-cli", "native-cli"}:
+                assert "clarify" in names
             assert ("terminal" in names) == native
         assert (home / "config.yaml").read_bytes() == before
         assert parent.agent.system_prompt == "cached" and parent.agent.tools == ["unchanged"]

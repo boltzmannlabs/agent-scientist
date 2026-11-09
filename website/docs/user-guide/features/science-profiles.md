@@ -77,6 +77,19 @@ set up in main using `/Add_skill`, `/Add_tool`, and `/Add_mcp` first.
 
 Tool choices come from main's installed plugins and configured MCP connections:
 
+Blank, skipped, or timed-out key entry returns to the credential choices without
+discarding the profile review. Enter a key again, choose an available existing
+key, or select **Remove service** to continue without that integration. Choosing
+**Cancel** at this step ends the wizard; service setup failures offer a reviewed
+retry or removal. Empty keys are never sent for authentication.
+
+Creation and updates release their temporary MCP log handles before deleting
+the review folder, including on cancellation. If another process still locks a
+file, cleanup offers **Retry cleanup** or **Keep temporary files for now** and
+reports the folder location. A cleanup problem does not undo a saved profile
+or replace the original setup outcome. Retained folders may contain staged
+credentials; remove them after releasing the lock.
+
 - Boltzmann: choose an existing main key or enter a masked new key. Its read-only
   authentication check requires approval and submits no scientific jobs. A successful
   save establishes a new profile-specific authorization receipt. All five helper
@@ -139,8 +152,37 @@ the active profile offers an explicit fresh-conversation restart after saving.
 
 ## Capability overview and standard connections
 
-`/capabilities` (or `/capabilities search pubmed`) is a searchable, paginated local
-inventory of tools, skills, MCPs and plugins. It distinguishes saved enablement from
+Input dialogs are built into the interactive CLI for main, existing profiles,
+and newly created profiles. There is no enable/disable step in `/capabilities`.
+The CLI includes `clarify` when building an interactive conversation, even if
+an older profile omitted it or saved a `clarify` exclusion. Shared tool guidance
+instructs every model to use this dialog for missing required workflow inputs;
+it does not depend on loading a Boltzmann skill first. Inputs are collected through a form:
+documented options appear as choices, while text, numbers and file paths use
+text-entry questions. Independent questions can share one form. Cancelling or
+skipping a question does not approve an action or supply a missing value.
+
+Restart SCI after updating to load the new code. A conversation already running
+keeps its cached prompt and tools; start a new conversation to load input dialogs.
+Attaching to a persistent background chat resumes its existing process and cached
+instructions. For an immediate fresh foreground session, run
+`agent-sci --cli --no-daemon -p <profile-name>` and start `/new` if needed. Existing
+background tasks are not stopped by this command.
+No profile configuration, credentials, backend, or scientific-tool permissions
+are rewritten. Restricted legacy profiles also get questions without gaining
+local execution or external-service access. Noninteractive sessions retain their
+existing delivery policy; unavailable dialogs fall back to plain-text questions
+instead of assuming scientific inputs.
+
+`/capabilities` opens a category picker: **Tools**, **Skills**, **MCP connections**,
+**Plugins**, and **Service providers**, plus **All** and **Search**. Browser,
+image-generation, and other category-managed backends appear under Service
+providers instead of crowding the plugin list. Select a capability to view its
+details; **Back** returns to the list or categories, and **Done** closes the browser.
+Lists have page controls, search, and clear-search actions. `/capabilities search
+pubmed` opens matching entries directly. Compact labels distinguish **Enabled**,
+**Disabled**, **In conversation**, **Pending new conversation**, and **Setup available**.
+Full details distinguish saved enablement from
 tools visible in this conversation. Deferred-discovery availability, authentication,
 dependencies, and connection readiness are labeled **not verified** where local metadata
 cannot establish them. Inventory viewing does not install, authenticate, probe, or run
