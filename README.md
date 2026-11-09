@@ -149,12 +149,29 @@ After saving, choose a new conversation or use `/new`, then use:
 /boltzmann_tools search docking
 ```
 
+To check the active profile's login and account details, run:
+
+```text
+/boltzmann_status
+```
+
+It shows the profile and login status. Successful verification displays the email,
+**available credits** and **frozen credits**, with balances to two decimal places.
+Activate another profile first to check its account. Missing authorization prompts
+you to sign in; a service or network failure is reported separately and does not
+erase the saved login. The command does not enable tools or submit scientific jobs.
+See [Boltzmann login status](website/docs/user-guide/features/boltzmann-status.md).
+
 The catalog groups scientific tools by domain and module, not connector helpers.
 Catalog visibility does not grant execution access.
 
 When an authorized Boltzmann workflow matches a request, SCI prefers its installed
 contract. Missing inputs or authentication failures must not trigger silent
 provider switching; ambiguous submissions must not be duplicated.
+Downloaded artifacts default to an `outputs`
+folder in the owning profile's persistent workspace unless you request another
+destination. Results report the saved paths; supported terminals render file links
+for opening local artifacts.
 See [Boltzmann integration](plugins/boltzmann/README.md).
 
 The same authorized account can use **boltzmann_models** from `/model` or
@@ -220,6 +237,7 @@ Slash commands below run **inside Agent Scientist**.
 | `/capabilities setup` | Review optional default MCP connections |
 | `/add_boltzmann` | Authorize Boltzmann for this profile |
 | `/boltzmann_login` | Verify a Boltzmann key, show email/credits and enable tools |
+| `/boltzmann_status` | Verify the active profile's login and show email, available credits and frozen credits |
 | `/boltzmann_tools [domain]` | Browse the scientific catalog; use `search <text>` to search |
 | `/Add_skill` | Supply skill material or describe a workflow for a reviewed draft |
 | `/Add_tool <request or URL>` | Ask the agent to add a tool |
@@ -307,6 +325,7 @@ stable/native releases. Do not substitute another application's installer or fee
 | Installation interrupted | Read the failed stage, fix its cause, and rerun the same installer |
 | No model response | Check authentication with `sci setup` or `sci model` |
 | Scientific service unavailable | Check `/capabilities`, credentials, and required dependencies |
+| Boltzmann login or balance unclear | Run `/boltzmann_status` in the affected profile |
 | Newly added tools not visible | Restart SCI; do not assume an existing conversation refreshed |
 | Startup stalls | Press Ctrl+C, retain the error, and run `sci doctor`; do not delete `.sci` |
 
@@ -314,6 +333,7 @@ stable/native releases. Do not substitute another application's installer or fee
 
 - [Detailed installation and optional dashboard/desktop builds](INSTALLATION.md)
 - [Research profiles](website/docs/user-guide/features/science-profiles.md)
+- [Boltzmann login status and account details](website/docs/user-guide/features/boltzmann-status.md)
 - [Sessions and resume](website/docs/user-guide/sessions.md)
 - [CLI commands](website/docs/reference/slash-commands.md)
 - [Developer setup](CONTRIBUTING.md) — use `scripts/run_tests.sh` for Python tests
