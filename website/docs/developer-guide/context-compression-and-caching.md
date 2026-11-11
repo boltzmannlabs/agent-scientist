@@ -6,6 +6,40 @@ manage context window usage efficiently across long conversations.
 Source files: `agent/context_engine.py` (ABC), `agent/context_compressor.py` (default engine),
 `agent/prompt_caching.py`, `gateway/run_turn.py` (session hygiene), `agent/compression_facade.py` (search for `_compress_context`)
 
+## Compression routing and transport failures
+
+With `auxiliary.compression.provider: auto` and no model override, compression
+uses the active conversation's model and provider, including its endpoint and
+profile credentials. A saved auxiliary override is intentional and still wins.
+No particular model or machine is required. Context budgeting uses the resolved
+route's limits; the displayed whole-conversation token estimate is not necessarily
+the size of the sampled summarization request.
+
+Compression's configuration-derived request timeout has a 300-second minimum;
+an explicit per-call timeout still wins. Codex Responses streams now use that
+effective budget while waiting for their first substantive output, then a
+60-second inactivity window after output starts. Keepalives do not reset either
+window. An explicit `auxiliary.compression.no_progress_timeout` retains its
+existing meaning for both initial waiting and subsequent inactivity. The stream
+hard ceiling and any shorter host deadline remain enforced. Other tasks retain
+their existing first-output window; ordinary Chat Completions clients receive
+only SDK-supported timeout parameters.
+
+A full initial-budget timeout does not repeat the same compression request on
+the same provider. Shorter no-progress failures and transient connection errors
+continue through the existing bounded retry policy. If a watchdog closed the
+transport, sync and async retries rebuild it on the same provider/model/endpoint
+under the owning profile, preserving request parameters. They never reuse the
+closed client or select another provider as part of that rebuild. The existing
+configured fallback policy is separate.
+
+Failure reports retain the initial retry failure and safe underlying exception
+types when available. Compression failure preserves the conversation; only a
+successful summary can replace its compressed section. A refused endpoint or
+unavailable service still requires service/network repair: increasing a timeout
+cannot restore connectivity. Deploy the updated code and restart SCI normally
+on each installation; an already-running process retains its loaded code.
+
 
 ## Bedrock context window cache
 
@@ -559,7 +593,12 @@ to find the parent assistant message, keeping groups intact.
 ### Phase 3: Generate Structured Summary
 
 :::warning Summary model context length
-The summary model must have a context window **at least as large** as the main agent model's. The entire middle section is sent to the summary model in a single `call_llm(task="compression")` call. If the summary model's context is smaller, the API returns a context-length error — `_generate_summary()` catches it, logs a warning, and returns `None`. The compressor then drops the middle turns **without a summary**, silently losing conversation context. This is the most common cause of degraded compaction quality.
+The resolved summary route must accommodate its actual summary request and output.
+The displayed whole-conversation size is not that request's size: lean mode samples
+oversized middle sections into one bounded summary request rather than issuing a
+series of chunk requests. Keep deployment context limits accurate, especially
+when configuring a summary-model override. A failed network summary attempt
+aborts without dropping the conversation's messages.
 :::
 
 The middle turns are summarized using the auxiliary LLM with a structured

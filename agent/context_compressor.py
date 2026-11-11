@@ -707,7 +707,9 @@ class _HandoffScan:
 
 def _short_error_text(e: Exception, limit: int = 220) -> str:
     """Error text (or class name) capped for durable cooldown rows and telemetry."""
-    text = str(e).strip() or e.__class__.__name__
+    from agent.auxiliary_transport_recovery import compression_failure_detail
+
+    text = compression_failure_detail(e)
     return text if len(text) <= limit else text[: limit - 3].rstrip() + "..."
 
 
