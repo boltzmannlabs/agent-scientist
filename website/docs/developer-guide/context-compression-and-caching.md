@@ -41,6 +41,41 @@ cannot restore connectivity. Deploy the updated code and restart SCI normally
 on each installation; an already-running process retains its loaded code.
 
 
+## Issue #50: shipped fixes and remaining investigation
+
+The compression transport changes associated with
+[issue #50](https://github.com/boltzmannlabs/agent-scientist/issues/50)
+already shipped in commit
+[`9f3f82da1538cc5125360da20acb9f84218d3dfb`](https://github.com/boltzmannlabs/agent-scientist/commit/9f3f82da1538cc5125360da20acb9f84218d3dfb).
+This mapping does not introduce another runtime fix or establish the cause of
+all historical over-limit requests.
+
+| Implementation | Behavior |
+| --- | --- |
+| `agent/auxiliary_client.py` | Apply the initial-response timeout and bounded retry policy; preserve useful failure causes. |
+| `agent/auxiliary_transport_recovery.py` | Rebuild a closed auxiliary transport on the same route under the owning profile. |
+| `agent/context_compressor.py` | Pass the compression request's effective initial-response budget. |
+| `tests/agent/test_auxiliary_compression_transport.py` | Controlled regression coverage for transport recovery, timeout handling and profile isolation. |
+
+The historical estimates of 560,925 and 558,808 tokens against a 500,000-token
+limit were local preflight refusals. Those main-model requests were not sent.
+The transport fix does not raise the model's capacity or guarantee that retained
+instructions and messages fit after compression. The complete cause of those
+historical incidents remains unverified.
+
+For an ongoing workflow, preserve its session and recorded scientific job IDs.
+Inspect the reported failure before choosing recovery: an unavailable compression
+endpoint needs connectivity repair; an oversized retained request needs a reviewed
+context reduction or a model with sufficient verified capacity. Do not restart
+completed scientific work or resubmit jobs with uncertain outcomes merely because
+the parent conversation stopped. The actual outbound request must still pass its
+context-capacity gate.
+
+This issue remains an investigation until the historical failure is explained or
+the affected workflow is verified to recover while retaining its instructions,
+job identities and cumulative usage. The issue-mapping commit does not claim a
+new test run; checks were explicitly skipped for that push.
+
 ## Bedrock context window cache
 
 Bedrock context resolution in `agent/model_metadata.py` uses this precedence:
