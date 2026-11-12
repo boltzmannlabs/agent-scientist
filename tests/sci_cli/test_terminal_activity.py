@@ -68,6 +68,8 @@ def test_vscode_native_progress_over_a_real_terminal(monkeypatch):
     import select
     master, slave = pty.openpty()
     monkeypatch.setenv('TERM_PROGRAM', 'vscode')
+    clock = [0]
+    monkeypatch.setattr('sci_cli.terminal_activity.time.monotonic', lambda: clock[0])
     try:
         with os.fdopen(slave, 'w', buffering=1) as stream:
             output = Vt100_Output(stream, lambda: Size(rows=24, columns=80), term='xterm')
@@ -77,7 +79,13 @@ def test_vscode_native_progress_over_a_real_terminal(monkeypatch):
                 assert select.select([master], [], [], 2)[0], 'No terminal output'
                 return os.read(master, 4096).decode()
             activity.update(cli)
-            assert '\x1b]9;4;3;\x07' in read()
+            first = read()
+            assert '\x1b]9;4;3;\x07' in first
+            assert '\x1b]2;Agent Scientist\x07' in first
+            assert not any(frame in first for frame in ('●··', '·●·', '··●'))
+            clock[0] = 0.6
+            activity.update(cli)
+            assert not select.select([master], [], [], 0)[0], 'Native progress must not animate the title too'
             cli._clarify_state = {'question': 'Choose'}
             activity.update(cli)
             assert '\x1b]9;4;0;\x07' in read()

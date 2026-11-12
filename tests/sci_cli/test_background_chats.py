@@ -158,10 +158,13 @@ def test_start_is_not_capped_by_retained_workers_and_keeps_profile_owners(tmp_pa
 
 
 class Viewer:
-    def __init__(self, home, key, takeover=False, *, cols=80, rows=24):
+    def __init__(self, home, key, takeover=False, *, cols=80, rows=24, terminal_program=None):
         self.sock = connect(home)
         self.sock.settimeout(30)
-        send(self.sock, {"action": "attach", "id": key, "takeover": takeover, "cols": cols, "rows": rows})
+        params = {"action": "attach", "id": key, "takeover": takeover, "cols": cols, "rows": rows}
+        if terminal_program is not None:
+            params["terminal_program"] = terminal_program
+        send(self.sock, params)
         self.stream = self.sock.makefile("rb")
         self.reply = self.read()
         self.output = b""
@@ -189,6 +192,88 @@ class Viewer:
     def close(self):
         self.stream.close()
         self.sock.close()
+
+
+@pytest.mark.platforms("posix")
+def test_activity_follows_current_viewer_without_changing_profile_context(tmp_path):
+    from sci_state import SessionDB
+
+    worker = r'''
+import os, sys, time
+from pathlib import Path
+from types import SimpleNamespace
+from prompt_toolkit.data_structures import Size
+from prompt_toolkit.output.vt100 import Vt100_Output
+from sci_cli.background_chats import publish_cli_state
+from sci_cli.terminal_activity import TerminalActivity
+from sci_state import SessionDB
+home = Path(os.environ['SCI_HOME'])
+db = SessionDB(home / 'state.db')
+db.create_session('fixture', 'cli', system_prompt='cached-' + home.name)
+db.append_message('fixture', 'user', 'unchanged')
+output = Vt100_Output(sys.stdout, lambda: Size(rows=25, columns=121), term='xterm')
+cli = SimpleNamespace(session_id='fixture', _agent_running=True,
+                      _app=SimpleNamespace(output=output, is_running=True))
+activity = TerminalActivity()
+previous = None
+while True:
+    publish_cli_state(cli)
+    terminal = getattr(cli, '_background_terminal_activity', None)
+    changed = terminal != previous
+    if changed and terminal:
+        print('FRAME:' + terminal['id'], flush=True)
+    activity.update(cli)
+    if changed and terminal:
+        print('END:' + terminal['id'], flush=True)
+    previous = terminal
+    time.sleep(0.1)
+'''
+    homes = [tmp_path / "a", tmp_path / "b"]
+    daemons, viewers = [], []
+    try:
+        daemons = [service(home, worker_source=worker) for home in homes]
+        keys = [request("start", home=h, cwd=str(h),
+                        terminal_env={"TERM_PROGRAM": "xterm"})["id"] for h in homes]
+        owners = [wait_for(lambda h=h: find_worker("fixture", h)) for h in homes]
+        attachment_ids = set()
+        # Different profiles, then the same running worker in a different
+        # terminal, then a same-terminal reconnect with unchanged busy state.
+        for index, program in ((0, "xterm"), (1, "vscode"), (0, "vscode"), (0, "vscode")):
+            home, owner = homes[index], owners[index]
+            viewer = Viewer(home, keys[index], terminal_program=program, rows=25, cols=121)
+            viewers.append(viewer)
+            assert viewer.reply["terminal_activity"] is True
+            metadata = request("worker", home=home, pid=owner["pid"],
+                               session_id="fixture", state="running")["terminal_activity"]
+            assert metadata["program"] == program
+            assert metadata["id"] not in attachment_ids
+            attachment_ids.add(metadata["id"])
+            start = ("FRAME:" + metadata["id"]).encode()
+            end = ("END:" + metadata["id"]).encode()
+            viewer.until(end)
+            frame = viewer.output.split(start)[1].split(end)[0]
+            assert "Agent Scientist".encode() in frame
+            assert (b"\x1b]9;4;3;\x07" in frame) == (program == "vscode")
+            if program == "vscode":
+                assert b"\x1b]2;Agent Scientist\x07" in frame
+            # The viewer, never the worker/replay buffer, owns the title stack.
+            assert b"\x1b[22;2t" not in viewer.output
+            assert find_worker("fixture", home)["pid"] == owner["pid"]
+            viewer.close()
+            viewers.remove(viewer)
+            wait_for(lambda: not find_worker("fixture", home)["attached"])
+            assert request("worker", home=home, pid=owner["pid"], session_id="fixture",
+                           state="running")["terminal_activity"] is None
+        for home in homes:
+            with SessionDB(home / "state.db", read_only=True) as db:
+                assert db.get_session("fixture")["system_prompt"] == "cached-" + home.name
+                assert [m["content"] for m in db.get_messages("fixture")] == ["unchanged"]
+    finally:
+        for viewer in viewers:
+            viewer.close()
+        for daemon in daemons:
+            daemon.terminate()
+            daemon.communicate(timeout=20)
 
 
 @pytest.mark.platforms("posix")

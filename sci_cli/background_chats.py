@@ -245,6 +245,10 @@ def publish_cli_state(cli):
                         background_tasks=tasks, view_sessions=views,
                         view_ack=getattr(cli, "_background_view_ack", None))
         cli._background_managed = bool(reply.get("managed"))
+        if "terminal_activity" in reply:
+            cli._background_terminal_activity = reply["terminal_activity"]
+        else:
+            cli.__dict__.pop("_background_terminal_activity", None)
         if reply.get("stop_requested"):
             from agent.interrupt_compat import request_hard_interrupt
             if getattr(cli, "agent", None) and getattr(cli, "_agent_running", False):

@@ -25,7 +25,7 @@ def connect(home):
             stream.readline()
             # Reproduce a live renderer that leaves text below its cursor.
             frame = b'\x1b[2J\x1b[HSCI_BANNER\x1b[20;1HSTALE_TOOLBAR\x1b[2;1HVIEW_READY'
-            events = [{'attached': 'fixture'},
+            events = [{'attached': 'fixture', 'terminal_activity': True},
                       {'output': base64.b64encode(frame).decode()}]
             if sys.argv[1] == 'server_close':
                 events += [{'closed': 0}, {'output': base64.b64encode(b'LATE_DRAW').decode()}]
@@ -89,6 +89,9 @@ def test_viewer_cleans_display_and_restores_tty_before_returning_control(tmp_pat
         # retains the selected chat's scrollback when returning to the shell.
         assert b"\x1b[3J" not in before[drawn:]
         assert b"LATE_DRAW" not in output
+        assert before.count(b"\x1b[22;2t") == 1
+        assert before.count(b"\x1b[23;2t") == 1
+        assert before.rfind(b"\x1b]9;4;0;\x07") > drawn
         restored = termios.tcgetattr(master)
         expected = original.copy()
         # BSD sets PENDIN while restoring canonical mode: it is pending-input

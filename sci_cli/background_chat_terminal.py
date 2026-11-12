@@ -20,7 +20,8 @@ def _attach_once(chat_id, *, home=None, takeover=False, view_session=None):
         sock.settimeout(12)  # View selection needs the worker's two-second heartbeat/ack.
         size = os.get_terminal_size()
         send(sock, {"action": "attach", "id": chat_id, "takeover": takeover,
-                    "cols": size.columns, "rows": size.lines, "view_session": view_session})
+                    "cols": size.columns, "rows": size.lines, "view_session": view_session,
+                    "terminal_program": os.environ.get("TERM_PROGRAM", "")})
         # Keep all bytes after the handshake: the server may replay output in the same packet.
         pending = bytearray()
         while b"\n" not in pending:
@@ -38,8 +39,14 @@ def _attach_once(chat_id, *, home=None, takeover=False, view_session=None):
             raise RuntimeError("Unexpected background conversation identity.")
         console = terminal_console(outcome)
         stop = [False]
+        owns_activity = False
         try:
             console.__enter__()
+            if reply.get("terminal_activity"):
+                # The shell title belongs to this viewer, not the persistent
+                # worker. Save once per attachment, outside replayed output.
+                owns_activity = True
+                sys.stdout.write("\x1b[22;2t\x1b]9;4;0;\x07")
             # Each accepted attachment owns the visible transcript. Clear before
             # replay, including terminal scrollback, so previous chats cannot
             # accumulate above this one. Persisted histories remain untouched.
@@ -113,6 +120,8 @@ def _attach_once(chat_id, *, home=None, takeover=False, view_session=None):
                 # viewer's prompt chrome. Hand the shell a clean viewport and
                 # known cursor position; CSI 2J leaves scrollback intact.
                 sys.stdout.write(_TERMINAL_INPUT_MODE_RESET_SEQ + "\x1b[r\x1b[H\x1b[2J")
+                if owns_activity:
+                    sys.stdout.write("\x1b]9;4;0;\x07\x1b[23;2t")
                 sys.stdout.flush()
             except OSError:
                 pass  # A terminal closed by its owner cannot accept mode resets.

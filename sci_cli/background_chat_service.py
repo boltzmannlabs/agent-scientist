@@ -35,6 +35,7 @@ class Peer:
     def __init__(self, writer):
         self.writer = writer
         self.lock = asyncio.Lock()
+        self.terminal_activity = None
 
     async def _send(self, payload):
         self.writer.write(json.dumps(payload, separators=(",", ":")).encode() + b"\n")
@@ -187,7 +188,8 @@ class ChatService:
             self.chats[key] = {"id": key, "session_id": session_id, "pty": pty,
                                "process": process, "state": "starting",
                                "reported": time.monotonic(), "background_tasks": 0,
-                               "idle_since": None, "attach_lock": asyncio.Lock()}
+                               "idle_since": None, "attach_lock": asyncio.Lock(),
+                               "terminal_activity_capable": True}
             await pty.start()
             self.persist()
             return {"id": key, "existing": False}
@@ -253,14 +255,17 @@ class ChatService:
         if not isinstance(views, list) or len(views) > 2 or any(not isinstance(v, str) or len(v) > 256 for v in views):
             raise ValueError("Invalid conversation views.")
         chat["view_sessions"] = views
+        reply = {"managed": True, "stop_requested": chat.get("stop_requested", False)}
+        if chat.get("terminal_activity_capable"):
+            peer = chat["pty"]._ws
+            reply["terminal_activity"] = peer.terminal_activity if peer else None
         selection = chat.get("view_selection")
         if selection:
             ack = params.get("view_ack") or {}
             if ack.get("id") == selection["request"]["id"] and not selection["ready"].done():
                 selection["ready"].set_result(ack.get("selected") is True)
-            return {"managed": True, "select_view": selection["request"],
-                    "stop_requested": chat.get("stop_requested", False)}
-        return {"managed": True, "stop_requested": chat.get("stop_requested", False)}
+            reply["select_view"] = selection["request"]
+        return reply
 
     async def select_view(self, chat, session_id):
         selection = {"request": {"id": uuid.uuid4().hex, "session_id": session_id,
@@ -318,6 +323,13 @@ class ChatService:
             if params.get("action") != "attach":
                 await peer.send(await self.control(params))
                 return
+            activity_capable = "terminal_program" in params
+            if activity_capable:
+                program = params["terminal_program"]
+                if (not isinstance(program, str) or len(program) > 128
+                        or any(ord(char) < 32 or ord(char) == 127 for char in program)):
+                    raise ValueError("Invalid terminal program for activity display.")
+                peer.terminal_activity = {"id": uuid.uuid4().hex, "program": program}
             chat = self._lookup(params.get("id"))
             if not chat["pty"].alive or not chat["pty"].bridge.is_alive():
                 raise ValueError("This worker stopped. Resume its saved session; no work was restarted.")
@@ -333,8 +345,10 @@ class ChatService:
                         chat["pty"].detach(previous)
                         await previous.close(0)
                     await self.select_view(chat, params["view_session"])
-                await peer.send({"attached": chat["id"], "truncated": chat["pty"].buffer.truncated})
+                await peer.send({"attached": chat["id"], "truncated": chat["pty"].buffer.truncated,
+                                 "terminal_activity": activity_capable})
                 chat["pty"].bridge.resize(int(params.get("cols", 80)), int(params.get("rows", 24)))
+                chat["terminal_activity_capable"] = activity_capable
                 if not await chat["pty"].attach(peer):
                     return
             self.persist()
