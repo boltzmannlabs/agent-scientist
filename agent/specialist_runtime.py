@@ -53,31 +53,49 @@ def persist_snapshot_config(agent):
         name: asdict(item) for name, item in agent._specialist_snapshot.items()}
 
 
-def decorate(agent, *, enabled_toolsets=None, disabled_toolsets=None):
-    import model_tools
-    snapshot = agent._specialist_snapshot
+def _permitted_snapshot(agent):
+    snapshot = getattr(agent, "_specialist_snapshot", {})
+    if not isinstance(snapshot, dict):
+        return {}
     policy = getattr(agent, "_specialist_policy", None)
     if isinstance(policy, SpecialistPolicy):
         snapshot = {n: s for n, s in snapshot.items() if n in policy.children}
+    return snapshot
+
+
+def decorate(agent, *, enabled_toolsets=None, disabled_toolsets=None):
+    import model_tools
     agent._specialist_parent_tools = frozenset()
-    if not snapshot:
+    if not _permitted_snapshot(agent):
         return
     raw = model_tools.get_tool_definitions(enabled_toolsets=enabled_toolsets, disabled_toolsets=disabled_toolsets,
                                           quiet_mode=True, skip_tool_search_assembly=True)
     agent._specialist_parent_tools = frozenset(t["function"]["name"] for t in raw)
-    agent.tools = deepcopy(agent.tools)
-    for tool in agent.tools:
+    agent.tools = decorate_tools(agent, agent.tools)
+
+
+def decorate_tools(agent, tools):
+    """Reapply session-owned schema fields before publishing any rebuilt snapshot.
+
+    Use the captured definitions, not the live inventory; refreshing schemas must
+    neither adopt new specialists nor recalculate the parent's execution grants.
+    """
+    snapshot = _permitted_snapshot(agent)
+    if not snapshot:
+        return tools
+    tools = deepcopy(tools)
+    for tool in tools:
         fn = tool["function"]
         if fn["name"] != "delegate_task":
             continue
         props = fn["parameters"]["properties"]
         props["tasks"]["items"]["properties"]["specialist"] = {
             "type": "string", "description": "Saved specialist name from action=catalog. Manual specialists require the user's explicit name in this turn."}
-        props["action"]["enum"] = [*props["action"]["enum"], "catalog"]
+        props["action"]["enum"] = list(dict.fromkeys([*props["action"]["enum"], "catalog"]))
         props["query"] = {"type": "string", "description": "Search saved specialists by name or purpose (catalog only)."}
         props["page"] = {"type": "integer", "minimum": 1, "description": "Saved specialist catalog page, starting at 1."}
         automatic = [f"{s.name}: {s.purpose[:180]}" for s in snapshot.values() if s.automatic]
-        fn["description"] += (
+        fn["description"] = fn["description"].split("\nSaved specialists are available.", 1)[0] + (
             "\nSaved specialists are available. Use action=catalog to find names and purposes, then tasks[].specialist "
             "to run one. Delegate matching tasks to the relevant automatic specialist, including explanatory questions; "
             "automatic specialists ALSO support explicit user requests. Manual specialists require explicit user request. "
@@ -90,6 +108,7 @@ def decorate(agent, *, enabled_toolsets=None, disabled_toolsets=None):
             "retry, substitute another agent, or do its task yourself. "
             "If a specialist is unavailable, report why; do not silently substitute unrestricted delegation.\n"
             + "Automatic specialists (first 20): " + "; ".join(automatic[:20]))
+    return tools
 
 
 def catalog(agent, query="", page=1):

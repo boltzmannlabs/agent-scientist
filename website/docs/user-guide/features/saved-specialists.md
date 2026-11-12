@@ -93,6 +93,11 @@ The definition snapshot is retained in the existing session metadata, so resumin
 keeps its specialist catalog unchanged. Execution still checks current revisions and enabled state:
 an old snapshot cannot restore a disabled or replaced specialist's permission.
 
+Compression retains the conversation's reviewed specialist-selection interface,
+including catalog discovery. Preview does not change it, and resume uses the
+saved snapshot. New or edited specialists still require a new conversation;
+compression does not silently adopt them.
+
 ## Commands
 
 Command matching is case-insensitive; specialist names use lowercase letters, numbers,

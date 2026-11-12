@@ -160,6 +160,16 @@ Some tools are intercepted by `agent/tool_executor.py` (called from `agent/conve
 
 These tools modify agent state directly and return synthetic tool results without going through the registry.
 
+### Saved-specialist schema refresh
+
+`agent/specialist_runtime.py::decorate_tools` restores the specialist selector
+and catalog fields from the conversation's captured snapshot when tool schemas
+are rebuilt after compression. Decoration is idempotent and does not recalculate
+parent execution grants or adopt newly installed specialists. The refresh path
+in `tools/mcp_tool_agent.py` publishes and persists the decorated snapshot.
+Preview leaves the current conversation unchanged; resume retains the saved
+snapshot while execution still checks current permissions and revisions.
+
 ## Callback Surfaces
 
 `AIAgent` supports platform-specific callbacks that enable real-time progress in the CLI, gateway, and ACP integrations:

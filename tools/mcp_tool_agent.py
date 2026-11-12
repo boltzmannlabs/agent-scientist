@@ -121,6 +121,8 @@ def refresh_agent_mcp_tools(
     # Post-build families re-appended on LOCALS only; live attributes untouched until publish.
     staged_engine_names = _reinject_post_build_tools(agent, new_defs, new_names)
     _reinject_authorized_dynamic_tools(agent, new_defs, new_names)
+    from agent.specialist_runtime import decorate_tools
+    new_defs = decorate_tools(agent, new_defs)
     # Registry membership is read OUTSIDE ``_agent_tools_lock``: taking ``registry._lock``
     # under the tools lock would be the first nesting of the two.
     prefix_registered: Optional[set] = None
