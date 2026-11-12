@@ -49,6 +49,20 @@ def test_sync_delivery_is_turn_scoped_and_ordinary_or_nested_delegation_still_sy
     parent._specialist_policy = 'pod-lead'
     stage_sync(parent, [row])
     assert not stage_delivery(parent, state)
+    parent._specialist_policy = None
+    state.turn_id = parent._current_turn_id = 'turn-c'
+    # Intermediate work takes precedence over a final report in the same round,
+    # regardless of the order in which independent tool calls finish.
+    stage_sync(parent, [dict(row, delivery='intermediate')])
+    stage_sync(parent, [row])
+    assert not stage_delivery(parent, state)
+    state.turn_id = parent._current_turn_id = 'turn-d'
+    stage_sync(parent, [row])
+    stage_sync(parent, [dict(row, delivery='intermediate')])
+    assert not stage_delivery(parent, state)
+    state.turn_id = parent._current_turn_id = 'turn-e'
+    stage_sync(parent, [row])
+    assert stage_delivery(parent, state)  # continuation does not leak into another user turn
 
 
 def test_compacted_history_does_not_use_stale_user_index_for_delivery():

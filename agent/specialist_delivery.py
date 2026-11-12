@@ -46,13 +46,19 @@ def reports_from_results(results):
 def report_from_event(event):
     if event.get('type') != 'async_delegation' or event.get('task_failure_notice'):
         return None
-    return reports_from_results(event.get('results') or [])
+    results = event.get('results') or []
+    if any(isinstance(row, dict) and row.get('delivery', 'final') != 'final' for row in results):
+        return None  # The normal completion turn lets the parent process an intermediate review.
+    return reports_from_results(results)
 
 
 def stage_sync(parent, results):
     # A pod lead must still finish its own assignment after receiving child results.
     if parent is None or getattr(parent, '_specialist_policy', None) is not None:
         return
+    if any(isinstance(row, dict) and row.get('delivery', 'final') != 'final' for row in results):
+        parent._specialist_intermediate_turn = (getattr(parent, '_current_turn_id', None),)
+        return  # The existing tool result is the continuation; never synthesize a user turn.
     report = reports_from_results(results)
     if report:
         parent._specialist_pending_delivery = (getattr(parent, '_current_turn_id', None), report)
@@ -62,6 +68,9 @@ def stage_delivery(agent, state):
     """Use the normal turn finalizer/persistence; do not make a parent model request."""
     if agent._interrupt_requested:
         return False
+    if getattr(agent, '_specialist_intermediate_turn', None) == (state.turn_id,):
+        agent._specialist_pending_delivery = None
+        return False  # Another final-report call in the same tool round cannot end this workflow.
     report = None
     pending = getattr(agent, '_specialist_pending_delivery', None)
     if pending is not None:

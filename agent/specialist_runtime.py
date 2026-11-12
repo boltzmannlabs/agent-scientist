@@ -91,6 +91,12 @@ def decorate_tools(agent, tools):
         props = fn["parameters"]["properties"]
         props["tasks"]["items"]["properties"]["specialist"] = {
             "type": "string", "description": "Saved specialist name from action=catalog. Manual specialists require the user's explicit name in this turn."}
+        props["tasks"]["items"]["properties"]["delivery"] = {
+            "type": "string", "enum": ["final", "intermediate"],
+            "description": "Named specialists only. Use intermediate for a review/subtask when your active assignment "
+                           "has work afterward: read the result and continue the remaining authorized steps. "
+                           "Use final when the user's request ends with this report. Default final preserves "
+                           "report-only assignments and older conversations. This grants no additional permissions."}
         props["action"]["enum"] = list(dict.fromkeys([*props["action"]["enum"], "catalog"]))
         props["query"] = {"type": "string", "description": "Search saved specialists by name or purpose (catalog only)."}
         props["page"] = {"type": "integer", "minimum": 1, "description": "Saved specialist catalog page, starting at 1."}
@@ -101,8 +107,11 @@ def decorate_tools(agent, tools):
             "automatic specialists ALSO support explicit user requests. Manual specialists require explicit user request. "
             "Pass the user's assignment faithfully. Preserve the specialist's saved workflow and output format; "
             "do not add terminal/code/calculation-tool requirements or replace its report structure. "
-            "Named specialist reports are delivered directly in their saved format; do not rewrite or independently "
-            "redo their completed work. For inline data, pass the full supplied data without local file discovery. "
+            "Set tasks[].delivery=intermediate for reviews inside a larger assignment; process the returned review "
+            "and continue remaining authorized work without waiting for a user to say Continue. Set delivery=final "
+            "for a report-only request; that report is delivered directly in its saved format. Preserve the original "
+            "review and do not independently redo completed work. A review's completion does not complete the whole "
+            "assignment. For inline data, pass the full supplied data without local file discovery. "
             "A running child keeps its assigned model/provider; switching the parent model affects new assignments. "
             "If a named run returns incomplete_response, report the incomplete result and blocker; do not silently "
             "retry, substitute another agent, or do its task yourself. "
@@ -139,6 +148,8 @@ def resolve(parent, task):
         return None
     if not isinstance(name, str):
         raise ValueError("specialist must be a saved name.")
+    if task.get("delivery", "final") not in ("final", "intermediate"):
+        raise ValueError("Specialist delivery must be final or intermediate. No task was submitted.")
     home = str(get_sci_home().resolve())
     if home != getattr(parent, "_specialist_home", None):
         raise ValueError("Specialist owner profile does not match this session. Start a conversation in the intended profile.")

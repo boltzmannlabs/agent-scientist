@@ -1,4 +1,4 @@
-"""Regression for #49: real compression and saved-specialist discovery.
+"""Regressions for #49 and #52: real compression and named-review continuation.
 
 Model responses and the next pipeline operation are controlled locally. No
 scientific service, production credential or remote job is used.
@@ -195,9 +195,70 @@ def test_compression_and_resume_keep_the_reviewed_specialist_interface_a_b_a(pro
                     save(replace(item, enabled=False), expected_revision=item.revision)
                     with pytest.raises(ValueError, match="disabled or edited"):
                         resolve(resumed, {"specialist": "reviewer"})
+                    with pytest.raises(ValueError, match="delivery must be"):
+                        resolve(resumed, {"specialist": "reviewer", "delivery": "unsupported"})
                 finally:
                     if resumed:
                         resumed.close()
                     parent.close()
 
 
+@pytest.mark.parametrize("delivery", ["final", "intermediate"])
+@pytest.mark.parametrize("carrier", ["sync", "async"])
+@pytest.mark.parametrize("blocked", [False, True])
+def test_named_review_delivery_preserves_reports_and_continues_only_intermediate_work(
+        provider, delivery, carrier, blocked, monkeypatch):
+    from agent.specialist_runs import history
+    from sci_state import SessionDB
+    from tools.delegate_tool import delegate_task
+    url, requests, advances, scenario = provider
+    scenario.update(delivery=delivery, blocked=blocked)
+    home = get_sci_home()
+    save(Specialist("reviewer", "Review the supplied arithmetic", automatic=True))
+    with SessionDB(home / "state.db") as db:
+        parent = _parent(home, url, db=db)
+        try:
+            parent._cached_system_prompt = "Review first, then run the approved next step. Report blockers."
+            parent._ensure_db_session()
+            prompt, tools = parent._cached_system_prompt, deepcopy(parent.tools)
+            if carrier == "sync":
+                result = parent.run_conversation("RUN_REVIEW")
+            else:
+                from tools import async_delegation
+                from tools.process_registry import process_registry
+                monkeypatch.setattr("gateway.session_context.async_delivery_supported", lambda: True)
+                dispatched = json.loads(delegate_task(tasks=[{
+                    "specialist": "reviewer", "goal": "Check 2 + 2 = 4.", "delivery": delivery,
+                }], parent_agent=parent, background=True))
+                assert dispatched["mode"] == "background", dispatched
+                event = process_registry.completion_queue.get(timeout=30)
+                assert event["delegation_id"] == dispatched["delegation_id"]
+                claim = async_delegation.claim_event_delivery(event, "fixture-consumer")
+                assert claim
+                from sci_cli.cli_chat_turn_mixin import CLIChatTurnMixin
+                from tools.process_registry_notifications import TimelineNotification
+                notification = TimelineNotification.for_delegation("ASYNC_REVIEW " + json.dumps(event["results"]), event)
+                cli = SimpleNamespace(conversation_history=[])
+                CLIChatTurnMixin._chat_stage_user_message(cli, parent, notification)
+                result = parent.run_conversation(str(notification), conversation_history=[])
+                async_delegation.complete_event_delivery(event, claim)
+                assert async_delegation.claim_event_delivery(event, "replayed-consumer") is None
+            assert len(advances) == int(delivery == "intermediate" and not blocked), result
+            saved = history()[0]["result"]
+            assert saved["summary"] == (BLOCKED if blocked else REPORT)
+            assert saved["delivery"] == delivery
+            if delivery == "intermediate":
+                assert result["final_response"] == ("Blocked: review evidence is missing; no next step ran."
+                                                    if blocked else "Pipeline finished.")
+            elif not blocked:
+                assert result["final_response"] == REPORT
+            assert parent._cached_system_prompt == prompt and parent.tools == tools
+            parent_calls = [r for r in requests if "Saved specialist:" not in json.dumps(r["messages"])]
+            if carrier == "sync" and delivery == "intermediate":
+                assert len(parent_calls) == (3 if not blocked else 2)
+            assert all(not any(m.get("content") == "Continue" for m in r["messages"]) for r in parent_calls)
+            for request in parent_calls:
+                assert not any(a["role"] == b["role"] and a["role"] in {"user", "assistant"}
+                               for a, b in zip(request["messages"], request["messages"][1:]))
+        finally:
+            parent.close()

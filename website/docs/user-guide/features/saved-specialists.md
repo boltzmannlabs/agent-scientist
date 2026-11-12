@@ -93,9 +93,30 @@ The definition snapshot is retained in the existing session metadata, so resumin
 keeps its specialist catalog unchanged. Execution still checks current revisions and enabled state:
 an old snapshot cannot restore a disabled or replaced specialist's permission.
 
+## Reviews inside a longer workflow
+
+A specialist's report can be the final answer or an intermediate review. For example:
+
+> Use my critic specialist to review these enzyme candidates. This is an intermediate
+> review: evaluate its findings, then continue the already approved solubility step
+> for candidates that pass. Stop if evidence or a new approval is required.
+
+The parent marks that assignment as an intermediate review and receives its result
+through the ordinary delegation loop. It can evaluate the review and continue the
+remaining authorized work without another message saying “Continue.” The original
+review stays unchanged in the specialist's run receipt and transcript; `/subagent
+status <run-id>` makes it available independently of the parent's subsequent answer.
+Completion of a review does not establish that the entire pipeline succeeded.
+
+Report-only assignments keep direct delivery of the original report. Older
+assignments without a delivery choice retain that behavior. Failed or incomplete
+reviews remain explicit outcomes; an intermediate review grants no new tools,
+credentials or execution approval. The same distinction applies to background
+completion notifications when the owning surface supports automatic delivery.
+
 Compression retains the conversation's reviewed specialist-selection interface,
-including catalog discovery. Preview does not change it, and resume uses the
-saved snapshot. New or edited specialists still require a new conversation;
+including discovery and delivery choices. Preview does not change it, and resume
+uses the saved snapshot. New or edited specialists still require a new conversation;
 compression does not silently adopt them.
 
 ## Commands
@@ -571,10 +592,11 @@ certified by fixture tests. No commit or push was performed.
 
 ## Preserve specialist reports — 4 November 2026
 
-When a saved specialist completes in the interactive CLI, its original report is delivered directly
+For a report-only assignment, when a saved specialist completes in the interactive CLI, its original report is delivered directly
 through the normal response/persistence path, without a parent-model rewriting call. Its requested
 headings, protocol markers, tables and wording survive. Completed batches consisting entirely of
-saved specialists show each full report separately. A pod lead still finishes its own assignment;
+saved specialists with final delivery show each full report separately. Intermediate reviews
+return control to the parent as described above. A pod lead still finishes its own assignment;
 ordinary temporary delegation retains its synthesis behavior. A later explicit user request can
 ask SCI to summarize or reformat an already delivered report.
 

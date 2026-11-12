@@ -65,6 +65,7 @@ class _Batch:
         if isinstance(getattr(child, "_specialist_policy", None), SpecialistPolicy):
             result["specialist"] = child._specialist_policy.name
             result["run_id"] = child._subagent_id
+            result["delivery"] = task.get("delivery", "final")
             try:
                 record(child, task["goal"], result)
             except (OSError, ValueError) as exc:

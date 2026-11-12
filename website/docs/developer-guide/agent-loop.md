@@ -160,15 +160,33 @@ Some tools are intercepted by `agent/tool_executor.py` (called from `agent/conve
 
 These tools modify agent state directly and return synthetic tool results without going through the registry.
 
-### Saved-specialist schema refresh
+### Saved-specialist reviews
 
-`agent/specialist_runtime.py::decorate_tools` restores the specialist selector
-and catalog fields from the conversation's captured snapshot when tool schemas
-are rebuilt after compression. Decoration is idempotent and does not recalculate
-parent execution grants or adopt newly installed specialists. The refresh path
-in `tools/mcp_tool_agent.py` publishes and persists the decorated snapshot.
-Preview leaves the current conversation unchanged; resume retains the saved
-snapshot while execution still checks current permissions and revisions.
+When a conversation has reviewed saved specialists, `delegate_task.tasks[]` also
+accepts `specialist` and `delivery`:
+
+```json
+{"tasks": [{"specialist": "critic", "goal": "Review the supplied candidate evidence.", "delivery": "intermediate"}]}
+```
+
+`delivery: "final"` (also the default for older calls) uses the exact-report
+delivery path in `agent/specialist_delivery.py`, ending the parent turn without
+another inference. `delivery: "intermediate"` returns the result through the
+normal tool loop so the parent can evaluate the review and continue its active
+assignment. The choice is retained in the run receipt and asynchronous result;
+completion notifications use the same distinction. Existing async delivery
+claims/acknowledgements prevent a delivered event from being claimed again.
+An intermediate result grants no permission and does not imply the next step is
+valid: the parent must evaluate failures, warnings and remaining authorization.
+Ordinary and nested delegation retain their existing synthesis behavior.
+
+`agent/specialist_runtime.py::decorate_tools` composes these fields from the
+session's captured specialist snapshot during construction and tool refresh.
+It is idempotent and leaves the captured parent grants unchanged. The rebuilt
+snapshot is published and persisted by `tools/mcp_tool_agent.py`; compression
+does not drop the fields or adopt newly installed specialists. Execution still
+checks the current profile, enabled state and revision. This does not add a new
+system-prompt refresh or inject a synthetic “Continue” message.
 
 ## Callback Surfaces
 
