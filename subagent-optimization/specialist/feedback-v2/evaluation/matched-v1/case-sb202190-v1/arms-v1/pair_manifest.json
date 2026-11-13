@@ -1,0 +1,166 @@
+{
+  "version": "sb202190-pair-v1",
+  "status": "FROZEN_DEVELOPMENT_PAIR_KIT__NOT_EXECUTED",
+  "created_utc": "2026-11-12T12:12:38.169996+00:00",
+  "authorization": "No jobs authorized by saving this manifest. Only a user-issued arm assignment grants its stated operations.",
+  "evaluation_mode": "procedurally separated development pair, existing ankith profile",
+  "order": [
+    "BASE_WITH_GUIDANCE",
+    "BASE_PLUS_SPECIALIST"
+  ],
+  "model": "gpt-6.1-sol",
+  "provider": "openai-codex",
+  "specialist_role_revision_snapshot": "3b2d9283e23a4c4a960f357e5647f5ee",
+  "shared_packet": {
+    "path": "/home/boltzmann13/.sci/profiles/ankith/workspace/08_results/p38_refinement_matched/shared_sb202190_20261112T105759899917Z",
+    "manifest_sha256": "dfa4d7f81c5a29a4917ca9fe761d663411dcca4bb5c602e416c93281cd1c3c74",
+    "members": 82,
+    "logical_attribution": "equal to each arm",
+    "physical_counting": "once for the pair"
+  },
+  "shared_actual_use": {
+    "submissions": 3,
+    "candidate_slots": 40,
+    "pampa_inputs": 42,
+    "vina_ligand_inputs": 5
+  },
+  "new_per_arm_maxima": {
+    "submissions": 4,
+    "candidate_slots": 40,
+    "pampa_inputs": 42,
+    "vina_ligand_inputs": 54,
+    "search_vina_ligands": 42,
+    "final_vina_ligands": 12,
+    "submission_window_seconds": 7200
+  },
+  "case_cumulative_per_arm_maxima": {
+    "submissions": 7,
+    "candidate_slots": 80,
+    "pampa_inputs": 84,
+    "vina_ligand_inputs": 59
+  },
+  "shared_unused_vina_capacity_nontransferable": 37,
+  "max_additional_physical_submissions_for_pair": 8,
+  "initial_subset_seed": 1101,
+  "continuation_subset_seed": 1102,
+  "mandatory_eligibility": {
+    "pampa_class": 1,
+    "qed_min": 0.5,
+    "crippen_logp_interval": [
+      0,
+      5
+    ]
+  },
+  "panel": {
+    "slots": 10,
+    "rank": "ascending native successful search Score; canonical identity tie-break",
+    "coverage": "confirmed eligible valid final slots",
+    "primary_mean": "null unless all ten confirmed eligible with valid final observations/poses"
+  },
+  "interpretation_limits": [
+    "no enforced isolation",
+    "no approval-policy parity",
+    "no matched aggregate LLM compute",
+    "automatic-context/memory parity not established",
+    "single deliberately selected within-family case",
+    "native scoring predictions, no experimental-feedback or biological-improvement claim"
+  ],
+  "helper_validation": {
+    "contract_tests_passed": 7,
+    "actual_packet_members_verified_through_adapter": 82,
+    "source_helpers_unmodified": true,
+    "endpoint_gate": "confirmed_panel_summary; legacy summarize_final alone is insufficient"
+  },
+  "separate_review": "Shared-packet audit and execution/task/adapter critique found no material blocker for this development mode.",
+  "hash_algorithm": "SHA-256",
+  "files": [
+    {
+      "relative_path": "BASE_PROMPT.md",
+      "sha256": "9f7af2a2402f6ca76b4b13ba61406954780dd899fb649c61984259798582bd31",
+      "bytes": 1883
+    },
+    {
+      "relative_path": "README.md",
+      "sha256": "99a6b2c837936abae5664df983965d09b279110e8c2528ea9f69d72ad9384a22",
+      "bytes": 4529
+    },
+    {
+      "relative_path": "SPECIALIST_PROMPT.md",
+      "sha256": "c0d8d72c76dc94135c15538c52733869c48bf5e870d8f9c558319697e5d2a73d",
+      "bytes": 2055
+    },
+    {
+      "relative_path": "TASK.md",
+      "sha256": "4d2e03132a6f4da07d7133f06ba1d43ea809315c648f8872f535e3c8582fb7db",
+      "bytes": 16968
+    },
+    {
+      "relative_path": "common/COMMON_GUIDE.md",
+      "sha256": "73829417ba0a831c4c46910971955153b6573690285961466041f7fda95ac82e",
+      "bytes": 4097
+    },
+    {
+      "relative_path": "common/FROZEN_PANEL_SKILL.md",
+      "sha256": "44c8e42db6f006ecca71aea4d6d0df0b9849684869885f5cd094a2ba4292e5ac",
+      "bytes": 3647
+    },
+    {
+      "relative_path": "common/LIBRARY_DATA_NOTICE.md",
+      "sha256": "5e798620b098250d34168e221b751021647f8e562a419342de1a0fa1897688a1",
+      "bytes": 1504
+    },
+    {
+      "relative_path": "common/ROLE_INSTRUCTIONS.md",
+      "sha256": "be37ae28be911f9a54b70a0d15dea6e762d15a433765a432a7ff989ccee67e61",
+      "bytes": 3759
+    },
+    {
+      "relative_path": "common/SAVED_ROLE_CONTEXT.json",
+      "sha256": "b4189eed4bd54f27520281d4bf499e1ed51b417212f57f0faeffcab175e6c628",
+      "bytes": 5059
+    },
+    {
+      "relative_path": "common/SCIENTIFIC_REASONING.md",
+      "sha256": "a9a5c0f7021aeed84f950ed23c4e6faacfeaf69ef611faa597acfe929e8a8661",
+      "bytes": 7397
+    },
+    {
+      "relative_path": "common/__pycache__/evaluation_support.cpython-313.pyc",
+      "sha256": "d23dc76bb5a4bc4a6b75ab901ac126fc1c420b3a002e4d3e4d4d652a10709a4d",
+      "bytes": 4923
+    },
+    {
+      "relative_path": "common/__pycache__/feedback_policy.cpython-313.pyc",
+      "sha256": "f773c35ad799644d189bb260ffbfaa0ff3390859513f5ab8599979b100fd2bc1",
+      "bytes": 38996
+    },
+    {
+      "relative_path": "common/__pycache__/observations.cpython-313.pyc",
+      "sha256": "9f8904d12fe251407cff760ebf74aae764f6bc644a96949a1de364d3c5639bb9",
+      "bytes": 20743
+    },
+    {
+      "relative_path": "common/evaluation_support.py",
+      "sha256": "389470eecd4961d3ac12c71ea087e7bae22aca9d7616ac7a402f17cb98070b74",
+      "bytes": 3293
+    },
+    {
+      "relative_path": "common/feedback_policy.py",
+      "sha256": "818a0f7bd41bcc4ea08aef42972b83b1af334ce6874c7805b51436058dd5e2a1",
+      "bytes": 24620
+    },
+    {
+      "relative_path": "common/observations.py",
+      "sha256": "7f7b512f30439ea7a7cff39615e8a7357cda7403d741f3bbdc04cc6341a080e9",
+      "bytes": 15352
+    },
+    {
+      "relative_path": "common/test_evaluation_support.py",
+      "sha256": "d7e0dfa595ebdce49a1af23b4d3fa46377cc1bc6a68bd24e9775eea3b84c6d03",
+      "bytes": 4420
+    }
+  ],
+  "excluded_self_reference": [
+    "pair_manifest.json"
+  ]
+}

@@ -1,0 +1,3 @@
+SMILES,NAMES
+Oc1ccc(-c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)cc1,SB202190_lead
+C[S@](=O)c1ccc(-c2nc(-c3ccc(F)cc3)c(-c3ccncc3)[nH]2)cc1,SB2_control

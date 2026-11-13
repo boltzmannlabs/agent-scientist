@@ -1,0 +1,157 @@
+{
+  "status": "LOCAL_PREPARATION_ONLY__NOT_FROZEN_FOR_EXECUTION",
+  "created_utc": "2026-11-12T10:46:58.169133+00:00",
+  "rdkit_version": "2025.09.6",
+  "script_sha256": "9990b336070f082966bc4b15b93d6e0efa2c42fc600c3217d2f70201143ba8c7",
+  "source": {
+    "name": "SB202190",
+    "chebi_id": "CHEBI:79090",
+    "pubchem_cid": 5169,
+    "urls": [
+      "https://www.ebi.ac.uk/chebi/CHEBI:79090",
+      "https://pubchem.ncbi.nlm.nih.gov/compound/sb-202190"
+    ],
+    "inchi": "InChI=1S/C20H14FN3O/c21-16-5-1-13(2-6-16)18-19(14-9-11-22-12-10-14)24-20(23-18)15-3-7-17(25)8-4-15/h1-12,25H,(H,23,24)",
+    "retrieval_kind": "Fields transcribed from primary web records, not archived raw downloads.",
+    "raw_download_status": "NOT_SAVED; direct shell PubChem API retrieval failed DNS resolution."
+  },
+  "representation": {
+    "method": "RDKit MolFromInchi on ChEBI InChI, then canonical isomeric SMILES",
+    "canonical_isomeric_smiles": "Oc1ccc(-c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)cc1",
+    "smiles_sha256_utf8_no_newline": "18ee659b6769f2e01f51e68b4d1307ac54701eae3d4adbd5e7abbbf9bdcd5380",
+    "standard_inchikey": "QHKYPYXTTXKZST-UHFFFAOYSA-N",
+    "formula": "C20H14FN3O",
+    "components": 1,
+    "stereocenters": [],
+    "limitation": "InChI may merge tautomers. Freeze this explicit form; do not silently substitute or pool another tautomer. This is not a demonstrated preferred binding/protonation state."
+  },
+  "local_descriptors": {
+    "qed": 0.5742392441280129,
+    "crippen_logp": 4.650400000000003,
+    "molecular_weight": 331.34999999999997,
+    "heavy_atoms": 25,
+    "rotatable_bonds": 3,
+    "tpsa": 61.8
+  },
+  "historical_identity_scan": [
+    {
+      "path": "/home/boltzmann13/.sci/profiles/ankith/workspace/08_results/p38_refinement_feedback/continuation_sa-0-1ce61f20/candidate_registry.csv",
+      "sha256": "bac89f7384e99e3f9866b17faaea310d5b2b8d6a1d4fd5f8141cf9e4d9a3334c",
+      "identity_column": "identity",
+      "distinct_nonempty_values": 388,
+      "unparseable_values": 0,
+      "exact_form_matches": 0,
+      "standard_inchikey_matches": 0
+    },
+    {
+      "path": "/home/boltzmann13/.sci/profiles/ankith/workspace/08_results/p38_refinement_feedback/integration_20261111T125648839983Z/candidate_registry.csv",
+      "sha256": "6f85ec9afbf1d4aced1b4827ad4f7af00d9f74429f90de263e2027e8777be55c",
+      "identity_column": "identity",
+      "distinct_nonempty_values": 240,
+      "unparseable_values": 0,
+      "exact_form_matches": 0,
+      "standard_inchikey_matches": 0
+    },
+    {
+      "path": "/home/boltzmann13/.sci/profiles/ankith/workspace/08_results/target_conditioned_de_novo_design/p38_base_guidance_20261109T130433538606Z/candidate_registry.csv",
+      "sha256": "54d79ebd4347b09f278da16d01469e58ad411fe614cf61938919b67fac39b597",
+      "identity_column": "canonical_identity",
+      "distinct_nonempty_values": 99,
+      "unparseable_values": 0,
+      "exact_form_matches": 0,
+      "standard_inchikey_matches": 0
+    },
+    {
+      "path": "/home/boltzmann13/.sci/profiles/ankith/workspace/08_results/target_conditioned_de_novo_design/p38_baseline_20261105T072302Z/candidate_registry.csv",
+      "sha256": "25a0693c8f2df50654d88d6ef4196f0a361b14fca837e7ff86033e89a3aa8ec4",
+      "identity_column": "canonical_identity",
+      "distinct_nonempty_values": 38,
+      "unparseable_values": 0,
+      "exact_form_matches": 0,
+      "standard_inchikey_matches": 0
+    },
+    {
+      "path": "/home/boltzmann13/.sci/profiles/ankith/workspace/08_results/target_conditioned_de_novo_design/p38_explore1000_sa-0-6b6f8fd3/candidate_registry.csv",
+      "sha256": "b92946942d0c538d89552ca46f1107b41ab2422dec8572c73d7eeef6b87bd6c3",
+      "identity_column": "identity",
+      "distinct_nonempty_values": 950,
+      "unparseable_values": 0,
+      "exact_form_matches": 0,
+      "standard_inchikey_matches": 0
+    },
+    {
+      "path": "/home/boltzmann13/.sci/profiles/ankith/workspace/08_results/target_conditioned_de_novo_design/p38_preflight_20261105T064315Z/candidate_registry.csv",
+      "sha256": "c6a26c434eba2cadc7bee3bb91d903deaf45035149207f351cec1f7925940c07",
+      "identity_column": "canonical_identity",
+      "distinct_nonempty_values": 0,
+      "unparseable_values": 0,
+      "exact_form_matches": 0,
+      "standard_inchikey_matches": 0
+    },
+    {
+      "path": "/home/boltzmann13/.sci/profiles/ankith/workspace/08_results/target_conditioned_de_novo_design/p38_public_preflight_20261105T071158Z/candidate_registry.csv",
+      "sha256": "dd01db8773bffe2489ffb48bdaa175e454e7b2c4f575c9a9dd7c6b59f15f4840",
+      "identity_column": "identity",
+      "distinct_nonempty_values": 0,
+      "unparseable_values": 0,
+      "exact_form_matches": 0,
+      "standard_inchikey_matches": 0
+    },
+    {
+      "path": "/home/boltzmann13/.sci/profiles/ankith/workspace/08_results/target_conditioned_de_novo_design/p38_sa-0-f231558f_20261106T113758Z/candidate_registry.csv",
+      "sha256": "f33bf01eef1edb934b521dfe14757d2a4981e06ac82a8748c5a3726c78f249f2",
+      "identity_column": "identity",
+      "distinct_nonempty_values": 62,
+      "unparseable_values": 0,
+      "exact_form_matches": 0,
+      "standard_inchikey_matches": 0
+    },
+    {
+      "path": "/home/boltzmann13/.sci/profiles/ankith/workspace/outputs/p38-specialist-amended-20261110T073545976470Z/continuation-sa-0-74e0b364/candidate_registry.csv",
+      "sha256": "86f6f3696be9a4fe0f6b02b0132d8150f83fb4b4fdf80048d9619a48e599fc6a",
+      "identity_column": "identity",
+      "distinct_nonempty_values": 99,
+      "unparseable_values": 0,
+      "exact_form_matches": 0,
+      "standard_inchikey_matches": 0
+    }
+  ],
+  "exact_matches_total": 0,
+  "standard_inchikey_matches_total": 0,
+  "freshness_scope": "Named local registries only; no global novelty/training-set/scaffold holdout claim.",
+  "verified_reusable_assets": [
+    {
+      "path": "/home/boltzmann13/.sci/profiles/ankith/workspace/08_results/target_conditioned_de_novo_design/p38_baseline_20261105T072302Z/inputs/derived/receptor_observed_A.pdb",
+      "sha256": "54c71aeb21d1d528b9475a5d3f76014269ca5bb6de51f5ce07ced4c9a95f43e1",
+      "bytes": 229481
+    },
+    {
+      "path": "/home/boltzmann13/.sci/profiles/ankith/workspace/08_results/target_conditioned_de_novo_design/p38_baseline_20261105T072302Z/inputs/derived/control_native.sdf",
+      "sha256": "db111b838854ff3658487d6c05b8e7f0dea8eaa682183ae6d4d7b3f00ebc9a34",
+      "bytes": 2357
+    },
+    {
+      "path": "/home/boltzmann13/agent-scientist-subagent-optimization/subagent-optimization/research/library-alternatives/run-v1/mixed_reference.csv",
+      "sha256": "74305b33acad639b825b025956f7e91285fccdbc8a6f4671348b521ad7b073c0",
+      "bytes": 996
+    },
+    {
+      "path": "/home/boltzmann13/agent-scientist-subagent-optimization/subagent-optimization/research/library-alternatives/run-v1/hetero_rich_sources.csv",
+      "sha256": "5341ee432b4ab84c3e2c104fc2af11ccef26bcf812d260de4a8c29d6625fabd2",
+      "bytes": 1043
+    },
+    {
+      "path": "/home/boltzmann13/agent-scientist-subagent-optimization/subagent-optimization/research/library-alternatives/run-v1/carbon_rich_sources.csv",
+      "sha256": "23fffbb53075321412eb35f39b24beb97c7881b4b74852f9622eb68d520cf9b6",
+      "bytes": 981
+    }
+  ],
+  "unmeasured": [
+    "common PAMPA label",
+    "native Vina score",
+    "generated products",
+    "biological activity"
+  ],
+  "remote_scientific_calls": 0,
+  "profile_changes": false
+}

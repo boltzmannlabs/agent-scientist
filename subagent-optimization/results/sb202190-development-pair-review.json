@@ -1,0 +1,162 @@
+{
+  "status": "PAIRED_READ_ONLY_REVIEW_COMPLETE",
+  "reviewed_utc": "2026-11-13T05:06:27.082575+00:00",
+  "scientific_calls": 0,
+  "source_writes": 0,
+  "shared_members_verified": 82,
+  "comparison_equalities": {
+    "parent": true,
+    "library": true,
+    "pool": true,
+    "subset": true,
+    "panel": true,
+    "properties": true,
+    "search": true
+  },
+  "selection_interpretation": "same action, assessed identities and committed panel; no demonstrated specialist selection advantage",
+  "quality_interpretation": "neither arm has a complete ten-slot endpoint; final mean comparison unavailable",
+  "coverage_interpretation": "BASE0/10, SPECIALIST8/10; service-delivery difference, not superior molecular selection",
+  "arms": [
+    {
+      "arm": "BASE_WITH_GUIDANCE",
+      "path": "/home/boltzmann13/.sci/profiles/ankith/workspace/08_results/p38_refinement_matched/arms/BASE_WITH_GUIDANCE_20261112T122201397716Z",
+      "manifest_sha256": "5ba8da606447a94cd1896137e5993f3c0ccea95bbec028b9434b94f29641f0cf",
+      "members_verified": 101,
+      "library": "hetero_rich_sources.csv",
+      "panel": [
+        "COc1cc(-c2nc(-c3ccc(O)cc3)[nH]c2-c2ccc(F)cc2)ccn1",
+        "COc1cc(-c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)ccc1O",
+        "CC(C)N1CC=C(c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)CC1",
+        "CC(C)N1CC=C(c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)C(CO)C1",
+        "CON1CC=C(c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)CC1",
+        "CCNC1=C(c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)CCN(C(C)C)C1",
+        "CC(C)N1CC=C(c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)CC1CO",
+        "CC(C)COC(=O)c1[nH]c(C2=CCN(C(C)C)CC2)nc1-c1ccncc1",
+        null,
+        null
+      ],
+      "primary_summary": {
+        "status": "INCOMPLETE_EVALUATION",
+        "committed_slots": 8,
+        "successful_pose_score_slots": 0,
+        "confirmed_eligible_final_slots": 0,
+        "all_eligible": false,
+        "mean_native_vina": null,
+        "median_native_vina": null,
+        "sample_sd_native_vina": null,
+        "minimum_native_vina": null,
+        "maximum_native_vina": null,
+        "coverage_denominator": 10,
+        "final_job_terminal_state": "failed",
+        "final_score_units": null,
+        "final_score_unit_reason": "No final score artifacts; search native units unexposed",
+        "execution_status": "ALL_FOUR_AUTHORIZED_STAGES_ATTEMPTED_TERMINAL; FINAL_FAILED",
+        "self_assessment": "SELF_ASSESSED",
+        "initial_search_diagnostics": {
+          "n": 3,
+          "mean": -8.634,
+          "median": -8.615,
+          "sample_sd": 0.06366317616958772,
+          "range": [
+            -8.705,
+            -8.582
+          ],
+          "interpretation": "PARTIAL_SEARCH_DIAGNOSTIC_NOT_PRIMARY_FINAL_ENDPOINT"
+        },
+        "continuation_search_diagnostics": {
+          "n": 5,
+          "mean": -8.1478,
+          "median": -8.323,
+          "sample_sd": 0.3873250572839304,
+          "range": [
+            -8.399,
+            -7.465
+          ],
+          "interpretation": "PARTIAL_SEARCH_DIAGNOSTIC_NOT_PRIMARY_FINAL_ENDPOINT"
+        },
+        "pooled_search_diagnostics": {
+          "n": 8,
+          "mean": -8.330125,
+          "median": -8.3675,
+          "sample_sd": 0.3875602948482433,
+          "range": [
+            -8.705,
+            -7.465
+          ],
+          "interpretation": "PARTIAL_SEARCH_DIAGNOSTIC_NOT_PRIMARY_FINAL_ENDPOINT"
+        }
+      }
+    },
+    {
+      "arm": "BASE_PLUS_SPECIALIST",
+      "path": "/home/boltzmann13/.sci/profiles/ankith/workspace/08_results/p38_refinement_matched/arms/BASE_PLUS_SPECIALIST_20261112T125119465804Z",
+      "manifest_sha256": "b4cb868d6b8b3491b047626c61d39b4c8331aaf55a9f0a91413f292c667f8e19",
+      "members_verified": 140,
+      "library": "hetero_rich_sources.csv",
+      "panel": [
+        "COc1cc(-c2nc(-c3ccc(O)cc3)[nH]c2-c2ccc(F)cc2)ccn1",
+        "COc1cc(-c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)ccc1O",
+        "CC(C)N1CC=C(c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)CC1",
+        "CC(C)N1CC=C(c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)C(CO)C1",
+        "CON1CC=C(c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)CC1",
+        "CCNC1=C(c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)CCN(C(C)C)C1",
+        "CC(C)N1CC=C(c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)CC1CO",
+        "CC(C)COC(=O)c1[nH]c(C2=CCN(C(C)C)CC2)nc1-c1ccncc1",
+        null,
+        null
+      ],
+      "primary_summary": {
+        "status": "INCOMPLETE_EVALUATION",
+        "committed_slots": 8,
+        "successful_pose_score_slots": 8,
+        "confirmed_eligible_final_slots": 8,
+        "all_eligible": false,
+        "mean_native_vina": null,
+        "median_native_vina": null,
+        "sample_sd_native_vina": null,
+        "minimum_native_vina": null,
+        "maximum_native_vina": null,
+        "partial_diagnostics_NOT_PRIMARY": {
+          "denominator": 10,
+          "observed_eligible_slots": 8,
+          "mean": -8.330125,
+          "median": -8.3675,
+          "sample_sd": 0.3875602948482433,
+          "minimum": -8.705,
+          "maximum": -7.465
+        },
+        "references_separate": [
+          {
+            "role": "lead",
+            "identity": "Oc1ccc(-c2nc(-c3ccncc3)c(-c3ccc(F)cc3)[nH]2)cc1",
+            "score": -8.888,
+            "status": "SUCCESS"
+          },
+          {
+            "role": "control",
+            "identity": "C[S@](=O)c1ccc(-c2nc(-c3ccc(F)cc3)c(-c3ccncc3)[nH]2)cc1",
+            "score": -9.234,
+            "status": "SUCCESS"
+          }
+        ],
+        "generated_lower_than_lead_count": 0,
+        "score_unit": "Native units absent, no physical unit assigned"
+      }
+    }
+  ],
+  "separate_critic": {
+    "status": "COMPLETE_NO_MATERIAL_INTEGRITY_CONCERN",
+    "native_search_poses_compared": 70,
+    "final_input_csvs_equal": true,
+    "optimizer_pampa_annotation_cells_differ": 16,
+    "common_pampa_values_equal": true,
+    "specialist_final_repeats_search_scores_and_coordinates": true
+  },
+  "limits": [
+    "procedural separation only",
+    "aggregate model costs unknown",
+    "service failure cause not attributable to chemistry",
+    "independent recomputation/caching unestablished",
+    "one within-family development case"
+  ]
+}

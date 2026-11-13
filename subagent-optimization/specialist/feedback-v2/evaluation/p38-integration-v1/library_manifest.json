@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-11-11T12:17:55.889519+00:00",
+  "status": "LOCAL_STRUCTURAL_REVIEW_COMPLETE__USER_RUN_NOT_EXECUTED",
+  "review_scope": "CSV contract and source molecular representation; no model execution, candidate generation, e072 fragment-coverage qualification or target-outcome assessment",
+  "execution_authorization": "None conferred by this manifest. The user-run PROMPT.md explicitly authorizes only this TASK.md pilot.",
+  "admission_reason": "Three preserved, outcome-blind, compositionally contrasting source cohorts offer finite reproducible library alternatives for an integration test. All have 20 connected unique supported molecular representations under the recorded parser. No target-specific efficacy is assumed.",
+  "approval_note": "Underlying audit flags remain unchanged: not_reviewed/available_for_policy=false refer to the original generalized policy admission. This new manifest documents a narrower structural review and proposed exploratory pilot scope, not a signed approval or prior SME review.",
+  "rdkit_version": "2026.03.6",
+  "libraries": [
+    {
+      "library_id": "carbon_rich_sources",
+      "path": "/home/boltzmann13/agent-scientist-subagent-optimization/subagent-optimization/research/library-alternatives/run-v1/carbon_rich_sources.csv",
+      "sha256": "23fffbb53075321412eb35f39b24beb97c7881b4b74852f9622eb68d520cf9b6",
+      "role": "exploratory_source_molecule_library",
+      "admission": "candidate_for_this_user_authorized_integration_pilot_only",
+      "audit": {
+        "schema_version": 1,
+        "content_sha256": "23fffbb53075321412eb35f39b24beb97c7881b4b74852f9622eb68d520cf9b6",
+        "bytes": 981,
+        "input_format": "csv",
+        "header": [
+          "SMILES",
+          "ChEMBL_ID"
+        ],
+        "row_count": 20,
+        "canonicalized_rows": 20,
+        "canonical_unique_count": 20,
+        "duplicate_rows": 0,
+        "invalid_rows": [],
+        "unsupported_rows": [],
+        "multicomponent_rows": [],
+        "normalization_policy_id": "strict-canonical-isomeric-no-standardization-v2@rdkit-2026.03.6;legacy-stereo=1;non-tetrahedral=1",
+        "rdkit_version": "2026.03.6",
+        "parser_settings": {
+          "parseName": false,
+          "allowCXSMILES": false,
+          "canonical": true,
+          "isomericSmiles": true,
+          "sanitize": true,
+          "removeHs": true,
+          "legacy_stereo": true,
+          "allow_nontetrahedral_chirality": true
+        },
+        "normalized_identity_complete": true,
+        "normalized_input_set_sha256": "a84ceecc13ad8cfbe232b5e6b1b6204fdce14213b0e67aee73d9c37e6e9ff3c9",
+        "normalized_sequence_sha256": "0d112a2560373bd755e182056109994e2f4ffff946bcb2216872a2ba1dfe6767",
+        "normalized_multiset_sha256": "a84ceecc13ad8cfbe232b5e6b1b6204fdce14213b0e67aee73d9c37e6e9ff3c9",
+        "public_input_format_ready": true,
+        "structure_scope_needs_review": false,
+        "approval_status": "not_reviewed",
+        "capability_card_reviewed": false,
+        "available_for_policy": false,
+        "fragment_material_identity": "not_calculated",
+        "scoring_or_model_execution": false
+      }
+    },
+    {
+      "library_id": "hetero_rich_sources",
+      "path": "/home/boltzmann13/agent-scientist-subagent-optimization/subagent-optimization/research/library-alternatives/run-v1/hetero_rich_sources.csv",
+      "sha256": "5341ee432b4ab84c3e2c104fc2af11ccef26bcf812d260de4a8c29d6625fabd2",
+      "role": "exploratory_source_molecule_library",
+      "admission": "candidate_for_this_user_authorized_integration_pilot_only",
+      "audit": {
+        "schema_version": 1,
+        "content_sha256": "5341ee432b4ab84c3e2c104fc2af11ccef26bcf812d260de4a8c29d6625fabd2",
+        "bytes": 1043,
+        "input_format": "csv",
+        "header": [
+          "SMILES",
+          "ChEMBL_ID"
+        ],
+        "row_count": 20,
+        "canonicalized_rows": 20,
+        "canonical_unique_count": 20,
+        "duplicate_rows": 0,
+        "invalid_rows": [],
+        "unsupported_rows": [],
+        "multicomponent_rows": [],
+        "normalization_policy_id": "strict-canonical-isomeric-no-standardization-v2@rdkit-2026.03.6;legacy-stereo=1;non-tetrahedral=1",
+        "rdkit_version": "2026.03.6",
+        "parser_settings": {
+          "parseName": false,
+          "allowCXSMILES": false,
+          "canonical": true,
+          "isomericSmiles": true,
+          "sanitize": true,
+          "removeHs": true,
+          "legacy_stereo": true,
+          "allow_nontetrahedral_chirality": true
+        },
+        "normalized_identity_complete": true,
+        "normalized_input_set_sha256": "f1a603f8a4bb78390ea68f3e78ef4911401217223aaf935afc789b0b672dad1a",
+        "normalized_sequence_sha256": "8213c5dbb655b6923afc6144e23a50bdd0346f259af4c29d7c7ac5efe1b1e843",
+        "normalized_multiset_sha256": "f1a603f8a4bb78390ea68f3e78ef4911401217223aaf935afc789b0b672dad1a",
+        "public_input_format_ready": true,
+        "structure_scope_needs_review": false,
+        "approval_status": "not_reviewed",
+        "capability_card_reviewed": false,
+        "available_for_policy": false,
+        "fragment_material_identity": "not_calculated",
+        "scoring_or_model_execution": false
+      }
+    },
+    {
+      "library_id": "mixed_reference",
+      "path": "/home/boltzmann13/agent-scientist-subagent-optimization/subagent-optimization/research/library-alternatives/run-v1/mixed_reference.csv",
+      "sha256": "74305b33acad639b825b025956f7e91285fccdbc8a6f4671348b521ad7b073c0",
+      "role": "exploratory_source_molecule_library",
+      "admission": "candidate_for_this_user_authorized_integration_pilot_only",
+      "audit": {
+        "schema_version": 1,
+        "content_sha256": "74305b33acad639b825b025956f7e91285fccdbc8a6f4671348b521ad7b073c0",
+        "bytes": 996,
+        "input_format": "csv",
+        "header": [
+          "SMILES",
+          "ChEMBL_ID"
+        ],
+        "row_count": 20,
+        "canonicalized_rows": 20,
+        "canonical_unique_count": 20,
+        "duplicate_rows": 0,
+        "invalid_rows": [],
+        "unsupported_rows": [],
+        "multicomponent_rows": [],
+        "normalization_policy_id": "strict-canonical-isomeric-no-standardization-v2@rdkit-2026.03.6;legacy-stereo=1;non-tetrahedral=1",
+        "rdkit_version": "2026.03.6",
+        "parser_settings": {
+          "parseName": false,
+          "allowCXSMILES": false,
+          "canonical": true,
+          "isomericSmiles": true,
+          "sanitize": true,
+          "removeHs": true,
+          "legacy_stereo": true,
+          "allow_nontetrahedral_chirality": true
+        },
+        "normalized_identity_complete": true,
+        "normalized_input_set_sha256": "348e41c461e3175b3dc0f74edd8f3ffc946d456068a41b36e3c59222e0e95c6f",
+        "normalized_sequence_sha256": "b04bb96cc35a31650618d119282fcb59ab0e21c40776e17cd07f0d38787d256c",
+        "normalized_multiset_sha256": "348e41c461e3175b3dc0f74edd8f3ffc946d456068a41b36e3c59222e0e95c6f",
+        "public_input_format_ready": true,
+        "structure_scope_needs_review": false,
+        "approval_status": "not_reviewed",
+        "capability_card_reviewed": false,
+        "available_for_policy": false,
+        "fragment_material_identity": "not_calculated",
+        "scoring_or_model_execution": false
+      }
+    }
+  ],
+  "provenance": [
+    {
+      "path": "/home/boltzmann13/agent-scientist-subagent-optimization/subagent-optimization/research/library-alternatives/protocol-v1.json",
+      "sha256": "249b36c6ceff45e94d67cd761e6c98f39172a2a579b02a1b3bb58e13639323c5"
+    },
+    {
+      "path": "/home/boltzmann13/agent-scientist-subagent-optimization/subagent-optimization/research/library-alternatives/run-v1/curation.json",
+      "sha256": "b8cbee6e4f0ff6f455e8505d4dc7888c495bc5ce879070fedc97e4e64e511c8f"
+    },
+    {
+      "path": "/home/boltzmann13/agent-scientist-subagent-optimization/subagent-optimization/research/library-alternatives/DATA_NOTICE.md",
+      "sha256": "5e798620b098250d34168e221b751021647f8e562a419342de1a0fa1897688a1"
+    },
+    {
+      "path": "/home/boltzmann13/agent-scientist-subagent-optimization/subagent-optimization/prototype/library_audit/audit.py",
+      "sha256": "981e6959d87b684369f61b403d153aaf1fd091b3a24804a3ab4541c95a380765"
+    }
+  ],
+  "source_summary": {
+    "release": "ChEMBL_37",
+    "retrieved_utc": "2026-11-03T07:33:16.098894+00:00",
+    "activity_data_requested": false,
+    "license": "CC-BY-SA-3.0",
+    "selection": "Bounded structure-only query, neutral single-component source filters, N/O/S-rich and N/O/S-poor cohorts matched on source heavy-atom and ring-count bins; mixed library overlaps both."
+  },
+  "limitations": [
+    "20 source molecules is not a generated-output cap or guarantee.",
+    "Library file names describe source composition, not guaranteed product chemistry.",
+    "Old lookup/context results used another lead; e072 applicability and deployed fragment behavior are untested.",
+    "No target activity, PAMPA, docking, synthesis or model-training independence claim.",
+    "Some valid source molecules can contain chemical liabilities; eligibility depends on assessed products.",
+    "Normalization hashes differ from older RDKit-version-specific reports; source CSV bytes are unchanged."
+  ]
+}

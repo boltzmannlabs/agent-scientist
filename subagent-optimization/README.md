@@ -2,9 +2,47 @@
 
 Research and proposed evaluation of a specialist subagent for small-molecule optimization in Agent Scientist.
 
-The goal is to identify a useful scientific decision that a specialist can improve, while retaining the native agent's tools and the lead-optimization environment's evidence/assessment responsibilities. A bounded host-mediated optimization specialist now has actual native-model and connector execution evidence. The prompt-entry plugin and saved specialist are installed in the local CLI profile; native discovery passed, while natural-prompt routing and scientific advantage still need user evaluation. No new prediction model is claimed.
+The goal is to improve evidence-driven molecular decisions using existing scientific tools, with explicit constraints, uncertainty, context management and resource accounting. The current saved specialist uses native Boltzmann tools; reusable local helpers support assessment and reporting. Execution has been exercised in bounded user-run cases, but a scientific advantage over a capable base agent has not been demonstrated. No new prediction model is claimed.
 
-## Current work — 4 November 2026
+## Current work — 12 November 2026, reviewed 13 November
+
+The [feedback specialist](specialist/feedback-v2/SETUP.md) owns a bounded
+CReM → common PAMPA/RDKit assessment → Vina → justified continuation or STOP
+investigation. It records evidence, competing options, parameter reasons,
+uncertainty and actual native receipts without adding another submission client.
+
+The [12 November work summary](research/progress-2026-11-12.md) links the source,
+validation and case records. Main deliverables are:
+
+- [Common refinement decision guide](specialist/feedback-v2/evaluation/matched-v1/COMMON_GUIDE.md)
+  and [scientific-reasoning contract](research/scientific-reasoning-contract-v1.md):
+  joint-constraint diagnosis, typed evidence, uncertainty consequences and visible
+  trade-offs; computational feedback remains distinct from experimental feedback.
+- [Feedback-policy prototype and observation adapters](prototype/feedback_policy/README.md):
+  70 offline checks pass. This code does not qualify models or enforce backend
+  budgets; Graph GA logic remains an offline development option, not a live route
+  authorized in these cases.
+- [SB202190 shared preparation and paired assignments](specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/README.md):
+  the same starting evidence, scientific choices and observable allowances for
+  the base agent and specialist; the common evaluation adapter has seven passing
+  checks. Source snapshots contain no service credentials or raw job archives.
+- [Completed feedback-pilot review](results/p38-refinement-feedback-completion-review.md)
+  and [development-pair comparison](results/sb202190-development-pair-review.md):
+  execution is demonstrated; specialist selection benefit is not. Both paired
+  arms chose the same action and eight-molecule panel. BASE's final service job
+  failed; the specialist assessed eight slots. Neither completed ten slots.
+- [Framework approval issue](research/agent-scientist-subagent-approval-issue.md):
+  the default noninteractive denial was misleadingly reported as user denial;
+  the local temporary workaround is not a framework fix.
+
+Private inputs, raw poses/downloads, profiles, credentials and compiled caches
+remain outside this source publication. Historical run manifests preserve their
+original hashes, including excluded local cache members where applicable; see
+the [publication inventory](results/publication-20261112.json). The archived
+case tasks require their original local inputs and a new explicit assignment;
+cloning this source alone does not install a role or authorize/reproduce a run.
+
+## Historical work — 4 November 2026
 
 The [development workflow](workflow/README.md) implements one CReM investigation:
 the specialist chooses a parent and fragment-source library, the owning host

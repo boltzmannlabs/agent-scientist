@@ -1,0 +1,36 @@
+{
+  "status": "REVIEWED_USER_RUN_PREPARATION_ONLY__NOT_EXECUTED",
+  "scientific_jobs_submitted": 0,
+  "files": [
+    {
+      "path": "PREPARATION_TASK.md",
+      "sha256": "8f2568b04f22cb3e6d9d5cc94d15ac8de5e9a3591e9a2340ac870c74538e2965",
+      "bytes": 8723
+    },
+    {
+      "path": "PREPARE_PROMPT.md",
+      "sha256": "19ab047092fe322f6cb3fb2c3b5a8aafba7f2df267872bb49565084d139816d0",
+      "bytes": 1742
+    },
+    {
+      "path": "README.md",
+      "sha256": "1c5f48ae95a492316ee9a55fd0c7babdb52a2fb40f8f89ed4e4c8e799abb3a12",
+      "bytes": 6027
+    },
+    {
+      "path": "local_case_review.json",
+      "sha256": "feb729c5d64364b416a52ae83d508501be4e957f10ce0b559be92384bc4091f3",
+      "bytes": 7427
+    },
+    {
+      "path": "prepare_case.py",
+      "sha256": "9990b336070f082966bc4b15b93d6e0efa2c42fc600c3217d2f70201143ba8c7",
+      "bytes": 7463
+    },
+    {
+      "path": "proposed_references.csv",
+      "sha256": "9d3f7cb2d3c4ee6a2088c4668f750d1b6324f591b377016554c375da18081bb2",
+      "bytes": 146
+    }
+  ]
+}

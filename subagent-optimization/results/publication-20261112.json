@@ -1,0 +1,354 @@
+{
+  "status": "SOURCE_PUBLICATION_REVIEWED",
+  "work_date": "2026-11-12",
+  "publication_prepared_utc": "2026-11-13T05:13:13.521502+00:00",
+  "tracking_issue": "https://github.com/boltzmannlabs/agent-scientist/issues/33",
+  "scope": "Feedback specialist, required earlier source dependencies, 12 November case preparation/development pair and 13 November review of those runs. Excludes unrelated de novo backlog and agriculture-tool handoff.",
+  "scientific_execution_during_publication": false,
+  "validation": {
+    "offline_component_tests_passed": 70,
+    "common_contract_tests_passed": 7,
+    "secret_pattern_scan": "PASS; bounded automated scan, not a proof of absence",
+    "json_parse": "PASS"
+  },
+  "files": [
+    {
+      "path": "subagent-optimization/README.md",
+      "sha256": "edd71e117dfe2b13d21b40e771ccffcc5c3351a180bd1d6f048296d509f4756b",
+      "bytes": 11072
+    },
+    {
+      "path": "subagent-optimization/prototype/feedback_policy/README.md",
+      "sha256": "3aa81e8f0b759d10ac93f27e0aeaf5f8ba768d576b5acc6b7eee36f0c1c6816d",
+      "bytes": 11335
+    },
+    {
+      "path": "subagent-optimization/prototype/feedback_policy/demo.py",
+      "sha256": "36c210d5ba9081c07f8feec19c730d5589cf0a154457b8c491b40dec37de72ad",
+      "bytes": 1772
+    },
+    {
+      "path": "subagent-optimization/prototype/feedback_policy/feedback_policy.py",
+      "sha256": "818a0f7bd41bcc4ea08aef42972b83b1af334ce6874c7805b51436058dd5e2a1",
+      "bytes": 24620
+    },
+    {
+      "path": "subagent-optimization/prototype/feedback_policy/fixtures.py",
+      "sha256": "38f9a028307e4a93d0410f41d40f53cb0cceb84d5f00ba246c49e71eddc1d668",
+      "bytes": 3206
+    },
+    {
+      "path": "subagent-optimization/prototype/feedback_policy/observations.py",
+      "sha256": "7f7b512f30439ea7a7cff39615e8a7357cda7403d741f3bbdc04cc6341a080e9",
+      "bytes": 15352
+    },
+    {
+      "path": "subagent-optimization/prototype/feedback_policy/replay_archive.py",
+      "sha256": "3c7930efc2538bcadf265293c3daa840aa5f787b4d6abe8dc0069272851ccce1",
+      "bytes": 7118
+    },
+    {
+      "path": "subagent-optimization/prototype/feedback_policy/test_feedback_policy.py",
+      "sha256": "a89b6f7f9c655ddae5ab7a12d1587321e72c33fad842e240e14e178c670b76bf",
+      "bytes": 18410
+    },
+    {
+      "path": "subagent-optimization/prototype/feedback_policy/test_observations.py",
+      "sha256": "ed03a5c858494da9d21f1192170dafd438be76fe6a8ed302b73839ad4d4cf7f4",
+      "bytes": 17043
+    },
+    {
+      "path": "subagent-optimization/prototype/feedback_policy/test_pampa.py",
+      "sha256": "f182d95e7413e532e88c34030b85824622a39ed153d1b71ec9431a64fa7a0752",
+      "bytes": 7241
+    },
+    {
+      "path": "subagent-optimization/research/agent-scientist-subagent-approval-issue.md",
+      "sha256": "088048e5664f0b82268c5d4002be5d85147d7f37d3c2356d325986f03bb4e133",
+      "bytes": 11637
+    },
+    {
+      "path": "subagent-optimization/research/feedback-platform-readiness.md",
+      "sha256": "147319cb5bd230058957fd78c3dd9fb5f28855b37d4fb707153c4ca0340864f1",
+      "bytes": 7966
+    },
+    {
+      "path": "subagent-optimization/research/feedback-policy-v2.md",
+      "sha256": "6d0ef37a5baa77dce4b87eabd419ad90c9f482485380006044de395296987836",
+      "bytes": 27283
+    },
+    {
+      "path": "subagent-optimization/research/first-refinement-case.md",
+      "sha256": "cbff30ae9a34f94b990dbc9941726212132269adbab5129d5ca12833669abf1f",
+      "bytes": 14932
+    },
+    {
+      "path": "subagent-optimization/research/p38-refinement-continuation-prompt.md",
+      "sha256": "b44bc4b7e039560cfa7802e482f4c4464a96c1f10d8d948de52e382954b9c41e",
+      "bytes": 7027
+    },
+    {
+      "path": "subagent-optimization/research/pampa-first-refinement.md",
+      "sha256": "7b061effffa473beaeeb7c5e102fb4532722ec238da474212bd66e4ac65bf59a",
+      "bytes": 7289
+    },
+    {
+      "path": "subagent-optimization/research/pampa-readiness-prompt.md",
+      "sha256": "19510e50d0e92d80aba393963278545bad2733a1480091ea1e7116fd4c3f4048",
+      "bytes": 2697
+    },
+    {
+      "path": "subagent-optimization/research/progress-2026-11-12.md",
+      "sha256": "a81ab28ef2054c28231db9d4dc5f475e6a694d5909387a09d86487ab64fb0fc2",
+      "bytes": 4048
+    },
+    {
+      "path": "subagent-optimization/research/refinement-matched-evaluation-v1.md",
+      "sha256": "8e10b06aad70927376e3555d0bce85d4615536b9d64c6c4deec8a55eb444e6d9",
+      "bytes": 24998
+    },
+    {
+      "path": "subagent-optimization/research/scientific-reasoning-contract-v1.md",
+      "sha256": "a9a5c0f7021aeed84f950ed23c4e6faacfeaf69ef611faa597acfe929e8a8661",
+      "bytes": 7397
+    },
+    {
+      "path": "subagent-optimization/results/feedback-policy-v2-observation-integration.md",
+      "sha256": "6f22cc97ce793646b2a3f841d00ffb5e161b5f2a63327d9c3e05500c69cca01c",
+      "bytes": 3308
+    },
+    {
+      "path": "subagent-optimization/results/feedback-policy-v2-offline-validation.md",
+      "sha256": "033e0f66029743e25a7e7ccc8753d574e08970ceb0567ee43559f025ab52ec1e",
+      "bytes": 3855
+    },
+    {
+      "path": "subagent-optimization/results/feedback-vina-live-readiness-20261111.md",
+      "sha256": "787bdfb4a3d093594a500fc5a3192cb5901aa7fce56b03eab3c4ec571cc30b97",
+      "bytes": 3726
+    },
+    {
+      "path": "subagent-optimization/results/feedback-vina-readiness-success-20261111.md",
+      "sha256": "45a3944a64fb8d9b904f84f7ccb3a670db0c8feac494893ab24c739c6db3863a",
+      "bytes": 2664
+    },
+    {
+      "path": "subagent-optimization/results/p38-refinement-feedback-completion-review.md",
+      "sha256": "b64ccfaf4a83f77c3513a0d2d8e586df54adccaed7805b18b09c1b79a5767130",
+      "bytes": 6378
+    },
+    {
+      "path": "subagent-optimization/results/p38-refinement-integration-20261111-review.md",
+      "sha256": "dc2d4bf0f66537006120a270f0030f10ef915ae183ae7cb4670e3f68c24d973b",
+      "bytes": 5642
+    },
+    {
+      "path": "subagent-optimization/results/pampa-label-readiness-20261111.md",
+      "sha256": "e95699a93b8928cc2aee1bc417ee94c3a81dca1ef98da9567d8f125f6550aa56",
+      "bytes": 2731
+    },
+    {
+      "path": "subagent-optimization/results/sb202190-development-pair-review.json",
+      "sha256": "f60aae1c8954a84f111425b65e472dacf44fd7a0eeba9a3ad5ac9f4f14501eba",
+      "bytes": 6122
+    },
+    {
+      "path": "subagent-optimization/results/sb202190-development-pair-review.md",
+      "sha256": "8bf481a3df79d4cf1d83bd3cb30eafc0630c3bec606ab1ac058d952a0403d65b",
+      "bytes": 6639
+    },
+    {
+      "path": "subagent-optimization/results/sb202190-shared-packet-review.md",
+      "sha256": "329a53114006857b1738d98cae59baf990f77b6ff15bf485166a9fe7efa95734",
+      "bytes": 3655
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/INSTRUCTIONS.md",
+      "sha256": "be37ae28be911f9a54b70a0d15dea6e762d15a433765a432a7ff989ccee67e61",
+      "bytes": 3759
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/SETUP.md",
+      "sha256": "c3b0b0f2bc6533553518521e223451ee1e49bfaeeab5c389f45c8ec63051bd01",
+      "bytes": 1995
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/SKILL_SELECTION_REVIEW.md",
+      "sha256": "284b73e9962e7af200464de7e7471cfa84e457700be5404ad895e8fd0d9ea978",
+      "bytes": 3415
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/definition-with-frozen-panel-skill.json",
+      "sha256": "2b5c305413173d17cdaf2b9530e3eddaa660109856c50b9e2e4b5a55e605502e",
+      "bytes": 5498
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/definition.json",
+      "sha256": "86a7cf88376e06e08226f2a5b4148bd43b040092f89ab6ed286ac6f8406e257e",
+      "bytes": 5381
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/COMMON_GUIDE.md",
+      "sha256": "73829417ba0a831c4c46910971955153b6573690285961466041f7fda95ac82e",
+      "bytes": 4097
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/PREPARATION_TASK.md",
+      "sha256": "8f2568b04f22cb3e6d9d5cc94d15ac8de5e9a3591e9a2340ac870c74538e2965",
+      "bytes": 8723
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/PREPARE_PROMPT.md",
+      "sha256": "19ab047092fe322f6cb3fb2c3b5a8aafba7f2df267872bb49565084d139816d0",
+      "bytes": 1742
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/README.md",
+      "sha256": "1c5f48ae95a492316ee9a55fd0c7babdb52a2fb40f8f89ed4e4c8e799abb3a12",
+      "bytes": 6027
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/BASE_PROMPT.md",
+      "sha256": "9f7af2a2402f6ca76b4b13ba61406954780dd899fb649c61984259798582bd31",
+      "bytes": 1883
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/README.md",
+      "sha256": "99a6b2c837936abae5664df983965d09b279110e8c2528ea9f69d72ad9384a22",
+      "bytes": 4529
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/SPECIALIST_PROMPT.md",
+      "sha256": "c0d8d72c76dc94135c15538c52733869c48bf5e870d8f9c558319697e5d2a73d",
+      "bytes": 2055
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/TASK.md",
+      "sha256": "4d2e03132a6f4da07d7133f06ba1d43ea809315c648f8872f535e3c8582fb7db",
+      "bytes": 16968
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/common/COMMON_GUIDE.md",
+      "sha256": "73829417ba0a831c4c46910971955153b6573690285961466041f7fda95ac82e",
+      "bytes": 4097
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/common/FROZEN_PANEL_SKILL.md",
+      "sha256": "44c8e42db6f006ecca71aea4d6d0df0b9849684869885f5cd094a2ba4292e5ac",
+      "bytes": 3647
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/common/LIBRARY_DATA_NOTICE.md",
+      "sha256": "5e798620b098250d34168e221b751021647f8e562a419342de1a0fa1897688a1",
+      "bytes": 1504
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/common/ROLE_INSTRUCTIONS.md",
+      "sha256": "be37ae28be911f9a54b70a0d15dea6e762d15a433765a432a7ff989ccee67e61",
+      "bytes": 3759
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/common/SAVED_ROLE_CONTEXT.json",
+      "sha256": "b4189eed4bd54f27520281d4bf499e1ed51b417212f57f0faeffcab175e6c628",
+      "bytes": 5059
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/common/SCIENTIFIC_REASONING.md",
+      "sha256": "a9a5c0f7021aeed84f950ed23c4e6faacfeaf69ef611faa597acfe929e8a8661",
+      "bytes": 7397
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/common/evaluation_support.py",
+      "sha256": "389470eecd4961d3ac12c71ea087e7bae22aca9d7616ac7a402f17cb98070b74",
+      "bytes": 3293
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/common/feedback_policy.py",
+      "sha256": "818a0f7bd41bcc4ea08aef42972b83b1af334ce6874c7805b51436058dd5e2a1",
+      "bytes": 24620
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/common/observations.py",
+      "sha256": "7f7b512f30439ea7a7cff39615e8a7357cda7403d741f3bbdc04cc6341a080e9",
+      "bytes": 15352
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/common/test_evaluation_support.py",
+      "sha256": "d7e0dfa595ebdce49a1af23b4d3fa46377cc1bc6a68bd24e9775eea3b84c6d03",
+      "bytes": 4420
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/pair_manifest.json",
+      "sha256": "42f12999bb450ea34802ba5fed0865f55dc2dffaa8a411ecfe017899f82cd778",
+      "bytes": 5777
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/local_case_review.json",
+      "sha256": "feb729c5d64364b416a52ae83d508501be4e957f10ce0b559be92384bc4091f3",
+      "bytes": 7427
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/preparation_file_manifest.json",
+      "sha256": "66cd232195140f64e53c5e108fb1e976aa23477c26098fa5f2857d00e5a3b262",
+      "bytes": 1032
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/prepare_case.py",
+      "sha256": "9990b336070f082966bc4b15b93d6e0efa2c42fc600c3217d2f70201143ba8c7",
+      "bytes": 7463
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/proposed_references.csv",
+      "sha256": "9d3f7cb2d3c4ee6a2088c4668f750d1b6324f591b377016554c375da18081bb2",
+      "bytes": 146
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/p38-integration-v1/PROMPT.md",
+      "sha256": "9644c25e2e1866b846492859699a50cb947d4162da4bb0dcfca79e3ec8073856",
+      "bytes": 1992
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/p38-integration-v1/REVIEW.md",
+      "sha256": "b77f03e5ce689eeed560c26599a98b83da4414c55c9e2445553b4e61835437e0",
+      "bytes": 2886
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/p38-integration-v1/TASK.md",
+      "sha256": "e19c039c58f61434855917e8db8cc97216106ffc57ebedb453e3308b80f1e0f7",
+      "bytes": 15347
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/p38-integration-v1/library_manifest.json",
+      "sha256": "f033f902bb92008810a7319acd1006df805445f696301ce785d03025446d52eb",
+      "bytes": 9314
+    }
+  ],
+  "omitted_archived_members": [
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/common/__pycache__/evaluation_support.cpython-313.pyc",
+      "sha256": "d23dc76bb5a4bc4a6b75ab901ac126fc1c420b3a002e4d3e4d4d652a10709a4d",
+      "reason": "Regenerable compiled cache omitted from source publication; frozen local manifest remains unchanged."
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/common/__pycache__/feedback_policy.cpython-313.pyc",
+      "sha256": "f773c35ad799644d189bb260ffbfaa0ff3390859513f5ab8599979b100fd2bc1",
+      "reason": "Regenerable compiled cache omitted from source publication; frozen local manifest remains unchanged."
+    },
+    {
+      "path": "subagent-optimization/specialist/feedback-v2/evaluation/matched-v1/case-sb202190-v1/arms-v1/common/__pycache__/observations.cpython-313.pyc",
+      "sha256": "9f8904d12fe251407cff760ebf74aae764f6bc644a96949a1de364d3c5639bb9",
+      "reason": "Regenerable compiled cache omitted from source publication; frozen local manifest remains unchanged."
+    }
+  ],
+  "private_material_excluded": [
+    "Raw scientific outputs and pose archives",
+    "signed URLs and service credentials",
+    "profile/account configuration",
+    "model weights",
+    "compiled caches"
+  ],
+  "archival_limit": "Original run manifests are historical local inventories. Some members and absolute local inputs are deliberately not published; this source checkout alone cannot reproduce an archived run.",
+  "excluded_self_reference": [
+    "subagent-optimization/results/publication-20261112.json"
+  ]
+}
