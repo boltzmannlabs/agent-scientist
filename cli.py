@@ -1151,6 +1151,7 @@ class SciCLI(CLISpecialistMixin, CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNot
     # ``_handle_<name>_command(cmd)``. Looked up via getattr at dispatch time so
     # monkeypatching works. A handler returning False exits the REPL.
     _SLASH_DISPATCH: dict[str, tuple[str, bool]] = {
+        "deactivate": ("_handle_activate_command", True),
         "create_subagent": ("_handle_subagent_command", True),
         "update_subagent": ("_handle_subagent_command", True),
         "subagents": ("_handle_subagent_command", True),

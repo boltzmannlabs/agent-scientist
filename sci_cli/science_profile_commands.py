@@ -10,7 +10,12 @@ def activate(cli, command, ui=None):
     from sci_cli.native_profile_session import request_switch, profile_label
     ui = ui or WizardUI(cli, numbered_choices=False)
     try:
-        args = shlex.split(command)[1:]
+        parts = shlex.split(command)
+        args = parts[1:]
+        if parts[0].lstrip("/").lower() == "deactivate":
+            if args:
+                raise ValueError("Usage: /deactivate (returns to main)")
+            args = ["main"]
         if len(args) == 2 and args[1].lower() == "profile":
             args.pop()
         if not args:

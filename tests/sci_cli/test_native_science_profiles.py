@@ -85,6 +85,69 @@ def test_publish_real_profiles_and_switch_a_b_a_without_leaking_state(root, tmp_
     assert cli._pending_profile_home == "unchanged"
 
 
+def test_deactivate_dispatch_returns_each_profile_to_main_without_picker(root, monkeypatch):
+    from cli import SciCLI
+    from sci_cli.commands import COMMANDS, resolve_command
+    from sci_cli.profiles import get_profile_dir
+    from sci_constants import get_sci_home
+    from sci_state import SessionDB
+
+    homes = [get_profile_dir(name) for name in ("a", "b")]
+    for home in homes:
+        home.mkdir(parents=True)
+        (home / "config.yaml").write_text("{}\n")
+    with SessionDB(root / "state.db") as db:
+        db.create_session("previous-main", "cli", system_prompt="saved main prompt")
+        db.append_message("previous-main", "user", "Keep this previous main conversation.")
+        previous = db.get_messages_as_conversation("previous-main")
+    ui = SimpleNamespace(show=Mock(), choose=Mock(side_effect=AssertionError("No picker")))
+    monkeypatch.setattr("sci_cli.science_profile_commands.WizardUI", lambda *a, **kw: ui)
+    assert "/deactivate" in COMMANDS
+    assert resolve_command("/DEACTIVATE").name == "deactivate"
+    for home, command in ((homes[0], "/DEACTIVATE"), (homes[1], "/activate main"),
+                          (homes[0], "/activate"), (root, "/deactivate"), (root, "/activate main")):
+        ui.choose = Mock(return_value="main") if command == "/activate" else Mock(side_effect=AssertionError("No picker"))
+        with profile_scope(home):
+            cli = SciCLI.__new__(SciCLI)
+            cli._slash_metrics_surface = None
+            cli.agent = SimpleNamespace(_cached_system_prompt="frozen", tools=["original"],
+                                        _flush_messages_to_session_db=Mock())
+            cli.conversation_history = [{"role": "user", "content": home.name}]
+            cli._app = SimpleNamespace(is_running=True, loop=Mock(), exit=Mock())
+            assert cli.process_command(command) is True
+            assert cli._pending_profile_home == str(root.resolve())
+            assert cli._pending_relaunch == ["--cli", "-p", "default"]
+            cli.agent._flush_messages_to_session_db.assert_called_once_with(
+                cli.conversation_history, conversation_history=cli.conversation_history)
+            cli._app.loop.call_soon_threadsafe.assert_called_once_with(cli._app.exit)
+            assert get_sci_home() == home
+            assert cli.agent._cached_system_prompt == "frozen"
+            assert cli.agent.tools == ["original"]
+            assert cli.conversation_history == [{"role": "user", "content": home.name}]
+            if command != "/activate":
+                ui.choose.assert_not_called()
+    with SessionDB(root / "state.db", read_only=True) as db:
+        assert db.get_session("previous-main")["system_prompt"] == "saved main prompt"
+        assert db.get_messages_as_conversation("previous-main") == previous
+
+
+@pytest.mark.parametrize("command,busy,message", [
+    ("/deactivate", True, "Finish or cancel the current turn"),
+    ("/deactivate other", False, "Usage: /deactivate"),
+])
+def test_deactivate_rejection_leaves_selection_unchanged(root, command, busy, message):
+    from sci_cli.science_profile_commands import activate
+
+    ui = SimpleNamespace(show=Mock(), choose=Mock(side_effect=AssertionError("No picker")))
+    cli = SimpleNamespace(_agent_running=busy, _pending_profile_home="unchanged",
+                          _app=SimpleNamespace(is_running=True, loop=Mock(), exit=Mock()))
+    activate(cli, command, ui)
+    assert cli._pending_profile_home == "unchanged"
+    assert message in ui.show.call_args.args[0]
+    cli._app.loop.call_soon_threadsafe.assert_not_called()
+    ui.choose.assert_not_called()
+
+
 def test_wizard_existing_new_keys_cancel_invalid_key_and_duplicate_are_transactional(root, monkeypatch):
     from sci_cli.native_profile_wizard import create_wizard
     from sci_cli.native_profile_services import setup_boltzmann, credential

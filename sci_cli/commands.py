@@ -264,6 +264,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
                cli_only=True, desktop="terminal"),
     CommandDef("activate", "Choose a native profile or return to main", "Configuration",
                args_hint='["profile-name"] [profile]', cli_only=True, desktop="terminal"),
+    CommandDef("deactivate", "Open a new chat in the main profile", "Configuration",
+               cli_only=True, desktop="terminal"),
     CommandDef("profile_routing", "Opt into automatic research-profile routing", "Configuration",
                args_hint="[on|off]", subcommands=("on", "off"), cli_only=True, desktop="terminal"),
     CommandDef("tools", "Manage tools: /tools [list|disable|enable] [name...]", "Tools & Skills",

@@ -37,7 +37,7 @@ def request_switch(cli, name, ui):
     if getattr(cli, "_agent_running", False) or getattr(cli, "_science_running_worker", None):
         raise ValueError("Finish or cancel the current turn before switching profiles.")
     home = get_profile_dir(name)
-    if home.resolve() == get_sci_home().resolve():
+    if name != "default" and home.resolve() == get_sci_home().resolve():
         ui.show(f"Already in {'main' if name == 'default' else name}.")
         return
     app = getattr(cli, "_app", None)
@@ -45,10 +45,10 @@ def request_switch(cli, name, ui):
         raise ValueError("Profile activation requires the interactive CLI.")
     from sci_cli.session_browser import flush_before_switch
     flush_before_switch(cli)
-    # Startup will resolve the target's model, tools, secret scope and previous
-    # conversation. No globals or toolsets of this conversation are rewritten.
+    # Main always opens a fresh conversation; named profiles keep their latest
+    # conversation. Both routes resolve capabilities in a separate runtime.
     args = ["--cli", "-p", name]
-    if (home / "state.db").is_file():
+    if name != "default" and (home / "state.db").is_file():
         from sci_state import SessionDB
         db = SessionDB(home / "state.db", read_only=True)
         try:
@@ -59,9 +59,10 @@ def request_switch(cli, name, ui):
             args.extend(["--resume", sessions[0]["id"]])
     cli._pending_profile_home = str(home.resolve())
     cli._pending_relaunch = args
+    destination = ("start a new chat in main" if name == "default" else
+                   "resume that profile's latest conversation, or start a new one")
     ui.show(f"Switching to {'main' if name == 'default' else name}. Saving this conversation; "
-            "the native CLI will resume that profile's latest conversation, or start a new one. "
-            "Its retained transcript will appear in scrollback. Use /resume to choose another conversation.")
+            f"the native CLI will {destination}. Use /resume to open a saved conversation.")
     if getattr(cli, "_background_managed", False):
         from sci_cli.background_chat_lifecycle import navigate
         navigate(cli)

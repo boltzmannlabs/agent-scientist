@@ -14,11 +14,19 @@ memory, workspaces, and a scientific persona.
 /activate
 /activate "omics" profile
 /activate main
+/deactivate
 /Update_profile "omics"
 /capabilities
 /boltzmann_tools
 /resume
 ```
+
+Use `/deactivate` from any profile to return directly to main without a picker.
+Like `/activate main` or choosing main in the activation picker, it saves the current
+conversation and opens a new chat in main. This also starts a new chat when main
+is already active. Saved conversations remain available through `/resume`, and the
+profile's configuration and credentials are preserved.
+Finish or cancel a running turn before switching.
 
 ## Omics coordinator foundation
 
@@ -26,7 +34,7 @@ memory, workspaces, and a scientific persona.
 unused. The bundled, versioned starter creates a private workspace and conversation
 through native profiles. `/activate` also offers this starter in its picker.
 Subsequent activation resumes the latest Omics conversation; `/activate main`
-returns to main. `/resume` selects a different saved conversation.
+opens a new chat in main. `/resume` selects a saved conversation.
 
 This first stage is ready for conversation once model authentication is available,
 not scientific execution. It includes an Omics coordinator persona and 16 foundation
