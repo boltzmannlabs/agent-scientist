@@ -15,8 +15,9 @@ class TestAnnotateFailureBasics:
         assert "SIGKILL" in annotate_failure("big_job", 137, "")
         assert "timeout" in annotate_failure("sleep 999", 124, "")
 
-    def test_unknown_failure_returns_none(self):
-        assert annotate_failure("./x", 1, "some unrecognized error") is None
+    def test_unknown_failure_requires_diagnosis_without_replaying_work(self):
+        hint = annotate_failure("./x", 1, "some unrecognized error")
+        assert "Inspect" in hint and "do not replay" in hint
 
     def test_only_first_matching_hint(self):
         out = 'CONFLICT (content): Merge conflict in a.py\npython: command not found'
@@ -84,12 +85,13 @@ class TestPermissionDenied:
 class TestBoundedScan:
     def test_pattern_beyond_scan_window_ignored(self):
         out = "x" * 5000 + "\npython: command not found"
-        assert annotate_failure("noop", 1, out) is None
+        hint = annotate_failure("noop", 1, out)
+        assert "python3" not in hint and "Inspect" in hint
 
     def test_hint_functions_cannot_crash_annotate(self):
         # A hint raising must not propagate.
         with mock_patch("tools.terminal_hints._OUTPUT_HINTS", [lambda c, o: 1 / 0]):
-            assert annotate_failure("x", 1, "boom") is None
+            assert "Inspect" in annotate_failure("x", 1, "boom")
 
 
 

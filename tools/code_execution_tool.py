@@ -176,19 +176,17 @@ _FAILURE_HINT_RULES = (
 
 
 def _sandbox_failure_hint(stderr_text: str, enabled_tools=None) -> Optional[str]:
-    """Map well-known sandbox script failures to one actionable recovery hint
-    (bounded scan, first match wins, never raises)."""
-    if not stderr_text:
-        return None
-    window = stderr_text[:4000]
+    """Specific advice where known, otherwise general diagnosis and partial-work recovery."""
+    from tools.terminal_hints import execution_failure_hint
+    window = (stderr_text or "")[:4000]
     try:
         for pattern, fmt in _FAILURE_HINT_RULES:
             m = re.search(pattern, window)
             if m:
-                return fmt(m, enabled_tools)
+                return execution_failure_hint(stderr_text, detail=fmt(m, enabled_tools))
     except Exception:
-        return None
-    return None
+        return execution_failure_hint(stderr_text)
+    return execution_failure_hint(stderr_text)
 
 
 def generate_sci_tools_module(enabled_tools: List[str],
@@ -583,6 +581,10 @@ def _finish_remote_kernel_result(kernel_result: Dict[str, Any], *,
                                "killed and its state was lost. The next call starts fresh.")
     elif result["status"] == "error" and kernel_result.get("error"):
         result["error"] = kernel_result["error"]
+    if result["status"] == "error":
+        hint = _sandbox_failure_hint(traceback_text or stderr_text or str(kernel_result.get("error") or ""))
+        if hint:
+            result["hint"] = hint
     return json.dumps(result, ensure_ascii=False)
 
 
@@ -653,6 +655,9 @@ def _run_remote_per_call(env, env_type: str, code: str, effective_task_id: str,
     elif exit_code != 0:
         result["status"] = "error"
         result["error"] = f"Script exited with code {exit_code}"
+        hint = _sandbox_failure_hint(stdout_text, enabled_tools=sandbox_tools)
+        if hint:
+            result["hint"] = hint
     return json.dumps(result, ensure_ascii=False)
 
 

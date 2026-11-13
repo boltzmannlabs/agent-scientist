@@ -1,10 +1,10 @@
-"""Output-pattern failure hints for the terminal tool.
+"""Output-pattern failure hints for terminal and Python execution.
 
 Extends the exit-code semantics table in ``terminal_tool`` with a bounded scan of failed-command
 output mapped to ONE short, actionable recovery hint. Rules: only fires on non-zero exit; first
-match wins, patterns ordered by observed production frequency; scans only the first
-``_SCAN_CHARS`` so hints key on error headers, not deep context; hints state the *next action*
-in 1-2 sentences; pure function, no I/O or config reads.
+match wins. Terminal-specific rules scan the first ``_SCAN_CHARS``; shared schema rules
+scan a bounded head and tail so a final traceback survives verbose stdout. Hints state
+the next action without changing the failure result; pure functions, no I/O or config reads.
 """
 
 from __future__ import annotations
@@ -13,6 +13,54 @@ import re
 from typing import Callable, Optional
 
 _SCAN_CHARS = 4000
+
+# Shared with execute_code's local and remote result builders. A script can
+# fail after writing valid outputs: guide inspection/repair, never replay it.
+_SCHEMA_FAILURE_HINTS = (
+    (re.compile(r"(?m)^KeyError:"),
+     "Inspect the actual record's keys, schema and required field types before correcting the reader. "
+     "Use canonical fields; do not replace missing required data with zero or an empty collection."),
+    (re.compile(r"(?m)^(?:sqlite3\.)?OperationalError: no such (?:column|table):"),
+     "Use the application's existing history/status/usage interfaces when available. Otherwise inspect "
+     "the actual database schema read-only before correcting the query; do not rename database columns to fit it."),
+    (re.compile(r"(?m)^(?:\w+(?:\.\w+)*Error:\s*)?New fields require existing final field anchor in changes"),
+     "Inspect the update helper and current record, validate its insertion/anchor contract before writing, "
+     "and preserve required unchanged bytes. Use an atomic update with a current-revision check."),
+    (re.compile(r"(?m)^AssertionError(?::|\r?$)"),
+     "Inspect the assertion's expected and actual values. For message bookkeeping, prefer persisted session "
+     "and message/event identities; if text matching is necessary, normalize only permitted line-ending "
+     "differences and reject ambiguous matches. Do not normalize scientific inputs to make an assertion pass."),
+)
+_EXECUTION_RECOVERY = (
+    " A failed operation may already have completed earlier steps. Inspect existing artifacts, receipts "
+    "and job outcomes first; do not replay the whole script or repeat accepted/uncertain scientific jobs. "
+    "Repair only the failed or unfinished step, verify it, then continue the user's authorized task without "
+    "asking them to debug the script or type Continue. Do not repeat unchanged failures; respect existing "
+    "retry and iteration limits. Count each execution once; unavailable usage stays unknown. Existing "
+    "permissions still apply: do not bypass approval, change providers, or install software without required "
+    "authorization. Report a specific blocker if evidence, access or authorization is missing."
+)
+
+
+def schema_failure_hint(output: str) -> Optional[str]:
+    """Bounded, evidence-neutral guidance for data/metadata script exceptions."""
+    text = output or ""
+    window = text if len(text) <= _SCAN_CHARS else text[:_SCAN_CHARS // 2] + "\n" + text[-_SCAN_CHARS // 2:]
+    for pattern, message in _SCHEMA_FAILURE_HINTS:
+        if pattern.search(window):
+            return message + _EXECUTION_RECOVERY
+    return None
+
+
+def execution_failure_hint(output: str, *, detail: Optional[str] = None) -> str:
+    """General recovery when no known signature matches; never guess the cause."""
+    if detail:
+        return detail + _EXECUTION_RECOVERY
+    return schema_failure_hint(output) or (
+        "Inspect the actual error, relevant code, inputs and execution environment before making a "
+        "targeted correction. If diagnostic output is absent, inspect the exit status and available logs; "
+        "do not invent an error cause." + _EXECUTION_RECOVERY
+    )
 
 
 def _regex_hint(pattern: str, message: str | Callable[[str], str], flags: int = 0) -> Callable[[str, str], Optional[str]]:
@@ -148,13 +196,15 @@ def annotate_masked_success(command: str, output: str) -> Optional[str]:
 
 def annotate_failure(command: str, exit_code: int, output: str) -> Optional[str]:
     """Return one short recovery hint for a failed command, or None (exit 0)."""
-    if exit_code == 0:
+    if exit_code <= 0 or exit_code == 130:
         return None
+    if recovery := schema_failure_hint(output):
+        return recovery
     window = (output or "")[:_SCAN_CHARS]
     for fn in _OUTPUT_HINTS if window else ():
         try:
             if hint := fn(command or "", window):
-                return hint
+                return execution_failure_hint(output, detail=hint)
         except Exception:
             continue
-    return _EXIT_CODE_HINTS.get(exit_code)
+    return _EXIT_CODE_HINTS.get(exit_code) or execution_failure_hint(output)

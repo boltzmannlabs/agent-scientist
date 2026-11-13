@@ -230,6 +230,33 @@ When a script fails, the agent receives structured error information:
 
 The response always includes `status` (success/error/timeout/interrupted), `output`, `tool_calls_made`, and `duration_seconds`.
 
+### Recovering from execution errors
+
+Python execution and failed terminal commands include recovery guidance even when
+an error has no recognized signature or diagnostic output. Known errors receive
+specific advice, including missing record keys, nonexistent database fields,
+metadata insertion errors, and failed assertions. Unrecognized failures direct SCI
+to inspect the actual error, code, inputs, environment and available logs without
+guessing the cause. The original error remains visible. The guidance directs SCI
+to reconcile existing outputs, repair the failed or unfinished step, verify it,
+and continue the authorized task. Missing usage remains unknown rather than being
+recorded as zero.
+
+A script may have saved results or submitted a job before a later statement failed.
+SCI must inspect those artifacts and job receipts before proceeding. Existing
+retry and iteration limits remain in force; unchanged failures must not be repeated.
+Recovery does not automatically rerun a script, resubmit an accepted or uncertain scientific job,
+or change permissions. For conversation tracking, stable session/message identifiers
+are preferred over exact prose matching; scientific input is not normalized merely
+to make an assertion pass. Metadata repairs should preserve unrelated fields, check
+for concurrent changes, and write atomically.
+
+This guidance is returned through the existing tool loop in main and named profiles,
+on local and remote Python backends. It does not rebuild the conversation's cached
+prompt. SCI can repair ordinary script errors using its available tools; it must
+report a specific blocker when required data, access, or new authorization is missing.
+Timeouts and interruptions retain their existing handling.
+
 ## Security
 
 :::danger Security Model
