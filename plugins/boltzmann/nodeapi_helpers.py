@@ -623,6 +623,11 @@ def fetch_status(
 
         # This endpoint uses 404 for real job bodies too. A recognized lifecycle
         # and a usable body are required; an arbitrary missing route is not a job.
+        from .results import service_error, status_retrieval_guidance
+        retrieval_guidance = status_retrieval_guidance(result)
+        if retrieval_guidance:
+            return {**service_error("status", response, active_token), **retrieval_guidance,
+                    "job_name": collection_name, "doc_id": doc_id}
         reported_status = result.get("status") if isinstance(result, dict) else None
         identified_job = (isinstance(result, dict)
                           and result.get("doc_id", result.get("docId")) == doc_id

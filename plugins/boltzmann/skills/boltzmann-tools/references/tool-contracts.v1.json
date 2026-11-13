@@ -12775,6 +12775,235 @@
       "fastapi_endpoint": "/v5/EnzymeGeneration/RFD3",
       "product_documentation": "enzyme-tools-guide.md#enzyme-rfd3",
       "request_checks": "enzyme_rfd3"
+    },
+    "global_agriculture_properties": {
+      "display_name": "Agriculture Properties",
+      "job_name": "global_agriculture_properties",
+      "aliases": [
+        "Agriculture Properties",
+        "global_agriculture_properties",
+        "agricultural properties",
+        "environmental property prediction"
+      ],
+      "module_id": "small-molecule-qspr",
+      "status": "active",
+      "source": "modules/small-molecule-qspr.md",
+      "description": "Predict agricultural and environmental endpoints for molecules supplied as one SMILES string or an uploaded CSV (use CSV for multiple molecules; never send a SMILES array). Select one or more of 14 exact property IDs or scalar all. The documented result is one predictions.csv with one row per molecule, selected predictions and molecular descriptors. Preserve raw values: units, transformations, class definitions, failure sentinels and model versions were not supplied.",
+      "execution_blocked": false,
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "smiles": {
+            "type": "string",
+            "x-input-kind": "value",
+            "description": "One SMILES string, never an array. For direct input supply a nonempty string and input_csv as an empty string. For CSV input omit smiles or use an empty string."
+          },
+          "input_csv": {
+            "type": "string",
+            "x-input-kind": "file",
+            "x-allow-empty": true,
+            "description": "Required field. Send an empty string for direct SMILES input; for CSV mode send the uploaded storage reference. CSV requires uppercase SMILES; optional ID and extra columns are accepted."
+          },
+          "properties": {
+            "type": [
+              "string",
+              "array"
+            ],
+            "x-input-kind": "value",
+            "description": "One supported property ID, a nonempty list of supported IDs, or the scalar string all. Do not replace IDs with display names or use all inside an array.",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "fish_nic_cpann",
+                  "fathead_epa",
+                  "daphnia_epa",
+                  "earthworm_concert",
+                  "sludge_ec50",
+                  "water_half_life",
+                  "soil_half_life",
+                  "sediment_half_life",
+                  "algae_classification",
+                  "algae_ec50",
+                  "bcf_meylan",
+                  "ready_biodegradability",
+                  "bee_knn",
+                  "air_half_life_coral",
+                  "all"
+                ]
+              },
+              {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "fish_nic_cpann",
+                    "fathead_epa",
+                    "daphnia_epa",
+                    "earthworm_concert",
+                    "sludge_ec50",
+                    "water_half_life",
+                    "soil_half_life",
+                    "sediment_half_life",
+                    "algae_classification",
+                    "algae_ec50",
+                    "bcf_meylan",
+                    "ready_biodegradability",
+                    "bee_knn",
+                    "air_half_life_coral"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "required": [
+          "properties",
+          "input_csv"
+        ],
+        "oneOf": [
+          {
+            "required": [
+              "smiles"
+            ],
+            "properties": {
+              "smiles": {
+                "type": "string",
+                "minLength": 1
+              },
+              "input_csv": {
+                "enum": [
+                  ""
+                ]
+              }
+            }
+          },
+          {
+            "required": [
+              "input_csv"
+            ],
+            "properties": {
+              "input_csv": {
+                "type": "string",
+                "minLength": 1
+              },
+              "smiles": {
+                "enum": [
+                  ""
+                ]
+              }
+            }
+          }
+        ],
+        "additionalProperties": false
+      },
+      "review_notes": [],
+      "examples": [
+        {
+          "job_name": "global_agriculture_properties",
+          "experiment_data": {
+            "smiles": "CCO",
+            "properties": [
+              "water_half_life",
+              "ready_biodegradability"
+            ],
+            "input_csv": ""
+          }
+        },
+        {
+          "job_name": "global_agriculture_properties",
+          "experiment_data": {
+            "input_csv": "<actual storage reference returned by upload>",
+            "properties": "all",
+            "smiles": ""
+          }
+        }
+      ],
+      "submission": {
+        "wire_job_name": "global_agriculture_properties",
+        "experiment_name_required": false,
+        "payload_field": "experimentData"
+      },
+      "diagnostics": [
+        {
+          "job_name": "global_agriculture_properties",
+          "collection_name": "Agriculture_Properties",
+          "mapping_status": "source_documented",
+          "evidence": "Owner handoff 2026-11-12. Collection is source-documented; no live lookup was possible without an accepted job ID."
+        }
+      ],
+      "backend_metadata": {
+        "task_name": "agriculture_properties",
+        "diagnostic_collection": "Agriculture_Properties",
+        "gpu_required": false,
+        "ram_gb": 4,
+        "cpu_cores": null,
+        "worker_runtime_fields": [
+          "experiment_id",
+          "user_id",
+          "tokenid"
+        ],
+        "identifier_injection_verified": false,
+        "worker_endpoint": "/v5/tools/Agriculture_properties"
+      },
+      "result_contract": {
+        "artifact": "predictions.csv",
+        "row_coverage": "One row per molecule; verify returned identities and counts.",
+        "identity_columns": [
+          "ID",
+          "SMILES"
+        ],
+        "selected_property_columns": [
+          "fish_nic_cpann",
+          "fathead_epa",
+          "daphnia_epa",
+          "earthworm_concert",
+          "sludge_ec50",
+          "water_half_life",
+          "soil_half_life",
+          "sediment_half_life",
+          "algae_classification",
+          "algae_ec50",
+          "bcf_meylan",
+          "ready_biodegradability",
+          "bee_knn",
+          "air_half_life_coral"
+        ],
+        "descriptor_columns": [
+          "MolWt",
+          "QED",
+          "TPSA",
+          "HBD",
+          "HBA",
+          "RotatableBonds",
+          "RingCount",
+          "AromaticRingCount",
+          "HeavyAtomCount",
+          "FractionCSP3",
+          "FormalCharge"
+        ],
+        "unknown": [
+          "units",
+          "transformations",
+          "class definitions",
+          "failure sentinels",
+          "ID generation/preservation",
+          "invalid-row behavior",
+          "output ordering",
+          "model versions"
+        ]
+      },
+      "product_documentation": "agriculture-properties.md",
+      "verification": {
+        "submission": "accepted",
+        "evidence": "User notebook saved response, execution 6, inspected 2026-11-12",
+        "http_status": 200,
+        "doc_id": "6af59f71042419d6c2a5ed85",
+        "platform_status": "queued",
+        "outputs_verified": false,
+        "csv_mode_verified": false
+      }
     }
   },
   "unavailable_entries": [

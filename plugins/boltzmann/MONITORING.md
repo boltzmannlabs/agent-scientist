@@ -33,6 +33,14 @@ SCI must remain running for this foreground wait. External MCP clients may impos
 their own request deadlines. Existing workers started by older SCI sessions are
 not killed by a code update; inspect and stop those monitors explicitly if needed.
 
+`Output path not found in metadata` returns `error_code: output_metadata_missing`,
+`retrieval_status: blocked`, `status: unknown` and `stop_polling: true` after one
+check. It is a failure to retrieve a result, not a terminal scientific job state.
+Report the preserved job ID and request platform review of the job record/output
+mapping. Do not replace the connector with scripts, search for credentials, guess
+an artifact path or submit another experiment. A later explicit status request
+still fetches fresh state, so a service-side repair can recover the existing job.
+
 `pending` and `running` remain nonterminal. Existing success, failure and
 cancellation spellings remain supported. A matching, explicit `deleted` or
 `not_found` job response can stop monitoring, but HTTP 404 alone cannot. This

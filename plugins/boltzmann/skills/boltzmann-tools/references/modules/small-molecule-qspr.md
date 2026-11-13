@@ -704,3 +704,208 @@ For mode-dependent fields, include the fields required by the selected schema br
 Accepted is not completed. Poll the returned job ID without resubmitting.
 Preserve every returned artifact link; download and inspect requested outputs before reporting success.
 Report actual service errors and incomplete outputs. Refresh status for expired links.
+
+## Agriculture Properties
+
+Predict agricultural and environmental endpoints for molecules supplied as one SMILES string or an uploaded CSV (use CSV for multiple molecules; never send a SMILES array). Select one or more of 14 exact property IDs or scalar all. The documented result is one predictions.csv with one row per molecule, selected predictions and molecular descriptors. Preserve raw values: units, transformations, class definitions, failure sentinels and model versions were not supplied.
+
+[Product description and result interpretation](../agriculture-properties.md)
+
+Exact job name: `global_agriculture_properties`.
+
+### Inputs
+
+Fields below belong in `experiment_data`. The connector generates `experiment_name` unless the user supplies one.
+
+| Field | Type | Required | Input kind | Description |
+|---|---|---|---|---|
+| `smiles` | string | no / mode-dependent | value | One SMILES string, never an array. For direct input supply a nonempty string and input_csv as an empty string. For CSV input omit smiles or use an empty string. |
+| `input_csv` | string | yes | file | Required field. Send an empty string for direct SMILES input; for CSV mode send the uploaded storage reference. CSV requires uppercase SMILES; optional ID and extra columns are accepted. |
+| `properties` | string / array | yes | value | One supported property ID, a nonempty list of supported IDs, or the scalar string all. Do not replace IDs with display names or use all inside an array. |
+
+Input kinds: `value` is inline data; `file` requires a platform file reference;
+`file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
+Only local files require a new upload. Never infer input mode from a field name.
+
+### Exact request schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "smiles": {
+      "type": "string",
+      "x-input-kind": "value",
+      "description": "One SMILES string, never an array. For direct input supply a nonempty string and input_csv as an empty string. For CSV input omit smiles or use an empty string."
+    },
+    "input_csv": {
+      "type": "string",
+      "x-input-kind": "file",
+      "x-allow-empty": true,
+      "description": "Required field. Send an empty string for direct SMILES input; for CSV mode send the uploaded storage reference. CSV requires uppercase SMILES; optional ID and extra columns are accepted."
+    },
+    "properties": {
+      "type": [
+        "string",
+        "array"
+      ],
+      "x-input-kind": "value",
+      "description": "One supported property ID, a nonempty list of supported IDs, or the scalar string all. Do not replace IDs with display names or use all inside an array.",
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "fish_nic_cpann",
+            "fathead_epa",
+            "daphnia_epa",
+            "earthworm_concert",
+            "sludge_ec50",
+            "water_half_life",
+            "soil_half_life",
+            "sediment_half_life",
+            "algae_classification",
+            "algae_ec50",
+            "bcf_meylan",
+            "ready_biodegradability",
+            "bee_knn",
+            "air_half_life_coral",
+            "all"
+          ]
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "fish_nic_cpann",
+              "fathead_epa",
+              "daphnia_epa",
+              "earthworm_concert",
+              "sludge_ec50",
+              "water_half_life",
+              "soil_half_life",
+              "sediment_half_life",
+              "algae_classification",
+              "algae_ec50",
+              "bcf_meylan",
+              "ready_biodegradability",
+              "bee_knn",
+              "air_half_life_coral"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "required": [
+    "properties",
+    "input_csv"
+  ],
+  "oneOf": [
+    {
+      "required": [
+        "smiles"
+      ],
+      "properties": {
+        "smiles": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input_csv": {
+          "enum": [
+            ""
+          ]
+        }
+      }
+    },
+    {
+      "required": [
+        "input_csv"
+      ],
+      "properties": {
+        "input_csv": {
+          "type": "string",
+          "minLength": 1
+        },
+        "smiles": {
+          "enum": [
+            ""
+          ]
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}
+```
+
+### Submission envelope
+
+Shape only: replace placeholders with the user's values. This is not a runnable sample.
+```json
+{
+  "job_name": "global_agriculture_properties",
+  "experiment_name": "<optional; generated if omitted>",
+  "experiment_data": {
+    "properties": "<user value; see properties schema>",
+    "input_csv": "<user value; see input_csv schema>"
+  }
+}
+```
+
+For mode-dependent fields, include the fields required by the selected schema branch.
+
+### File checks
+
+```json
+{
+  "input_csv": {
+    "formats": [
+      "csv"
+    ],
+    "columns": [
+      "SMILES"
+    ],
+    "values": {
+      "SMILES": "smiles"
+    },
+    "extra_columns": true,
+    "header_case_sensitive": true,
+    "notes": "Uppercase SMILES required; uppercase ID optional. Additional columns are accepted but not used for prediction. ID generation/preservation, invalid-row behavior and output ordering have not been supplied."
+  }
+}
+```
+
+### Recorded payload example
+
+Reference only; use current user inputs and upload references.
+```json
+[
+  {
+    "job_name": "global_agriculture_properties",
+    "experiment_data": {
+      "smiles": "CCO",
+      "properties": [
+        "water_half_life",
+        "ready_biodegradability"
+      ],
+      "input_csv": ""
+    }
+  },
+  {
+    "job_name": "global_agriculture_properties",
+    "experiment_data": {
+      "input_csv": "<actual storage reference returned by upload>",
+      "properties": "all",
+      "smiles": ""
+    }
+  }
+]
+```
+
+### Results
+
+Accepted is not completed. Poll the returned job ID without resubmitting.
+Preserve every returned artifact link; download and inspect requested outputs before reporting success.
+Report actual service errors and incomplete outputs. Refresh status for expired links.

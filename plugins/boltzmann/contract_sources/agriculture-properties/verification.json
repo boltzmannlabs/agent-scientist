@@ -1,0 +1,68 @@
+{
+  "date": "2026-11-12",
+  "route": "global_agriculture_properties",
+  "transport": "authorized native Boltzmann plugin via staged MCP adapter",
+  "payload": {
+    "smiles": [
+      "CCO",
+      "CC(=O)O"
+    ],
+    "properties": [
+      "water_half_life",
+      "ready_biodegradability"
+    ]
+  },
+  "worker_runtime_identifiers_in_public_payload": false,
+  "attempts": [
+    {
+      "stage": "client_response_lost",
+      "detail": "MCP client timeout-option type error after writing the tool request; no response captured. Server-side outcome unknown."
+    },
+    {
+      "stage": "submit",
+      "message": "Internal server error",
+      "success": false,
+      "doc_id": null,
+      "status": "unknown",
+      "safe_to_retry": false
+    }
+  ],
+  "identifier_injection_verified": false,
+  "outputs_verified": false,
+  "csv_live_test": "not submitted after unresolved direct-route response",
+  "cause": "Unresolved. The worker schema requires tokenid in addition to the two owner-listed runtime fields; the Node error does not identify the failing field or prove an injection defect.",
+  "subsequent_direct_submission": {
+    "submission": "accepted",
+    "evidence": "User notebook saved response, execution 6, inspected 2026-11-12",
+    "http_status": 200,
+    "doc_id": "6af59f71042419d6c2a5ed85",
+    "platform_status": "queued",
+    "outputs_verified": false,
+    "csv_mode_verified": false,
+    "experiment_data": {
+      "smiles": "CCO",
+      "properties": [
+        "water_half_life",
+        "ready_biodegradability"
+      ],
+      "input_csv": ""
+    },
+    "worker_runtime_identifiers_in_public_payload": false,
+    "credits_used": 25
+  },
+  "contract_correction": "Node API requires a SMILES string instead of an array; tested direct payload explicitly includes input_csv as an empty string. Earlier failed attempts remain unresolved.",
+  "backend_repair_report": {
+    "date": "2026-11-13",
+    "source": "tool owner in conversation",
+    "reported_fixed": true,
+    "independently_verified": false,
+    "verification_check": {
+      "job_name": "global_agriculture_properties",
+      "doc_id": "6af5af253fb9b718021334e2",
+      "status": "unknown",
+      "authorization_required": true,
+      "service_message": "You don't have permission to perform this action",
+      "new_submissions": 0
+    }
+  }
+}

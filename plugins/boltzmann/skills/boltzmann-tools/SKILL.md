@@ -38,6 +38,17 @@ Binding Affinity Energy, Molecular Docking and FEP. Product navigation paths
 are not API endpoints, and documented product features without an established
 job/schema must not be presented as executable connector tools.
 
+Agriculture Properties (`global_agriculture_properties`) is enabled under QSPR Modelling.
+Load `references/modules/small-molecule-qspr.md` and `references/agriculture-properties.md`.
+Direct input must use one SMILES string plus `input_csv: ""`; never send a SMILES array.
+For batches use an uploaded CSV with uppercase SMILES. The corrected direct payload was
+accepted (HTTP 200, queued); returned predictions and CSV mode are not yet live-verified.
+Use the authorized connector and existing profile permissions. Do not invent runtime IDs,
+retry unresolved attempts automatically, or treat acceptance as completed computation.
+Preserve raw endpoint values; units, class definitions and favorable directions are unspecified.
+The owner reported the backend retrieval fix on 2026-11-13. Treat earlier metadata
+errors as historical; run new authorized requests normally and inspect their actual results.
+
 For DeepAllo, EnzyControl, Enzyme RFD3, Catalytic Geometry and MolProbity,
 read `references/enzyme-tools-guide.md` and the matching generated module.
 The guide preserves API/runtime differences, full advanced/template references,
@@ -71,6 +82,10 @@ of persisting a permanent tool limitation in a learned skill.
 ## Resolve and review the request
 
 1. Load the matching module and canonical request. Preserve user inputs.
+   Reuse values already supplied in the current request or conversation. For
+   example, `predict CCO for water_half_life, ready_biodegradability` already
+   supplies the direct SMILES input and both properties; do not ask the user to
+   choose an input mode or paste CCO again. Send `input_csv: ""` in that case.
 2. Collect missing scientific fields with `clarify` in an interactive session
    when the tool is available. Do not replace the input dialog with questions
    in the final text response. Batch independent questions in one call; use
@@ -140,6 +155,15 @@ ID together. Poll only that job with `boltzmann_status`. Never duplicate an
 accepted, pending or ambiguously submitted job, including after a connection
 failure or timeout. A polling/authentication failure means the job outcome is
 unknown, not that the scientific computation failed.
+
+If a status response has `stop_polling: true`, stop the current wait and report
+its `next_step`, job name and job ID. In particular, **Output path not found in
+metadata** is a result-service blocker, not evidence that computation is still
+running or has failed. Do not repeatedly call status or diagnostics, generate
+polling scripts, try guessed URLs/HTTP methods, or search config/.env files for
+credentials. An unavailable diagnostic endpoint is not a reason to bypass the
+connector. Report the blocker to the user; recheck the same ID only on an
+explicit new request or after the service fix. Never submit a replacement job.
 
 For a user-requested workflow, execute tools directly in the current conversation.
 Do not delegate the run or start a background monitor. After acceptance, call

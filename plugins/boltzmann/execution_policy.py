@@ -67,6 +67,12 @@ foreground, showing progress until a terminal state, status-check error or user
 cancellation, with no overall queue deadline. Then check the returned artifacts.
 No background monitor or continuation is started automatically. Cancelling the
 wait does not cancel the remote scientific job; preserve its ID for later checks.
+
+A status-check error ends the attempt. Report the blocker and job ID immediately;
+completion remains unknown. On stop_polling=true do not use terminal, execute_code,
+read_file or diagnostic tools for recovery, inspect env/credentials, guess endpoints
+or create polling scripts. Only an explicit request for further diagnosis permits
+that work; never expose credentials. Running a prediction is not that permission.
 """
 
 

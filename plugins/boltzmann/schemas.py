@@ -38,7 +38,9 @@ SCHEMAS = [
             "Poll an existing Boltzmann platform-tools job. Use the exact job_name and doc_id "
             "returned by boltzmann_submit. This foreground call keeps checking that same job until completion, "
             "terminal failure, a status-check error, or user cancellation, without an overall waiting deadline. "
-            "Progress is shown while waiting. Polling never creates another job or background agent."
+            "Progress is shown while waiting. Polling never creates another job or background agent. "
+            "On stop_polling=true or a status-check error, report the blocker and job ID and end the "
+            "attempt; do not run recovery scripts, inspect credentials or guess endpoints."
         ),
         "input_schema": {
             "type": "object",

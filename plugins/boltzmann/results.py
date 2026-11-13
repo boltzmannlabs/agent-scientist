@@ -50,6 +50,34 @@ def service_diagnostics(result, token=""):
             for key, value in result.items()}
 
 
+def status_retrieval_guidance(body):
+    """Recognize a result-service blocker without inventing a scientific job state."""
+    if not isinstance(body, dict):
+        return {}
+    missing_output = any(
+        isinstance(body.get(field), str)
+        and body[field].strip().rstrip(".").casefold() == "output path not found in metadata"
+        for field in ("message", "error", "detail")
+    )
+    if not missing_output:
+        return {}
+    return {
+        "error_code": "output_metadata_missing",
+        "retrieval_status": "blocked",
+        "stop_polling": True,
+        "action_required": "review_service_output_metadata",
+        "next_step": (
+            "Stop this polling attempt and report the job_name, doc_id and service error. "
+            "The result service could not resolve an output path; the scientific job's "
+            "completion or failure is unknown. The platform owner must inspect this job's "
+            "record and output mapping. Do not resubmit, start polling scripts, guess "
+            "endpoints or storage paths, or read credentials from files. Use only the "
+            "authorized connector. Recheck this same job when the user requests it or "
+            "the service mapping is repaired."
+        ),
+    }
+
+
 def service_error(stage, response, token=""):
     try:
         body = response.json()

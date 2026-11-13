@@ -3490,6 +3490,25 @@
           ]
         }
       }
+    },
+    "global_agriculture_properties": {
+      "source": "modules/small-molecule-qspr.md",
+      "files": {
+        "input_csv": {
+          "formats": [
+            "csv"
+          ],
+          "columns": [
+            "SMILES"
+          ],
+          "values": {
+            "SMILES": "smiles"
+          },
+          "extra_columns": true,
+          "header_case_sensitive": true,
+          "notes": "Uppercase SMILES required; uppercase ID optional. Additional columns are accepted but not used for prediction. ID generation/preservation, invalid-row behavior and output ordering have not been supplied."
+        }
+      }
     }
   }
 }

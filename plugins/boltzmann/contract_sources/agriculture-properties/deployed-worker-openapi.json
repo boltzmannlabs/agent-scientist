@@ -1,0 +1,133 @@
+{
+  "url": "https://boltchemapis.boltzmann.co/openapi.json",
+  "info": {
+    "title": "FastAPI",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v5/tools/Agriculture_properties": {
+      "post": {
+        "tags": [
+          "v5",
+          "toolsAPI"
+        ],
+        "summary": "Agri Read",
+        "operationId": "agri_read_v5_tools_Agriculture_properties_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgriPropRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schemas": {
+    "AgriPropRequest": {
+      "properties": {
+        "smiles": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Smiles"
+        },
+        "input_csv": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Input Csv"
+        },
+        "properties": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "title": "Properties"
+        },
+        "experiment_id": {
+          "type": "string",
+          "title": "Experiment Id"
+        },
+        "user_id": {
+          "type": "string",
+          "title": "User Id"
+        },
+        "tokenid": {
+          "type": "string",
+          "title": "Tokenid"
+        }
+      },
+      "type": "object",
+      "required": [
+        "properties",
+        "experiment_id",
+        "user_id",
+        "tokenid"
+      ],
+      "title": "AgriPropRequest"
+    },
+    "HTTPValidationError": {
+      "properties": {
+        "detail": {
+          "items": {
+            "$ref": "#/components/schemas/ValidationError"
+          },
+          "type": "array",
+          "title": "Detail"
+        }
+      },
+      "type": "object",
+      "title": "HTTPValidationError"
+    }
+  }
+}

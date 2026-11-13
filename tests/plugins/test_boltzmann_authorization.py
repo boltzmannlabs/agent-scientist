@@ -1137,6 +1137,43 @@ def test_status_transport_failures_do_not_fabricate_job_states(tmp_path, monkeyp
             manager.unload()
 
 
+def test_output_metadata_blocker_stops_one_check_and_allows_explicit_recovery(tmp_path, monkeypatch, auth_server):
+    state, endpoint = auth_server
+    home = tmp_path / "metadata-retrieval"
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("SCI_HOME", str(home))
+    monkeypatch.delenv("SCI_BUNDLED_PLUGINS", raising=False)
+    monkeypatch.chdir(tmp_path)
+    with profile(home):
+        manager, module = discover(monkeypatch, endpoint)
+        try:
+            assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
+            helpers = sys.modules[module.__name__ + ".nodeapi_helpers"]
+            monkeypatch.setattr(helpers, "_FETCH_URL", endpoint.removesuffix("/api/agent-authenticate") + "/result")
+            for http in (400, 404, 500, 200):
+                state.update(result_http=http, result_override={
+                    "message": "Output path not found in metadata", "status": "error", "OutputData": None})
+                before = len(state["calls"])
+                result = helpers.fetch_status("global_agriculture_properties", "fixture-job",
+                                              token="fixture-valid", wait_until_terminal=True)
+                assert state["calls"][before:] == ["/result"]
+                assert result["status"] == "unknown" and not result.get("job_terminal_confirmed")
+                assert result["error_code"] == "output_metadata_missing" and result["stop_polling"] is True
+                assert result["action_required"] == "review_service_output_metadata"
+                assert result["job_name"] == "global_agriculture_properties" and result["doc_id"] == "fixture-job"
+                assert result["safe_to_retry"] is False
+            # A later explicit request fetches fresh state; a retrieval blocker
+            # must not become a permanent cached failure of the scientific job.
+            state.update(result_http=200, result_override={"status": "success"})
+            recovered = helpers.fetch_status("global_agriculture_properties", "fixture-job",
+                                             token="fixture-valid", wait_until_terminal=True)
+            assert recovered["job_terminal_confirmed"] is True
+            assert recovered["OutputData"] and "stop_polling" not in recovered
+            assert "/submit" not in state["calls"] and "/tool-log" not in state["calls"]
+        finally:
+            manager.unload()
+
+
 def test_file_upload_discovery_and_fresh_multi_artifact_results(tmp_path, monkeypatch, auth_server):
     """Exercise the real connector against localhost only; no scientific worker runs."""
     state, endpoint = auth_server
