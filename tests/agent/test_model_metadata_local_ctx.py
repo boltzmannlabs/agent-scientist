@@ -736,9 +736,10 @@ class TestGetModelContextLengthLocalFallback:
 
 
 
-    def test_local_endpoint_stale_cache_reconciled_from_live_probe(self):
+    @pytest.mark.parametrize("live_ctx", (16384, 32768))
+    def test_local_endpoint_stale_cache_reconciled_from_live_probe(self, live_ctx):
         """Stale disk cache must yield to a live local max_model_len probe."""
-        from agent.model_metadata import get_model_context_length
+        from agent.model_metadata import MINIMUM_CONTEXT_LENGTH, get_model_context_length
 
         model = "NousResearch/Hermes-3-Llama-3.1-70B"
         base = "http://192.168.1.50:8000/v1"
@@ -749,14 +750,17 @@ class TestGetModelContextLengthLocalFallback:
              patch("agent.model_metadata._query_ollama_api_show", return_value=None), \
              patch("agent.model_metadata._is_custom_endpoint", return_value=False), \
              patch("agent.model_metadata.is_local_endpoint", return_value=True), \
-             patch("agent.model_metadata._query_local_context_length", return_value=32768), \
+             patch("agent.model_metadata._query_local_context_length", return_value=live_ctx), \
              patch("agent.model_metadata._invalidate_cached_context_length") as mock_invalidate, \
              patch("agent.model_metadata.save_context_length") as mock_save:
             result = get_model_context_length(model, base, provider="custom")
 
-        assert result == 32768
+        assert result == live_ctx
         mock_invalidate.assert_called_once_with(model, base)
-        mock_save.assert_not_called()
+        if live_ctx >= MINIMUM_CONTEXT_LENGTH:
+            mock_save.assert_called_once_with(model, base, live_ctx)
+        else:
+            mock_save.assert_not_called()
 
 
 

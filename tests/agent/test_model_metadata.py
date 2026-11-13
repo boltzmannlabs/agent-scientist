@@ -350,9 +350,8 @@ class TestDefaultContextLengths:
 
     def test_upstage_solar_ids_match_legacy_keys_only_on_an_id_boundary(self):
         """Upstage /v1/models has no context field, so the table decides. ``solar-mini`` must not
-        claim ``solar-mini4`` (its 32K is below MINIMUM_CONTEXT_LENGTH, so the agent refused to
-        start); Solar ids without a legacy key get the Solar family window, not the 256K fallback."""
-        from agent.model_metadata import MINIMUM_CONTEXT_LENGTH, _longest_key_match
+        claim ``solar-mini4`` with its legacy 32K window; Solar ids without a legacy key get the Solar family window, not the 256K fallback."""
+        from agent.model_metadata import _longest_key_match
 
         family = DEFAULT_CONTEXT_LENGTHS["solar-"]
         assert family > DEFAULT_FALLBACK_CONTEXT
@@ -369,7 +368,7 @@ class TestDefaultContextLengths:
                               ("upstage/solar-pro-3", "solar-pro3"), ("solar-pro3.1", "solar-pro3"),
                               ("solar-open2@q4_k_m", "solar-open2")):
             assert self._upstage_ctx(variant) == self._upstage_ctx(bare), variant
-        assert self._upstage_ctx("solar-mini") < MINIMUM_CONTEXT_LENGTH
+        assert self._upstage_ctx("solar-mini") < family
         assert self._upstage_ctx("solar-pro3") < family
 
         # Ids merely containing "solar", and open-weight Solar ids, are not Solar API lineups.

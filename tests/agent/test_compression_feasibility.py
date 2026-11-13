@@ -263,10 +263,10 @@ def test_auto_corrects_threshold_when_aux_context_below_threshold(mock_get_clien
     assert agent.context_compressor.tail_token_budget == 16_000
 
 
-@patch("agent.model_metadata.get_model_context_length", return_value=32_768)
+@patch("agent.model_metadata.get_model_context_length", return_value=16_384)
 @patch("agent.auxiliary_client.get_text_auxiliary_client")
 def test_rejects_aux_below_minimum_context(mock_get_client, mock_ctx_len):
-    """Hard floor: aux context < MINIMUM_CONTEXT_LENGTH (64K) → session
+    """Hard floor: aux context < MINIMUM_CONTEXT_LENGTH (32K) → session
     refuses to start (ValueError), mirroring the main-model rejection."""
     agent = _make_agent(main_context=200_000, threshold_percent=0.50)
     mock_client = MagicMock()

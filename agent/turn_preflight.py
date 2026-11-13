@@ -222,6 +222,21 @@ def run_preflight_compression(
         # Any other gate blocking the forced preflight (e.g. uncompressible one-
         # message request) must fail closed: the request is proven not to fit.
         return _done("return", _exhausted_result())
+    from agent.context_compressor import ContextCompressor
+    if isinstance(compressor, ContextCompressor) and compressor.context_length < compressor._MIN_TRIGGER_TOKENS:
+        # Small-window admission also needs a final send gate: disabled compression,
+        # cooldowns and protected inputs must not consume the reserved output space.
+        budget = max(0, compressor.context_length - (compressor.max_tokens or 0))
+        if request_pressure_tokens > budget:
+            v.api_call_count = _refund_api_call(agent, v.api_call_count)
+            v.final_response = (
+                f"The request is estimated at {request_pressure_tokens:,} input tokens, but this model has "
+                f"an input budget of {budget:,} after reserving {compressor.max_tokens or 0:,} output tokens "
+                f"within its {compressor.context_length:,}-token window. The provider call was not sent. "
+                "Reduce the input or output reservation, run /compress, or select a larger model."
+            )
+            v.failed, v._turn_exit_reason = True, "context_budget_exceeded"
+            return _done("break")
     return _done("fallthrough")
 
 

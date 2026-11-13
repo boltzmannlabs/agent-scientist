@@ -268,8 +268,9 @@ def _warn_context_length_fallback(model: str, base_url: str) -> None:
         )
 
 
-# Sessions, model switches and cron jobs reject models below this (too little working memory).
-MINIMUM_CONTEXT_LENGTH = 64_000
+# Admission floor for main and compression routes. Request budgeting still checks
+# the served window; this is independent of the compaction trigger's 64K floor.
+MINIMUM_CONTEXT_LENGTH = 32_000
 # In-process (model, base_url) -> (result, monotonic_ts) memo for local probes: one
 # startup resolves the same model several times (banner, /model, compressor). Never persisted.
 _LOCAL_CTX_PROBE_TTL_SECONDS = 30.0

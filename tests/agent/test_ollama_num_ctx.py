@@ -189,24 +189,24 @@ class TestServedNumCtxSatisfiesTheFloor:
         assert agent.context_compressor.context_length == 40960  # one-directional clamp unchanged
 
     def test_served_window_counts_only_for_a_local_endpoint(self):
-        """Only a local server honours num_ctx; a stale override must not admit a hosted 40K model."""
+        """Only a local server honours num_ctx; a stale override must not admit a hosted sub-minimum model."""
         with pytest.raises(ValueError, match="below the minimum"):
-            _build_agent({"agent": {}, "model": {"ollama_num_ctx": 65536}}, probed_ctx=40960,
+            _build_agent({"agent": {}, "model": {"ollama_num_ctx": 65536}}, probed_ctx=16384,
                          base_url="https://openrouter.ai/api/v1")
 
 
 class TestFloorRefusalNamesTheLocalServerHonestly:
     """#87075: a local OpenAI-compatible server without /api/show (llama.cpp, vLLM) that serves a
-    sub-64K window must get server-agnostic guidance — raise the server's context or set
+    sub-minimum window must get server-agnostic guidance — raise the server's context or set
     model.ollama_num_ctx — while a hosted route keeps the model.context_length advice."""
 
     def test_local_refusal_names_server_flag_and_num_ctx_key(self):
         with pytest.raises(ValueError) as exc:
-            _build_agent({"agent": {}, "model": {}}, probed_ctx=32768, base_url="http://127.0.0.1:8422/v1")
+            _build_agent({"agent": {}, "model": {}}, probed_ctx=16384, base_url="http://127.0.0.1:8422/v1")
         msg = str(exc.value)
         assert "model.ollama_num_ctx" in msg
 
     def test_hosted_refusal_keeps_context_length_advice(self):
         with pytest.raises(ValueError, match="model.context_length") as exc:
-            _build_agent({"agent": {}, "model": {}}, probed_ctx=32768, base_url="https://openrouter.ai/api/v1")
+            _build_agent({"agent": {}, "model": {}}, probed_ctx=16384, base_url="https://openrouter.ai/api/v1")
         assert "ollama_num_ctx" not in str(exc.value)

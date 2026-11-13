@@ -6,6 +6,36 @@ manage context window usage efficiently across long conversations.
 Source files: `agent/context_engine.py` (ABC), `agent/context_compressor.py` (default engine),
 `agent/prompt_caching.py`, `gateway/run_turn.py` (session hygiene), `agent/compression_facade.py` (search for `_compress_context`)
 
+## Models with a 32K context window
+
+Main and auxiliary compression routes support served context windows of at least
+32,000 tokens, including 32,768-token models. SCI uses the resolved window; it does
+not enlarge a server's limit to admit a model. Configure an override only when it
+matches the window the server actually serves.
+
+Model admission and compression cadence are separate policies. Larger models keep
+the existing 64,000-token compression trigger floor. On smaller windows the trigger
+is capped within the usable input budget after the configured output reservation;
+for example, a 32,768-token window with a 2,048-token output reservation uses a
+26,112-token trigger at the default small-window policy. Explicit threshold settings
+and additional safety caps can change that trigger.
+
+A 32K helper receives a bounded transcript excerpt with room reserved for its
+summary. Required summary instructions and the previous summary are preserved;
+older transcript detail may be omitted when it exceeds the helper's budget.
+Compaction cannot guarantee that mandatory instructions, tool schemas or a protected
+user input fit. Requests that remain oversized are refused locally, and the user
+must reduce the input or choose a larger model. No model context limit is increased
+and no scientific job is resubmitted to work around such a refusal.
+
+Existing installations must update their code and restart old chat runtimes before
+resuming saved conversations. Reconnecting to a background runtime keeps its loaded
+code, including the previous admission floor. Publishing a commit does not update
+those processes automatically. Source installations can use `sci update --channel
+main` after the fix is published; stable-channel installations need a release that
+contains it. Saved conversations require no data migration. Stop local work through
+normal SCI controls before restarting; already submitted remote jobs may continue.
+
 ## Compression routing and transport failures
 
 With `auxiliary.compression.provider: auto` and no model override, compression

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any, Callable, List, Optional
 
-from agent.model_metadata import MINIMUM_CONTEXT_LENGTH
 from sci_cli.model_switch import ModelSwitchResult, resolve_display_context_length
 
 
@@ -26,7 +25,9 @@ def _threshold_tokens(
         if isinstance(compressor, ContextCompressor):
             return int(preview(model, context_length, provider, max_tokens=max_tokens))
         return int(preview(model, context_length, provider))
-    return max(int(context_length * float(getattr(compressor, "threshold_percent", 0.5))), MINIMUM_CONTEXT_LENGTH)
+    from agent.context_compressor import ContextCompressor
+    return ContextCompressor._compute_threshold_tokens(
+        context_length, float(getattr(compressor, "threshold_percent", 0.5)), max_tokens=max_tokens)
 
 
 def _estimate_tokens(agent: Any, messages: Optional[List[dict]]) -> Optional[int]:

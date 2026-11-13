@@ -2046,7 +2046,7 @@ def _build_context_engine(agent, _agent_cfg, cs, _custom_providers, _effective_c
 
 
 def _enforce_minimum_context(agent):
-    # Reject windows below the 64K floor needed for reliable tool-calling; an explicit
+    # Reject windows below the shared admission floor; an explicit
     # positive model.context_length on LM Studio is allowed below the floor.
     _ctx = getattr(agent.context_compressor, "context_length", 0)
     # A local Ollama server serves num_ctx, not the GGUF's advertised window: a Modelfile or

@@ -2147,7 +2147,8 @@ def check_compression_model_feasibility(agent: Any) -> None:
                 aux_model, base_url=aux_base_url, api_key=aux_api_key, config_context_length=_aux_cfg_ctx,
                 provider=_aux_provider, custom_providers=agent._custom_providers,
             )
-        # Aux model must meet MINIMUM_CONTEXT_LENGTH like the main model, else it cannot summarise a full window.
+        # Helpers share the main-model admission floor. The auxiliary request
+        # budgeter independently fits the summary input to the helper's window.
         if aux_context and aux_context < MINIMUM_CONTEXT_LENGTH:
             raise ValueError(
                 f"Auxiliary compression model {aux_model} has a context "
@@ -2159,6 +2160,7 @@ def check_compression_model_feasibility(agent: Any) -> None:
                 f"auxiliary.compression.context_length to override the "
                 f"detected value if it is wrong."
             )
+        agent.context_compressor._summary_context_length = aux_context
         if aux_context < agent.context_compressor.threshold_tokens:
             _lower_threshold_to_aux_context(
                 agent, aux_model=aux_model, aux_context=aux_context, aux_provider=_aux_cfg_provider,

@@ -37,7 +37,7 @@ from agent.error_classifier import FailoverReason, classify_api_error
 from agent.micro_compaction import MicroCompactionMixin
 from agent.prompt_builder import STEER_DISPLAY_KIND
 from agent.model_metadata import (
-    CHARS_PER_TOKEN, MINIMUM_CONTEXT_LENGTH, get_model_context_length, estimate_messages_tokens_rough, estimate_tokens_rough,
+    CHARS_PER_TOKEN, get_model_context_length, estimate_messages_tokens_rough, estimate_tokens_rough,
     strip_opaque_replay_items,
 )
 from agent.redact import redact_sensitive_text
@@ -2586,6 +2586,7 @@ class ContextCompressor(SummaryDispatchMixin, MicroCompactionMixin, ContextEngin
             # main model); the caller re-runs the feasibility probe. A same-runtime recompute (overflow-reported
             # window, grown local window, tier cap) keeps it: the summariser did not change (#114707).
             self._aux_context_ceiling = None
+            self._summary_context_length = None
         self._base_threshold_percent, self.threshold_percent, self.threshold_tokens = self._derive_trigger(
             model, context_length, provider)
         self._apply_threshold_tokens_cap()
@@ -2613,7 +2614,9 @@ class ContextCompressor(SummaryDispatchMixin, MicroCompactionMixin, ContextEngin
         self._reset_proactive_prune_rearm()
         self._clear_durable_proactive_prune_rearm()
 
-    # When the MINIMUM_CONTEXT_LENGTH floor binds on a small window, trigger near the top instead.
+    # Keep larger models' established cadence independent of the admission floor.
+    _MIN_TRIGGER_TOKENS = 64_000
+    # When the trigger floor binds on a small window, trigger near the top instead.
     _MIN_CTX_TRIGGER_RATIO = 0.85
 
     # Anti-thrash recovery: after this long blocked, allow ONE probe (counters drop to 1 strike).
@@ -2669,11 +2672,11 @@ class ContextCompressor(SummaryDispatchMixin, MicroCompactionMixin, ContextEngin
         context_length: int, threshold_percent: float, max_tokens: int | None = None,
     ) -> int:
         """Compute the compaction trigger in tokens from the effective input budget.
-        Base is ``(context_length - max_tokens) * threshold_percent`` floored at MINIMUM_CONTEXT_LENGTH;
+        Base is ``(context_length - max_tokens) * threshold_percent`` floored at 64K;
         when the floor binds it is capped at 85% of the budget so small windows can still fire.
 
         The base value is ``effective_input_budget * threshold_percent``, floored at
-        ``MINIMUM_CONTEXT_LENGTH`` so large-context models don't compress prematurely at 50%. BUT that floor
+        64K so large-context models don't compress prematurely at 50%. BUT that floor
         degenerates at small windows: for a model whose ``context_length`` is at/below the minimum (e.g. a
         64K local model), ``max(0.5*64000, 64000) == 64000`` makes the threshold equal the ENTIRE window —
         auto-compression can never fire because the provider rejects the request before usage reaches 100%
@@ -2687,7 +2690,7 @@ class ContextCompressor(SummaryDispatchMixin, MicroCompactionMixin, ContextEngin
         """
         effective_window = ContextCompressor._effective_input_window(context_length, max_tokens)
         pct_value = int(effective_window * threshold_percent)
-        floored = max(pct_value, MINIMUM_CONTEXT_LENGTH)
+        floored = max(pct_value, ContextCompressor._MIN_TRIGGER_TOKENS)
         # The floor must not consume output headroom: cap at 85% when it is the binding term. Near-minimum windows
         # otherwise trigger at ~98%, and providers that silently clip over-window prompts (ollama) never raise the
         # overflow backstop, so the session wedges. An explicit threshold_percent above 85% is user intent; not capped.
@@ -2725,6 +2728,7 @@ class ContextCompressor(SummaryDispatchMixin, MicroCompactionMixin, ContextEngin
         self.threshold_tokens_cap = self._coerce_threshold_tokens_cap(threshold_tokens_cap)
         # Aux summariser window installed by the feasibility probe; None until it runs.
         self._aux_context_ceiling: int | None = None
+        self._summary_context_length: int | None = None
         self.protect_first_n, self.protect_last_n = protect_first_n, protect_last_n
         # Proactive prune runs independently of the full-compression trigger. 0 = disabled.
         self.proactive_prune_tokens = int(proactive_prune_tokens or 0)
@@ -2882,6 +2886,13 @@ class ContextCompressor(SummaryDispatchMixin, MicroCompactionMixin, ContextEngin
         usage, or the estimate would be the only signal and compression could never fire (#2153);
         the overflow handler compacts reactively in every case."""
         if rough_tokens < self.threshold_tokens:
+            return False
+        # Newly supported small windows cannot spend a whole request discovering
+        # that an inherited transcript or first input exceeds their input budget.
+        # Keep the established provider-adjudicated policy for larger windows.
+        if self.context_length < self._MIN_TRIGGER_TOKENS and rough_tokens >= self._effective_input_window(
+            self.context_length, self.max_tokens
+        ):
             return False
         if self.awaiting_real_usage_after_compression:
             return True
@@ -3911,6 +3922,11 @@ Summary generation was unavailable, so this is a best-effort deterministic fallb
             has_user_turn = self._transcript_has_real_user_turn(turns_to_summarize)
         prompt = self._build_summary_prompt(content_to_summarize, summary_budget, focus_topic, memory_context, has_user_turn)
         try:
+            from agent.compression_small_context import fit_summary_prompt
+            prompt = fit_summary_prompt(
+                self, prompt, content_to_summarize, summary_budget,
+                lambda content: self._build_summary_prompt(content, summary_budget, focus_topic, memory_context, has_user_turn),
+            )
             content = self._call_summary_llm(prompt, prompt_started_at)
             # Strip <think> blocks: they would be stored, injected, and compounded on every iterative update.
             from agent.agent_runtime_helpers import strip_think_blocks
