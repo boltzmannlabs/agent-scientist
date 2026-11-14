@@ -86,6 +86,18 @@ server implementation requirements and cutover checklist are in the
 
 ## Endpoint configuration
 
+After updating SCI, the config migration replaces the formerly shipped
+`http://100.87.197.84:8010/v1` endpoint with public HTTPS for explicitly configured
+Boltzmann model, provider and auxiliary routes. `sci update` runs this migration
+for main and existing named profiles. Custom endpoints and other providers are
+preserved; no new login is needed. Restart SCI after updating, since running
+conversations retain their client configuration. The public gateway does not
+require a client Tailscale connection.
+
+If you updated by pulling source without running the updater, run
+`sci config migrate` before restarting. For a named profile, run
+`sci -p PROFILE_NAME config migrate`. A missing or different URL is not rewritten.
+
 The supplied gateway defaults to `https://sciagent.boltzmann.co.in/v1`; the CLI host must
 be able to reach it. Configure a replacement endpoint in the owning profile's
 `config.yaml` before selecting the model:
