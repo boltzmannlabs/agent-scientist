@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from .model_gateway import MODELS, endpoint, owner_home, owner_scope
+from .model_gateway import catalog_models, endpoint, owner_home, owner_scope
 from .model_response import remember_response
 
 
@@ -17,10 +17,11 @@ def _request(home, base_url, kwargs):
                 "Boltzmann model endpoint changed. Re-select the provider before sending messages."
             )
         key = require_authorized()
+        models = catalog_models()
     kwargs = dict(kwargs)
     model = kwargs.get("model")
-    if model not in MODELS:
-        raise ValueError("Boltzmann model must be qwen, discoveryrsi, glm or codex.")
+    if not isinstance(model, str) or model not in (models or []):
+        raise ValueError("Boltzmann model is unavailable in this account's gateway catalog. Refresh the model picker and check connectivity.")
     extra = dict(kwargs.get("extra_body") or {})
     if "model" in extra and extra["model"] != model:
         raise ValueError("extra_body cannot override the reviewed Boltzmann model.")

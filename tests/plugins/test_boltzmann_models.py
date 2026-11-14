@@ -21,6 +21,7 @@ def platform(tmp_path, monkeypatch):
         "revoked": False,
         "credits": 2550,
         "auth_requests": 0,
+        "models": [{"id": name} for name in ("qwen", "discoveryrsi", "discoveryrsi-q4ks", "glm", "codex")],
     }
 
     class Handler(BaseHTTPRequestHandler):
@@ -179,7 +180,7 @@ def platform(tmp_path, monkeypatch):
         thread.join(5)
 
 
-@pytest.mark.parametrize("model", ["qwen", "discoveryrsi", "glm", "codex"])
+@pytest.mark.parametrize("model", ["qwen", "discoveryrsi", "discoveryrsi-q4ks", "glm", "codex"])
 def test_gateway_context_is_exact_profile_scoped_and_matches_display(platform, model, monkeypatch):
     from agent import model_metadata as mm
     from agent.model_metadata import fetch_endpoint_model_metadata, get_model_context_length
@@ -320,7 +321,7 @@ def test_large_history_switch_uses_destination_budget_before_reply(platform, mod
             agent.close()
 
 
-@pytest.mark.parametrize("model", ["qwen", "discoveryrsi", "glm", "codex"])
+@pytest.mark.parametrize("model", ["qwen", "discoveryrsi", "discoveryrsi-q4ks", "glm", "codex"])
 def test_gated_sdk_clients_sync_async_streaming_and_profiles(platform, model):
     from providers import get_provider_profile
     from sci_cli.runtime_provider import resolve_runtime_provider
@@ -848,3 +849,52 @@ def test_missing_or_malformed_metadata_never_reuses_or_invents_charges(platform)
         assert "Gateway billing" not in text and "Available credits: 2,550.00" in text
         client.close()
     assert len(state["requests"]) == 3 and state["updates"] == []
+
+
+def test_gateway_catalog_admits_new_ids_with_owner_auth_and_rejects_unknown(platform):
+    from plugins.boltzmann.model_gateway import catalog_models
+    from providers import get_provider_profile
+
+    state, root, a, b, base = platform
+    name = "gateway-new-fixture"
+    state["models"] = [{"id": name}, {"id": name}, {"id": "another-fixture"}]
+    provider = get_provider_profile("boltzmann_models")
+    for home, allowed in ((a, True), (b, False), (a, True)):
+        with profile_scope(home):
+            before = len(state.get("model_requests", []))
+            ids = catalog_models(force_refresh=True)
+            if not allowed:
+                assert ids == [] and len(state.get("model_requests", [])) == before
+                assert provider.fetch_models(api_key="fixture-a", base_url=base) == []
+                continue
+            assert ids == [name, "another-fixture"]
+            assert provider.fetch_models(api_key="wrong-caller-key", base_url=base) == ids
+            client = provider.create_client(api_key="fixture-a", base_url=base)
+            try:
+                reply = client.chat.completions.create(model=name, messages=[{"role": "user", "content": "Fixture"}])
+                assert reply.choices[0].message.content == "Fixture report: SCI_TOOL_OK"
+                assert state["requests"][-1]["model"] == name
+                sent = len(state["requests"])
+                with pytest.raises(ValueError, match="gateway catalog"):
+                    client.chat.completions.create(model="not-advertised", messages=[])
+                assert len(state["requests"]) == sent
+            finally:
+                client.close()
+    assert set(state["model_requests"]) == {"Bearer fixture-a"}
+
+
+def test_gateway_catalog_refresh_and_setup_follow_server_inventory(platform, monkeypatch):
+    from plugins.boltzmann.model_gateway import catalog_models, setup_model
+
+    state, root, a, b, base = platform
+    seen = []
+    monkeypatch.setattr("sci_cli.model_setup_flows_common._pick_model_or_prompt",
+                        lambda models, *args, **kwargs: seen.append(models) or None)
+    with profile_scope(a):
+        state["models"] = [{"id": "old-fixture"}]
+        assert catalog_models(force_refresh=True) == ["old-fixture"]
+        state["models"] = [{"id": "new-fixture"}]
+        setup_model()
+        assert seen == [["new-fixture"]]
+        state["models"] = []
+        assert catalog_models(force_refresh=True) == []

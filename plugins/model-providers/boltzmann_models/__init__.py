@@ -1,10 +1,18 @@
-"""One platform account, four model routes, with profile-local authorization."""
+"""Gateway-discovered platform models with profile-local authorization."""
 
 from providers import register_provider
 from providers.base import ProviderProfile
 
 
 class BoltzmannModels(ProviderProfile):
+    def fetch_models(self, *, api_key=None, base_url=None, timeout=8.0):
+        from plugins.boltzmann.model_gateway import catalog_models, endpoint, owner_scope
+
+        with owner_scope():
+            if base_url and str(base_url).rstrip("/") != endpoint():
+                return []
+            return catalog_models(timeout=timeout)
+
     def get_model_context_length(self, model):
         from plugins.boltzmann.model_context import model_limits
 
@@ -82,14 +90,14 @@ register_provider(
         env_vars=("BOLTZMANN_API_KEY",),
         base_url="https://sciagent.boltzmann.co.in/v1",
         api_mode="chat_completions",
-        fallback_models=("qwen", "discoveryrsi", "glm", "codex"),
+        fallback_models=(),
         credential_scope="profile",
         picker_visible_when_locked=True,
         requires_custom_client=True,
         allow_fallback=False,
         show_account_usage_after_turn=True,
         supports_health_check=False,
-        supports_model_listing=False,
+        supports_model_listing=True,
         classify_api_error=classify,
     )
 )

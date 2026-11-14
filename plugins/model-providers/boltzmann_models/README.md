@@ -5,14 +5,22 @@ scientific tools. It does not require a separate model API key.
 
 1. Run `/boltzmann_login` and authenticate your account.
 2. Open `/model` (or `sci model`), choose **boltzmann_models**, then choose
-   **qwen**, **discoveryrsi**, **glm**, or **codex**.
+   a model from the gateway's authenticated `/v1/models` catalog, including
+   **discoveryrsi-q4ks** when advertised by your gateway.
 3. Confirm the model selection. Saved defaults apply to new conversations;
    `/model` uses the existing explicit conversation-switch flow.
 
 The selected ID is sent as `model`, for example `"model": "glm"`. There is no
 additional `provider` request field. Responses may identify the underlying
 deployment with a different model name. This integration uses Chat Completions
-for all four routes, including `codex`; it does not use Codex OAuth.
+for gateway model routes, including `codex`; it does not use Codex OAuth.
+
+The gateway controls the model list. SCI uses its existing credential-scoped
+catalog cache and validates inference against that catalog. Setup refreshes the
+list; an unavailable catalog with no cached models blocks selection or execution
+instead of silently substituting a fixed model list. Context/output limits use
+the exact selected ID's gateway metadata or configured limits; missing limits
+are labeled as estimates, never copied from another deployment alias.
 
 ## Authentication and profiles
 
