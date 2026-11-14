@@ -78,14 +78,14 @@ server implementation requirements and cutover checklist are in the
 
 ## Endpoint configuration
 
-The supplied gateway defaults to `http://100.87.197.84:8010/v1`; the CLI host must
+The supplied gateway defaults to `https://sciagent.boltzmann.co.in/v1`; the CLI host must
 be able to reach it. Configure a replacement endpoint in the owning profile's
 `config.yaml` before selecting the model:
 
 ```yaml
 providers:
   boltzmann_models:
-    base_url: http://100.87.197.84:8010/v1
+    base_url: https://sciagent.boltzmann.co.in/v1
 ```
 
 The URL must not contain credentials, query parameters or fragments. Existing

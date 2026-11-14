@@ -7,7 +7,7 @@ from sci_constants import get_sci_home
 
 PROVIDER = "boltzmann_models"
 MODELS = ("qwen", "discoveryrsi", "glm", "codex")
-DEFAULT_BASE_URL = "http://100.87.197.84:8010/v1"
+DEFAULT_BASE_URL = "https://sciagent.boltzmann.co.in/v1"
 LOGIN_REQUIRED = "You are not authorized to use Boltzmann models in this profile. Run /boltzmann_login to connect your account."
 
 

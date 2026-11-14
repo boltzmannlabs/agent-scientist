@@ -80,7 +80,7 @@ register_provider(
         description="Boltzmann platform models — requires /boltzmann_login in this profile",
         signup_url="https://app.boltzmann.co/home",
         env_vars=("BOLTZMANN_API_KEY",),
-        base_url="http://100.87.197.84:8010/v1",
+        base_url="https://sciagent.boltzmann.co.in/v1",
         api_mode="chat_completions",
         fallback_models=("qwen", "discoveryrsi", "glm", "codex"),
         credential_scope="profile",
