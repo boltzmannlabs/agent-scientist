@@ -10,6 +10,7 @@ import binascii
 import contextlib
 import mimetypes
 import os
+import posixpath
 import re
 import secrets
 import shutil
@@ -22,14 +23,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi.responses import FileResponse, Response, StreamingResponse
 
 from sci_cli._subprocess_compat import windows_hide_flags
 from sci_cli.sqlite_safe_read import LiveConnectionError, offline_file_access
 from sci_cli.web_deps import late
 from sci_cli.web_server_files import (
-    _fs_path, _managed_file_entry, _managed_response_meta, _resolve_managed_path,
+    _fs_path, _managed_file_entry, _managed_files_policy, _managed_response_meta, _resolve_managed_path,
 )
 from sci_cli.web_models import (
     ChatImageUpload, FsWriteText, ManagedDirectoryCreate, ManagedFileDelete, ManagedFileUpload,
@@ -502,7 +503,22 @@ async def upload_chat_image(payload: ChatImageUpload, profile: Optional[str] = N
 
 
 @router.get("/api/files")
-async def list_managed_files(request: Request, path: Optional[str] = None):
+async def list_managed_files(request: Request, path: Optional[str] = None,
+                             profile: Optional[str] = None, session_id: Optional[str] = None):
+    backend, path = await _managed_file_context(request, path, profile, session_id)
+    if backend is not None:
+        target = path or backend.cwd
+        try:
+            listing = await asyncio.to_thread(backend.list_dir, target, _FS_READDIR_HIDDEN)
+        except Exception as exc:
+            _raise_fs_backend_error(exc)
+        if listing.get('error'):
+            raise HTTPException(status_code=400, detail=listing['error'])
+        return {'path': target, 'parent': posixpath.dirname(target) if target != '/' else None,
+                'root': None, 'locked_root': None, 'can_change_path': True, 'read_only': True,
+                'entries': [{'name': row['name'], 'path': row['path'], 'is_directory': row['isDirectory'],
+                             'size': None, 'mtime': 0, 'mime_type': mimetypes.guess_type(row['name'])[0]}
+                            for row in listing['entries'] if not _is_sensitive_path(Path(row['path']))]}
     policy, target, display_path = _resolve_managed_path(path, request)
     if not target.exists():
         raise HTTPException(status_code=404, detail="Path not found")
@@ -522,6 +538,43 @@ async def list_managed_files(request: Request, path: Optional[str] = None):
     if target.parent != target and (locked_root is None or target != locked_root):
         parent = str(target.parent)
     return {"path": display_path, "parent": parent, "entries": entries, **_managed_response_meta(policy)}
+
+
+async def _managed_file_context(request, path, profile, session_id):
+    """Resolve the conversation owner before selecting a file backend; never probe another host."""
+    cwd = ''
+    if session_id is not None:
+        from sci_cli.web_routers.sessions import get_session_detail
+        if not session_id.strip():
+            raise HTTPException(status_code=404, detail='Session not found')
+        session = await get_session_detail(session_id, profile)
+        cwd = session.get('cwd') or ''
+    # Plugins can save server-local artifacts even when terminal execution is remote.
+    # Known profile storage has an explicit owner; do not infer its location from terminal.backend.
+    server_artifact = False
+    if path and (Path(path).expanduser().is_absolute() or path.lower().startswith('file:') or
+                 (cwd and Path(cwd).is_absolute())):
+        with _profile_scope(profile):
+            home = get_sci_home().resolve()
+        target = _fs_path(path, cwd=cwd or None)
+        server_artifact = target == home or home in target.parents
+        if server_artifact:
+            path = str(target)
+    backend = None if server_artifact else await asyncio.to_thread(_fs_backend, profile)
+    if backend is not None:
+        if _managed_files_policy(request, create_root=False).locked_root is not None:
+            raise HTTPException(status_code=403, detail='Remote files are outside the managed files root')
+        if path and cwd and not posixpath.isabs(path) and not path.startswith('~'):
+            path = posixpath.normpath(posixpath.join(cwd, path))
+    else:
+        if not server_artifact and (profile is not None or session_id is not None):
+            with _profile_scope(profile):
+                kind = (load_config().get('terminal') or {}).get('backend') or 'local'
+            if kind not in ('local', ''):
+                raise HTTPException(status_code=409, detail=f'File access for the {kind} execution backend is unavailable; no host file was read.')
+        if path and cwd:
+            path = str(_fs_path(path, cwd=cwd))
+    return backend, path
 
 
 def _managed_readable_file(request: Request, path: str) -> tuple[Any, Path, str, int, str]:
@@ -552,9 +605,27 @@ def _managed_file_size(target: Path, max_bytes: int) -> int:
 
 
 @router.get("/api/files/read")
-async def read_managed_file(request: Request, path: str):
-    policy, target, display_path, max_bytes, mime_type = _managed_readable_file(request, path)
-    size = _managed_file_size(target, max_bytes)
+async def read_managed_file(request: Request, path: str, profile: Optional[str] = None,
+                            session_id: Optional[str] = None, max_bytes: Optional[int] = Query(None, ge=1)):
+    backend, path = await _managed_file_context(request, path, profile, session_id)
+    if backend is not None:
+        from sci_cli.web_server import _MANAGED_FILE_MAX_BYTES
+        limit = min(max_bytes or _MANAGED_FILE_MAX_BYTES, _MANAGED_FILE_MAX_BYTES)
+        try:
+            target, size = await asyncio.to_thread(backend.inspect_file, path)
+            if _is_sensitive_path(Path(target)):
+                raise HTTPException(status_code=403, detail='Access to sensitive files is not allowed')
+            if size > limit:
+                raise HTTPException(status_code=413, detail='File is too large for preview; use Download')
+            data, size, target = await asyncio.to_thread(backend.read_bytes, target, max_bytes=limit)
+        except Exception as exc:
+            _raise_fs_backend_error(exc)
+        mime = mimetypes.guess_type(target)[0] or 'application/octet-stream'
+        return {'name': posixpath.basename(target), 'path': target, 'size': size, 'mime_type': mime,
+                'data_url': f'data:{mime};base64,{base64.b64encode(data).decode("ascii")}',
+                'root': None, 'locked_root': None, 'can_change_path': True}
+    policy, target, display_path, configured_limit, mime_type = _managed_readable_file(request, path)
+    size = _managed_file_size(target, min(max_bytes or configured_limit, configured_limit))
     with _io_errors("File is not readable", "Could not read file"):
         encoded = await asyncio.to_thread(_read_base64_file, target)
     return {
@@ -590,7 +661,9 @@ async def _managed_file_response(
 
 
 @router.get("/api/files/download")
-async def download_managed_file(request: Request, path: str):
+@router.head("/api/files/download")
+async def download_managed_file(request: Request, path: str, profile: Optional[str] = None,
+                                session_id: Optional[str] = None):
     """Stream a managed file as an attachment download.
 
     ``auth_middleware`` also accepts the session token as ``?token=`` here so a
@@ -599,6 +672,23 @@ async def download_managed_file(request: Request, path: str):
     ``Sec-Fetch-Dest``; those are served inline for Desktop builds that still
     use this route as their player source, attachment semantics otherwise.
     """
+    backend, path = await _managed_file_context(request, path, profile, session_id)
+    if backend is not None:
+        from sci_cli.web_server import _MANAGED_FILE_MAX_BYTES
+        try:
+            target, size = await asyncio.to_thread(backend.inspect_file, path)
+        except Exception as exc:
+            _raise_fs_backend_error(exc)
+        if _is_sensitive_path(Path(target)):
+            raise HTTPException(status_code=403, detail='Access to sensitive files is not allowed')
+        if size > _MANAGED_FILE_MAX_BYTES:
+            raise HTTPException(status_code=413, detail='File is too large')
+        headers = {'Content-Disposition': "attachment; filename*=UTF-8''" + urllib.parse.quote(posixpath.basename(target)),
+                   'Content-Length': str(size), 'X-Content-Type-Options': 'nosniff'}
+        if request.method == 'HEAD':
+            return Response(headers=headers)
+        return StreamingResponse(backend.stream_file(target), headers=headers,
+                                 media_type=mimetypes.guess_type(target)[0] or 'application/octet-stream')
     fetch_destination = request.headers.get("sec-fetch-dest", "").lower()
     is_media_subresource = fetch_destination in {"audio", "video"}
     return await _managed_file_response(

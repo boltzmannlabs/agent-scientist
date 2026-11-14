@@ -37,9 +37,9 @@ import { errorMessage } from "@/lib/api-error";
  */
 
 interface ExpensiveModelConfirmResponse {
-  confirm_message?: string;
-  confirm_required?: boolean;
-  warning?: string;
+  confirm_message?: string | null;
+  confirm_required?: boolean | null;
+  warning?: string | null;
 }
 
 interface ConfigSetResponse extends ExpensiveModelConfirmResponse {

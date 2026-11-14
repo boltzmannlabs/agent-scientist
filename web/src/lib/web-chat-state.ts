@@ -18,6 +18,7 @@ export const emptyChat: WebChatState = { messages: [], stream: '', busy: false, 
 export type ChatAction =
   | { type: 'hydrate'; messages: TranscriptMessage[]; stream?: string; busy?: boolean; error?: string }
   | { type: 'user'; text: string }
+  | { type: 'queued'; text: string }
   | { type: 'delta'; text: string }
   | { type: 'interim'; text: string }
   | { type: 'complete'; text?: string; error?: string; status?: string }
@@ -35,6 +36,7 @@ export function chatReducer(state: WebChatState, action: ChatAction): WebChatSta
           .map(m => ({ ...row(m.role as ChatMessage['role'], m.text || (typeof m.content === 'string' ? m.content : '')), name: m.name || undefined }))
           .filter(m => m.text || m.name) };
     case 'user': return { ...state, messages: [...state.messages, row('user', action.text)], stream: '', busy: true, status: 'Working…', error: '' };
+    case 'queued': return { ...state, messages: [...state.messages, row('user', action.text)] };
     case 'delta': return { ...state, stream: state.stream + action.text, busy: true, status: 'Writing…' };
     case 'interim': return { ...state, messages: [...state.messages, row('assistant', action.text || state.stream)], stream: '' };
     case 'complete': {

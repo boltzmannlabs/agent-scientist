@@ -4,6 +4,8 @@ export interface StructureSource {
   name: string;
   path?: string;
   file?: File;
+  profile?: string;
+  sessionId?: string;
 }
 
 export function structureFormat(name: string): 'pdb' | 'mmcif' | null {

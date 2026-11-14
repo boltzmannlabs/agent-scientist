@@ -17,13 +17,27 @@ logo. The animation runs locally in the browser and makes no model or tool reque
 Hosted-mode auth uses Nous Portal OAuth; if you also want the dashboard to talk to a real backend, `sci setup --portal` wires up the model and tool gateway too. See [Nous Portal](../../integrations/nous-portal.md).
 :::
 
+For the full feature inventory, architecture, technology stack, and component-to-file map,
+see the [Web App Reference](../../developer-guide/web-dashboard-reference.md).
+
 ## Quick Start
 
 ```bash
 sci dashboard
 ```
 
-This starts a local web server and opens `http://127.0.0.1:9119` in your browser. If that port is busy, SCI tries `9120`, `9121`, and so on, then prints and opens the actual URL. A compatible SCI dashboard already running on this host is reused. An explicit `--port` stays fixed; `--port 0` lets the OS choose a free port.
+This starts a local web server and opens `http://127.0.0.1:9119` in your browser. If that port is busy, SCI tries `9120`, `9121`, and so on, then prints and opens the actual URL. If a compatible SCI dashboard is already running, plain `sci dashboard` in an interactive terminal asks you to **start a new instance on the next available port** or **open the existing dashboard**. Choosing a new instance starts searching above the running dashboard's port. Escape cancels. Non-interactive launches reuse the existing dashboard. An explicit `--port` stays fixed; `--port 0` lets the OS choose a free port.
+
+To start another server instead of reusing the running dashboard:
+
+```bash
+sci dashboard --new-instance
+```
+
+It uses the first available port starting at `9119` (for example, `9120` when
+`9119` is occupied). This is an alias for `--isolated`: the new process uses the
+selected profile's existing settings, credentials and saved data. It does not
+create a separate profile. Add `--no-open` to print the URL without opening a browser.
 
 ### Options
 
@@ -32,6 +46,7 @@ This starts a local web server and opens `http://127.0.0.1:9119` in your browser
 | `--port` | `9119` | Port to run the web server on |
 | `--host` | `127.0.0.1` | Bind address |
 | `--no-open` | — | Don't auto-open the browser |
+| `--new-instance` | off | Start another server on the next available port; alias for `--isolated` |
 | `--insecure` | off | **Deprecated / no-op.** Formerly bypassed auth on a non-loopback bind; it no longer disables authentication — a public bind always requires an auth provider (password or OAuth) |
 | `--isolated` | off | When launched from a named profile (`worker dashboard`), run a dedicated per-profile server instead of routing to the machine dashboard |
 
@@ -79,10 +94,10 @@ Pass `--isolated` to opt out and run a dedicated server scoped to that
 profile (the pre-unification behavior — useful if you deliberately expose
 different profiles' dashboards with different auth).
 
-The **Chat** tab follows the switcher too: a scoped chat spawns its PTY
-child with the selected profile's `SCI_HOME`, so the conversation runs
-with that profile's model, skills, memory, and session history. Switching
-profiles starts a fresh terminal session.
+The **Chat** tab follows the switcher too: its WebSocket create/resume requests
+name the selected profile, so the conversation uses that profile's model,
+skills, memory, and session history. Switching profiles opens a separately
+scoped chat view and clears a conflicting resume target.
 
 Hub actions (skill install/update/uninstall, MCP install, toolset setup)
 run with the target profile's own secret scope — its `.env` and configured
@@ -107,20 +122,18 @@ Messaging and voice extras are separate requests, not implied by `all`.
 
 When you run `sci dashboard` without the dependencies, it will tell you what to install. If the frontend hasn't been built yet and `npm` is available, it builds automatically on first launch.
 
-The Chat tab is part of every `sci dashboard` launch — the embedded browser chat pane (running the TUI over PTY/WebSocket) is always available, with no extra flag required.
+The Chat tab is part of `sci dashboard`, with no extra flag required. It is a
+native React chat interface over the shared JSON-RPC WebSocket backend. It does
+not require the browser to render a POSIX terminal TUI.
 
 ## Pages
 
-### Status
+### Status and landing page
 
-The landing page shows a live overview of your installation:
-
-- **Agent version** and release date
-- **Gateway status** — running/stopped, PID, connected platforms and their state
-- **Active sessions** — count of sessions active in the last 5 minutes
-- **Recent sessions** — list of the 20 most recent sessions with model, message count, token usage, and a preview of the conversation
-
-The status page auto-refreshes every 5 seconds.
+The root URL opens **Sessions**. Runtime status is available through the shared
+sidebar status strip and **System** page: gateway/platform state, version and
+resource information. There is no separate built-in Status page in the current
+route table.
 
 #### Resource pressure banner
 
@@ -144,32 +157,41 @@ it, and a stale heartbeat renders nothing rather than a spurious alert.
 
 ### Chat
 
-The **Chat** tab embeds the full Sci TUI (the same interface you get from `sci --tui`) directly in the browser. Everything you can do in the terminal TUI — slash commands, model picker, tool-call cards, markdown streaming, clarify/sudo/approval prompts, skin theming — works identically here, because the dashboard is running the real TUI binary and rendering its ANSI output through [xterm.js](https://xtermjs.org/) with its WebGL renderer for pixel-perfect cell layout.
+The **Chat** tab is a native React conversation interface. It uses `/api/ws` to
+create/resume sessions and send prompts to the same backend used by other SCI
+clients. It displays streaming assistant responses, expandable tool activity,
+working/error states, and Copy controls.
 
-**How it works:**
+- **Composer:** Enter sends; Shift+Enter adds a newline. Attach or paste PNG,
+  JPEG, GIF, WebP, or BMP images up to 25 MiB each with a text message.
+- **History:** Select a stored conversation to resume it, or use New chat.
+  The Sessions page also offers resume links via `/chat?resume=<id>`.
+- **Workspace:** Select a known project/repository or another server path in
+  the history rail. The preference applies to a new chat; a resumed chat keeps
+  its own working context.
+- **Model:** The toolbar identifies the active model and links to model settings.
+- **User input:** Native forms handle supported clarification, approval, secret,
+  sudo, vault, and service-connection requests. Unsupported request types are
+  reported explicitly.
+- **Commands:** `/new` and `/reset` start a fresh conversation. Other supported
+  commands use the shared command dispatcher; CLI-only dialogs are not
+  automatically browser features.
+- **Stop:** Requests interruption and reports unconfirmed stops. This does not
+  automatically cancel an already submitted remote scientific job.
+- **Reconnect:** The Reconnect action resumes the saved conversation and restores
+  available in-flight state without automatically resending the prompt.
 
-- `/api/pty` opens a WebSocket authenticated with the dashboard's session token
-- The server spawns `sci --tui` behind a POSIX pseudo-terminal
-- Keystrokes travel to the PTY; ANSI output streams back to the browser
-- xterm.js's WebGL renderer paints each cell to an integer-pixel grid; mouse tracking (SGR 1006), wide characters (Unicode 11), and box-drawing glyphs all render natively
-- Resizing the browser window resizes the TUI via the `@xterm/addon-fit` addon
-- A quiet PTY socket sends a small resize keepalive every 20 seconds, so reverse proxies with idle timeouts (nginx, Caddy) don't drop a chat that is merely waiting; proxies that cap a connection's total lifetime (some tunnels close a socket after ~30 seconds regardless of traffic) still close it, and the chat reattaches to the same session automatically; automatic reconnects pause while the browser tab is hidden or you are on another dashboard page, and resume when you come back
+Navigating to another dashboard page keeps the chat host mounted. The browser
+requests `close_on_disconnect: false`, so closing a tab is not a confirmed
+cancellation of server work. Reopening can restore the remembered conversation.
 
-**Resume an existing session:** from the **Sessions** tab, click the play icon (▶) next to any session. That jumps to `/chat?resume=<id>` and launches the TUI with `--resume`, loading the full history.
+The empty chat shows the animated dotted Boltzmann logo and suggestions that
+prefill the composer. Structure links can open the browser molecular viewer.
 
-**Session switcher (right rail):** the Chat tab carries its own ChatGPT-style conversation list in a thin right rail beside the terminal, so you can swap conversations without leaving the page. The rail stacks the model picker on top and the session list directly below it; the terminal takes up most of the screen. The list shows your most recent sessions for the active profile — title (falling back to a message preview), relative last-active time, message count, and the source channel for non-CLI sessions. Click any row to resume it in place (the terminal respawns with that conversation's history); the active session is highlighted. **New chat** starts a fresh session, and a refresh control re-pulls the list. The rail is read-only for switching — delete, rename, export, and bulk cleanup still live on the **Sessions** tab. On narrow screens it folds into a slide-over panel.
-
-**Workspace picker:** a fresh chat starts wherever the dashboard process was launched — useless when you are driving Sci from a phone and want it in `~/code/foo`. The rail's **workspace** selector lists the same directories the Desktop sidebar knows: your explicit projects (`sci projects`) and every discovered git repository (session-derived plus the `desktop.repo_scan_roots` scan), most recently active first, with an **Other path…** entry for anything else. The choice is remembered per profile and applies to the next **New chat** (a resumed session keeps its own working directory); the rescan button re-walks the discovery roots on the host, so a repo you just cloned over SSH shows up without a restart. A path that no longer exists is refused with an error instead of silently starting in the launch directory. Backed by `GET /api/chat/workspaces` and the `cwd` parameter of the `/api/pty` WebSocket.
-
-**Prerequisites:**
-
-- Node.js (same requirement as `sci --tui`; the TUI bundle is built on first launch)
-- `ptyprocess` — a core dependency on POSIX
-- POSIX kernel (Linux, macOS, or WSL2).  The `/chat` terminal pane specifically needs a POSIX PTY — native Windows Python has no equivalent, so on a native Windows install the rest of the dashboard (sessions, jobs, metrics, config editor) works but the `/chat` tab will show a banner telling you to use WSL2 for that feature.
-
-Close the browser tab and the PTY is reaped cleanly on the server. Re-opening spawns a fresh session.
-
-To point [Sci Desktop](#connecting-sci-desktop-to-a-remote-backend) at a dashboard running on another machine instead of its own bundled backend, see the remote-backend section below.
+The separate SCI Console and other backend clients still use terminal-related
+infrastructure. Their PTY limitations should not be attributed to this native
+Chat page. See the [Web App Reference](../../developer-guide/web-dashboard-reference.md)
+for component paths and protocol details.
 
 ### Connecting Sci Desktop to a remote backend
 
@@ -230,6 +252,30 @@ curl -s http://VM_IP:9119/api/status | jq '.auth_required, .auth_providers'
 :::
 
 If `/api/status` shows the gate is on with the `"basic"` provider and Desktop *still* fails to connect after signing in, the issue is past basic setup — grab a fresh `desktop.log` (Settings → Gateways → Open logs) plus the dashboard's logs from the same retry window and look for the `/api/ws` close code (4403 = chat WS rejected by the request guard, e.g. Host/peer mismatch; 4401 = the WS ticket didn't authenticate).
+
+### Output files in chat
+
+File references in assistant replies and completed tool results offer **Preview**, **Download**
+and **Show in Files**. This works across tools; downloads do not depend on a particular extension.
+Paths inside inline code or Markdown links work too, and saved conversations retain these actions.
+The file remains on the SCI server until you download a copy to your computer.
+
+**Show in Files** opens the containing directory and highlights the file, preserving the conversation's
+profile and session. Up to 20 references are shown per tool result; use the folder view for larger
+collections. A reference is not proof that a file exists: access is checked when you click an action.
+Missing files and unavailable access produce an error rather than running the tool again.
+
+Previews load only on demand, up to 20 MiB. Text, CSV, FASTA, code and similar readable files appear
+as text; long text is capped at 64,000 characters. Images, PDF and browser-supported audio/video
+use their browser viewers, and molecular structures use the existing 3D viewer. Unsupported binary
+formats remain downloadable. HTML and code are displayed as text, not executed.
+
+Downloads stream through the existing authenticated file route and retain its access controls and
+100 MiB server limit. Preview links do not grant additional file access or upload data to the model.
+Artifacts under the owning profile's SCI storage remain server-local even when its terminal is remote.
+Other SSH paths use the configured remote file backend; those directory listings are read-only. Other remote
+execution backends without a file adapter report that access is unavailable rather than reading a
+same-named host file. Switching profiles discards an open preview and stale directory responses.
 
 ### Molecular structure previews
 

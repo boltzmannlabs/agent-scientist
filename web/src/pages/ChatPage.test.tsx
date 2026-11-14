@@ -85,6 +85,19 @@ it('sends one prompt, renders streamed text once, and requires explicit approval
   expect(container.querySelector('[role=log]')?.textContent).not.toContain('API key');
 });
 
+it('resumes the stored conversation on reopening and starts a fresh one only on New chat', async () => {
+  sessionStorage.setItem('sci-web-chat:a', 'previous-a');
+  await render('a');
+  expect(instances[0].request).toHaveBeenCalledWith('session.resume', expect.objectContaining({
+    profile: 'a', session_id: 'previous-a',
+  }));
+  await click('New chat');
+  const fresh = instances.at(-1)!;
+  expect(fresh.request).toHaveBeenCalledWith('session.create', expect.objectContaining({ profile: 'a' }));
+  expect(fresh.request.mock.calls.some(([method]) => method === 'prompt.submit')).toBe(false);
+  expect(sessionStorage.getItem('sci-web-chat:a')).toBe('');
+});
+
 it('isolates A→B→A and reconnects by resuming authoritative state without resending prompts', async () => {
   await render('a'); const first = instances[0];
   await fill('Only profile A'); await click('Send message');

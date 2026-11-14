@@ -17,7 +17,7 @@
 import { Button } from "@sci/ui/ui/components/button";
 import { Input } from "@sci/ui/ui/components/input";
 import { Select, SelectOption } from "@sci/ui/ui/components/select";
-import { FolderGit2, RefreshCw } from "lucide-react";
+import { ChevronDown, FolderGit2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useI18n } from "@/i18n";
@@ -34,6 +34,7 @@ interface ChatWorkspacePickerProps {
   value: string;
   onChange: (cwd: string) => void;
   className?: string;
+  compact?: boolean;
 }
 
 export function ChatWorkspacePicker({
@@ -41,11 +42,13 @@ export function ChatWorkspacePicker({
   value,
   onChange,
   className,
+  compact = false,
 }: ChatWorkspacePickerProps) {
   const { t } = useI18n();
   const [data, setData] = useState<ChatWorkspacesResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [draft, setDraft] = useState(value);
   const requestRef = useRef(0);
 
@@ -84,6 +87,8 @@ export function ChatWorkspacePicker({
   const defaultLabel = data?.default_cwd
     ? `${t.sessions.workspaceDefault} · ${abbreviateHomePath(data.default_cwd, home)}`
     : t.sessions.workspaceDefault;
+  const selectedLabel = options.find((option) => option.value === value)?.label
+    ?? (value ? abbreviateHomePath(value, home) : defaultLabel);
 
   const onSelect = useCallback(
     (next: string) => {
@@ -104,8 +109,8 @@ export function ChatWorkspacePicker({
     if (trimmed !== value) onChange(trimmed);
   }, [draft, onChange, value]);
 
-  return (
-    <div className={cn("flex flex-col gap-1.5 px-2 pb-2", className)}>
+  const controls = (
+    <>
       <div className="flex items-center gap-2 text-xs">
         <div className="flex items-center gap-1.5 text-text-tertiary">
           <FolderGit2 className="h-3.5 w-3.5" />
@@ -154,6 +159,30 @@ export function ChatWorkspacePicker({
           className="h-8 text-xs"
         />
       )}
-    </div>
+    </>
   );
+
+  if (compact) {
+    return (
+      <div className={cn("chat-workspace-picker chat-workspace-picker--compact", className)}>
+        <Button
+          ghost
+          size="sm"
+          className="chat-workspace-trigger"
+          aria-label={`Workspace: ${selectedLabel}`}
+          aria-expanded={pickerOpen}
+          aria-controls="chat-workspace-options"
+          title={`Workspace: ${selectedLabel}`}
+          onClick={() => setPickerOpen((open) => !open)}
+          prefix={<FolderGit2 />}
+          suffix={<ChevronDown className={cn("transition-transform", pickerOpen && "rotate-180")} />}
+        >
+          Workspace
+        </Button>
+        {pickerOpen && <div id="chat-workspace-options" className="chat-workspace-popover">{controls}</div>}
+      </div>
+    );
+  }
+
+  return <div className={cn("chat-workspace-picker flex flex-col gap-1.5 px-2 pb-2", className)}>{controls}</div>;
 }

@@ -39,7 +39,8 @@ def _occupied_pair(stack):
 
 
 @pytest.mark.parametrize('explicit', [False, True])
-def test_dashboard_launch_uses_next_port_only_when_implicit(tmp_path, explicit):
+@pytest.mark.parametrize('instance_flag', ['--isolated', '--new-instance'])
+def test_dashboard_launch_uses_next_port_only_when_implicit(tmp_path, explicit, instance_flag):
     with ExitStack() as stack:
         port = _occupied_pair(stack)
         home = tmp_path / 'home'
@@ -61,7 +62,7 @@ main._dashboard_prepare_runtime = lambda *args: False
 web_server._maybe_open_browser = lambda host, port, *args: print("BROWSER_PORT=" + str(port), flush=True)
 main.cmd_dashboard(args)
 '''
-        argv = ['dashboard', '--isolated', '--no-open']
+        argv = ['dashboard', instance_flag, '--no-open']
         if explicit:
             argv += ['--port', str(port)]
         log = tmp_path / 'server.log'

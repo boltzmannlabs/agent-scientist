@@ -853,6 +853,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'developer-guide/contributing',
         'developer-guide/worktree-ui-dev',
+        'developer-guide/web-dashboard-reference',
         {
           type: 'category',
           label: 'Architecture',

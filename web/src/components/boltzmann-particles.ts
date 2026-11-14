@@ -21,7 +21,7 @@ export const logoParticles: Particle[] = art.boltzmann.flatMap((line, row) =>
 );
 
 export function drawLogoParticles(ctx: CanvasRenderingContext2D, size: number, time: number,
-  motions: ParticleMotion[], pointer: LogoPointer | null, seconds: number) {
+  motions: ParticleMotion[], pointer: LogoPointer | null, seconds: number, formation = 1) {
   const height = size / 1.2;
   const cx = size / 2, cy = height / 2;
   const scale = size * 0.78;
@@ -46,6 +46,12 @@ export function drawLogoParticles(ctx: CanvasRenderingContext2D, size: number, t
     const y = Math.sin(angle) * radius * expansion;
     const drift = Math.sin(time * 0.7 + phase) * 0.004;
     const home = { x: x * Math.cos(yaw) + drift, y: y + Math.cos(time * 0.5 + phase) * 0.003 };
+    if (formation < 1) {
+      const angle = p.seed * Math.PI * 14 + (1 - formation) * 1.8;
+      const radius = 0.12 + Math.sqrt(p.seed) * 1.15;
+      home.x = home.x * formation + Math.cos(angle) * radius * (1 - formation);
+      home.y = home.y * formation + Math.sin(angle) * radius * 0.65 * (1 - formation);
+    }
     const motion = motions[index];
     moveParticle(motion, home, pointer, seconds, p.seed);
     const px = cx + (home.x + motion.x) * scale;

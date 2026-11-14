@@ -5,6 +5,10 @@ import {
   useState,
   type DragEvent as ReactDragEvent,
 } from "react";
+import { useSearchParams } from 'react-router';
+import { useProfileScope } from '@/contexts/useProfileScope';
+import { OutputFile } from '@/components/files/OutputFile';
+import { downloadOutputFile, outputFileReference } from '@/lib/output-files';
 import {
   ArrowUp,
   Download,
@@ -61,15 +65,6 @@ function formatBytes(size: number | null): string {
   return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
-function downloadDataUrl(dataUrl: string, name: string) {
-  const link = document.createElement("a");
-  link.href = dataUrl;
-  link.download = name || "download";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-}
-
 function displayPath(path: string | null | undefined): string {
   return path?.trim() || "Files";
 }
@@ -79,6 +74,15 @@ function transferHasFiles(event: ReactDragEvent<HTMLElement>): boolean {
 }
 
 export default function FilesPage() {
+  const [params] = useSearchParams();
+  const { profile, currentProfile } = useProfileScope();
+  const owningProfile = profile || currentProfile;
+  const sessionId = params.get('session_id') || undefined;
+  const linkedPath = params.get('path') || undefined;
+  const selectedFile = params.get('file');
+  const selectedName = selectedFile && !selectedFile.startsWith('/') && !/^[a-z]:/i.test(selectedFile)
+    ? outputFileReference(selectedFile, undefined, true)?.name : undefined;
+  const requestId = useRef(0);
   const { toast, showToast } = useToast();
   const { setAfterTitle, setEnd } = usePageHeader();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -98,33 +102,47 @@ export default function FilesPage() {
 
   const activePath = listing?.path ?? currentPath ?? "";
   const canChangePath = listing?.can_change_path ?? false;
-  const canUpload = Boolean(activePath) && !uploading;
+  const canUpload = Boolean(activePath) && !uploading && !listing?.read_only;
   const headerPath = displayPath(listing?.locked_root ?? listing?.path ?? currentPath);
 
   const load = useCallback(
-    async (path = currentPath) => {
+    async (path?: string) => {
+      const id = ++requestId.current;
       setLoading(true);
       setError(null);
       try {
-        const result = await api.listFiles(path);
+        const result = await api.listFiles(path, { profile: owningProfile, sessionId });
+        if (id !== requestId.current) return;
         setListing(result);
         setCurrentPath(result.path);
         setPathInput(result.path);
       } catch (e) {
-        setError(errorMessage(e));
+        if (id === requestId.current) setError(errorMessage(e));
       } finally {
-        setLoading(false);
+        if (id === requestId.current) setLoading(false);
       }
     },
-    [currentPath],
+    [owningProfile, sessionId],
   );
 
   useEffect(() => {
     // Existing dashboard data pages fetch from effects; keep this local and explicit
     // until the shared lint profile is updated for async page loaders.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load(currentPath);
-  }, [currentPath]); // eslint-disable-line react-hooks/exhaustive-deps
+    setListing(null);
+    void load(linkedPath);
+    return () => {
+      // This is a request generation counter, not a captured DOM handle.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      requestId.current++;
+    };
+  }, [load, linkedPath]);
+
+  useEffect(() => {
+    if (!selectedFile || !listing) return;
+    const row = document.querySelector<HTMLElement>('[data-file-path][data-highlighted="true"]');
+    row?.scrollIntoView?.({ block: 'nearest' });
+  }, [listing, selectedFile]);
 
   useEffect(() => {
     setAfterTitle(
@@ -138,7 +156,7 @@ export default function FilesPage() {
           ghost
           size="icon"
           type="button"
-          onClick={() => void load()}
+          onClick={() => void load(currentPath)}
           disabled={loading}
           aria-label="Refresh files"
         >
@@ -150,11 +168,11 @@ export default function FilesPage() {
       setAfterTitle(null);
       setEnd(null);
     };
-  }, [headerPath, load, loading, setAfterTitle, setEnd]);
+  }, [headerPath, load, loading, currentPath, setAfterTitle, setEnd]);
 
   const openDirectory = (entry: ManagedFileEntry) => {
     if (entry.is_directory) {
-      setCurrentPath(entry.path);
+      void load(entry.path);
     }
   };
 
@@ -183,7 +201,7 @@ export default function FilesPage() {
       setFolderName("");
       setCreateDialogOpen(false);
       showToast("Folder created", "success");
-      await load();
+      await load(activePath);
     } catch (e) {
       showToast(`Create failed: ${errorMessage(e)}`, "error");
     } finally {
@@ -199,7 +217,7 @@ export default function FilesPage() {
         await api.uploadFile(joinPath(activePath, file.name), file, true);
       }
       showToast(`${files.length} file${files.length === 1 ? "" : "s"} uploaded`, "success");
-      await load();
+      await load(activePath);
     } catch (e) {
       showToast(`Upload failed: ${errorMessage(e)}`, "error");
     } finally {
@@ -241,8 +259,7 @@ export default function FilesPage() {
   const downloadFile = async (entry: ManagedFileEntry) => {
     if (entry.is_directory) return;
     try {
-      const file = await api.readFile(entry.path);
-      downloadDataUrl(file.data_url, file.name);
+      await downloadOutputFile(entry, { profile: owningProfile, sessionId });
     } catch (e) {
       showToast(`Download failed: ${errorMessage(e)}`, "error");
     }
@@ -255,7 +272,7 @@ export default function FilesPage() {
       await api.deleteFile(pendingDelete.path, pendingDelete.is_directory);
       showToast("Deleted", "success");
       setPendingDelete(null);
-      await load();
+      await load(activePath);
     } catch (e) {
       showToast(`Delete failed: ${errorMessage(e)}`, "error");
     } finally {
@@ -316,7 +333,7 @@ export default function FilesPage() {
           <Button
             type="button"
             onClick={() => setCreateDialogOpen(true)}
-            disabled={!activePath}
+            disabled={!activePath || listing?.read_only}
             size="sm"
             outlined
             className="uppercase"
@@ -378,7 +395,7 @@ export default function FilesPage() {
           {listing?.parent && (
             <button
               type="button"
-              onClick={() => setCurrentPath(listing.parent ?? undefined)}
+              onClick={() => void load(listing.parent ?? undefined)}
               className="grid w-full min-w-[42rem] grid-cols-[minmax(12rem,1fr)_7rem_10rem_9rem] items-center gap-3 border-b border-border/60 px-4 py-2 text-left text-sm transition hover:bg-background/40"
             >
               <span className="flex min-w-0 items-center gap-2 font-mono text-text-secondary">
@@ -402,9 +419,11 @@ export default function FilesPage() {
             listing?.entries.map((entry) => (
               <div
                 key={entry.path}
-                className="grid min-w-[42rem] grid-cols-[minmax(12rem,1fr)_7rem_10rem_9rem] items-center gap-3 border-b border-border/60 px-4 py-2 text-sm last:border-b-0 hover:bg-background/35"
+                data-file-path={entry.path}
+                data-highlighted={entry.path === selectedFile || entry.name === selectedName || undefined}
+                className={`grid min-w-[42rem] grid-cols-[minmax(12rem,1fr)_7rem_10rem_9rem] items-center gap-3 border-b border-border/60 px-4 py-2 text-sm last:border-b-0 hover:bg-background/35 ${entry.path === selectedFile || entry.name === selectedName ? 'bg-primary/10 ring-1 ring-inset ring-primary/40' : ''}`}
               >
-                <button
+                {entry.is_directory ? <button
                   type="button"
                   onClick={() => (entry.is_directory ? openDirectory(entry) : void downloadFile(entry))}
                   className="flex min-w-0 items-center gap-2 text-left font-mono text-foreground"
@@ -415,10 +434,10 @@ export default function FilesPage() {
                     <FileIcon className="h-4 w-4 shrink-0 text-text-tertiary" />
                   )}
                   <span className="truncate">{entry.name}</span>
-                </button>
+                </button> : <OutputFile file={entry} scope={{ profile: owningProfile, sessionId }} />}
                 <span className="text-xs tabular-nums text-text-secondary">{formatBytes(entry.size)}</span>
                 <span className="truncate text-xs text-text-secondary">
-                  {Number.isFinite(entry.mtime) ? DATE_FORMAT.format(entry.mtime * 1000) : "-"}
+                  {entry.mtime > 0 && Number.isFinite(entry.mtime) ? DATE_FORMAT.format(entry.mtime * 1000) : "-"}
                 </span>
                 <span className="flex justify-end gap-1">
                   {entry.is_directory ? (
@@ -442,13 +461,14 @@ export default function FilesPage() {
                       <Download />
                     </Button>
                   )}
-                  {!entry.is_directory && structureFormat(entry.name) && <StructureButton source={{ name: entry.name, path: entry.path }} label="3D" />}
+                  {!entry.is_directory && structureFormat(entry.name) && <StructureButton source={{ name: entry.name, path: entry.path, profile: owningProfile, sessionId }} label="3D" />}
                   <Button
                     ghost
                     size="icon"
                     type="button"
                     onClick={() => setPendingDelete(entry)}
                     aria-label={`Delete ${entry.name}`}
+                    disabled={listing?.read_only}
                     className="text-destructive hover:text-destructive"
                   >
                     <Trash2 />

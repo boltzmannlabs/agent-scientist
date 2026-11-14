@@ -1,10 +1,11 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
-import { looksLikeSlashCommand, parseSlashCommand, parseCommandDispatch, JsonRpcGatewayError, type ServerRequest, type SessionResumeResult, type SessionLiveInfo, type SlashExecResult, type GatewayEvent, type ConnectionRequestPayload, type ConnectionAnswer, type ConnectionRespondResult } from '@sci/shared';
+import { looksLikeSlashCommand, parseSlashCommand, parseCommandDispatch, JsonRpcGatewayError, type ServerRequest, type SessionResumeResult, type SessionLiveInfo, type SlashExecResult, type GatewayEvent, type ConnectionRequestPayload, type ConnectionAnswer, type ConnectionRespondResult, type SessionControlReadResult, type SessionControlSnapshot, type CommandsCatalogResult, type ConfigSetResult } from '@sci/shared';
 import { GatewayClient } from '@/lib/gatewayClient';
 import { chatReducer, emptyChat } from '@/lib/web-chat-state';
 
 const messageOf = (error: unknown) => error instanceof Error ? error.message : String(error);
 const secretMethods = new Set(['sudo', 'secret', 'vault.unlock_prompt', 'vault.code', 'vault.save_login']);
+const WEB_SLASH_SUGGESTIONS = new Set(['/side', '/compact', '/goal']);
 export const chatStorageKey = (profile: string) => `sci-web-chat:${profile || 'default'}`;
 export function readChatSession(profile: string): string {
   try { return sessionStorage.getItem(chatStorageKey(profile)) || ''; } catch { return ''; }
@@ -12,14 +13,16 @@ export function readChatSession(profile: string): string {
 function rememberSession(profile: string, id: string) {
   try { sessionStorage.setItem(chatStorageKey(profile), id); } catch { /* Private browsing can disable storage. */ }
 }
-interface WebChatOptions { profile: string; resume: string; cwd: string }
+interface WebChatOptions { profile: string; resume: string; cwd: string; storageKey?: string; parentSessionId?: string }
 
-export function useWebChat({ profile, resume, cwd }: WebChatOptions) {
+export function useWebChat({ profile, resume, cwd, storageKey = profile, parentSessionId }: WebChatOptions) {
   const [state, dispatch] = useReducer(chatReducer, emptyChat);
   const [online, setOnline] = useState(false);
   const [loading, setLoading] = useState(true);
   const [storedId, setStoredId] = useState(resume);
   const [info, setInfo] = useState<SessionLiveInfo>({});
+  const [control, setSessionControl] = useState<SessionControlSnapshot>({ goal: null, loop: null, heartbeat: null, revision: '', updated_at: 0 });
+  const [commands, setCommands] = useState<Array<[string, string]>>([]);
   const [requests, setRequests] = useState<ServerRequest[]>([]);
   const [prefill, setPrefill] = useState('');
   const [connection, setConnection] = useState<ConnectionRequestPayload | null>(null);
@@ -50,6 +53,7 @@ export function useWebChat({ profile, resume, cwd }: WebChatOptions) {
         'tool.generating': () => dispatch({ type: 'status', text: `Preparing ${String(p.name)}…` }),
         'status.update': () => dispatch({ type: 'status', text }),
         'session.info': () => setInfo(prev => ({ ...prev, ...p })),
+        'session.control.update': () => { if (p.control && typeof p.control === 'object') setSessionControl(p.control as SessionControlSnapshot); },
         'error': () => { locked.current = false; dispatch({ type: 'error', text: String(p.message || 'The request failed.') }); },
         'notice': () => dispatch({ type: 'notice', text: String(p.message || '') }),
         'connection.request': () => setConnection(p as unknown as ConnectionRequestPayload),
@@ -86,8 +90,10 @@ export function useWebChat({ profile, resume, cwd }: WebChatOptions) {
         await gw.connect();
         if (cancelled) { gw.close(); return; }
         const resuming = Boolean(stored.current);
-        const result = await gw.request<SessionResumeResult>(resuming ? 'session.resume' : 'session.create', {
+        const method = resuming ? 'session.resume' : parentSessionId ? 'session.branch_stored' : 'session.create';
+        const result = await gw.request<SessionResumeResult>(method, {
           profile, source: 'web', close_on_disconnect: false,
+          ...(parentSessionId && !resuming ? { parent_session_id: parentSessionId } : {}),
           ...(stored.current ? { session_id: stored.current } : cwd ? { cwd } : {}),
         });
         if (cancelled) { gw.close(); return; }
@@ -95,8 +101,22 @@ export function useWebChat({ profile, resume, cwd }: WebChatOptions) {
         stored.current = result.stored_session_id || result.session_key || stored.current;
         setStoredId(stored.current);
         // Empty drafts have no durable DB row; do not restore one after a server restart.
-        rememberSession(profile, resuming ? stored.current : '');
+        rememberSession(storageKey, resuming ? stored.current : '');
         setInfo(result.info);
+        void gw.request<SessionControlReadResult>('session.control.read', { profile, session_id: runtime.current }).then(snapshot => setSessionControl(snapshot.control)).catch(() => {});
+        void gw.request<CommandsCatalogResult>('commands.catalog', { profile, session_id: runtime.current }).then(catalog => {
+          const pairs = (catalog.pairs || []).filter(pair => pair.length >= 1);
+          const suggestions = pairs
+            .filter(pair => WEB_SLASH_SUGGESTIONS.has(String(pair[0]).toLowerCase()))
+            .map(pair => [pair[0], pair[1] || ''] as [string, string]);
+          // The command registry exposes /compact as an alias of /compress, so
+          // add the requested web-facing alias while preserving its native dispatch.
+          const compress = pairs.find(pair => String(pair[0]).toLowerCase() === '/compress');
+          if (compress && !suggestions.some(([name]) => name.toLowerCase() === '/compact')) {
+            suggestions.push(['/compact', compress[1] || '']);
+          }
+          setCommands(suggestions.sort(([left], [right]) => left.localeCompare(right)));
+        }).catch(() => {});
         setConnection(result.pending_connection || null);
         setRequests(prev => prev.filter(r => r.params.session_id === runtime.current));
         locked.current = Boolean(result.running || result.inflight?.streaming);
@@ -119,18 +139,19 @@ export function useWebChat({ profile, resume, cwd }: WebChatOptions) {
       gw.close(); gateway.current = null;
     };
     // A keyed ChatConversation owns exactly one profile and initial resume target.
-  }, [profile, resume, cwd]);
+  }, [profile, resume, cwd, storageKey, parentSessionId]);
 
-  async function send(text: string, images: File[] = []): Promise<boolean> {
+  async function send(text: string, images: File[] = [], queued = false): Promise<boolean> {
     const gw = gateway.current;
-    if (!gw || !online || locked.current || !runtime.current) return false;
-    locked.current = true;
+    if (!gw || !online || (locked.current && !queued) || !runtime.current) return false;
+    if (!queued) locked.current = true;
     setPrefill('');
-    dispatch({ type: 'user', text });
+    if (!queued) dispatch({ type: 'user', text });
     const params = { session_id: runtime.current, profile };
     try {
       let prompt = text;
       if (looksLikeSlashCommand(text)) {
+        if (queued) throw new Error('Slash commands cannot be queued. Send the command after the current response.');
         let response: SlashExecResult;
         try { response = await gw.request<SlashExecResult>('slash.exec', { ...params, command: text }); }
         catch (error) {
@@ -161,16 +182,57 @@ export function useWebChat({ profile, resume, cwd }: WebChatOptions) {
       if (!alive.current) return false;
       // Persist the target before delivery so refresh during a pending request
       // resumes this conversation instead of silently creating another one.
-      rememberSession(profile, stored.current);
-      await gw.request('prompt.submit', { ...params, text: prompt, surface: 'web' });
+      rememberSession(storageKey, stored.current);
+      await gw.request('prompt.submit', { ...params, text: prompt, surface: 'web', ...(queued ? { queued: true } : {}) });
+      if (queued) dispatch({ type: 'queued', text: prompt });
       return true;
     } catch (error) {
       if (alive.current) {
-        setOnline(false);
-        dispatch({ type: 'error', text: `${messageOf(error)} Reconnect to verify the conversation before sending again. No automatic retry was attempted.` });
+        if (queued) dispatch({ type: 'notice', text: `Message was not queued: ${messageOf(error)}. The active response is still running.` });
+        else {
+          setOnline(false);
+          dispatch({ type: 'error', text: `${messageOf(error)} Reconnect to verify the conversation before sending again. No automatic retry was attempted.` });
+        }
       }
       return false;
     }
+  }
+  async function steer(text: string): Promise<boolean> {
+    const gw = gateway.current;
+    if (!gw || !online || !runtime.current || !locked.current) return false;
+    try {
+      const result = await gw.request<{ status: string }>('session.steer', { session_id: runtime.current, profile, text });
+      if (result.status === 'rejected') { dispatch({ type: 'notice', text: 'The active response could not be steered. Your message was not applied.' }); return false; }
+      dispatch({ type: 'queued', text: `/steer ${text}` });
+      return true;
+    } catch (error) { dispatch({ type: 'notice', text: `Steer failed: ${messageOf(error)}` }); return false; }
+  }
+  async function setChatControl(key: 'yolo' | 'fast' | 'reasoning', value: string) {
+    const gw = gateway.current;
+    if (!gw || !online || !runtime.current) return;
+    try {
+      const result = await gw.request<{ info?: SessionLiveInfo }>('config.set', { profile, session_id: runtime.current, key, value, scope: 'session' });
+      if (result.info) setInfo(prev => ({ ...prev, ...result.info }));
+      if (key === 'yolo') setInfo(prev => ({ ...prev, yolo: value !== 'off' }));
+      if (key === 'fast') setInfo(prev => ({ ...prev, fast: value === 'fast' }));
+      if (key === 'reasoning') setInfo(prev => ({ ...prev, reasoning_effort: value }));
+    } catch (error) { dispatch({ type: 'notice', text: `${key} setting was not changed: ${messageOf(error)}` }); }
+  }
+  async function setModel(provider: string, model: string, confirmExpensiveModel = false): Promise<ConfigSetResult> {
+    const gw = gateway.current;
+    if (!gw || !online || !runtime.current) throw new Error('Chat is not connected. Reconnect before changing the model.');
+    const result = await gw.request<ConfigSetResult>('config.set', {
+      profile, session_id: runtime.current, key: 'model',
+      value: `${model} --provider ${provider}`, confirm_expensive_model: confirmExpensiveModel,
+    });
+    if (!result.confirm_required) setInfo(prev => ({ ...prev, model, provider }));
+    return result;
+  }
+  async function controlAction(action: string) {
+    const gw = gateway.current;
+    if (!gw || !online || !runtime.current) return;
+    try { const result = await gw.request<{ control: SessionControlSnapshot }>('session.control', { profile, session_id: runtime.current, action }); setSessionControl(result.control); }
+    catch (error) { dispatch({ type: 'notice', text: `Control action failed: ${messageOf(error)}` }); }
   }
   async function stop() {
     try {
@@ -198,5 +260,5 @@ export function useWebChat({ profile, resume, cwd }: WebChatOptions) {
     });
     if (response.settled) setConnection(null);
   }
-  return { connection, answerConnection, setPrefill, state, online, loading, storedId, info, requests, prefill, send, stop, answer, reconnect: () => reconnect.current() };
+  return { connection, answerConnection, setPrefill, state, online, loading, storedId, info, control, commands, requests, prefill, send, steer, setControl: setChatControl, setModel, controlAction, stop, answer, reconnect: () => reconnect.current() };
 }

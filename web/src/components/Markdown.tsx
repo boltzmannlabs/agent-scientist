@@ -1,4 +1,7 @@
-import { useMemo, type ReactNode } from "react";
+import { useContext, useMemo, type ReactNode } from "react";
+import { OutputFileContext } from '@/components/files/output-file-context';
+import { OutputFile } from '@/components/files/OutputFile';
+import { linkedOutputFile, outputFileReference, splitFileText } from '@/lib/output-files';
 import { StructureLink } from '@/components/structure/StructurePreview';
 import { structureSourceFromLink } from '@/lib/structure-source';
 
@@ -319,6 +322,7 @@ function InlineContent({
   highlightTerms?: string[];
 }) {
   const nodes = useMemo(() => parseInline(text), [text]);
+  const fileScope = useContext(OutputFileContext);
 
   return (
     <>
@@ -326,13 +330,17 @@ function InlineContent({
         switch (node.type) {
           case "text":
             return (
-              <HighlightedText
+              <FileText
                 key={i}
                 text={node.content}
                 terms={highlightTerms}
               />
             );
           case "code":
+            if (fileScope) {
+              const file = outputFileReference(node.content, undefined, /[/.\\]/.test(node.content));
+              if (file) return <OutputFile key={i} file={file} scope={fileScope} />;
+            }
             return (
               <code
                 key={i}
@@ -344,16 +352,20 @@ function InlineContent({
           case "bold":
             return (
               <strong key={i} className="font-semibold">
-                <HighlightedText text={node.content} terms={highlightTerms} />
+                <FileText text={node.content} terms={highlightTerms} />
               </strong>
             );
           case "italic":
             return (
               <em key={i}>
-                <HighlightedText text={node.content} terms={highlightTerms} />
+                <FileText text={node.content} terms={highlightTerms} />
               </em>
             );
           case "link": {
+            if (fileScope) {
+              const file = linkedOutputFile(node.href, typeof window === 'undefined' ? undefined : window.location.origin);
+              if (file) return <OutputFile key={i} file={file} scope={fileScope} />;
+            }
             if (structureSourceFromLink(node.href, typeof window === 'undefined' ? undefined : window.location.origin)) {
               return <StructureLink key={i} href={node.href}>{node.text}</StructureLink>;
             }
@@ -388,6 +400,14 @@ function InlineContent({
       })}
     </>
   );
+}
+
+function FileText({ text, terms }: { text: string; terms?: string[] }) {
+  const scope = useContext(OutputFileContext);
+  if (!scope) return <HighlightedText text={text} terms={terms} />;
+  return <>{splitFileText(text).map((part, index) => part.file
+    ? <OutputFile key={index} file={part.file} scope={scope} />
+    : <HighlightedText key={index} text={part.text} terms={terms} />)}</>;
 }
 
 /** Highlight search terms within a plain text string. */

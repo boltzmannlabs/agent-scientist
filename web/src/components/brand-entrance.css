@@ -1,15 +1,22 @@
-.brand-app { height: 100%; min-height: 0; }
+.brand-app { height: 100%; min-height: 0; opacity: 1; transition: opacity .8s ease; }
+.brand-app--entering { opacity: 0; }
 .brand-entrance {
   position: fixed; inset: 0; z-index: 10000; background: #000;
-  display: grid; place-items: center; overflow: hidden;
+  overflow: hidden; transition: background-color .8s ease;
 }
-.brand-entrance__video {
-  display: block; width: 100%; height: 100%; object-fit: contain;
-}
+.brand-entrance--revealing { background: transparent; }
+.brand-entrance__stars { display: block; width: 100%; height: 100%; opacity: 0; }
 .brand-entrance__skip {
   position: absolute; bottom: max(28px, env(safe-area-inset-bottom)); right: 32px;
   padding: 10px 16px; border: 1px solid #444; border-radius: 999px;
   font: 15px var(--theme-font-sans); color: #ddd; background: #000; cursor: pointer;
+  animation: intro-control-reveal 2s ease both;
 }
+.brand-entrance--revealing .brand-entrance__skip { opacity: 0; pointer-events: none; }
 .brand-entrance__skip:hover { border-color: #f36cce; color: white; }
 .brand-entrance__skip:focus-visible { outline: 2px solid #54e8e0; outline-offset: 5px; }
+@keyframes intro-control-reveal { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .brand-app, .brand-entrance { transition: none; }
+  .brand-entrance__skip { animation: none; }
+}

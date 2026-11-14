@@ -136,6 +136,7 @@ SECTIONS: list[tuple[str, list[tuple[str, str, str | None]]]] = [
     ]),
     ("Developer Guide", [
         ("developer-guide/contributing", "Contributing", None),
+        ("developer-guide/web-dashboard-reference", "Web Dashboard Reference", None),
         ("developer-guide/architecture", "Architecture", None),
         ("developer-guide/agent-loop", "Agent Loop", None),
         ("developer-guide/prompt-assembly", "Prompt Assembly", None),

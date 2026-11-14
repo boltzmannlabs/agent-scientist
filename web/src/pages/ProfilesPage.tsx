@@ -746,7 +746,7 @@ export default function ProfilesPage() {
       : base;
   })();
 
-  // Put "Build" (full builder) + "Create" (quick modal) buttons in header
+  // Science profiles use the guided builder; the compact modal remains for config clones.
   useLayoutEffect(() => {
     setEnd(
       <div className="flex items-center gap-2">
@@ -754,14 +754,14 @@ export default function ProfilesPage() {
           className="uppercase"
           size="sm"
           outlined
-          onClick={() => navigate("/profiles/new")}
+          onClick={() => setCreateModalOpen(true)}
         >
-          Build
+          Clone
         </Button>
         <Button
           className="uppercase"
           size="sm"
-          onClick={() => setCreateModalOpen(true)}
+          onClick={() => navigate("/profiles/new")}
         >
           {t.common.create}
         </Button>
@@ -834,7 +834,7 @@ export default function ProfilesPage() {
                 id="create-profile-title"
                 className="font-mondwest text-display text-base tracking-wider"
               >
-                {t.profiles.newProfile}
+                Clone profile
               </h2>
             </header>
 

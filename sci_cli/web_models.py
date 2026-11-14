@@ -445,6 +445,32 @@ class ProfileCreate(BaseModel):
     # so SCI_HOME can't redirect it); PIDs go back for the UI to poll.
     hub_skills: List[str] = []
 
+class NativeScienceSource(BaseModel):
+    location: str
+    access: Literal["reference", "read-local", "model"]
+
+class NativeScienceService(BaseModel):
+    name: str
+    kind: Literal["mcp", "plugin"]
+    tools: List[str] = []
+    discovery_token: Optional[str] = None
+    approve_scope: bool = False
+
+class NativeScienceProfileCreate(BaseModel):
+    name: str
+    config_fingerprint: str
+    skills: List[str] = []
+    services: List[NativeScienceService] = []
+    sources: List[NativeScienceSource] = []
+    approve_image_download: bool = False
+    approve_boltzmann_validation: bool = False
+    boltzmann_api_key: SecretStr = SecretStr("")
+
+class NativeScienceMcpDiscover(BaseModel):
+    name: str
+    approve_network: bool = False
+    approve_local_execution: bool = False
+
 class ProfileRename(BaseModel):
     new_name: str
 

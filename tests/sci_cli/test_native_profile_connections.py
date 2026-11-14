@@ -63,8 +63,9 @@ def test_mcp_handshake_credentials_selection_and_cancellation(tmp_path, monkeypa
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
+    # Cold MCP imports share this deadline; allow loaded parallel CI workers.
     source = {"url": f"http://127.0.0.1:{server.server_port}/mcp", "transport": "http",
-              "headers": {"Authorization": "Bearer ${API_KEY}"}, "connect_timeout": 4}
+              "headers": {"Authorization": "Bearer ${API_KEY}"}, "connect_timeout": 15}
     scratch = tmp_path / "scratch"
     scratch.mkdir()
     ui = SimpleNamespace(show=Mock())
