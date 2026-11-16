@@ -1434,3 +1434,9 @@ def real_bash() -> str:
             if candidate.exists():
                 return str(candidate)
     return found or "bash"
+
+
+@pytest.fixture
+def released_sci_version(monkeypatch):
+    """Give package-install fixtures a declared release independent of git tags."""
+    monkeypatch.setattr("sci_cli.plugins_manifest.running_sci_version", lambda: "1.0.0")

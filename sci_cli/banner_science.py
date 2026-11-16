@@ -18,7 +18,7 @@ SCIENCE_LOGO_MIN_COLUMNS = 70
 
 @lru_cache(maxsize=1)
 def science_art():
-    return json.loads(files("sci_cli").joinpath("data/science-terminal-art.json").read_text(encoding="utf-8"))
+    return json.loads(files("sci_cli").joinpath("data/science-terminal-art.json").read_text(encoding="utf-8-sig"))
 
 
 def science_welcome_panel(*, skin, profile, model, provider, cwd, tool_count,

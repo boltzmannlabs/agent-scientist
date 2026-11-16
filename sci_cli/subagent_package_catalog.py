@@ -24,7 +24,7 @@ def catalog():
         return rows
     if not SNAPSHOT.exists():
         return {}
-    data = json.loads(SNAPSHOT.read_text())
+    data = json.loads(SNAPSHOT.read_text(encoding='utf-8-sig'))
     return {key: {'manifest': row['manifest'], 'digest': row['digest']} for key, row in data.items()}
 
 
@@ -37,7 +37,7 @@ def package(package_id):
     if 'path' in row:
         yield Path(row['path'])
         return
-    data = json.loads(SNAPSHOT.read_text())[package_id]
+    data = json.loads(SNAPSHOT.read_text(encoding='utf-8-sig'))[package_id]
     from sci_cli.subagent_package_io import MAX_BYTES, MAX_FILES
     if len(data['files']) > MAX_FILES:
         raise ValueError('Embedded package exceeds file limit.')
