@@ -66,11 +66,11 @@ def test_interactive_completion_launches_only_with_configuration(tmp_path, mode)
     shutil.copy2(ROOT / 'scripts/source-install-preflight.sh', source / 'scripts/source-install-preflight.sh')
     for name in ('pyproject.toml', 'uv.lock', 'pm/lock.json'):
         (source / name).touch()
-    (source / 'setup-sci.sh').write_text('#!/bin/bash\nexit 0\n')
+    (source / 'setup-sci.sh').write_text('#!/usr/bin/env bash\nexit 0\n')
     local = source / '.sci/bin'
     local.mkdir(parents=True)
     (local / 'sci').write_text(
-        '#!/bin/bash\nprintf "%s\\n" "$*" >> "$CALL_LOG"\n'
+        '#!/usr/bin/env bash\nprintf "%s\\n" "$*" >> "$CALL_LOG"\n'
         'case "$1" in\n'
         '  --help) exit 0 ;;\n'
         '  --run-module) if [ "$MODE" = status-error ]; then exit 19; fi; '
