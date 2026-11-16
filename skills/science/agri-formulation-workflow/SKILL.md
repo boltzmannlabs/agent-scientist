@@ -1,7 +1,7 @@
 ---
 name: agri-formulation-workflow
 description: Evaluate and cost-optimize agricultural formulations.
-version: "2.2.0"
+version: "2.3.0"
 author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
@@ -79,6 +79,15 @@ alternate store. Remote execution must have the package and that store available
 when `project_id` is absent; retain its returned ID. The allowed ingredient roles
 are active, carrier, matrix, solvent, surfactant, dispersant, binder, filler,
 coating, stabilizer and other. Do not invent roles or API fields.
+
+## Composition-based recipe names
+
+Give every recipe a descriptive name before saving and use it throughout recipe
+selection, scenarios, comparisons, charts and reports. Read
+[references/recipe-naming.md](references/recipe-naming.md) for the naming rules.
+Use active identity + pure-active concentration/basis + formulation type + the
+main distinguishing composition. A/B and V0/V1 labels supplement the name; they
+never replace it. Verify the saved name, composition and ID agree before display.
 
 ## After saving recipes — required next-mode choice
 

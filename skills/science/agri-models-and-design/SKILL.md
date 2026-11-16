@@ -1,7 +1,7 @@
 ---
 name: agri-models-and-design
 description: Run physical scenarios and constrained design searches.
-version: "2.3.0"
+version: "2.3.1"
 author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
@@ -117,6 +117,9 @@ Confirm review saves Ready status and ends Edit, returning to the parent without
 executing. Follow `references/design-setup.md` for this flow.
 
 ## Recipe selection
+
+Show composition-based recipe names from the workflow skill's naming convention
+alongside short labels and saved IDs; do not show only A/B or "Recipe 1/2".
 
 For Add/Edit and AI + Physics recipe questions, use the draft helper's `recipes`
 selector with `multi_select: false`. All eligible recipes is a direct choice,

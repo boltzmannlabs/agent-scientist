@@ -1,7 +1,7 @@
 ---
 name: formulation-results
 description: Explain and report formulation optimization results.
-version: "1.1.0"
+version: "1.2.0"
 author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
@@ -22,6 +22,10 @@ Turn formulation optimization work into a traceable, understandable decision. Ap
 - Preserve the user's baseline as V0. Record recipe identity, ingredient composition, grade/source, concentration, quantity and units, batch basis, process and known cost/performance. Unknown fields remain “not provided”; do not fabricate them.
 - Give each saved recipe a stable generation label (V0, V1, V2…). Never imply chronological superiority. Keep generation labels linked to exact recipe IDs and revisions.
 - Select every relevant simulation from the problem objectives and criteria, using current model catalogues and domain fit. Do not run every available model indiscriminately. Mark unavailable, unsupported, blocked and unassessed criteria clearly.
+- Give every recipe a composition-based name: active(s), pure-active concentration
+  and basis, formulation type, and distinguishing ingredient system. Follow the
+  workflow skill's `references/recipe-naming.md`. Use that same name in tables,
+  selectors, charts and reports, alongside generation labels and exact saved IDs.
 - Every simulation result must map to the exact formulation name, generation, recipe ID/revision, model, scenario/run ID, inputs, shared conditions and evidence/assumption provenance.
 - Explain each result before or alongside its numbers and interpret it immediately afterward. Use the required six-part interpretation below for every simulation and reported result. Do not provide naked numbers, raw objects or execution logs.
 - Distinguish measured experimental results, user-supplied values, literature data, model predictions and assumptions. A simulation awaiting confirmation is not a failure. Use “Experimental validation pending” or “To be experimentally confirmed.”
