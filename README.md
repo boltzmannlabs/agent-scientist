@@ -25,6 +25,17 @@ work in named research profiles.
 Skills are instructions—not installed software or proof of scientific validity.
 External services may require credentials, credits, and additional dependencies.
 
+## Agricultural formulations
+
+AgriFormulations is bundled as an installed Python library, with three built-in
+skills for automatic objective-based simulations, baseline comparisons and cost
+optimization across grades, suppliers, ingredient combinations and parameters.
+It includes 21 model keys, measurement fitting, manual Design / AI + Physics
+review, research and PDF/data exports. Ask a formulation
+question in a new conversation; the agent uses these skills and the package
+through its existing execution tools. No plugin activation is required.
+See [the bundled package guide](third_party/agriformulations/README.md).
+
 ## Installation
 
 Install from this repository as your normal user. The installers prepare a managed

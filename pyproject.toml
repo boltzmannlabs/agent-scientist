@@ -17,6 +17,7 @@ authors = [{ name = "Nous Research" }]
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = [
+  "sci-agriformulations==1.3.0",
   # Core — every direct dep is exact-pinned to ==X.Y.Z (no ranges).
   # Rationale: ranges allow PyPI to ship a fresh version of a transitive
   # at any time without a code review on our side. Exact pins mean the
@@ -640,6 +641,7 @@ override-dependencies = [
 exclude-newer = "14 days"
 
 [tool.uv.sources]
+sci-agriformulations = { path = "third_party/agriformulations/sci_agriformulations-1.3.0-py3-none-any.whl" }
 misaki = { path = "third_party/misaki" }
 # h2: temporary exclude-newer exception for the CVE-2026-71554 (GHSA-6hr6-w5qg-qmwg,
 # request-smuggling) fix in 4.4.1, published 2026-08-03. Remove after 2026-08-17.
@@ -821,6 +823,7 @@ include = [
   "acp_adapter",
   "plugins",
   "plugins.*",
+  "third_party.agriformulations",
   "providers",
   "providers.*",
   "sci_platform",
@@ -832,6 +835,7 @@ include = [
 ]
 
 [tool.setuptools.package-data]
+"third_party.agriformulations" = ["*.whl", "README.md", "manifest.json"]
 sci_cli = [
   "observability/schemas/*.json",
   "data/*.json",

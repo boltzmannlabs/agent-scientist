@@ -806,6 +806,52 @@ def _cprint(text: str):
         paint_fallback()
 
 
+def _wait_for_pending_paints(app, timeout: float = 5.0) -> bool:
+    """From the agent thread, drain queued output before opening a modal.
+
+    `_cprint` schedules each row on the UI loop. Flushing the stream alone
+    does not wait for those rows to reach the terminal.
+    """
+    import asyncio
+    loop = getattr(app, 'loop', None) if app is not None else None
+    if (not getattr(app, '_is_running', False)
+            or not isinstance(loop, asyncio.AbstractEventLoop) or not loop.is_running()):
+        return True
+    try:
+        if asyncio.get_running_loop() is loop:
+            return True  # Never block the UI loop on itself.
+    except RuntimeError:
+        pass
+
+    async def drain():
+        # Earlier _cprint callbacks run first; allow their run_in_terminal tasks
+        # to install their chained completion future before inspecting it.
+        await asyncio.sleep(0)
+        while True:
+            pending = getattr(app, '_running_in_terminal_f', None)
+            if pending is not None and not pending.done():
+                await asyncio.shield(pending)
+            with _HELD_PAINTS_LOCK:
+                held = bool(_HELD_PAINTS)
+            if not held:
+                break
+            await asyncio.sleep(.01)
+        await asyncio.sleep(0)
+
+    coroutine = drain()
+    try:
+        future = asyncio.run_coroutine_threadsafe(coroutine, loop)
+    except RuntimeError:  # The application may close between the checks above.
+        coroutine.close()
+        return False
+    try:
+        future.result(timeout=timeout)
+        return True
+    except Exception:
+        future.cancel()
+        return False
+
+
 def _capture_side_parent_output(text):
     try:
         from prompt_toolkit.application import get_app_or_none
