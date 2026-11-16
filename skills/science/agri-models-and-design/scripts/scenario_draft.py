@@ -78,6 +78,23 @@ def validate_scenarios(items):
     return items
 
 
+def run_choice(state, payload):
+    ids = payload.get('scenario_ids', [r['id'] for r in state['scenarios']])
+    available = {r['id'] for r in state['scenarios']}
+    if not isinstance(ids, list) or not ids or any(not isinstance(i, str) for i in ids) or set(ids) - available:
+        raise ValueError('Choose existing scenarios before Run')
+    answer = payload.get('answer')
+    status = 'needs_input'
+    if payload.get('outcome', 'submitted') == 'cancelled':
+        status = 'cancelled'
+    elif payload.get('outcome', 'submitted') == 'submitted':
+        status = {'Run without review': 'run', 'Go to Edit for review': 'edit',
+                  'Previous': 'previous'}.get(answer, 'needs_input') if isinstance(answer, str) else 'needs_input'
+    return {'status': status, 'scenario_ids': list(dict.fromkeys(ids)),
+            'selector': {'question': 'Run these scenarios without review, or go to Edit for review?',
+                         'choices': ['Run without review', 'Go to Edit for review'], 'multi_select': False}}
+
+
 def create(payload):
     if not isinstance(payload.get('project_id'), str) or not payload['project_id']:
         raise ValueError('project_id is required')
@@ -96,7 +113,21 @@ def apply(state, action, payload):
         raise ValueError('Draft changed; list it again before editing')
     updated = deepcopy(state)
     validate_scenarios(updated['scenarios'])
-    if action == 'delete':
+    if action == 'confirm-review':
+        ids = payload.get('scenario_ids')
+        available = {r['id'] for r in updated['scenarios']}
+        if payload.get('confirmation') != 'Confirm review':
+            raise ValueError('Confirm review requires an explicit answer')
+        if not isinstance(ids, list) or not ids or any(not isinstance(i, str) for i in ids) or set(ids) - available:
+            raise ValueError('Choose existing scenarios to confirm')
+        for row in updated['scenarios']:
+            if row['id'] in ids:
+                if row.get('unresolved_inputs') or not (row.get('inputs') or row.get('shared_inputs') or row.get('recipe_inputs')):
+                    raise ValueError('Resolve and validate scenario inputs before confirming review')
+                row['status'] = 'ready'
+                row['ready'] = True
+                row['review_confirmed'] = True
+    elif action == 'delete':
         ids = payload.get('scenario_ids')
         available = {r['id'] for r in updated['scenarios']}
         if ids == 'all':
@@ -170,6 +201,8 @@ def view(state):
     return {'revision': state['revision'], 'project_id': state['project_id'],
             'mode': state['mode'], 'scenarios': rows,
             'delete_selector': selector,
+            'run_selector': run_choice(state, {})['selector'] if rows else None,
+            'edit_actions': ['Edit section', 'Confirm review', 'Previous'],
             'delete_more_selector': {
                 'question': 'How would you like to select scenarios?',
                 'choices': ['Choose multiple scenarios', 'All scenarios', 'Previous'], 'multi_select': False},
@@ -236,7 +269,7 @@ def draft_lock(path, timeout=10):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['create', 'list', 'delete', 'undo', 'upsert', 'recipes'])
+    parser.add_argument('action', choices=['create', 'list', 'delete', 'undo', 'upsert', 'recipes', 'run-choice', 'confirm-review'])
     parser.add_argument('--draft', type=Path)
     parser.add_argument('--request-file', type=Path,
                         help='Read mutation payload as UTF-8 JSON data from this file')
@@ -255,8 +288,11 @@ def main():
             return 0
         if args.draft is None:
             raise ValueError('--draft is required for draft operations')
-        if args.action == 'list':
+        if args.action in ('list', 'run-choice'):
             state = json.loads(args.draft.read_text())
+            if args.action == 'run-choice':
+                print(json.dumps(run_choice(state, payload), ensure_ascii=False))
+                return 0
         else:
             with draft_lock(args.draft):
                 if args.action == 'create':

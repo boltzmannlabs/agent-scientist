@@ -88,3 +88,19 @@ question even though the screen describes radio choices. The structure is
 `{"questions":[{"question":"Which recipes should this scenario include?","choices":["All eligible recipes","1 — <actual first recipe name>","2 — <actual second recipe name>","Previous"],"multi_select":false}]}`
 for two recipes; copy actual labels from the helper rather than inventing IDs.
 Check that the native question has the returned choices before sending it.
+
+## Run choice and confirming Edit review
+
+`run-choice --draft PATH --request-file REQUEST` is read-only. Include optional
+`scenario_ids` (otherwise the displayed draft scope), actual `answer` and clarify
+`outcome`. Send the returned selector as one complete native question, including
+both choices. A `run` result authorizes the selected scope only after the agent
+resolves and validates its input values; `edit` opens Edit. No answer or an
+unsubmitted response never starts execution.
+
+`confirm-review` is a mutation with `expected_revision`, `scenario_ids` and exact
+`confirmation: "Confirm review"`. Before calling it, resolve inputs and check the
+current model schema. Save edits via upsert as review_required first. Confirmation
+rejects absent/unresolved inputs, marks only the selected rows Ready and returns
+the parent list. It never executes physics. `edit_actions` supplies the Edit section /
+Confirm review / Previous question. Display current values before that question.

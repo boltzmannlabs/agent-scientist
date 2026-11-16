@@ -48,10 +48,11 @@ execution for this mode only.
 8. **Setup summary and Run.** Show selected recipes and scenarios, reviewed shared
    and recipe-specific values, targets, variable bounds, fixed values, budget and
    assumptions. Mark incomplete sections clearly. Return to the existing
-   Add/Delete/Edit/Run parent menu. Only Run scenarios authorizes calculation of
-   the displayed Ready scope; editing or finishing an input group does not run it.
-   Incomplete scenarios must be resolved or explicitly deferred before the chosen
-   scope can run. No extra confirmation after a valid Run is needed.
+   Add/Delete/Edit/Run parent menu. Editing or finishing an input group does not
+   run anything. Run offers the single Run without review / Go to Edit for
+   review question; the former accepts the displayed setup and valid proposed
+   defaults even if a review flag is unset, the latter opens Edit
+   with Confirm review to finish. Do not add another execution confirmation.
 
 ## Clear question format
 

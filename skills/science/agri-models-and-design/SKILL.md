@@ -1,7 +1,7 @@
 ---
 name: agri-models-and-design
 description: Run physical scenarios and constrained design searches.
-version: "2.2.3"
+version: "2.3.0"
 author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
@@ -105,6 +105,16 @@ The automatic path applies only to explicitly requested automatic campaigns; it 
 missing inputs, criteria or consent to exploratory assumptions. Honor recipes-only,
 cost-only, stop and other explicit limits. Keep unknown performance unassessed and
 recommend only a qualified best among the evaluated feasible scenarios.
+
+## Run and Edit review
+
+In the scenario editor, Run opens one question: **Run without review / Go to Edit
+for review**. Use the helper's run selector; this supersedes older rules that
+blocked unreviewed scenarios or treated parent Run as immediate execution.
+Without-review accepts valid displayed defaults but still requires essential
+inputs and schema checks. Edit provides **Edit section / Confirm review / Previous**;
+Confirm review saves Ready status and ends Edit, returning to the parent without
+executing. Follow `references/design-setup.md` for this flow.
 
 ## Recipe selection
 

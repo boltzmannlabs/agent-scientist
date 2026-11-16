@@ -440,3 +440,28 @@ def test_completed_add_has_consistent_persisted_and_displayed_readiness(tmp_path
     code,edited=call(path,'upsert',{'expected_revision':listed['revision'],'scenario':{
         **listed['scenarios'][0],'status':'review_required'}})
     assert code==0 and edited['can_run'] is False
+
+
+@pytest.mark.parametrize('answer,outcome,route', [('Run without review','submitted','run'),('Go to Edit for review','submitted','edit'),('Run without review','cancelled','cancelled'),('Run without review','timed_out','needs_input'),([], 'submitted','needs_input')])
+def test_run_choice_is_explicit_read_only_and_preserves_selected_scope(tmp_path,answer,outcome,route):
+    path=tmp_path/'draft.json';draft(path);before=path.read_bytes()
+    code,result=call(path,'run-choice',{'scenario_ids':['S2'],'answer':answer,'outcome':outcome})
+    assert code==0 and result['status']==route
+    assert result['scenario_ids']==['S2']
+    assert len(result['selector']['choices'])==2 and result['selector']['multi_select'] is False
+    assert path.read_bytes()==before
+
+
+def test_confirm_review_only_marks_selected_resolved_scenario_ready(tmp_path):
+    path=tmp_path/'draft.json';initial=draft(path)
+    code,edited=call(path,'upsert',{'expected_revision':initial['revision'],'scenario':{
+        **initial['scenarios'][0],'shared_inputs':{'pipe_length_m':7},'status':'review_required'}})
+    assert code==0
+    before=path.read_bytes()
+    for payload in [{}, {'confirmation':'Confirm review','scenario_ids':['S2']}, {'confirmation':'Confirm review','scenario_ids':['missing']}]:
+        code,_=call(path,'confirm-review',{'expected_revision':edited['revision'],**payload})
+        assert code!=0 and path.read_bytes()==before
+    code,confirmed=call(path,'confirm-review',{'expected_revision':edited['revision'],'scenario_ids':['S1'],'confirmation':'Confirm review'})
+    assert code==0 and confirmed['scenarios'][0]['status']=='ready'
+    assert confirmed['scenarios'][0]['shared_inputs']=={'pipe_length_m':7}
+    assert confirmed['scenarios'][1]==initial['scenarios'][1]

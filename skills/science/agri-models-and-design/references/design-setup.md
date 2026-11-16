@@ -50,8 +50,8 @@ Then ask exactly one parent question:
 Choices: **Add scenario**, **Delete scenario**, **Edit scenario**, **Run scenarios**.
 Pass these four choices in that order as plain strings in `choices`, never
 objects with label/description fields. Use the question exactly as written;
-do not rename Run to mean starting input review. Unreviewed rows must be edited
-before Run can execute them.
+do not rename Run to mean starting input review. Run opens the single review-choice question described below, including for
+unreviewed rows; do not force the user through Edit first.
 Keep these same four actions even when the list is empty. Do not substitute Undo
 for Run or add a fifth button; Undo/Cancel remain typed navigation commands; Previous belongs to input steps.
 If Run is selected with an empty list, explain that a scenario must be added and
@@ -212,36 +212,63 @@ parent menu after completion or cancellation; do not auto-select Add or Run.
 
 ## Edit scenario
 
-1. Show short labels/names and ask which scenario to edit, even when there is
-   only one. Include Previous to return to the parent without changes.
-2. Show that scenario's current model, recipe selection and review status, then
-   ask which section to change: recipes; shared conditions; recipe-specific
-   properties; criteria; search settings (when relevant); or model/name. List
-   numbered sections in the text and use a free-text question when there are
-   more than four. Do not put all parameter-entry questions in one clarify call.
-3. For the selected section, show its current values with units/origins first.
-   Ask for edits only to that section. For recipe properties, ask which recipe
-   before showing that recipe's values. Retain unchanged values.
-4. Validate the edit, show a brief before/after table for changed fields, save
-   the draft, and return to the parent menu. Do not automatically ask every other
-   section again. If a model or recipe change invalidates dependent settings,
-   flag exactly those sections Review required and explain why.
+1. Show saved scenario IDs/names and ask which scenario to edit, with Previous.
+   If arriving from Run's review choice, use its selected scope and ask which
+   scenario in that scope to review; do not silently edit others.
+2. Show that scenario's current recipe selection, conditions, properties, criteria
+   and search settings with units and origins. Present ONE question using the
+   helper's `edit_actions`: **Edit section / Confirm review / Previous**.
+3. Edit section asks which section to change (recipes, shared conditions,
+   recipe-specific properties, criteria, search settings, model/name). Use a
+   numbered free-text section chooser for long lists. Show only the selected
+   section's current values and ask for its edits. Keep the existing recipe
+   selector and Previous/Skip rules. Validate changes against the current schema;
+   never clamp invalid values. Show a brief before → after table and save the
+   edited scenario with `status: review_required`. Return to the same Edit action
+   question so the user can make another edit or finish.
+4. **Confirm review** ends Edit. Resolve every selected scenario input from saved
+   values and explicitly shown defaults, validate units/bounds and required search
+   settings, and show a concise final setup. If essential values are unresolved,
+   ask only for those fields instead of marking the row Ready. Then call helper
+   `confirm-review` with the selected ID(s), current revision and
+   `confirmation: "Confirm review"`. The helper persists Ready status. Return to
+   the parent scenario list; confirming review does not execute physics.
 
-If an edit crosses a model bound or has ambiguous units, ask for correction in
-that section. Do not clamp it or silently replace it with a default. Previous restores the prior input question. The typed command Back to scenarios
-discards unfinished section changes and returns to the parent; Cancel keeps the
-last saved draft without running.
+Previous/cancel exits the current editing stage without confirming unresolved
+values or running. Saved edits remain, but no unconfirmed edit is called Ready.
+Changing a model or recipe invalidates affected setup sections and requires their
+resolution before confirmation. Keep unchanged scenarios and recipes intact.
 
 ## Run scenarios
 
-The parent **Run scenarios** answer authorizes execution of the displayed Ready
-scenarios and their reviewed values. Do not add another redundant global approval
-question. If the user names a subset with Run, show that exact subset and use it.
+When the user selects **Run scenarios**, show a short scope/setup summary (scenario,
+recipes, key conditions and supplied/default origins), then ask exactly ONE native
+question from the helper's `run_selector`:
+**Run these scenarios without review, or go to Edit for review?**
+Choices: **Run without review / Go to Edit for review**, `multi_select: false`.
+Do not automatically execute on the parent Run action and do not reject an
+unreviewed row just because its review flag is unset.
 
-Before running, check that at least one scenario is selected, all required inputs
-are reviewed, recipe/active identities exist, and constraints/search settings are
-valid. If anything is incomplete, report the affected scenario/section and return
-to the parent menu; do not auto-fill it or start the valid portion silently.
+- **Run without review:** explicit permission to use the displayed saved/proposed
+  inputs and valid catalogue defaults without a field-by-field review. Preserve
+  user values, resolve all selected model inputs, record default origins, validate
+  recipe/active identity, units, constraints and search bounds, then execute the
+  selected scope. No extra Run or confirmation question is required. Unknown
+  essential identity/material evidence or invalid bounds still need a focused
+  question; this option does not authorize fabricated properties or prices.
+- **Go to Edit for review:** open Edit for the selected scope. Use the Edit section /
+  Confirm review / Previous flow above. After confirmation return to the parent;
+  the user can select Run and choose Run without review to execute the now-reviewed
+  values. Do not automatically start a simulation when Edit is confirmed.
+- Empty/skipped/cancelled input executes nothing and preserves the draft. An empty
+  draft asks the user to add a scenario before showing this question. A named
+  subset remains that subset; do not silently expand the run to other scenarios.
+
+Use metadata-only `run-choice` to resolve the actual submitted answer. It returns
+`run`, `edit`, `previous`, `cancelled` or `needs_input` with the exact scope and
+never runs the solver or changes review flags. The old `can_run` field describes
+reviewed readiness; it does not disable the user's Run-without-review choice.
+
 Read-only catalogue/schema validation and unit conversion are allowed during
 editing. Do not calculate predicted outputs or feasibility until Run: this also
 prohibits scratch Python/terminal formulas for pressure, viscosity, release,
@@ -249,7 +276,7 @@ settling or constraint feasibility. An ad hoc calculation is still a calculation
 even if it is not saved as a package simulation. Propose bounds for review without
 solving them first; evaluate their feasibility only after Run.
 
-Submit the exact reviewed values. An absent package field could introduce an
+Submit the exact values accepted through review or Run without review. An absent package field could introduce an
 unseen default, so explicitly resolve all selected model inputs in the draft.
 Shared fields are fixed for a scenario; recipe-specific overrides must respect
 its declared `candidate_parameters`. If a user wants a normally shared condition
@@ -263,7 +290,7 @@ studies without changing the configured evaluations. Do not take the union of
 recipe selections and run unrequested combinations. Use simulation batches or
 the dedicated analysis path for model keys excluded from ordinary studies. With
 No acceptance limits, use an objective-only criterion where supported or a batch
-without specification claims. AI + Physics searches only reviewed variable bounds
+without specification claims. AI + Physics searches only user-supplied or explicitly accepted variable bounds
 and replays shortlisted values under the approved scope.
 
 Report completed, partial and failed cases separately. Keep successful saved
