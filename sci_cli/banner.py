@@ -856,7 +856,7 @@ def _banner_left_lines(model: str, cwd: str, session_id, context_length, provide
         model_short = model.split("/")[-1].removesuffix(".gguf")
         lines.append(f"[{accent}]{_short_label(model_short)}[/]{ctx_str}{nous_str}")
     if os.getenv("SCI_YOLO_MODE"):
-        lines.append(f"[bold red]⚠ YOLO mode[/] [dim {dim}]— all approval prompts bypassed[/]")
+        lines.append(f"[bold red]⚠ YOLO mode[/] [dim {dim}]— command approvals bypassed; provider changes and explicit approval requests still require your answer[/]")
     lines.append(f"[dim {dim}]{cwd}[/]")
     if session_id:
         lines.append(f"[dim {_skin_color('session_border', '#8B8682')}]Session: {session_id}[/]")

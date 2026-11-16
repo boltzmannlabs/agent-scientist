@@ -240,7 +240,10 @@ def get_auxiliary_models(profile: Optional[str] = None):
             })
 
         model, provider = _main_model_fields(cfg.get("model", {}))
-        return {"tasks": tasks, "main": {"provider": str(provider or ""), "model": str(model or "")}}
+        from sci_constants import resolve_reasoning_config
+        reasoning = resolve_reasoning_config(cfg, model) or {}
+        effort = "none" if reasoning.get("enabled") is False else reasoning.get("effort") or "medium"
+        return {"tasks": tasks, "main": {"provider": str(provider or ""), "model": str(model or ""), "reasoning_effort": effort}}
 
 
 @router.get("/api/model/moa")

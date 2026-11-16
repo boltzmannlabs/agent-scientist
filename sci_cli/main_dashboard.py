@@ -352,9 +352,13 @@ def _restart_launchd_job(domain: str, label: str, old_pid: int | None, *, timeou
 
 def _dashboard_cmdline_for_pid(pid: int) -> list[str] | None:
     """Exact argv of a running process: ``/proc/<pid>/cmdline`` (Linux), ``ps -o command=`` + shlex
-    (macOS), None on Windows (no graceful taskkill window; Desktop manages its backend)."""
+    (macOS), psutil on Windows. Capture before stopping the process."""
     if sys.platform == "win32":
-        return None
+        import psutil
+        try:
+            return psutil.Process(pid).cmdline() or None
+        except (psutil.Error, OSError):
+            return None
     try:
         cmdline_path = f"/proc/{pid}/cmdline"
         if os.path.exists(cmdline_path):
@@ -405,6 +409,7 @@ def _respawn_dashboard_processes(commands: list[list[str]]) -> list[list[str]]:
     See #78821.
     """
     from sci_constants import get_sci_home
+    from sci_cli._subprocess_compat import windows_detach_flags, windows_detach_flags_without_breakaway
     respawned: list[list[str]] = []
     spawned: list[tuple[list[str], list[str], "subprocess.Popen"]] = []
     failed: list[tuple[list[str], list[str], str]] = []
@@ -420,9 +425,17 @@ def _respawn_dashboard_processes(commands: list[list[str]]) -> list[list[str]]:
             command = [*command, "--no-open"]
         try:
             with open(log_path, "ab") as log_f:
-                proc = subprocess.Popen(
-                    command, stdin=subprocess.DEVNULL, stdout=log_f, stderr=subprocess.STDOUT,
-                    start_new_session=True, close_fds=True)
+                options = ({"creationflags": windows_detach_flags()} if sys.platform == "win32"
+                           else {"start_new_session": True})
+                try:
+                    proc = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=log_f,
+                                            stderr=subprocess.STDOUT, close_fds=True, **options)
+                except PermissionError:
+                    if sys.platform != "win32":
+                        raise
+                    proc = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=log_f,
+                                            stderr=subprocess.STDOUT, close_fds=True,
+                                            creationflags=windows_detach_flags_without_breakaway())
             spawned.append((original, command, proc))
         except (OSError, ValueError) as exc:
             failed.append((original, command, str(exc)))
@@ -872,10 +885,10 @@ def _endpoint_conflict(args, record, typed: set) -> str:
 def _attach_to_host_backend(args, headless_backend: bool) -> None:
     """Multiplex-only: a second `sci serve`/`dashboard` attaches to the host backend.
 
-    Exactly ONE backend runs per host and multiplexes every profile, so a second invocation —
-    for ANY profile, the default included — reports the live one and exits 0 instead of binding
-    a second port. ``--isolated`` opts out (Desktop's SSH backend proves ownership with it) and
-    Desktop pool backends (SCI_DESKTOP=1) keep their own lifecycle.
+    Ordinary interactive dashboard launches offer a new dedicated instance or reuse of the
+    existing one. Non-interactive launches and ``serve`` reuse the host owner. ``--isolated``
+    opts out (Desktop's SSH backend proves ownership with it), and Desktop pool backends
+    (SCI_DESKTOP=1) keep their own lifecycle.
 
     Exit 0 means "the host backend answered and serves what you asked for", and nothing else:
 
@@ -889,7 +902,8 @@ def _attach_to_host_backend(args, headless_backend: bool) -> None:
       restart loop with nothing listening on the ingress port (#119824);
     * a `sci dashboard` user is never handed a headless backend's URL (no SPA behind it).
 
-    Returns normally — leaving the caller to BIND — when no owner answers.
+    Returns normally — leaving the caller to BIND — when no owner answers or the user
+    chooses a new instance.
     """
     if getattr(args, "isolated", False) or _is_desktop_owned_backend():
         return
@@ -919,6 +933,24 @@ def _attach_to_host_backend(args, headless_backend: bool) -> None:
               "which is a headless `sci serve` backend with no dashboard UI.")
         print("  Stop it and run `sci dashboard`, or use --isolated for a dedicated server.")
         sys.exit(GATEWAY_FATAL_CONFIG_EXIT_CODE)
+
+    if not headless_backend and not typed and sys.stdin.isatty() and sys.stdout.isatty():
+        from sci_cli.curses_ui import curses_single_select
+
+        choice = curses_single_select(
+            f"A dashboard is already running on port {record.port}. What would you like to do?",
+            ["Start a new instance on the next available port", "Open the existing dashboard"],
+        )
+        if choice is None:
+            print("Dashboard launch cancelled.")
+            sys.exit(0)
+        if choice == 0:
+            if record.port >= 65535:
+                raise SystemExit("No higher port is available. Use sci dashboard --new-instance --port 0.")
+            args.isolated = True
+            args.port = record.port + 1
+            print(f"Starting another dashboard; checking ports from {args.port} onward.")
+            return
 
     try:
         from sci_cli.profiles import get_active_profile_name

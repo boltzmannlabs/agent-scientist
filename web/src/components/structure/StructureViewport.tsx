@@ -9,7 +9,7 @@ import { Color } from 'molstar/lib/mol-util/color';
 import 'molstar/build/viewer/molstar.css';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/api-error';
-import { decodeStructureFile, structureFormat, validateStructureSize, type StructureSource } from '@/lib/structure-source';
+import { decodeStructureFile, MAX_STRUCTURE_BYTES, structureFormat, validateStructureSize, type StructureSource } from '@/lib/structure-source';
 
 export default function StructureViewport({ source }: { source: StructureSource }) {
   const container = useRef<HTMLDivElement>(null);
@@ -40,7 +40,8 @@ export default function StructureViewport({ source }: { source: StructureSource 
           validateStructureSize(source.file.size);
           text = await source.file.text();
         } else if (source.path) {
-          const file = await api.readFile(source.path, abort.signal);
+          const file = await api.readFile(source.path, abort.signal,
+            source.profile ? { profile: source.profile, sessionId: source.sessionId } : undefined, MAX_STRUCTURE_BYTES);
           text = decodeStructureFile(file.data_url, file.size);
         } else throw new Error('No structure file was selected.');
         if (cancelled) return;

@@ -264,6 +264,10 @@ def resolve_clarify_timeout(config: dict) -> int:
     """Clarify timeout (seconds): legacy ``clarify.timeout`` if explicitly set, else
     ``agent.clarify_timeout``, else 3600 — the single source of truth for every surface
     (gateway, CLI, TUI). ``<= 0`` is kept verbatim (unlimited); non-numeric -> 3600."""
+    from tools.clarify_policy import TIMEOUT_OVERRIDE
+    override = TIMEOUT_OVERRIDE.get()
+    if override is not None:
+        return override
     raw = (config.get("clarify") or {}).get("timeout")
     if raw is None:
         raw = (config.get("agent") or {}).get("clarify_timeout", 3600)

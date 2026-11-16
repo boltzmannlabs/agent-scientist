@@ -133,7 +133,7 @@ def _attach_once(chat_id, *, home=None, takeover=False, view_session=None):
     return outcome
 
 
-def attach(chat_id, *, home=None, takeover=False, view_session=None):
+def attach(chat_id, *, home=None, takeover=False, view_session=None, refresh=True):
     from sci_cli.background_chats import find_view_worker, find_worker
     from sci_cli.cli_runtime_refresh import refresh_attached_worker
     from sci_cli.skill_add import Cancelled
@@ -151,7 +151,7 @@ def attach(chat_id, *, home=None, takeover=False, view_session=None):
         else:
             print('Reopening the existing side view. Its owning runtime and main chat keep running; '
                   'source updates apply after that runtime is closed normally.')
-    elif worker:
+    elif worker and refresh:
         try:
             refreshed = refresh_attached_worker(worker, home=home)
         except Cancelled:

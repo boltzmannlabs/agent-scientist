@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from .model_gateway import MODELS, PROVIDER, credentials, owner_scope
+from .model_gateway import PROVIDER, credentials, owner_scope
 
 
 @dataclass(frozen=True)
@@ -19,7 +19,7 @@ def model_limits(model: str) -> ModelLimits | None:
     )
     from agent.models_dev import _explicit_model_override, _override_int
 
-    if model not in MODELS:
+    if not isinstance(model, str) or not model:
         return None
     with owner_scope():
         runtime = credentials()

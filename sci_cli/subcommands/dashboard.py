@@ -31,11 +31,12 @@ def _add_server_runtime_args(parser, *, auto_port: bool = False) -> None:
             "Useful for non-interactive contexts (Windows Scheduled Tasks, CI) "
             "where npm may not be available. Pre-build with: cd web && npm run build")
     parser.add_argument(
-        "--isolated", action="store_true",
-        help="When launched from a named profile, run a dedicated server scoped "
-            "to that profile instead of routing to the machine-level server. "
-            "Default behavior is unified: profile launches attach to (or start) "
-            "ONE machine-level server and preselect the profile.")
+        *(('--isolated', '--new-instance') if auto_port else ('--isolated',)),
+        dest="isolated", action="store_true",
+        help="Start a dedicated server for the selected profile instead of reusing "
+            "the machine-level server. "
+            + ("Without --port, use the first free port starting at 9119. " if auto_port else "")
+            + "Uses the existing profile's settings and credentials; does not create a new profile.")
     # Internal: set by the unified-launch re-exec to preselect the launching profile.
     parser.add_argument("--open-profile", dest="open_profile", default="", help=argparse.SUPPRESS)
     # Lifecycle flags win over the start-a-server flags (they exit first). No service

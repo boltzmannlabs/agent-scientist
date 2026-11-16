@@ -5,6 +5,7 @@ at import time. Receipts must be stored by the caller in the owning profile.
 """
 
 import gzip
+from copy import deepcopy
 import hashlib
 import io
 import json
@@ -117,6 +118,7 @@ def _ligand_bundle(archive, infos, requirements, summary):
     validate_schema(document, schema, report, "ligand_manifest")
     if report.errors:
         raise ValueError("Invalid ligand manifest: " + report.errors[0])
+    summary["ligand_bundle_schema"] = document["schema"]
     def member(name):
         path = PurePosixPath(name)
         if (len(name) > 1024 or path.is_absolute() or str(path) != name or ".." in path.parts or "\\" in name
@@ -125,7 +127,7 @@ def _ligand_bundle(archive, infos, requirements, summary):
         if name not in members:
             raise ValueError("Ligand manifest references a missing ZIP member")
         return name
-    entries, dictionaries = {}, {}
+    entries, dictionaries, generations = {}, {}, set()
     protected = STANDARD | {"MSE", "HOH", "WAT", "DOD", "A", "C", "G", "U", "T", "DA", "DC", "DG", "DT", "DU"}
     for entry in document["structures"]:
         name = member(entry["path"])
@@ -133,31 +135,42 @@ def _ligand_bundle(archive, infos, requirements, summary):
             raise ValueError("Repeated or unsupported ligand manifest structure path")
         selectors, components = set(), {}
         for binding in entry["ligands"]:
-            dictionary = member(binding["dictionary"])
-            if dictionary not in dictionaries:
-                if len(dictionaries) >= limits["maximum_dictionaries"]:
-                    raise ValueError("Too many distinct ligand dictionary paths")
-                contents = read(dictionary, limits["maximum_dictionary_bytes"])
-                dictionaries[dictionary] = hashlib.sha256(contents).hexdigest()
+            generating = binding.get("generate_dictionary") is True
+            if generating:
+                signature = "generated:" + json.dumps({k: binding[k] for k in ("component_id", "smiles", "atom_mapping")}, sort_keys=True)
+                generations.add(signature)
+                if len(generations) > limits["maximum_generated_dictionaries"]:
+                    raise ValueError("Too many distinct generated dictionaries")
+                if len(binding["atom_mapping"]) > limits["maximum_generation_heavy_atoms"]:
+                    raise ValueError("Generated ligand exceeds worker heavy-atom limit")
+                summary["ligand_dictionary_generation"] = "Worker-side AceDRG; no client-side generator or installation required."
+            else:
+                dictionary = member(binding["dictionary"])
+                if dictionary not in dictionaries:
+                    if len(dictionaries) >= limits["maximum_dictionaries"]:
+                        raise ValueError("Too many distinct ligand dictionary paths")
+                    contents = read(dictionary, limits["maximum_dictionary_bytes"])
+                    dictionaries[dictionary] = hashlib.sha256(contents).hexdigest()
+                    if dictionaries[dictionary] != binding["sha256"]:
+                        raise ValueError("Ligand dictionary SHA-256 mismatch")
+                    try:
+                        import gemmi
+                    except ImportError:
+                        summary["ligand_dictionary_syntax_unchecked"] = True
+                    else:
+                        cif = gemmi.cif.read_string(contents.decode("utf-8-sig"))
+                        atom_count = sum(len(block.find_values("_chem_comp_atom.atom_id")) for block in cif)
+                        if not 0 < atom_count <= limits["maximum_dictionary_atoms"]:
+                            raise ValueError("Ligand dictionary atom table is empty or exceeds its atom limit")
                 if dictionaries[dictionary] != binding["sha256"]:
                     raise ValueError("Ligand dictionary SHA-256 mismatch")
-                try:
-                    import gemmi
-                except ImportError:
-                    summary["ligand_dictionary_syntax_unchecked"] = True
-                else:
-                    cif = gemmi.cif.read_string(contents.decode("utf-8-sig"))
-                    atom_count = sum(len(block.find_values("_chem_comp_atom.atom_id")) for block in cif)
-                    if not 0 < atom_count <= limits["maximum_dictionary_atoms"]:
-                        raise ValueError("Ligand dictionary atom table is empty or exceeds its atom limit")
-            if dictionaries[dictionary] != binding["sha256"]:
-                raise ValueError("Ligand dictionary SHA-256 mismatch")
+                signature = binding["sha256"]
             component = binding["component_id"]
             if component in protected:
                 raise ValueError("Custom dictionary cannot replace a protected polymer/water component")
-            if component in components and components[component] != binding["sha256"]:
+            if component in components and components[component] != signature:
                 raise ValueError("Conflicting dictionaries for one candidate component")
-            components[component] = binding["sha256"]
+            components[component] = signature
             chain, insertion = binding["chain_id"], binding.get("insertion_code", "")
             if (not chain.strip() or any(ord(c) < 32 for c in chain)
                     or insertion and (insertion.isspace() or ord(insertion) < 32)):
@@ -180,9 +193,11 @@ def _ligand_bundle(archive, infos, requirements, summary):
                     raise ValueError("Custom ligand reference SMILES must describe a nonempty heavy-atom molecule")
                 if (any(a.GetIsotope() or a.GetChiralTag() != Chem.ChiralType.CHI_UNSPECIFIED for a in molecule.GetAtoms())
                         or any(b.GetStereo() != Chem.BondStereo.STEREONONE for b in molecule.GetBonds())):
-                    raise ValueError("Custom ligand bundle v1 does not support specified stereo/isotopes; do not strip labels to bypass this")
+                    raise ValueError("Custom ligand bundles do not support specified stereo/isotopes; do not strip labels to bypass this")
                 if set(mapping.values()) != set(range(molecule.GetNumAtoms())):
                     raise ValueError("Ligand atom_mapping must cover every reference SMILES atom index")
+                if generating and (len(Chem.GetMolFrags(molecule)) != 1 or any(a.GetSymbol() not in {"C", "N", "O", "S", "P", "F", "Cl", "Br", "I", "B", "Si", "Se"} for a in molecule.GetAtoms())):
+                    raise ValueError("Worker dictionary generation requires one connected organic ligand, not salts or metals")
         entries[name] = entry["ligands"]
     if set(entries) & dictionaries.keys():
         raise ValueError("Dictionary files must not also be candidate structures")
@@ -215,6 +230,98 @@ def _bound_ligands(structure, bindings):
             for other in chain:
                 if other.name == binding["component_id"] and (other.name, chain.name, other.seqid.num, other.seqid.icode.strip()) not in declared:
                     raise ValueError("Every instance of a custom ligand component must be bound explicitly")
+
+
+def _peppatch_bundle(archive, infos, requirements, summary):
+    """Opt into the existing ZIP/JSON inspection path, without local chemistry."""
+    from .contracts import ValidationReport, validate_schema
+    from .file_validation import _json
+
+    limits = requirements["zip_limits"]
+    if len(infos) > limits["members"] or sum(info.file_size for info in infos) > limits["expanded_bytes"]:
+        raise ValueError("PepPatch ZIP exceeds its member/expanded-byte resource limit")
+    seen, members = set(), {}
+    for info in infos:
+        path = PurePosixPath(info.filename)
+        key = str(path).casefold()
+        if str(path) != info.filename.rstrip("/") or key in seen:
+            raise ValueError("PepPatch ZIP paths must be canonical and unique, including case")
+        seen.add(key)
+        if not info.is_dir():
+            members[info.filename] = info
+    name = requirements["zip_manifest_name"]
+    pdbs = [member for member in members if member.lower().endswith(".pdb")]
+    if len(pdbs) != 1:
+        raise ValueError("PepPatch ZIP must contain exactly one PDB, never a batch")
+    if set(members) - {name, pdbs[0]}:
+        raise ValueError("PepPatch ZIP accepts only the sole PDB and optional root peppatch_manifest.json")
+    if name not in members:
+        return {pdbs[0]: []}
+    with archive.open(members[name]) as stream:
+        contents = _bounded_read(stream, limits["manifest_bytes"])
+    # The canonical worker schema permits empty chain/insertion strings. The
+    # generic request validator requires this explicit opt-in for required text.
+    schema = deepcopy(requirements["zip_manifest_schema"])
+    properties = schema["properties"]["ligands"]["items"]["properties"]
+    for field in ("chain_id", "insertion_code"):
+        properties[field]["x-allow-empty"] = True
+    report = ValidationReport()
+    document = _json(contents, {"json_schema": {}}, report)
+    # The worker's JSON Schema treats 1.0 as an integer. Normalize only this
+    # parsed PepPatch view; never rewrite uploaded bytes or broaden the shared
+    # request validator. Booleans/fractional values remain invalid.
+    if isinstance(document, dict) and isinstance(document.get("ligands"), list):
+        for binding in document["ligands"]:
+            if not isinstance(binding, dict):
+                continue
+            number = binding.get("residue_number")
+            if type(number) is float and math.isfinite(number) and number.is_integer():
+                binding["residue_number"] = int(number)
+            mapping = binding.get("atom_mapping")
+            if isinstance(mapping, dict):
+                binding["atom_mapping"] = {
+                    name: int(index) if type(index) is float and math.isfinite(index) and index.is_integer() else index
+                    for name, index in mapping.items()
+                }
+    validate_schema(document, schema, report, "file")
+    if report.errors:
+        raise ValueError("Invalid PepPatch manifest: " + report.errors[0])
+    if document["structure"] != pdbs[0]:
+        raise ValueError("PepPatch manifest structure must exactly match the sole PDB member")
+    selectors = set()
+    for binding in document["ligands"]:
+        key = tuple(binding[field] for field in ("chain_id", "residue_number", "insertion_code", "component_id"))
+        if key in selectors:
+            raise ValueError("Duplicate PepPatch ligand binding")
+        selectors.add(key)
+        if not binding["chemistry_source"].strip():
+            raise ValueError("PepPatch chemistry_source must be nonempty reference provenance")
+        mapping = binding["atom_mapping"]
+        if sorted(mapping.values()) != list(range(len(mapping))):
+            raise ValueError("PepPatch atom_mapping indices must be unique, contiguous and zero-based")
+    summary["peppatch_manifest_schema"] = document["schema"]
+    return {pdbs[0]: document["ligands"]}
+
+
+def _peppatch_structure(structure, bindings):
+    """Exact input identities only; graph elements, stereo and state are worker checks."""
+    if len(structure) != 1:
+        raise ValueError("PepPatch requires exactly one structure model")
+    rows = [(chain.name, residue) for chain in structure[0] for residue in chain if residue.name != "HOH"]
+    if not any(residue.name in STANDARD for _, residue in rows):
+        raise ValueError("PepPatch input must contain a standard protein")
+    seen, unusual = set(), set()
+    for chain, residue in rows:
+        key = (chain, residue.seqid.num, residue.seqid.icode.strip())
+        if key in seen or any(atom.altloc.strip("\x00 ") for atom in residue):
+            raise ValueError("PepPatch residue selectors/alternate locations must be unambiguous")
+        seen.add(key)
+        if residue.name not in STANDARD:
+            unusual.add((*key, residue.name))
+    declared = {tuple(binding[field] for field in ("chain_id", "residue_number", "insertion_code", "component_id"))
+                for binding in bindings}
+    if unusual != declared:
+        raise ValueError("Every PepPatch nonstandard non-HOH residue needs an exact manifest ligand binding; raw PDB/residue names are not chemical identities")
 
 
 def _candidates(data, extension, profile, summary, filename, requirements):
@@ -253,9 +360,10 @@ def _candidates(data, extension, profile, summary, filename, requirements):
             if profile != "protein_structure" and info.file_size > 200 * max(1, info.compress_size):
                 raise ValueError("ZIP member compression ratio exceeds 200")
         bindings = None
+        if requirements.get("zip_manifest_name") == "peppatch_manifest.json":
+            bindings = _peppatch_bundle(archive, infos, requirements, summary)
         if profile == "Mol_Probity" and any(info.filename == "ligand_manifest.json" and not info.is_dir() for info in infos):
             bindings = _ligand_bundle(archive, infos, requirements, summary)
-            summary["ligand_bundle_schema"] = "molprobity-ligand-bundle.v1"
         for info in infos:
             if bindings is not None and info.filename not in bindings:
                 continue
@@ -273,7 +381,8 @@ def _candidates(data, extension, profile, summary, filename, requirements):
             selected.append((info, ending, candidate))
         if not selected:
             raise ValueError("ZIP contains no supported structures")
-        metadata = [info for info in infos if not info.is_dir() and _ending(info.filename) is None]
+        metadata = [info for info in infos if not info.is_dir() and _ending(info.filename) is None
+                    and info.filename != requirements.get("zip_manifest_name")]
         summary["mapping_inventory_complete"] = not any(
             "mapping" in info.filename.lower() or PurePosixPath(info.filename).suffix.lower()
             in {".json", ".csv", ".trb", ".npz", ".pkl", ".pickle", ".pt", ".yaml", ".yml"}
@@ -673,7 +782,12 @@ def inspect_structure(data: bytes, extension: str, profile: str, payload: dict, 
                 structure = _parse(contents, ending, gemmi)
                 if bindings:
                     _bound_ligands(structure, bindings)
-                    report.warnings.append("Custom ligand dictionary/reference graph agreement, charges/hydrogens, CCTBX energy types and restraint targets remain unchecked locally; the worker must validate them. Bundle validity is not chemistry validity.")
+                    if (requirements or {}).get("zip_manifest_name") == "peppatch_manifest.json":
+                        report.warnings.append("PepPatch client checked manifest syntax, selectors and atom-name/index identity only; SMILES chemistry, reference element/atom coverage, pose stereochemistry, charges/hydrogens and native parameterization remain worker-side chemical validation. Bundle validity is not chemistry validity.")
+                    else:
+                        report.warnings.append("Custom ligand dictionary/reference graph agreement, charges/hydrogens, CCTBX energy types and restraint targets remain unchecked locally; the worker must validate them. Bundle validity is not chemistry validity.")
+                if (requirements or {}).get("zip_manifest_name") == "peppatch_manifest.json":
+                    _peppatch_structure(structure, bindings)
                 unknown_template = profile == "Catalytic_Geometry" and not isinstance(payload.get("reaction_template"), dict)
                 models = _inventory(structure, profile, profile == "protein_structure" or unknown_template or
                                     (profile == "Catalytic_Geometry" and _ensemble_allowed(payload)), gemmi)

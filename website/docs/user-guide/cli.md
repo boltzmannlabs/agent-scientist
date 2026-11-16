@@ -158,6 +158,16 @@ for the exact supported subset and trust boundary.
 
 The welcome banner shows your model, terminal backend, working directory, available tools, and installed skills at a glance.
 
+VS Code shows its native circular progress indicator while SCI is working and
+keeps the tab title as `Agent Scientist`, without a second animation. Other
+terminals use animated title dots while working, `?` when input is needed, and
+a stationary dot when idle. The title animation has no minimum terminal size, but your
+terminal must allow application-controlled titles. Reconnecting a background
+conversation refreshes the indicator for the newly attached terminal; detaching
+clears its progress indicator and restores the shell title where supported.
+After updating SCI, existing workers and their background service need a normal
+restart to load the new display code; reconnecting alone does not reload Python.
+
 ### Status Bar
 
 A persistent status bar sits above the input area, updating in real time:
@@ -715,6 +725,35 @@ If the task fails, you'll see an error notification instead. If `display.bell_on
 :::info
 Background sessions do not appear in your main conversation history. They are standalone sessions with their own task ID (e.g., `bg_143022_a1b2c3`).
 :::
+
+## YOLO experiment approvals
+
+Enable `/yolo` in the current conversation, or launch with `sci --yolo`.
+The experiment decision policy applies only while YOLO is active:
+
+| Decision | YOLO behavior |
+|---|---|
+| Missing required input | Ask for up to 120 seconds, then use a supported recommended value if one is available. |
+| Change supplied data | Ask for up to 120 seconds, then apply the described recommended transformation, preserving the original. |
+| Partial file validation | Proceed with warnings retained and reported. |
+| Uploaded reference without a validation receipt | Attempt the supplied reference with provenance uncertainty reported. |
+| Known execution uncertainty | Proceed and report the known uncertainty and possible charges. |
+| Switch execution provider | Require an explicit answer; no timeout or automatic switch. |
+| Local command approval | Use the existing YOLO approval bypass; explicit deny rules and hard security restrictions still apply. |
+| User explicitly requests approval | Require an explicit answer, with no automatic timeout. |
+
+Timed defaults are recorded as **policy decisions**, not user answers. SCI does
+not fabricate scientific sequences, targets or file paths when no supported
+recommendation exists. Cancellation, skipping and undelivered dialogs never
+authorize a default. Generated experiment names still need no question.
+
+For Boltzmann uploads/submissions, omit `allow_partial_validation` to follow
+the session policy. Explicit `false` retains a user-requested validation approval
+gate even in YOLO; `true` records approval to proceed with partial checks.
+YOLO does not bypass invalid-input checks, service authorization, profile access,
+receipt capacity limits or duplicate-submission protection. Disabling YOLO restores
+normal approval behavior. Start a new conversation after updating SCI to load the
+new clarification schema and workflow instructions without changing cached prompts.
 
 ## Quiet Mode
 

@@ -106,7 +106,7 @@ def run(cli, raw_args, *, ui=None, report=None):
     manager = get_plugin_manager()
     manager._cli_ref = cli
     ctx = PluginContext(PluginManifest(name="boltzmann"), manager)
-    from plugins.boltzmann.auth import current_key
+    from plugins.boltzmann.auth import current_key, available
     from sci_cli.skill_add import Cancelled
     reuse = False
     try:
@@ -120,7 +120,15 @@ def run(cli, raw_args, *, ui=None, report=None):
         return finish("[add_boltzmann] CANCELLED. Existing key and authorization are unchanged.")
     # Publish account details before another modal opens or /new closes this
     # runtime. The slash adapter supplies the terminal-safe renderer once.
-    message = finish(add_boltzmann(ctx, raw_args, complete_setup=complete_setup, reuse_saved=reuse))
+    was_connected = available()
+    message = add_boltzmann(ctx, raw_args, complete_setup=complete_setup, reuse_saved=reuse)
+    if _saved(message) and not was_connected and not legacy:
+        from plugins.boltzmann.model_gateway import save_login_default
+        try:
+            message += "\n" + save_login_default()
+        except Exception:
+            message += "\nBoltzmann is connected, but its model default could not be saved. Choose a model under Models or with /model."
+    message = finish(message)
     if _saved(message) and "--now" not in words and ui is not None and getattr(getattr(cli, "_app", None), "is_running", False):
         try:
             choice = ui.choose("Boltzmann is saved. When should the tools become available?", [

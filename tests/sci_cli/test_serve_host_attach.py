@@ -132,6 +132,54 @@ def test_isolated_never_attaches(host_dir, owner):
     assert _attach_to_host_backend(_args(isolated=True), headless_backend=True) is None
 
 
+def test_dashboard_new_instance_bypasses_owner_without_changing_its_record(host_dir, owner):
+    import argparse
+    from sci_cli.subcommands.dashboard import build_dashboard_parser
+
+    parser = argparse.ArgumentParser()
+    build_dashboard_parser(parser.add_subparsers(dest='command'),
+                           cmd_dashboard=lambda args: None,
+                           cmd_dashboard_register=lambda args: None)
+    _publish(hr.process_create_time(), port=owner.port)
+    before = hr.record_path(hr.ROLE_SERVE).read_bytes()
+    args = parser.parse_args(['dashboard', '--new-instance', '--no-open'])
+    assert _attach_to_host_backend(args, headless_backend=False) is None
+    assert hr.record_path(hr.ROLE_SERVE).read_bytes() == before
+    # Ordinary launches still reuse the existing owner after an explicit opt-out.
+    with pytest.raises(SystemExit) as exc:
+        _attach_to_host_backend(parser.parse_args(['dashboard', '--no-open']), headless_backend=False)
+    assert exc.value.code == 0
+
+
+@pytest.mark.parametrize('choice', [0, 1, None], ids=['new-instance', 'reuse', 'cancel'])
+def test_plain_interactive_dashboard_offers_instance_choice(host_dir, owner, monkeypatch, choice):
+    import sys
+    from sci_cli import curses_ui, main_dashboard
+
+    monkeypatch.setattr(sys, 'argv', ['sci', 'dashboard'])
+    monkeypatch.setattr(sys.stdin, 'isatty', lambda: True)
+    monkeypatch.setattr(sys.stdout, 'isatty', lambda: True)
+    prompts = []
+    monkeypatch.setattr(curses_ui, 'curses_single_select',
+                        lambda title, items: prompts.append((title, items)) or choice)
+    _publish(hr.process_create_time(), port=owner.port)
+    before = hr.record_path(hr.ROLE_SERVE).read_bytes()
+    args = _args()
+    if choice == 0:
+        _attach_to_host_backend(args, headless_backend=False)
+        assert args.isolated and args.port == owner.port + 1
+        # The selected new server must not route back into the machine owner.
+        monkeypatch.setattr('sci_cli.profiles.get_active_profile_name', lambda: 'research')
+        assert main_dashboard._route_named_profile_dashboard(args, False, None, None) is None
+    else:
+        with pytest.raises(SystemExit) as exc:
+            _attach_to_host_backend(args, headless_backend=False)
+        assert exc.value.code == 0
+        assert not args.isolated
+    assert len(prompts) == 1 and str(owner.port) in prompts[0][0]
+    assert hr.record_path(hr.ROLE_SERVE).read_bytes() == before
+
+
 def test_a_record_whose_owner_does_not_answer_falls_through_to_the_bind(host_dir):
     """The graceful-shutdown window: the PID is still alive and the record still on disk, but the
     socket is already closed. Exiting 0 here reported success with NOTHING listening."""

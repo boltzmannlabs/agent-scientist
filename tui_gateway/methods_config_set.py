@@ -132,7 +132,10 @@ def _set_model(rid, params, key, value, session):
         failed_agent_init = (
             failed_agent_init and session.get("agent") is None and session.get("agent_error") is not None
             and session.get("agent_ready") is failed_ready and failed_ready.is_set())
-        if session.get("agent") is None and not explicit_provider.strip() and not failed_agent_init:
+        # An in-flight constructor already captured its model. Saving an override
+        # alone cannot switch the agent it is about to attach.
+        if (session.get("agent") is None and not failed_agent_init
+                and (not explicit_provider.strip() or session.get("agent_build_started"))):
             _start_agent_build(sid, session)
             if init_err := _cfgset_await_agent(session, rid):
                 return init_err

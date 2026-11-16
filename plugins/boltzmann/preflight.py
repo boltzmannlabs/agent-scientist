@@ -66,6 +66,11 @@ def decision(report, approved):
         return {"error": "Input validation failed; no upload or job submission was performed.",
                 "stage": "validation", "status": "not_started", "validation": report.as_dict(),
                 "safe_to_retry": False}
+    if report.warnings and approved is None:
+        from tools.approval import _yolo_active
+        if _yolo_active():
+            approved = True
+            report.info.append("YOLO mode permits these partial checks without another approval; warnings remain unverified.")
     if report.warnings and approved is not True:
         return {"error": "Validation is partial, not failed. Review the unchecked aspects and ask for explicit best-effort approval.",
                 "stage": "validation", "status": "approval_required", "approval_required": True,

@@ -95,7 +95,12 @@ def _run_first_time_quick_setup(config: dict, sci_home, is_existing: bool):
     # Reuse the provider-neutral flow, including its reload after model/auth writes.
     from sci_cli.boltzmann_setup import quick_setup_step
     quick_setup_step(config, sci_home)
-    setup_model_provider(config, quick=True)
+    from plugins.boltzmann.auth import available
+    configured_model = config.get("model")
+    if isinstance(configured_model, dict) and configured_model.get("provider") == "boltzmann_models" and available():
+        print_info("Using your connected Boltzmann model default. Change it later with sci model or /model.")
+    else:
+        setup_model_provider(config, quick=True)
     _info("Web search and MCP connections are independent of your model-provider login.",
           "Web search uses your configured backend, or available keyless providers when unconfigured.",
           "Public search services have usage limits; configure a dedicated backend with 'sci tools'.",

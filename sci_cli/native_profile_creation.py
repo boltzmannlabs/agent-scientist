@@ -71,9 +71,20 @@ def _use_shared_model_credential(config, original, source_home, references):
         route = normalize_route_base_url(model.get('base_url'))
         candidates = [entry for entry in get_compatible_custom_providers(shared_config)
                       if route and normalize_route_base_url(entry['base_url']) == route]
+        selected_model = str(model.get('model') or model.get('default') or '').strip().lower()
+        model_specific = [entry for entry in candidates if str(entry.get('model') or '').strip()]
+        if selected_model and model_specific:
+            candidates = [entry for entry in model_specific
+                          if str(entry.get('model') or '').strip().lower() == selected_model]
+        credential_matches = [entry for entry in candidates
+                              if (entry.get('key_env') or entry.get('api_key_env') or
+                                  _model_key_reference(entry.get('api_key'))) in references]
+        if credential_matches:
+            candidates = credential_matches
         if len(candidates) != 1:
-            raise ValueError("The custom model endpoint must match exactly one saved provider in main's shared "
-                             "catalog. Select a named provider with sci model and retry; no credential was copied or changed.")
+            raise ValueError("The custom model endpoint and model must identify exactly one saved provider in main's shared "
+                             "catalog, with the same shared credential reference. Review its named provider entry; "
+                             "no credential was copied or changed.")
         candidate = candidates[0]
         requested = custom_provider_slug(candidate['name'], candidate.get('provider_key', ''))
 

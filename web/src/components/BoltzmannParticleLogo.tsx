@@ -1,21 +1,23 @@
-import { useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { drawLogoParticles, logoParticles } from './boltzmann-particles';
 import type { LogoPointer } from './boltzmann-particle-motion';
 import './boltzmann-particle-logo.css';
+import { BrandEntranceContext } from './brand-entrance-context';
 
 interface BoltzmannParticleLogoProps { active?: boolean }
 
 export function BoltzmannParticleLogo({ active = true }: BoltzmannParticleLogoProps) {
+  const entering = useContext(BrandEntranceContext);
   const host = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const element = host.current, surface = canvas.current;
-    if (!element || !surface || !active) return;
+    if (!element || !surface || !active || entering) return;
     const ctx = surface.getContext('2d');
     if (!ctx) return;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let frame = 0, visible = true, elapsed = 0, last = 0, painted = -Infinity;
+    let frame = 0, visible = true, elapsed = 3000, last = 0, painted = -Infinity;
     let size = 0, ratio = 0;
     const motions = logoParticles.map(() => ({ x: 0, y: 0, vx: 0, vy: 0 }));
     let pointer: LogoPointer | null = null;
@@ -87,7 +89,7 @@ export function BoltzmannParticleLogo({ active = true }: BoltzmannParticleLogoPr
       reduced.removeEventListener('change', sync);
       delete element.dataset.animated;
     };
-  }, [active]);
+  }, [active, entering]);
 
   return <div className="boltzmann-particle-logo" ref={host} role="img" aria-label="Boltzmann Labs dotted b logo">
     <svg className="boltzmann-particle-logo__still" viewBox="-0.64 -0.54 1.28 1.08" aria-hidden="true">

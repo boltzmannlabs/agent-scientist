@@ -71,11 +71,25 @@ def _reset_model_to_config_default(cli, silent: bool) -> None:
         _config_provider = _model_config.get("provider", "")
     else:
         _raw_default, _config_provider = (_model_config or ""), ""
-    _config_model, _ = _split_model_config_default(_raw_default)
-    if not _config_model or _config_model == getattr(cli, "model", None):
+    _config_model, _nested_provider = _split_model_config_default(_raw_default)
+    _config_provider = _nested_provider or _config_provider
+    if not _config_model:
         return
     try:
         from sci_cli.model_switch import switch_model as _switch_model
+        from sci_cli.providers import normalize_provider
+        from sci_cli.route_identity import normalize_route_base_url
+
+        # Identical model IDs can use different adapters, credentials and wire protocols.
+        # /new may skip restoring only when every configured part of the route still matches.
+        route = _model_config if isinstance(_model_config, dict) else {}
+        provider_matches = not _config_provider or _config_provider == 'auto' or all(
+            normalize_provider(value or '') == normalize_provider(_config_provider)
+            for value in (cli.provider, getattr(cli, 'requested_provider', cli.provider)))
+        base_matches = not route.get('base_url') or normalize_route_base_url(route['base_url']) == normalize_route_base_url(cli.base_url)
+        mode_matches = not route.get('api_mode') or route['api_mode'] == getattr(cli, 'api_mode', '')
+        if _config_model == getattr(cli, 'model', None) and provider_matches and base_matches and mode_matches:
+            return
 
         r = _switch_model(
             raw_input=_config_model,

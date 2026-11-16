@@ -1,3 +1,4 @@
+import { BoltzmannMark } from "@/components/BoltzmannMark";
 import {
   lazy,
   Suspense,
@@ -90,6 +91,7 @@ const CronPage = lazy(() => import("@/pages/CronPage"));
 const ProfilesPage = lazy(() => import("@/pages/ProfilesPage"));
 const ProfileBuilderPage = lazy(() => import("@/pages/ProfileBuilderPage"));
 const SkillsPage = lazy(() => import("@/pages/SkillsPage"));
+const BoltzmannPage = lazy(() => import("@/pages/BoltzmannPage"));
 const PluginsPage = lazy(() => import("@/pages/PluginsPage"));
 const McpPage = lazy(() => import("@/pages/McpPage"));
 const PairingPage = lazy(() => import("@/pages/PairingPage"));
@@ -126,7 +128,7 @@ function RouteFallback({ label = "Loading…" }: { label?: string }) {
 }
 
 function RootRedirect() {
-  return <Navigate to="/sessions" replace />;
+  return <Navigate to="/chat" replace />;
 }
 
 function UnknownRouteFallback({ pluginsLoading }: { pluginsLoading: boolean }) {
@@ -134,7 +136,7 @@ function UnknownRouteFallback({ pluginsLoading }: { pluginsLoading: boolean }) {
     // Render nothing during the plugin-load window — a spinner here would just flash.
     return null;
   }
-  return <Navigate to="/sessions" replace />;
+  return <Navigate to="/chat" replace />;
 }
 
 const CHAT_NAV_ITEM: NavItem = {
@@ -165,6 +167,7 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/cron": CronPage,
   "/skills": SkillsPage,
   "/plugins": PluginsPage,
+  "/boltzmann": BoltzmannPage,
   "/mcp": McpPage,
   "/pairing": PairingPage,
   "/channels": ChannelsPage,
@@ -208,6 +211,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/logs", labelKey: "logs", label: "Logs", icon: FileText },
   { path: "/cron", labelKey: "cron", label: "Cron", icon: Clock },
   { path: "/skills", labelKey: "skills", label: "Skills", icon: Package },
+  { path: "/boltzmann", label: "Boltzmann", icon: BoltzmannMark },
   { path: "/plugins", labelKey: "plugins", label: "Plugins", icon: Puzzle },
   { path: "/mcp", label: "MCP", icon: Plug },
   { path: "/channels", label: "Channels", icon: Radio },
@@ -943,7 +947,7 @@ function SidebarSystemActions({
 }: SidebarSystemActionsProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { activeAction, isBusy, isRunning, pendingAction, runAction } =
+  const { activeAction, isBusy, isRunning, pendingAction, runAction, statusMessage } =
     useSystemActions();
   const canUpdateSci = status?.can_update_sci === true;
   // Served by the shared multiplexer: a restart blips every bot on this device — say which.
@@ -1072,7 +1076,7 @@ function SidebarSystemActions({
             tooltipWarmRef={tooltipWarmRef}
             isPending={pendingAction === item.action}
             isRunning={activeAction === item.action && isRunning && pendingAction !== item.action}
-            item={item}
+            item={activeAction === item.action && statusMessage ? { ...item, runningLabel: statusMessage } : item}
             onClick={() => handleClick(item.action)}
           />
         ))}

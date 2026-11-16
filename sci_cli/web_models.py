@@ -112,8 +112,8 @@ class ModelAssignment(BaseModel):
     provider: str
     model: str
     task: str = ""
-    # Auxiliary only. Omitted → the task's override is left alone; explicit null → cleared
-    # (inherit the main agent's effort); a level → set. ``model_fields_set`` tells the two apart.
+    # Omitted preserves effort. Main writes agent.reasoning_effort; auxiliary writes
+    # the task override. Explicit null restores inherited/default effort.
     reasoning_effort: Optional[str] = None
     # Custom/local endpoint URL + key, honored on main AND auxiliary slots: the runtime resolvers
     # read model.base_url / auxiliary.<task>.base_url (+ .api_key) and ignore OPENAI_BASE_URL.
@@ -444,6 +444,32 @@ class ProfileCreate(BaseModel):
     # Installed async via `sci -p <name> skills install` (skills_hub.SKILLS_DIR is import-time-bound,
     # so SCI_HOME can't redirect it); PIDs go back for the UI to poll.
     hub_skills: List[str] = []
+
+class NativeScienceSource(BaseModel):
+    location: str
+    access: Literal["reference", "read-local", "model"]
+
+class NativeScienceService(BaseModel):
+    name: str
+    kind: Literal["mcp", "plugin"]
+    tools: List[str] = []
+    discovery_token: Optional[str] = None
+    approve_scope: bool = False
+
+class NativeScienceProfileCreate(BaseModel):
+    name: str
+    config_fingerprint: str
+    skills: List[str] = []
+    services: List[NativeScienceService] = []
+    sources: List[NativeScienceSource] = []
+    approve_image_download: bool = False
+    approve_boltzmann_validation: bool = False
+    boltzmann_api_key: SecretStr = SecretStr("")
+
+class NativeScienceMcpDiscover(BaseModel):
+    name: str
+    approve_network: bool = False
+    approve_local_execution: bool = False
 
 class ProfileRename(BaseModel):
     new_name: str

@@ -6,9 +6,46 @@ from pathlib import Path
 from sci_constants import get_sci_home
 
 PROVIDER = "boltzmann_models"
-MODELS = ("qwen", "discoveryrsi", "glm", "codex")
-DEFAULT_BASE_URL = "http://100.87.197.84:8010/v1"
+DEFAULT_BASE_URL = "https://sciagent.boltzmann.co.in/v1"
 LOGIN_REQUIRED = "You are not authorized to use Boltzmann models in this profile. Run /boltzmann_login to connect your account."
+DEFAULT_MODEL = "discoveryrsi"
+DEFAULT_EFFORT = "medium"
+
+
+def reasoning_efforts(model):
+    """Gateway-confirmed controls; other gateway routes keep server-managed effort."""
+    return ("low", "medium", "high") if model == DEFAULT_MODEL else ()
+
+
+def save_login_default():
+    """Select the first connected account's default without touching a live agent."""
+    from .auth import available, current_key
+    from sci_cli.config import _CONFIG_LOCK, get_config_path, read_user_config_raw, atomic_config_replace
+    from sci_cli.model_switch import ModelSwitchResult, apply_model_selection
+
+    with owner_scope():
+        key, base = current_key(), endpoint()
+        if not available():
+            raise PermissionError(LOGIN_REQUIRED)
+        if DEFAULT_MODEL not in (catalog_models() or []):
+            return "Model default unchanged: DiscoveryRSI is not available in the gateway catalog. Choose a model under Models when the gateway is available."
+        with _CONFIG_LOCK:
+            if not available() or current_key() != key or endpoint() != base:
+                raise ValueError("Boltzmann login changed while selecting its default.")
+            raw = read_user_config_raw()
+            raw["model"] = apply_model_selection(raw.get("model"), ModelSwitchResult(
+                success=True, new_model=DEFAULT_MODEL, target_provider=PROVIDER,
+                base_url=base, api_mode="chat_completions"))
+            raw.setdefault("agent", {})["reasoning_effort"] = DEFAULT_EFFORT
+            aliases = {PROVIDER, "boltzmann-models"}
+            catalog = raw.get("model_catalog") or {}
+            if "excluded_providers" in catalog:
+                catalog["excluded_providers"] = [p for p in catalog["excluded_providers"] if str(p).lower() not in aliases]
+            for name, entry in (raw.get("providers") or {}).items():
+                if name in aliases and isinstance(entry, dict) and entry.get("enabled") is False:
+                    entry["enabled"] = True
+            atomic_config_replace(get_config_path(), raw)
+    return "New-conversation default: boltzmann_models / discoveryrsi · medium effort."
 
 
 def owner_home():
@@ -82,6 +119,34 @@ def credentials(*, strict=False):
         }
 
 
+def catalog_models(*, force_refresh=False, timeout=8.0):
+    """Read the owning account's gateway catalog through the shared model cache."""
+    from .auth import available, current_key
+    from providers import get_provider_profile
+    from providers.base import ProviderProfile
+    from sci_cli.models import cached_fetch_api_models
+    from sci_cli.model_switch_providers import _NativePickerModelList
+
+    with owner_scope():
+        if not available():
+            return []
+        key, base = current_key(), endpoint()
+        profile = get_provider_profile(PROVIDER)
+
+        def fetch():
+            models = ProviderProfile.fetch_models(
+                profile, api_key=key, base_url=base, timeout=timeout)
+            if models is None:
+                return None
+            return _NativePickerModelList(dict.fromkeys(
+                model for model in models if isinstance(model, str) and model.strip()))
+
+        return cached_fetch_api_models(
+            key, base, timeout=timeout, force_refresh=force_refresh,
+            fetch_models=fetch,
+        )
+
+
 def setup_model(current_model=""):
     from .auth import require_authorized
     from sci_cli.model_setup_flows_common import _pick_model_or_prompt, _finish_model
@@ -96,8 +161,12 @@ def setup_model(current_model=""):
     print(
         f"Boltzmann model gateway: {base}\nThis sends model messages using this profile's Boltzmann account."
     )
+    models = catalog_models(force_refresh=True)
+    if not models:
+        print("No Boltzmann models could be loaded from this account's gateway. Check authorization and connectivity.")
+        return
     chosen = _pick_model_or_prompt(
-        list(MODELS),
+        models,
         "Model name: ",
         current_model=current_model,
         confirm_provider=PROVIDER,
@@ -107,8 +176,8 @@ def setup_model(current_model=""):
             "codex": "Gateway output limits are server-managed; max_tokens is ignored."
         },
     )
-    if chosen and chosen not in MODELS:
-        print("Choose qwen, discoveryrsi, glm or codex. Nothing changed.")
+    if chosen and chosen not in models:
+        print("Choose a model listed by this account's Boltzmann gateway. Nothing changed.")
         return
     _finish_model(
         chosen,

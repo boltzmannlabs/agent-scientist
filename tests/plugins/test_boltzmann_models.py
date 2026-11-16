@@ -21,6 +21,7 @@ def platform(tmp_path, monkeypatch):
         "revoked": False,
         "credits": 2550,
         "auth_requests": 0,
+        "models": [{"id": name} for name in ("qwen", "discoveryrsi", "discoveryrsi-q4ks", "glm", "codex")],
     }
 
     class Handler(BaseHTTPRequestHandler):
@@ -179,7 +180,7 @@ def platform(tmp_path, monkeypatch):
         thread.join(5)
 
 
-@pytest.mark.parametrize("model", ["qwen", "discoveryrsi", "glm", "codex"])
+@pytest.mark.parametrize("model", ["qwen", "discoveryrsi", "discoveryrsi-q4ks", "glm", "codex"])
 def test_gateway_context_is_exact_profile_scoped_and_matches_display(platform, model, monkeypatch):
     from agent import model_metadata as mm
     from agent.model_metadata import fetch_endpoint_model_metadata, get_model_context_length
@@ -320,7 +321,7 @@ def test_large_history_switch_uses_destination_budget_before_reply(platform, mod
             agent.close()
 
 
-@pytest.mark.parametrize("model", ["qwen", "discoveryrsi", "glm", "codex"])
+@pytest.mark.parametrize("model", ["qwen", "discoveryrsi", "discoveryrsi-q4ks", "glm", "codex"])
 def test_gated_sdk_clients_sync_async_streaming_and_profiles(platform, model):
     from providers import get_provider_profile
     from sci_cli.runtime_provider import resolve_runtime_provider
@@ -848,3 +849,200 @@ def test_missing_or_malformed_metadata_never_reuses_or_invents_charges(platform)
         assert "Gateway billing" not in text and "Available credits: 2,550.00" in text
         client.close()
     assert len(state["requests"]) == 3 and state["updates"] == []
+
+
+def test_gateway_catalog_admits_new_ids_with_owner_auth_and_rejects_unknown(platform):
+    from plugins.boltzmann.model_gateway import catalog_models
+    from providers import get_provider_profile
+
+    state, root, a, b, base = platform
+    name = "gateway-new-fixture"
+    state["models"] = [{"id": name}, {"id": name}, {"id": "another-fixture"}]
+    provider = get_provider_profile("boltzmann_models")
+    for home, allowed in ((a, True), (b, False), (a, True)):
+        with profile_scope(home):
+            before = len(state.get("model_requests", []))
+            ids = catalog_models(force_refresh=True)
+            if not allowed:
+                assert ids == [] and len(state.get("model_requests", [])) == before
+                assert provider.fetch_models(api_key="fixture-a", base_url=base) == []
+                continue
+            assert ids == [name, "another-fixture"]
+            assert provider.fetch_models(api_key="wrong-caller-key", base_url=base) == ids
+            client = provider.create_client(api_key="fixture-a", base_url=base)
+            try:
+                reply = client.chat.completions.create(model=name, messages=[{"role": "user", "content": "Fixture"}])
+                assert reply.choices[0].message.content == "Fixture report: SCI_TOOL_OK"
+                assert state["requests"][-1]["model"] == name
+                sent = len(state["requests"])
+                with pytest.raises(ValueError, match="gateway catalog"):
+                    client.chat.completions.create(model="not-advertised", messages=[])
+                assert len(state["requests"]) == sent
+            finally:
+                client.close()
+    assert set(state["model_requests"]) == {"Bearer fixture-a"}
+
+
+def test_gateway_catalog_refresh_and_setup_follow_server_inventory(platform, monkeypatch):
+    from plugins.boltzmann.model_gateway import catalog_models, setup_model
+
+    state, root, a, b, base = platform
+    seen = []
+    monkeypatch.setattr("sci_cli.model_setup_flows_common._pick_model_or_prompt",
+                        lambda models, *args, **kwargs: seen.append(models) or None)
+    with profile_scope(a):
+        state["models"] = [{"id": "old-fixture"}]
+        assert catalog_models(force_refresh=True) == ["old-fixture"]
+        state["models"] = [{"id": "new-fixture"}]
+        setup_model()
+        assert seen == [["new-fixture"]]
+        state["models"] = []
+        assert catalog_models(force_refresh=True) == []
+
+
+def test_discovery_effort_reaches_sync_async_wire_without_cross_profile_access(platform):
+    from providers import get_provider_profile
+    from agent.transports.chat_completions import ChatCompletionsTransport
+    from plugins.boltzmann.model_client import BoltzmannClient
+    from sci_cli.inventory import _apply_capabilities
+
+    state, root, a, b, base = platform
+    with profile_scope(a):
+        provider = get_provider_profile("boltzmann_models")
+        rows = [{"slug": provider.name, "models": ["discoveryrsi", "qwen"]}]
+        _apply_capabilities(rows)
+        caps = rows[0]["capabilities"]
+        assert caps["discoveryrsi"]["supported_efforts"] == list(provider.supported_reasoning_efforts("discoveryrsi"))
+        assert not caps["discoveryrsi"]["can_disable_reasoning"]
+        assert not caps["qwen"]["reasoning"]
+        client = BoltzmannClient(base_url=base, api_key="ignored")
+        try:
+            for effort in provider.supported_reasoning_efforts("discoveryrsi"):
+                kwargs = ChatCompletionsTransport().build_kwargs(
+                    "discoveryrsi", [{"role": "user", "content": "Fixture"}],
+                    tools=[], base_url=base, provider_profile=provider,
+                    reasoning_config={"enabled": True, "effort": effort}, stream=False)
+                client.chat.completions.create(**kwargs)
+                assert state["requests"][-1]["reasoning_effort"] == effort
+
+            async def auxiliary_request():
+                other = client.to_async_client()
+                try:
+                    await other.chat.completions.create(model="discoveryrsi", messages=[],
+                        extra_body={"reasoning": {"effort": "medium"}}, stream=False)
+                finally:
+                    await other.close()
+            asyncio.run(auxiliary_request())
+            assert state["requests"][-1]["reasoning_effort"] == "medium"
+            sent = len(state["requests"])
+            with profile_scope(b), pytest.raises(PermissionError):
+                client.chat.completions.create(model="discoveryrsi", messages=[])
+            assert len(state["requests"]) == sent
+            client.chat.completions.create(model="discoveryrsi", messages=[], reasoning_effort="high")
+            assert state["requests"][-1]["reasoning_effort"] == "high"
+            state["revoked"] = True
+            sent = len(state["requests"])
+            with pytest.raises(PermissionError):
+                client.chat.completions.create(model="discoveryrsi", messages=[])
+            assert len(state["requests"]) == sent
+        finally:
+            client.close()
+
+
+def test_first_login_default_is_scoped_and_relogin_preserves_later_choice(platform):
+    from types import SimpleNamespace
+    from sci_cli.boltzmann_setup import run
+    from sci_cli.callbacks import _secret_result
+    from sci_cli.config import read_user_config_raw
+    from sci_cli.plugins_state import PluginState
+    from plugins.boltzmann.model_gateway import DEFAULT_MODEL, DEFAULT_EFFORT
+
+    state, root, a, b, base = platform
+    untouched = {home: (home / "config.yaml").read_bytes() for home in (root, b)}
+    with profile_scope(a):
+        PluginState("boltzmann").set("authorization", "")
+        agent = SimpleNamespace(system_prompt="frozen", tools=["unchanged"])
+        cli = SimpleNamespace(agent=agent, _secret_capture_callback=lambda name, prompt, **kw: _secret_result(name, "fixture-a", **kw))
+        message = run(cli, "--replace")
+        assert "SAVED" in message and "New-conversation default:" in message
+        cfg = read_user_config_raw()
+        assert cfg["model"]["provider"] == "boltzmann_models" and cfg["model"]["default"] == DEFAULT_MODEL
+        assert cfg["agent"]["reasoning_effort"] == DEFAULT_EFFORT
+        assert cfg["model"]["base_url"] == base and "api_key" not in cfg["model"]
+        assert "context_length" not in cfg["model"]
+        assert agent.system_prompt == "frozen" and agent.tools == ["unchanged"]
+        cfg["model"]["default"] = "glm"
+        cfg["agent"]["reasoning_effort"] = "high"
+        atomic_config_replace(a / "config.yaml", cfg)
+        assert "SAVED" in run(cli, "--replace")
+        assert read_user_config_raw()["model"]["default"] == "glm"
+        assert read_user_config_raw()["agent"]["reasoning_effort"] == "high"
+    with profile_scope(b):
+        assert read_user_config_raw()["model"]["default"] != DEFAULT_MODEL
+    with profile_scope(a):
+        assert read_user_config_raw()["model"]["default"] == "glm"
+    assert all((home / "config.yaml").read_bytes() == data for home, data in untouched.items())
+    assert not state["requests"] and not state["updates"]
+
+
+@pytest.mark.parametrize('surface', ['cli-new', 'web-new'])
+def test_saved_gateway_default_answers_first_turn_without_reselection(platform, monkeypatch, surface):
+    """A model name is not its route: persist the provider, then cold-start A -> B -> A."""
+    from types import SimpleNamespace
+    import cli
+    from run_agent import AIAgent
+    from sci_cli.cli_config_load import load_cli_config
+    from sci_cli.cli_init_mixin import CLIInitMixin
+    from sci_cli.cli_session_mixin import _reset_model_to_config_default
+    from sci_cli.config import read_user_config_raw
+    from sci_cli.model_switch import ModelSwitchResult, persist_model_selection
+    from sci_cli.runtime_provider import resolve_runtime_provider
+    from tui_gateway import server
+
+    state, _, a, b, base = platform
+    state['allowed_keys'] = ['Bearer fixture-a', 'Bearer fixture-b']
+    monkeypatch.setattr('agent.title_generator.maybe_auto_title', lambda *a, **k: None)
+    with profile_scope(b):
+        save_env_value_secure('BOLTZMANN_API_KEY', 'fixture-b')
+        authorize_saved_key()
+    unchanged = (b / 'config.yaml').read_bytes()
+    with profile_scope(a):
+        cfg = read_user_config_raw()
+        cfg['model'] = {'default': 'discoveryrsi-q4ks', 'provider': 'custom', 'base_url': base,
+                        'api_key': 'stale-custom-key', 'api_mode': 'chat_completions'}
+        atomic_config_replace(a / 'config.yaml', cfg)
+        persist_model_selection(ModelSwitchResult(success=True, new_model='discoveryrsi-q4ks',
+            target_provider='boltzmann_models', base_url=base, api_mode='chat_completions'))
+        cfg = read_user_config_raw()
+        assert cfg['model']['provider'] == 'boltzmann_models' and 'api_key' not in cfg['model']
+    assert (b / 'config.yaml').read_bytes() == unchanged
+
+    for home, model in ((a, 'discoveryrsi-q4ks'), (b, 'qwen'), (a, 'discoveryrsi-q4ks')):
+        with profile_scope(home):
+            if surface == 'cli-new':
+                monkeypatch.setattr(cli, '_sci_home', home)  # CLI launch profile is fixed before import.
+                monkeypatch.setattr(cli, 'CLI_CONFIG', load_cli_config())
+                cold = SimpleNamespace()
+                CLIInitMixin._init_model_and_provider(cold, None, None, None, None)
+                assert (cold.model, cold.requested_provider) == (model, 'boltzmann_models')
+                # A previous conversation used the same model name through another provider.
+                shell = SimpleNamespace(model=model, provider='custom', requested_provider='custom',
+                    base_url=base, api_key='stale-custom-key', api_mode='chat_completions', agent=None)
+                _reset_model_to_config_default(shell, silent=True)
+                assert shell.provider == shell.requested_provider == 'boltzmann_models'
+                runtime = resolve_runtime_provider(requested=shell.requested_provider, target_model=shell.model)
+            else:
+                selected, runtime = server._resolve_agent_model_runtime(None, None)
+                assert selected == model and runtime['provider'] == 'boltzmann_models'
+            agent = AIAgent(model=model, provider=runtime['provider'], base_url=runtime['base_url'],
+                api_key=runtime['api_key'], api_mode=runtime['api_mode'], enabled_toolsets=['file'],
+                quiet_mode=True, skip_context_files=True, skip_memory=True, max_iterations=3)
+            try:
+                agent._cached_system_prompt = 'Frozen startup fixture'
+                result = agent.run_conversation('Hello')
+                assert 'SCI_TOOL_OK' in result['final_response'], result
+                assert agent._cached_system_prompt == 'Frozen startup fixture'
+            finally:
+                agent.close()
+    assert state['requests'] and all(row['stream'] is False for row in state['requests'])
+    assert not state['updates']

@@ -63,7 +63,10 @@ def science_welcome_panel(*, skin, profile, model, provider, cwd, tool_count,
     if yolo:
         if not compact:
             content.append(Text())
-        content.append(Text("⚠ YOLO mode — all approval prompts bypassed", style=skin.get_color("ui_warn")))
+        content.append(Text(
+            "⚠ YOLO mode — command approvals bypassed; provider changes and explicit approval requests still require your answer",
+            style=skin.get_color("ui_warn"),
+        ))
     return Panel(
         Group(*content), box=box.ROUNDED, padding=(0, 1) if compact else (1, 2),
         border_style=skin.get_color("banner_border"),

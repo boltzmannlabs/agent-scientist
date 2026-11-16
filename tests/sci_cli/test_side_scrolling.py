@@ -18,7 +18,7 @@ from sci_cli.side_scroll import SideScrollFrame, TranscriptControl, TranscriptWi
 
 
 def build_view(text):
-    view = SimpleNamespace(follow=True, transcript=TextArea(text=text, read_only=True, focusable=False))
+    view = SimpleNamespace(visible=True, follow=True, transcript=TextArea(text=text, read_only=True, focusable=False))
     view.transcript.control = TranscriptControl(view, view.transcript.buffer, view.transcript.lexer)
     view.copy_text = Mock()
     view.transcript.window = TranscriptWindow(view, view.transcript.control)
@@ -111,3 +111,97 @@ async def test_drag_copies_wrapped_unicode_output_without_changing_composer(reve
         view.scroll(-1)
         mouse.mouse_handlers[end.y][end.x](MouseEvent(end, MouseEventType.MOUSE_UP, MouseButton.LEFT, frozenset()))
         assert view.copy_text.call_count == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('direction', [-1, 1])
+async def test_wheel_preserves_drag_anchor_and_copies_across_viewports(direction):
+    from sci_cli.side_view import SideView
+    text = '\n'.join(f'entry {i:03} 世界' for i in range(80))
+    view, composer, app, frame = build_view(text)
+    with set_app(app):
+        app.layout.update_parents_relations()
+        render(frame)
+        window = view.transcript.window
+        window.move(0, fraction=.5)
+        _, mouse = render(frame)
+        start, end = Point(2, 5), Point(6, 6)
+        mouse.mouse_handlers[start.y][start.x](MouseEvent(start, MouseEventType.MOUSE_DOWN, MouseButton.LEFT, frozenset()))
+        anchor = view.transcript.control.anchor
+        wheel = MouseEvent(start, MouseEventType.SCROLL_UP if direction < 0 else MouseEventType.SCROLL_DOWN,
+                           MouseButton.NONE, frozenset())
+        for _ in range(5):
+            mouse.mouse_handlers[start.y][start.x](wheel)
+            _, mouse = render(frame)
+            assert view.transcript.control.anchor == anchor
+        mouse.mouse_handlers[end.y][end.x](MouseEvent(end, MouseEventType.MOUSE_UP, MouseButton.LEFT, frozenset()))
+        selected = SideView.selected_text(view)
+        assert selected.count('\n') > window.render_info.window_height
+        view.copy_text.assert_called_once_with(selected)
+        assert not view.follow
+        selection = view.transcript.buffer.document.selection_range()
+        view.scroll(direction)
+        render(frame)
+        assert view.transcript.buffer.document.selection_range() == selection
+        assert composer.text == 'keep my draft' and app.layout.current_buffer is composer.buffer
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('direction', [-1, 1])
+async def test_edge_drag_scrolls_while_held_and_stops_on_release_or_hide(direction):
+    import asyncio
+    from prompt_toolkit.data_structures import Size
+    from prompt_toolkit.input import create_pipe_input
+    from sci_cli.side_view import SideView
+
+    view, composer, app, frame = build_view('\n'.join(f'entry {i:03} 世界' for i in range(80)))
+    view.visible = True
+    app.full_screen = True
+    app.output.get_size = lambda: Size(rows=12, columns=24)
+
+    async def wait_for(predicate):
+        async def poll():
+            while not predicate():
+                await asyncio.sleep(.01)
+        await asyncio.wait_for(poll(), timeout=5)
+
+    def mouse(kind, point):
+        app.renderer.mouse_handlers.mouse_handlers[point.y][point.x](
+            MouseEvent(point, kind, MouseButton.LEFT, frozenset()))
+
+    with create_pipe_input() as pipe:
+        app.input = pipe
+        task = asyncio.create_task(app.run_async())
+        try:
+            await wait_for(lambda: view.transcript.window.render_info is not None)
+            window = view.transcript.window
+            window.move(0, fraction=.5)
+            app.invalidate = Application.invalidate.__get__(app)
+            counter = app.render_counter
+            app.invalidate()
+            await wait_for(lambda: app.render_counter > counter)
+            mouse(MouseEventType.MOUSE_DOWN, Point(2, 5))
+            anchor = view.transcript.control.anchor
+            edge = Point(6, 0 if direction < 0 else 11)  # header / composer
+            before = window.top
+            mouse(MouseEventType.MOUSE_MOVE, edge)
+            await wait_for(lambda: (window.top - before) * direction >= 12)
+            await wait_for(lambda: view.transcript.buffer.selection_state is not None)
+            assert view.transcript.control.anchor == anchor
+            assert not view.follow
+            mouse(MouseEventType.MOUSE_UP, edge)
+            view.copy_text.assert_called_once_with(SideView.selected_text(view))
+            stopped = window.top
+            await asyncio.sleep(.3)
+            assert window.top == stopped and view.transcript.control.anchor is None
+            assert composer.text == 'keep my draft' and app.layout.current_buffer is composer.buffer
+            # A hidden side view must never keep a held drag's timer alive.
+            mouse(MouseEventType.MOUSE_DOWN, Point(2, 5))
+            mouse(MouseEventType.MOUSE_MOVE, edge)
+            view.visible = False
+            stopped = window.top
+            await asyncio.sleep(.3)
+            assert window.top == stopped
+        finally:
+            app.exit()
+            await task
