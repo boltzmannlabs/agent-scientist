@@ -49,7 +49,9 @@ python3 "$HELPER" delete --draft "$DRAFT" --request-file "$REQUEST"
 - **upsert**: request includes `expected_revision` and a full `scenario` entry.
   Retain its ID for edits. For Add omit ID to allocate the next unused S-number.
   Extra metadata holds shared/per-recipe inputs, origins, search settings and
-  reviewed sections. Set ready only after all required sections are reviewed.
+  reviewed sections. Set `status: "ready"` only after all required sections are
+  reviewed; otherwise use `status: "review_required"`. Older `ready: true` entries
+  without a status are normalized by the helper for compatibility.
 
 After any mutation, use the returned list/revision. On a stale revision error,
 list again and resolve the intended selection; never silently delete another row.
@@ -63,3 +65,26 @@ If an older session displayed recommendations without a draft, reconstruct those
 exact displayed rows as review_required entries before offering deletion. Do not
 show an empty list while S1/S2 still appear in the recommendation table. Save a
 fresh draft per mode; previous scientific results are never targets of this helper.
+
+## Recipe selection without checkboxes
+
+Use `recipes --request-file PRIVATE_REQUEST_PATH` (no draft path required) before
+Add/Edit recipe selection. Payload: `{"recipes":[{"recipe_id":"R-a","name":"Recipe A"},{"recipe_id":"R-b","name":"Recipe B"}]}`.
+Render the returned numbered recipes and use `selector` unchanged in native
+`clarify`. Send the same recipes plus `answer` from `user_response` and the actual
+clarify `outcome` to resolve selection. `status=selected` returns exact saved
+`recipe_ids`; retain them in the pending wizard and continue. Do not send the
+question's default as an answer. This command never writes a draft or runs physics.
+`needs_input` means keep asking the same step, without dropping the pending Add;
+`previous` navigates back; `cancelled` exits without a mutation. Unknown IDs are
+errors, not a reason to select All. `Choose recipes` returns a free-text selector
+for comma/space-separated recipe numbers or IDs. Never use checkbox selection for
+All or silently reset a confirmed selection.
+
+The helper response wraps the question in `selector`: submit the WHOLE selector
+object as one item of native clarify's `questions` array. Do not submit only its
+`question` string, and do not omit its `choices`: that would create a free-text
+question even though the screen describes radio choices. The structure is
+`{"questions":[{"question":"Which recipes should this scenario include?","choices":["All eligible recipes","1 — <actual first recipe name>","2 — <actual second recipe name>","Previous"],"multi_select":false}]}`
+for two recipes; copy actual labels from the helper rather than inventing IDs.
+Check that the native question has the returned choices before sending it.

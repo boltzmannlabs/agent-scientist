@@ -14,6 +14,51 @@ import time
 ACTIONS = ['Add scenario', 'Delete scenario', 'Edit scenario', 'Run scenarios']
 
 
+def recipe_selection(payload):
+    """Resolve explicit recipe choices without checkboxes or draft mutation."""
+    recipes = payload.get('recipes')
+    if not isinstance(recipes, list) or not recipes:
+        raise ValueError('Supply the eligible saved recipes')
+    ids = [r.get('recipe_id') if isinstance(r, dict) else None for r in recipes]
+    if any(not isinstance(r, str) or not r for r in ids) or len(set(ids)) != len(ids):
+        raise ValueError('Eligible recipe IDs must be distinct nonempty strings')
+    labels = [str(i + 1) + ' — ' + str(r.get('name') or rid)[:60]
+              for i, (r, rid) in enumerate(zip(recipes, ids))]
+    choices = ['All eligible recipes', *(labels if len(ids) <= 2 else ['Choose recipes']), 'Previous']
+    selector = {'question': 'Which recipes should this scenario include?',
+                'choices': choices, 'multi_select': False}
+    result = {'status': 'needs_input', 'recipe_ids': [], 'selector': selector,
+              'recipes': [{'number': i + 1, **r} for i, r in enumerate(recipes)]}
+    if payload.get('outcome', 'submitted') == 'cancelled':
+        return dict(result, status='cancelled')
+    if payload.get('outcome', 'submitted') != 'submitted':
+        return result
+    answer = payload.get('answer')
+    if answer in (None, '', [], '[]') or (isinstance(answer, str) and not answer.strip()):
+        return result
+    if answer == 'Previous':
+        return dict(result, status='previous')
+    if answer == 'Choose recipes':
+        return dict(result, selector={'question': 'Enter recipe numbers or saved IDs, separated by commas. Type Previous to go back.',
+                                      'multi_select': False})
+    tokens = answer if isinstance(answer, list) else [answer]
+    if tokens == ['All eligible recipes']:
+        return dict(result, status='selected', recipe_ids=ids)
+    lookup = dict(zip(labels, ids))
+    lookup.update(zip(ids, ids))
+    lookup.update((str(i + 1), rid) for i, rid in enumerate(ids))
+    selected = []
+    for value in tokens:
+        if not isinstance(value, str):
+            raise ValueError('Choose recipe numbers or saved IDs')
+        for token in ([value] if value in lookup else re.split(r'[,\s]+', value.strip())):
+            if token not in lookup:
+                raise ValueError('Unknown recipe selection; keep the pending selection and ask again')
+            if lookup[token] not in selected:
+                selected.append(lookup[token])
+    return dict(result, status='selected', recipe_ids=selected)
+
+
 def validate_scenarios(items):
     if not isinstance(items, list):
         raise ValueError('scenarios must be a list')
@@ -86,6 +131,8 @@ def apply(state, action, payload):
         row = deepcopy(payload.get('scenario'))
         if not isinstance(row, dict):
             raise ValueError('scenario must be an object')
+        # Older wizard instructions produced a boolean instead of the status field.
+        row.setdefault('status', 'ready' if row.get('ready') is True else 'review_required')
         if 'id' not in row:
             row['id'] = 'S' + str(updated['next_scenario_number'])
             updated['next_scenario_number'] += 1
@@ -107,7 +154,9 @@ def apply(state, action, payload):
 
 
 def view(state):
-    rows = state['scenarios']
+    rows = deepcopy(state['scenarios'])
+    for row in rows:
+        row.setdefault('status', 'ready' if row.get('ready') is True else 'review_required')
     selector = None
     if rows:
         if len(rows) <= 2:
@@ -119,7 +168,7 @@ def view(state):
         selector = {'question': 'Which scenario(s) should be deleted?',
                     'choices': choices, 'multi_select': False}
     return {'revision': state['revision'], 'project_id': state['project_id'],
-            'mode': state['mode'], 'scenarios': state['scenarios'],
+            'mode': state['mode'], 'scenarios': rows,
             'delete_selector': selector,
             'delete_more_selector': {
                 'question': 'How would you like to select scenarios?',
@@ -130,7 +179,7 @@ def view(state):
             'bulk_delete_confirmation': {
                 'question': f'Delete all {len(rows)} draft scenarios? Saved scientific results will remain.',
                 'choices': ['Keep scenarios', f'Delete all {len(rows)} scenarios'], 'multi_select': False},
-            'actions': ACTIONS, 'can_run': bool(state['scenarios']) and all(r.get('status') == 'ready' for r in state['scenarios'])}
+            'actions': ACTIONS, 'can_run': bool(rows) and all(r.get('status') == 'ready' for r in rows)}
 
 
 def save(path, state):
@@ -187,8 +236,8 @@ def draft_lock(path, timeout=10):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['create', 'list', 'delete', 'undo', 'upsert'])
-    parser.add_argument('--draft', type=Path, required=True)
+    parser.add_argument('action', choices=['create', 'list', 'delete', 'undo', 'upsert', 'recipes'])
+    parser.add_argument('--draft', type=Path)
     parser.add_argument('--request-file', type=Path,
                         help='Read mutation payload as UTF-8 JSON data from this file')
     args = parser.parse_args()
@@ -201,6 +250,11 @@ def main():
             payload = json.load(sys.stdin)  # Compatibility with older clients.
         if not isinstance(payload, dict):
             raise ValueError('Command payload must be a JSON object')
+        if args.action == 'recipes':
+            print(json.dumps(recipe_selection(payload), ensure_ascii=False))
+            return 0
+        if args.draft is None:
+            raise ValueError('--draft is required for draft operations')
         if args.action == 'list':
             state = json.loads(args.draft.read_text())
         else:

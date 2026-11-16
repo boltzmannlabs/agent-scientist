@@ -1,7 +1,7 @@
 ---
 name: agri-models-and-design
 description: Run physical scenarios and constrained design searches.
-version: "2.2.0"
+version: "2.2.3"
 author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
@@ -105,6 +105,14 @@ The automatic path applies only to explicitly requested automatic campaigns; it 
 missing inputs, criteria or consent to exploratory assumptions. Honor recipes-only,
 cost-only, stop and other explicit limits. Keep unknown performance unassessed and
 recommend only a qualified best among the evaluated feasible scenarios.
+
+## Recipe selection
+
+For Add/Edit and AI + Physics recipe questions, use the draft helper's `recipes`
+selector with `multi_select: false`. All eligible recipes is a direct choice,
+not a checkbox. Resolve the explicit answer to saved IDs; an empty response keeps
+this step pending, with no arbitrary retry limit or lost Add configuration.
+See `references/draft-commands.md` for the selection command.
 
 ## Manual Design Review
 

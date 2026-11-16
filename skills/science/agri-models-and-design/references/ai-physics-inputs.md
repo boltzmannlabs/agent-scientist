@@ -14,7 +14,8 @@ execution for this mode only.
    If no acceptance limits are requested, record that choice and avoid pass claims.
 2. **Baseline and recipes.** Show saved recipe names, generation/IDs, batch basis
    and composition. Ask which is the baseline, then which alternatives to include.
-   Offer All eligible recipes where appropriate. Preserve pure-active loading and
+   Use the helper's single-choice recipe selector (never checkboxes), with
+   All eligible recipes as an explicit option. Empty input keeps the step pending. Preserve pure-active loading and
    ask about any permitted composition/grade/supplier changes. Never infer a recipe
    selection from an unrelated answer or select all without an answer.
 3. **Scenarios to evaluate.** Recommend a small relevant set with one plain-language

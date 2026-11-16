@@ -78,13 +78,21 @@ or cancelled question never runs calculations. Preserve existing recipes/results
    inverse_design. If inverse_design is chosen, ask for its supported base model
    unless already explicit in the request. Explain requirements only when relevant. Do not pretend every key can
    be inserted into the engine's ordinary design/study comparison.
-2. **Choose recipes.** Show saved names and short labels with their real IDs.
-   Ask which recipes to include and always offer **All eligible recipes**. With
-   at most two recipes, use multi-select plus All and Previous (four choices).
-   For a longer list, show names/numbers and use **All eligible recipes**,
-   **Choose recipes**, **Previous**; Choose recipes opens free-text selection.
-   Never exceed the native four-choice limit or silently drop a recipe.
-   Ask for an individual active only when a selected recipe makes it ambiguous.
+2. **Choose recipes.** Use the helper's `recipes` command with the actual eligible
+   saved recipe IDs/names. Show its numbered list and pass its `selector` unchanged
+   to native `clarify`: **multi_select: false**. All eligible recipes is a single
+   radio choice: Enter confirms it, with no checkbox or Space action required.
+   With one/two recipes, direct individual choices and Previous also appear;
+   larger sets use All eligible recipes / Choose recipes / Previous. Choose recipes
+   opens the helper's free-text number/ID question. Do not use checkbox selection.
+   Resolve the submitted answer with the helper and use its exact `recipe_ids`.
+   Show the selected recipe names, retain them in the pending Add/Edit and advance
+   to shared conditions. Empty/`[]`/unanswered input keeps this same step pending;
+   re-show the single-choice selector and explain Enter once. Do not abandon Add
+   after a retry count, interpret an empty answer as All, or regenerate the model.
+   Previous returns to model selection; explicit cancellation preserves the saved
+   draft and exits without adding a partial scenario. Ask for an individual active
+   only when a selected recipe makes it ambiguous.
 3. **Shared conditions.** Read the chosen model schema. Show the first related
    group of shared fields with current/proposed values, units and origins. Ask
    **Keep values**, **Change values**, **Previous**, or **Skip — use defaults**

@@ -356,3 +356,87 @@ raise SystemExit(m.main())
     assert second.returncode == 1, second_error + second_output
     assert json.loads(second_output)['status'] == 'error'
     assert [r['id'] for r in call(path, 'list')[1]['scenarios']] == ['S2']
+
+
+@pytest.mark.parametrize('answer,expected', [('All eligible recipes',['R-a','R-b']),('1',['R-a']),('2',['R-b']),('1, 2',['R-a','R-b']),('R-b R-a',['R-b','R-a'])])
+def test_recipe_selection_resolves_exact_ids_without_changing_draft(tmp_path,answer,expected):
+    path=tmp_path/'draft.json';original=draft(path);before=path.read_bytes()
+    payload={'recipes':[{'recipe_id':'R-a','name':'A'},{'recipe_id':'R-b','name':'B'}],'answer':answer,'outcome':'submitted'}
+    status,value=call(path,'recipes',payload)
+    assert status==0 and value['status']=='selected'
+    assert value['recipe_ids']==expected
+    assert path.read_bytes()==before
+    status,added=call(path,'upsert',{'expected_revision':original['revision'],
+        'scenario':{'name':'Release','model':'kinetics','recipe_ids':value['recipe_ids']}})
+    assert status==0 and added['scenarios'][-1]['recipe_ids']==expected
+    assert added['scenarios'][:-1]==original['scenarios']
+
+
+@pytest.mark.parametrize('answer,outcome,status', [([], 'submitted','needs_input'),('[]','submitted','needs_input'),(None,'submitted','needs_input'),('All eligible recipes','cancelled','cancelled'),('All eligible recipes','timed_out','needs_input'),('Previous','submitted','previous')])
+def test_empty_or_unconfirmed_recipe_selection_does_not_add_or_drop_scenarios(tmp_path,answer,outcome,status):
+    path=tmp_path/'draft.json';draft(path);before=path.read_bytes()
+    code,result=call(path,'recipes',{'recipes':[{'recipe_id':'R-a','name':'A'}],'answer':answer,'outcome':outcome})
+    assert code==0 and result['status']==status and result['recipe_ids']==[]
+    assert path.read_bytes()==before
+
+
+def test_real_cli_enter_on_all_recipes_reaches_helper_and_saved_add(tmp_path):
+    from queue import Queue
+    from cli import SciCLI
+    from tools.clarify_tool import clarify_tool
+    path=tmp_path/'draft.json';original=draft(path)
+    recipes=[{'recipe_id':'R-a','name':'A'},{'recipe_id':'R-b','name':'B'}]
+    _,options=call(path,'recipes',{'recipes':recipes})
+    def callback(entries):
+        entry=entries[0];assert entry['multi_select'] is False
+        view=SciCLI.__new__(SciCLI);view._persist_prompt_summary=lambda *a:None
+        state={'questions':entries,'active':0,'answers':{},'choices':entry['choices'],
+               'selected':0,'multi_select':False,'response_queue':Queue()}
+        view._clarify_batch_enter(state)
+        return {'answers':state['response_queue'].get_nowait(),'outcome':'submitted'}
+    reply=json.loads(clarify_tool([options['selector']],callback=callback))
+    answer=reply['responses'][0]['user_response']
+    _,selected=call(path,'recipes',{'recipes':recipes,'answer':answer,'outcome':reply['outcome']})
+    assert selected['recipe_ids']==['R-a','R-b']
+    _,added=call(path,'upsert',{'expected_revision':original['revision'],
+        'scenario':{'name':'Release','model':'kinetics','recipe_ids':selected['recipe_ids']}})
+    assert call(path,'list')[1]['scenarios'][-1]['recipe_ids']==['R-a','R-b']
+    assert added['actions']==original['actions']
+
+
+@pytest.mark.parametrize('count', [1,2,3,8])
+def test_recipe_picker_supports_large_catalogues_and_rejects_unknown_ids(tmp_path,count):
+    path=tmp_path/'draft.json';draft(path);before=path.read_bytes()
+    recipes=[{'recipe_id':f'R-{i}','name':'Same display name'} for i in range(count)]
+    _,options=call(path,'recipes',{'recipes':recipes})
+    assert options['selector']['multi_select'] is False
+    assert len(options['selector']['choices'])<=4
+    _,all_selected=call(path,'recipes',{'recipes':recipes,'answer':'All eligible recipes'})
+    assert all_selected['recipe_ids']==[r['recipe_id'] for r in recipes]
+    if count>2:
+        _,typed=call(path,'recipes',{'recipes':recipes,'answer':'Choose recipes'})
+        assert 'choices' not in typed['selector']
+    code,invalid=call(path,'recipes',{'recipes':recipes,'answer':'R-missing'})
+    assert code!=0 and invalid['status']=='error'
+    assert path.read_bytes()==before
+
+
+def test_completed_add_has_consistent_persisted_and_displayed_readiness(tmp_path):
+    path=tmp_path/'draft.json'
+    code,initial=call(path,'create',{'project_id':'P','mode':'design','scenarios':[]})
+    assert code==0
+    code,added=call(path,'upsert',{'expected_revision':initial['revision'],'scenario':{
+        'name':'Release','model':'kinetics','recipe_ids':['R-a','R-b'],'ready':True,
+        'reviewed_sections':['model','recipes','shared_conditions','recipe_properties','criteria']}})
+    assert code==0 and added['can_run'] is True
+    assert added['scenarios'][0]['status']=='ready'
+    assert json.loads(path.read_text())['scenarios'][0]['status']=='ready'
+    # Existing wizard drafts with a legacy boolean also remain usable via the reader.
+    state=json.loads(path.read_text());state['scenarios'][0].pop('status');path.write_text(json.dumps(state))
+    code,listed=call(path,'list')
+    assert code==0 and listed['can_run'] is True
+    assert listed['scenarios'][0]['status']=='ready'
+    # Explicit review-required status takes priority over a stale legacy flag.
+    code,edited=call(path,'upsert',{'expected_revision':listed['revision'],'scenario':{
+        **listed['scenarios'][0],'status':'review_required'}})
+    assert code==0 and edited['can_run'] is False
