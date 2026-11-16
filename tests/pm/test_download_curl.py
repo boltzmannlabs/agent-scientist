@@ -131,3 +131,59 @@ def test_curl_pause_reaps_child_and_preserves_destination(tmp_path, monkeypatch,
     RangeHandler.slow_per_chunk = 0
     job.run()
     assert destination.read_bytes() == body
+
+
+def test_curl_resume_restarts_partial_but_retains_completed_archives(tmp_path, monkeypatch, dl_server):
+    curl = locate_command("curl").command
+    if not curl:
+        pytest.skip("curl executable unavailable")
+    # Exercise the real transport on this host; native selection has its own
+    # Windows case above. This does not change host facts or platform markers.
+    monkeypatch.setattr(downloader_curl, "windows_curl", lambda: curl[0])
+    bodies = {"/engine.zip": b"complete engine", "/runtime.zip": b"r" * (2 << 20)}
+    RangeHandler.payloads = bodies
+    RangeHandler.no_range = True
+    RangeHandler.chunk = 64 << 10
+    RangeHandler.slow_per_chunk = 0.02
+    requested = []
+    original = RangeHandler.do_GET
+
+    def request(handler):
+        requested.append(handler.path)
+        original(handler)
+
+    monkeypatch.setattr(RangeHandler, "do_GET", request)
+    sources = [Source(url(dl_server, name), tmp_path / name.lstrip("/"), hashlib.sha256(body).hexdigest())
+               for name, body in bodies.items()]
+    pause = threading.Event()
+    job = Download(sources, partials_dir=tmp_path / "partials", pause_event=pause,
+                   native_archive_transport=True)
+    attempts = [[], []]
+    completed_size = len(bodies["/engine.zip"])
+
+    def initial(done, total, ranges):
+        attempts[0].append((done, total, ranges))
+        if done > completed_size:
+            pause.set()
+
+    with pytest.raises(DownloadPaused):
+        job.run(initial)
+    assert sources[0].dest.read_bytes() == bodies["/engine.zip"]
+    assert not sources[1].dest.exists()
+    pause.clear()
+    RangeHandler.slow_per_chunk = 0
+    job.run(lambda *tick: attempts[1].append(tick))
+
+    # Only the incomplete stream restarts. Progress is allowed to fall at this
+    # explicit boundary and must still represent real whole-plan coverage.
+    assert attempts[1][0][0] == completed_size < attempts[0][-1][0]
+    for phase in attempts:
+        assert phase
+        for done, total, ranges in phase:
+            assert done == sum(end - start for spans in ranges.values() for start, end in spans)
+            assert done >= 0 and (total == 0 or done <= total)
+    assert all(tick[2][str(sources[0].dest)] == [(0, completed_size)] for tick in attempts[1])
+    assert attempts[1][-1][:2] == (sum(map(len, bodies.values())),) * 2
+    assert requested.count("/engine.zip") == 1
+    assert requested.count("/runtime.zip") == 2
+    assert [source.dest.read_bytes() for source in sources] == list(bodies.values())
