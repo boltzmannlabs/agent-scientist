@@ -40,6 +40,7 @@ import {
   recordWebSockets,
   renderedTranscript,
   send,
+  steerQueued,
   waitForInteractive,
   writeProviderHome
 } from './harness'
@@ -240,6 +241,7 @@ test('an acknowledged redirect prompt renders once after in-place compaction ins
 
     // Busy submit: the redirect correction, an optimistic row with no row-id receipt.
     await send(page, `${U(4)} change course`, 'Enter', ws)
+    await steerQueued(page)
     await expect
       .poll(() => provider.completions.some(c => c.marker === U(6) && c.finished), {
         timeout: 90_000,
