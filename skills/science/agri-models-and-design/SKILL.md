@@ -1,7 +1,7 @@
 ---
 name: agri-models-and-design
 description: Run physical scenarios and constrained design searches.
-version: "2.5.0"
+version: "2.6.0"
 author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
@@ -203,7 +203,10 @@ assumptions and limitations visible. For a design study, compare candidates
 side by side with baseline deltas. For cost optimization include actual total
 production cost, grade/supplier contributions, savings, trade-offs and failed
 iterations through the workflow comparator. Report returned Pareto status without
-implying experimental validation. Include saved IDs for follow-up and offer PDF/ZIP for detail.
+implying experimental validation. Include saved IDs for follow-up and deliver the report file automatically,
+following `formulation-results` and its `references/report-delivery.md`. Every
+selected-mode or direct simulation run needs an objective outcome and a complete
+result summary in the document, plus applicable comparison tables.
 
 For requested end-to-end cases, discover the corresponding design catalogue
 example. `design/complete` accepts compact explicit material families, computes

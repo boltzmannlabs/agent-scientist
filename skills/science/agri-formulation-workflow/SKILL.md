@@ -1,7 +1,7 @@
 ---
 name: agri-formulation-workflow
 description: Evaluate and cost-optimize agricultural formulations.
-version: "2.5.0"
+version: "2.6.0"
 author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
@@ -245,7 +245,12 @@ Load `formulation-results` for the mandatory six-part interpretation, generation
 Present structured tables or aligned columns appropriate to the chat surface.
 Never paste raw JSON/objects, commands, source/request/draft paths, or backend
 lookup narration. Use short progress messages about the scientific decision.
-Requested downloads may show readable artifact links.
+Every executed run must deliver a verified report file alongside chat results,
+including recipe-only and direct-calculation runs. Use PDF by default with a complete
+Markdown companion, or honor requested DOCX/Markdown. Load the results skill's
+`references/report-delivery.md`; state objective outcome and summarize all results
+and available comparisons. Deliver readable report links, not an offer to export.
+After recipe-only delivery, still ask the required next-mode question.
 
 - **Baseline and winner:** full saved ingredient composition, grade, supplier,
   purity, percent, mass, batch basis and pure-active loading.

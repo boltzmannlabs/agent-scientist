@@ -59,6 +59,16 @@ the selected mode. Execution then continues without repeated mode or Run questio
 Unsupported material-property mappings, missing quotes and unassessed criteria
 remain visible and cannot establish a proven product improvement.
 
+Every executed formulation task also delivers a report file alongside its chat
+results. The report states the objective outcome, summarizes every result, maps
+recipes to saved runs, and includes applicable comparison tables, limitations and
+experimental validation requirements. Default delivery is PDF with a complete
+Markdown companion; requested Markdown or DOCX formats are honored where supported.
+If a converter is unavailable, a complete Markdown report is delivered with the
+format limitation disclosed. Project exports are not described as complete
+run-specific narratives unless their contents have been checked. A ZIP alone does
+not satisfy report delivery. The post-recipe mode selector remains required.
+
 The existing `cost/compare` package action joins actual saved recipes, cost records
 and simulation IDs. It enforces the same active loading/batch/currency/test basis,
 keeps failed or incomplete iterations, computes grade contributions, cost savings,

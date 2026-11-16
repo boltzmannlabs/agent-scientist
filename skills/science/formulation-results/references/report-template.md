@@ -1,7 +1,19 @@
-# Formulation Optimization Report
+# Formulation Run Report
+
+**Report identity:** project / execution batch / date / model-package version.
+
+**Scope:** recipe generation / direct simulation / Design Study / AI + Physics Design / cost comparison.
+
+**Execution status:** completed / partial / blocked; list omitted work and reasons.
 
 ## Executive summary
 **Objective:** …
+
+**Objective outcome:** Met in the evaluated model / partially met / not met in the evaluated model / not assessable. Explain what the evidence establishes and what remains unresolved; predictions remain **Experimental validation pending**.
+
+| Objective / criterion | Target / direction and units | Baseline | Achieved result / candidate | Outcome and evidence |
+|---|---|---|---|---|
+| … | … | … or not available | … | … |
 
 **Best evaluated candidate:** … (generation / exact recipe ID)
 
@@ -29,6 +41,18 @@
 | Changed / Improved / Unchanged / Needs validation | … | … → … | … |
 
 **Experimental validation status:** …
+
+## Summary of all results
+
+| Evaluation / model | Formulation / generation / recipe ID | Run ID | Main results and units | Plain-language meaning / target status | Evidence / limitation |
+|---|---|---|---|---|---|
+| … | … | … | … | … | … |
+
+Cover every saved result in this run, including incomplete/blocked evaluations and
+why they are unresolved. Detailed interpretation below must cover every reported
+metric; this summary may group secondary metrics with a reference to that section.
+For recipe-only work summarize composition validation and state performance was
+not simulated. Single-candidate runs have no invented baseline comparison or rank.
 
 ## Agent decisions
 | Question | Agent-selected option | Reason based on objectives and inputs | Assumptions / evidence |

@@ -1,7 +1,7 @@
 ---
 name: formulation-results
 description: Explain and report formulation optimization results.
-version: "1.4.0"
+version: "1.5.0"
 author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
@@ -43,7 +43,26 @@ Turn formulation optimization work into a traceable, understandable decision. Ap
 6. **Evaluate costs.** Where prices and production assumptions exist, compare each grade, supplier and quantity, substitutions, raw-material contribution, total raw-material cost and manufacturing/packaging/logistics/overhead/tax costs separately. State currency and cost basis (e.g. per kg saleable product). Show savings against V0. Missing price or cost terms stay unresolved; do not call a raw-material subtotal total production cost.
 7. **Interpret and rank.** Apply stated hard constraints and target criteria to model outputs. Rank feasible evaluated candidates by the user's priorities, then show cost-effective alternatives and Pareto trade-offs where useful. Keep model prediction separate from experimental confirmation. Explain uncertainty and search coverage.
 8. **Recommend next steps.** Identify best overall and best cost-effective evaluated candidates when the data supports that distinction. State what would change the recommendation, unresolved risks, and a practical experiment/measurement plan to validate promising predictions.
-9. **Create the report.** Provide a concise chat summary and, when supported/requested, a professional PDF plus machine-readable tables. Check units, labels, generation mapping, interpretation and evidence status before delivery.
+9. **Deliver the report file.** Every executed formulation task requires a saved, linked report alongside the specified chat results; it is not an optional follow-up. Follow [references/report-delivery.md](references/report-delivery.md). Default to PDF with a complete Markdown companion; honor a requested DOCX or Markdown format. Check objective outcome, complete result coverage, comparisons, units, interpretation and evidence status before delivery.
+
+## Report required for every run
+
+Apply file delivery to Design Study, AI + Physics Design, direct simulations,
+cost-only comparisons and recipe-only deliverables. One consolidated report covers
+an execution batch and all its iterations; do not create a document per internal
+solver call. A later run creates a new report. Report partial/blocked runs honestly.
+Cancelled setup with no generated results does not trigger a new results report.
+Show the Run Summary first in chat, then the requested results and readable report
+links. Never end with “I can generate a report if you want.” File delivery does not
+replace the required post-recipe mode question or authorize additional simulations.
+
+The document must explicitly answer **Did this run achieve the user's objective?**
+Use met in the evaluated model, partially met, not met in the evaluated model, or
+not assessable, with numerical evidence and remaining gaps. Qualify predictions
+with **Experimental validation pending**. Include a summary of ALL results, exact
+recipe/run identity, applicable baseline/candidate and target/achieved tables,
+change indicators, selected candidate rationale, uncertainty and next steps.
+No baseline means no invented improvement; no cost data means cost not assessed.
 
 ## Agent decisions in results
 
@@ -142,6 +161,7 @@ Before presenting results, verify:
 - Predicted results are not represented as experiments; missing evidence is not called failure.
 - Recommendations state evidence, uncertainty, what may have caused the result and next validation step.
 - Tables and charts contain no unexplained values, raw objects, hidden zeros or ambiguous labels.
+- A nonempty report file was saved and verified, its link resolves, and its objective outcome and all-result summary match the saved records. Requested formats are genuine files, not renamed extensions. Failed exports are disclosed with a complete Markdown fallback.
 
 ## Compact example
 
