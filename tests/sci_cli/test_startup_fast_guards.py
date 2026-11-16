@@ -66,7 +66,7 @@ def test_cli_starts_from_a_deleted_cwd(tmp_path):
     finally:
         os.close(fd)
     assert result.returncode == 0, result.stderr
-    assert "Sci Agent v" in result.stdout
+    assert result.stdout.startswith("Agent Scientist ")
     assert "FileNotFoundError" not in result.stderr
 
 
@@ -116,17 +116,18 @@ def test_fast_version_parity_on_termux(tmp_path):
         {"SCI_HOME": str(home), "TERMUX_VERSION": "0.118"}
     )
     assert result.returncode == 0, result.stderr
-    assert "Sci Agent v" in result.stdout
+    assert result.stdout.startswith("Agent Scientist ")
     assert "Traceback" not in result.stderr
 
 
-def test_fast_version_reports_install_method_stamp(tmp_path):
+def test_fast_version_omits_install_method_stamp(tmp_path):
     home = tmp_path / ".sci"
     home.mkdir()
     (home / ".install_method").write_text("git\n", encoding="utf-8")
     result = _run_version({"SCI_HOME": str(home)})
     assert result.returncode == 0, result.stderr
-    assert "Install method: git" in result.stdout
+    assert result.stdout.startswith("Agent Scientist ")
+    assert len(result.stdout.splitlines()) == 1
 
 
 def test_literal_tilde_sci_home_expands_before_any_reader(tmp_path):
@@ -212,8 +213,8 @@ def test_fast_version_parity(tmp_path):
     result = _run_version({"SCI_HOME": str(home)})
     assert result.returncode == 0, result.stderr
     out = result.stdout
-    for field in ("Sci Agent v", "Install directory:", "Python:", "OpenAI SDK:"):
-        assert field in out, f"fast --version output missing {field!r}:\n{out}"
+    assert out.startswith("Agent Scientist ")
+    assert len(out.splitlines()) == 1
     assert "Traceback" not in result.stderr
 
 

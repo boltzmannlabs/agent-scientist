@@ -326,7 +326,14 @@
         "maximum_archive_members": 1000,
         "maximum_structure_bytes": 52428800,
         "maximum_expanded_bytes": 2147483648,
-        "maximum_compression_ratio": 200
+        "maximum_compression_ratio": 200,
+        "schemas": [
+          "molprobity-ligand-bundle.v1",
+          "molprobity-ligand-bundle.v2"
+        ],
+        "maximum_generation_heavy_atoms": 128,
+        "maximum_generated_dictionaries": 16,
+        "generator_timeout_seconds": 300
       },
       "fields": {},
       "files": {

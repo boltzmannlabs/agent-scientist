@@ -8,12 +8,22 @@ import type { ReactNode } from 'react';
 import { useProfileScope } from '@/contexts/useProfileScope';
 import { OutputFileContext } from '@/components/files/output-file-context';
 import { OutputFile } from '@/components/files/OutputFile';
-import { outputFilesInResult, type OutputFileScope } from '@/lib/output-files';
+import { outputFilesInResult, outputFilesInResponse, type OutputFileReference, type OutputFileScope } from '@/lib/output-files';
 
 interface ChatTranscriptProps { state: WebChatState; children?: ReactNode; onSuggestion: (text: string) => void; active?: boolean; sessionId?: string }
 export function ChatTranscript({ state, children, onSuggestion, active = true, sessionId }: ChatTranscriptProps) {
   const { profile, currentProfile } = useProfileScope();
   const fileScope = useMemo(() => ({ profile: profile || currentProfile, sessionId }), [profile, currentProfile, sessionId]);
+  const artifacts = useMemo(() => {
+    let current: OutputFileReference[] = [];
+    const byMessage = new Map<string, OutputFileReference[]>();
+    for (const message of state.messages) {
+      if (message.role === 'user') current = [];
+      if (message.role === 'tool' && !message.running) current = [...current, ...outputFilesInResult(message.text)];
+      byMessage.set(message.id, current);
+    }
+    return { byMessage, current };
+  }, [state.messages]);
   const scroll = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
   const [copied, setCopied] = useState('');
@@ -44,19 +54,28 @@ export function ChatTranscript({ state, children, onSuggestion, active = true, s
         ].map(([label, prompt]) => <button key={label} onClick={() => onSuggestion(prompt)}>{label}</button>)}</div>
       </div>}
       {state.messages.map(message => message.role === 'tool' ? <div key={message.id}><details className="chat-tool">
-        <summary>{message.running ? <LoaderCircle size={15} className="chat-spinning" /> : <Check size={15} />}<span>{message.name || 'Tool activity'}</span><ChevronDown size={14} /></summary>
-        <pre>{message.text || (message.running ? 'Running…' : 'Finished. No text output returned.')}</pre>
+        <summary>{message.running ? <LoaderCircle size={15} className="chat-spinning" /> : <Check size={15} />}<span>{message.name || 'Tool activity'}{message.context && <small className="chat-tool-context">{message.context}</small>}</span><span className="chat-tool-state">{message.running ? 'Running' : 'Finished'}</span><ChevronDown size={14} /></summary>
+        {message.summary && <p className="chat-tool-summary">{message.summary}</p>}
+        <pre>{message.text || (message.running ? 'Waiting for output…' : message.outputAvailable ? 'No output returned.' : 'Output is not available in this transcript.')}</pre>
       </details>{!message.running && <ToolFiles text={message.text} scope={fileScope} />}</div> : <article className={`chat-message chat-message--${message.role}`} key={message.id} aria-label={message.role === 'user' ? 'You' : 'Agent Scientist'}>
         {message.role === 'assistant' && <div className="chat-speaker">Agent Scientist</div>}
         <div className="chat-message-content">{message.role === 'user' ? <p>{message.text}</p> : <Markdown content={message.text} />}</div>
+        {message.role === 'assistant' && <ResponseFiles text={message.text} known={artifacts.byMessage.get(message.id) || []} scope={fileScope} />}
         {message.role === 'assistant' && <button className="chat-copy" aria-label="Copy response" onClick={() => void copy(message.id, message.text)}>{copied === message.id ? <Check size={14} /> : <Copy size={14} />}{copied === message.id ? 'Copied' : 'Copy'}</button>}
       </article>)}
-      {state.stream && <article className="chat-message chat-message--assistant" aria-label="Agent Scientist reply"><div className="chat-speaker">Agent Scientist</div><Markdown content={state.stream} streaming={state.busy} /></article>}
+      {state.stream && <article className="chat-message chat-message--assistant" aria-label="Agent Scientist reply"><div className="chat-speaker">Agent Scientist</div><Markdown content={state.stream} streaming={state.busy} /><ResponseFiles text={state.stream} known={artifacts.current} scope={fileScope} /></article>}
       {state.busy && <p role="status" className="chat-progress"><LoaderCircle size={15} className="chat-spinning" />{state.status || 'Working…'}</p>}
       {children}
       {(state.error || copyError) && <div className="chat-error" role="alert">{state.error || copyError}</div>}
     </div>
   </div></OutputFileContext.Provider>;
+}
+
+function ResponseFiles({ text, known, scope }: { text: string; known: OutputFileReference[]; scope: OutputFileScope }) {
+  const files = useMemo(() => outputFilesInResponse(text, known), [text, known]);
+  return files.length ? <div aria-label="Result files" className="flex flex-wrap gap-2 py-2">
+    {files.map(file => <OutputFile key={file.path} file={file} scope={scope} />)}
+  </div> : null;
 }
 
 function ToolFiles({ text, scope }: { text: string; scope: OutputFileScope }) {

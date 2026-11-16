@@ -15,6 +15,8 @@ import { cn, themedBody } from "@/lib/utils";
 import { queryMatchesProviderOnly } from "@/lib/model-picker-filter";
 import { fuzzyRank, modelSearchText } from "@sci/shared";
 import { errorMessage } from "@/lib/api-error";
+import { ModelReasoningControl } from "./ModelReasoningControl";
+import { modelReasoningChoices } from "@/lib/model-picker-reasoning";
 
 /**
  * Two-stage model picker modal.
@@ -47,6 +49,7 @@ interface ConfigSetResponse extends ExpensiveModelConfirmResponse {
 }
 
 interface PendingExpensiveConfirm {
+  reasoningEffort?: string;
   message: string;
   model: string;
   persistGlobal: boolean;
@@ -62,6 +65,7 @@ interface Props {
   /** Standalone-mode: when present (and onSubmit absent), picker calls onApply. */
   loader?(options?: { refresh?: boolean }): Promise<ModelOptionsResult>;
   onApply?(args: {
+    reasoningEffort?: string;
     confirmExpensiveModel?: boolean;
     provider: string;
     model: string;
@@ -75,6 +79,7 @@ interface Props {
   title?: string;
   /** If true, hides "Persist globally" checkbox — always saves to config.yaml. */
   alwaysGlobal?: boolean;
+  reasoningEffort?: string;
 }
 
 export function ModelPickerDialog(props: Props) {
@@ -97,6 +102,7 @@ export function ModelPickerDialog(props: Props) {
   const [error, setError] = useState<string | null>(null);
   const [selectedSlug, setSelectedSlug] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
+  const [reasoningEffort, setReasoningEffort] = useState(props.reasoningEffort || "");
   const [query, setQuery] = useState("");
   const [persistGlobal, setPersistGlobal] = useState(alwaysGlobal);
   const [applying, setApplying] = useState(false);
@@ -259,6 +265,9 @@ export function ModelPickerDialog(props: Props) {
     const providerSlug = forced?.provider ?? selectedProvider?.slug ?? "";
     const model = forced?.model ?? selectedModel;
     const shouldPersistGlobal = forced?.persistGlobal ?? persistGlobal;
+    const choices = modelReasoningChoices(providers.find(p => p.slug === providerSlug), model);
+    const requestedEffort = forced ? forced.reasoningEffort : reasoningEffort;
+    const effort = requestedEffort && choices.includes(requestedEffort) ? requestedEffort : undefined;
 
     if (!providerSlug || !model || applying) return;
 
@@ -270,9 +279,11 @@ export function ModelPickerDialog(props: Props) {
           provider: providerSlug,
           model,
           persistGlobal: shouldPersistGlobal,
+          reasoningEffort: effort,
         });
         if (result?.confirm_required) {
           setPendingConfirm({
+            reasoningEffort: effort,
             provider: providerSlug,
             model,
             persistGlobal: shouldPersistGlobal,
@@ -297,10 +308,11 @@ export function ModelPickerDialog(props: Props) {
           confirm_expensive_model: confirmExpensiveModel,
           key: "model",
           session_id: sessionId,
-          value: `${model} --provider ${providerSlug}${global}`,
+          value: `${model} --provider ${providerSlug}${global}${effort ? ` --reasoning ${effort}` : ""}`,
         });
         if (result?.confirm_required) {
           setPendingConfirm({
+            reasoningEffort: effort,
             provider: providerSlug,
             model,
             persistGlobal: shouldPersistGlobal,
@@ -319,7 +331,7 @@ export function ModelPickerDialog(props: Props) {
       }
     } else if (onSubmit) {
       const global = shouldPersistGlobal ? " --global" : "";
-      onSubmit(`/model ${model} --provider ${providerSlug}${global}`);
+      onSubmit(`/model ${model} --provider ${providerSlug}${global}${effort ? ` --reasoning ${effort}` : ""}`);
       onClose();
     }
   };
@@ -410,12 +422,15 @@ export function ModelPickerDialog(props: Props) {
                 provider: selectedProvider?.slug ?? "",
                 model: m,
                 persistGlobal,
+                reasoningEffort,
                 message: "",
               });
             }}
           />
         </div>
 
+        <ModelReasoningControl provider={selectedProvider} model={selectedModel || currentModel}
+          value={reasoningEffort} disabled={applying} onChange={setReasoningEffort} />
         <footer className="border-t border-border p-3 flex items-center justify-between gap-3 flex-wrap">
           {alwaysGlobal ? (
             <span className="text-xs text-muted-foreground">

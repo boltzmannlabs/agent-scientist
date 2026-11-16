@@ -352,9 +352,13 @@ def _restart_launchd_job(domain: str, label: str, old_pid: int | None, *, timeou
 
 def _dashboard_cmdline_for_pid(pid: int) -> list[str] | None:
     """Exact argv of a running process: ``/proc/<pid>/cmdline`` (Linux), ``ps -o command=`` + shlex
-    (macOS), None on Windows (no graceful taskkill window; Desktop manages its backend)."""
+    (macOS), psutil on Windows. Capture before stopping the process."""
     if sys.platform == "win32":
-        return None
+        import psutil
+        try:
+            return psutil.Process(pid).cmdline() or None
+        except (psutil.Error, OSError):
+            return None
     try:
         cmdline_path = f"/proc/{pid}/cmdline"
         if os.path.exists(cmdline_path):
@@ -405,6 +409,7 @@ def _respawn_dashboard_processes(commands: list[list[str]]) -> list[list[str]]:
     See #78821.
     """
     from sci_constants import get_sci_home
+    from sci_cli._subprocess_compat import windows_detach_flags, windows_detach_flags_without_breakaway
     respawned: list[list[str]] = []
     spawned: list[tuple[list[str], list[str], "subprocess.Popen"]] = []
     failed: list[tuple[list[str], list[str], str]] = []
@@ -420,9 +425,17 @@ def _respawn_dashboard_processes(commands: list[list[str]]) -> list[list[str]]:
             command = [*command, "--no-open"]
         try:
             with open(log_path, "ab") as log_f:
-                proc = subprocess.Popen(
-                    command, stdin=subprocess.DEVNULL, stdout=log_f, stderr=subprocess.STDOUT,
-                    start_new_session=True, close_fds=True)
+                options = ({"creationflags": windows_detach_flags()} if sys.platform == "win32"
+                           else {"start_new_session": True})
+                try:
+                    proc = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=log_f,
+                                            stderr=subprocess.STDOUT, close_fds=True, **options)
+                except PermissionError:
+                    if sys.platform != "win32":
+                        raise
+                    proc = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=log_f,
+                                            stderr=subprocess.STDOUT, close_fds=True,
+                                            creationflags=windows_detach_flags_without_breakaway())
             spawned.append((original, command, proc))
         except (OSError, ValueError) as exc:
             failed.append((original, command, str(exc)))

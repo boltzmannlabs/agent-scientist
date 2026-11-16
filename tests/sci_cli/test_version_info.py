@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 import subprocess
 
+import pytest
+
 from sci_cli.version_info import (
     VersionInfo,
     _derived_version,
@@ -9,6 +11,7 @@ from sci_cli.version_info import (
     _resolve_stamp_file,
     _stamp_version_info,
     get_version_info,
+    get_release_version,
 )
 
 
@@ -25,7 +28,7 @@ def test_derived_version_shows_plus_question_for_dirty_unknown_distance():
 
 def test_display_version_names_the_distance_without_the_commit():
     """Labels say how far past the release an install is; the commit is shown
-    beside them where there is room (`sci --version` keeps `.g<sha>`)."""
+    beside them where there is room; `sci --version` shows only the base release."""
     ahead = VersionInfo("0.21.5", "0.21.5+1913.gf83a9e9", 1913, "f83a9e9" + "0" * 33, "main", "git")
     assert ahead.display_version == "0.21.5+1913"
     assert VersionInfo("0.21.5", "0.21.5", 0, None, None, "git").display_version == "0.21.5"
@@ -149,7 +152,8 @@ def test_get_version_info_unknown_when_no_stamp_and_no_git(monkeypatch):
     assert info.source == "unknown"
 
 
-def test_get_version_info_derives_identity_from_reachable_release_tag(tmp_path, monkeypatch):
+@pytest.mark.parametrize("prefix", ["", "v"])
+def test_product_release_is_nearest_while_runtime_provenance_is_preserved(tmp_path, monkeypatch, prefix):
     repo = tmp_path / "repo"
     repo.mkdir()
 
@@ -163,10 +167,14 @@ def test_get_version_info_derives_identity_from_reachable_release_tag(tmp_path, 
     git("init", "-q")
     git("config", "user.name", "Sci Test")
     git("config", "user.email", "sci@example.invalid")
+    (repo / "tracked").write_text("old numbering scheme\n", encoding="utf-8")
+    git("add", "tracked")
+    git("commit", "-qm", "old release")
+    git("tag", "v1.0.0.0")
     (repo / "tracked").write_text("release\n", encoding="utf-8")
     git("add", "tracked")
     git("commit", "-qm", "release")
-    git("tag", "v0.21.4")
+    git("tag", prefix + "0.21.4")
     git("tag", "v2026.9.21")
     (repo / "tracked").write_text("next\n", encoding="utf-8")
     git("commit", "-qam", "next")
@@ -176,9 +184,10 @@ def test_get_version_info_derives_identity_from_reachable_release_tag(tmp_path, 
 
     info = get_version_info()
 
-    assert info.base_version == "0.21.4"
-    assert info.derived_version == f"0.21.4+1.g{git('rev-parse', '--short=7', 'HEAD')}"
-    assert info.distance == 1
+    assert get_release_version() == "0.21.4"
+    assert info.base_version == "1.0.0.0"
+    assert info.derived_version == f"1.0.0.0+2.g{git('rev-parse', '--short=7', 'HEAD')}"
+    assert info.distance == 2
     assert info.commit == git("rev-parse", "HEAD")
     assert info.source == "git"
 

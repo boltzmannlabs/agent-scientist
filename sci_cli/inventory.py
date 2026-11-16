@@ -320,7 +320,7 @@ def _apply_capabilities(rows: list[dict], *, metadata_config: dict | None = None
     silent (the dial is a no-op on models that ignore it; hiding it from a capable model is worse). A
     serving aggregator's detail overrides models.dev (adds ``can_disable_reasoning``). Aggregator
     ``supported_efforts`` is deliberately NOT forwarded — it under-reports levels that work.
-    A custom provider's explicit template vocabulary is authoritative and can restrict the dial."""
+    Explicit provider/template vocabularies are authoritative and can restrict the dial."""
     from agent.reasoning_effort import custom_model_reasoning_efforts
     from sci_cli.models import model_supports_fast_mode
 
@@ -365,7 +365,13 @@ def _apply_capabilities(rows: list[dict], *, metadata_config: dict | None = None
 
             if entry["reasoning"]:
                 supported = custom_model_reasoning_efforts(reasoning_provider, model)
+                from providers import get_provider_profile
+                profile = get_provider_profile(reasoning_provider)
+                if supported is None and profile is not None and profile.name != "custom":
+                    supported = profile.supported_reasoning_efforts(model)
                 if supported is not None:
+                    if not supported:
+                        entry["reasoning"] = False
                     entry["supported_efforts"] = [level for level in supported if level != "none"]
                     entry["can_disable_reasoning"] = "none" in supported
 

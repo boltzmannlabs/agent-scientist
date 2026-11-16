@@ -1,13 +1,15 @@
 """Side transcript viewport: scroll rendered rows without moving the composer."""
 
 from bisect import bisect_right
+import asyncio
 from functools import lru_cache
 from types import SimpleNamespace
 
 from prompt_toolkit.layout import HSplit, Window
 from prompt_toolkit.layout.controls import BufferControl
 from prompt_toolkit.layout.margins import ScrollbarMargin
-from prompt_toolkit.mouse_events import MouseButton, MouseEventType
+from prompt_toolkit.data_structures import Point
+from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.selection import SelectionState
 from prompt_toolkit.utils import get_cwidth
 
@@ -92,9 +94,8 @@ class TranscriptWindow(Window):
         self.vertical_scroll_2 = self.top - self.row_offsets[self.vertical_scroll]
 
     def move(self, direction, amount=None, *, fraction=None):
-        # Scrolling ends a text drag; a later release must not copy a stale range.
-        self.content.anchor = None
-        self.view.transcript.buffer.exit_selection()
+        buffer = self.view.transcript.buffer
+        selecting = self.content.anchor is not None or buffer.selection_state is not None
         info = self.render_info
         size = self.view.cli._app.output.get_size()
         width = info.window_width if info else max(1, size.columns - 1)
@@ -103,10 +104,10 @@ class TranscriptWindow(Window):
         target = (round(self.maximum * fraction) if fraction is not None else
                   self.top + direction * (amount if amount is not None else max(1, height - 1)))
         self._set_top(target)
-        self.view.follow = self.top == self.maximum
-        buffer = self.view.transcript.buffer
-        buffer.cursor_position = (len(buffer.text) if self.view.follow else
-                                  buffer.document.translate_row_col_to_index(self.vertical_scroll, 0))
+        self.view.follow = self.top == self.maximum and not selecting
+        if not selecting:
+            buffer.cursor_position = (len(buffer.text) if self.view.follow else
+                                      buffer.document.translate_row_col_to_index(self.vertical_scroll, 0))
         self.view.cli._app.invalidate()
 
 
@@ -128,10 +129,76 @@ class SideScrollFrame(HSplit):
     def __init__(self, view, children):
         self.view = view
         self.dragging_scrollbar = False
+        self._drag_point = None
+        self._edge_timer = None
+        self._refresh_selection = False
+        self._bounds = None
+        self._text_handlers = {}
         super().__init__(children)
+
+    def cancel_drag(self):
+        if self._edge_timer is not None:
+            self._edge_timer.cancel()
+            self._edge_timer = None
+        self._drag_point = None
+        self._refresh_selection = False
+        self.view.transcript.control.anchor = None
+        self.dragging_scrollbar = False
+
+    def _select_pointer(self, kind=MouseEventType.MOUSE_MOVE):
+        if self._drag_point is None or self._bounds is None:
+            return
+        left, top, right, bottom = self._bounds
+        point = Point(max(left, min(right, self._drag_point.x)),
+                      max(top, min(bottom, self._drag_point.y)))
+        # Reuse Window's rendered-cell mapping, including wrapping, wide glyphs
+        # and styled text. Never interpret screen columns as string offsets.
+        self._text_handlers[point.y, point.x](
+            MouseEvent(point, kind, MouseButton.LEFT, frozenset()))
+
+    def _edge_direction(self):
+        if self._drag_point is None or self._bounds is None:
+            return 0
+        return (-1 if self._drag_point.y <= self._bounds[1] else
+                1 if self._drag_point.y >= self._bounds[3] else 0)
+
+    def _schedule_edge_scroll(self):
+        window = self.view.transcript.window
+        direction = self._edge_direction()
+        can_scroll = window.top > 0 if direction < 0 else window.top < window.maximum
+        if (self._edge_timer is None and direction and can_scroll and self.view.visible
+                and self.view.transcript.control.anchor is not None
+                and self.view.cli._app.is_running):
+            self._edge_timer = asyncio.get_running_loop().call_later(.1, self._scroll_edge)
+
+    def _scroll_edge(self):
+        self._edge_timer = None
+        if (not self.view.cli._app.is_running or not self.view.visible
+                or self.view.transcript.control.anchor is None):
+            self.cancel_drag()
+            return
+        direction = self._edge_direction()
+        if direction:
+            window = self.view.transcript.window
+            previous = window.top
+            window.move(direction, amount=1)
+            # Extend only after repaint, when the cell-to-text mapping is fresh.
+            self._refresh_selection = window.top != previous
 
     def write_to_screen(self, screen, mouse_handlers, write_position, parent_style, erase_bg, z_index):
         super().write_to_screen(screen, mouse_handlers, write_position, parent_style, erase_bg, z_index)
+        window = self.view.transcript.window
+        area = screen.visible_windows_to_write_positions.get(window)
+        if area is not None and area.width > 1 and area.height > 0:
+            self._bounds = (area.xpos, area.ypos, area.xpos + area.width - 2,
+                            area.ypos + area.height - 1)
+            self._text_handlers = {(y, x): mouse_handlers.mouse_handlers[y][x]
+                                   for y in range(area.ypos, area.ypos + area.height)
+                                   for x in range(area.xpos, area.xpos + area.width - 1)}
+            if self._refresh_selection and window.content.anchor is not None:
+                self._refresh_selection = False
+                self._select_pointer()
+            self._schedule_edge_scroll()
         # The wheel must work over the composer, blank rows and scrollbar too.
         # Wrap the normal handlers so clicks/selections keep their usual behavior.
         wrapped = {}
@@ -145,9 +212,25 @@ class SideScrollFrame(HSplit):
 
     def _handler(self, original, position):
         def handle(event):
+            if event.event_type == MouseEventType.MOUSE_DOWN:
+                self.cancel_drag()
             directions = {MouseEventType.SCROLL_UP: -1, MouseEventType.SCROLL_DOWN: 1}
             if event.event_type in directions:
+                if self.view.transcript.control.anchor is not None:
+                    self._drag_point = event.position
+                    self._refresh_selection = True
                 self.view.scroll(directions[event.event_type], amount=3)
+                return None
+            control = self.view.transcript.control
+            if (control.anchor is not None and event.event_type in
+                    (MouseEventType.MOUSE_MOVE, MouseEventType.MOUSE_UP)
+                    and event.button in (MouseButton.LEFT, MouseButton.NONE)):
+                self._drag_point = event.position
+                self._select_pointer(event.event_type)
+                if event.event_type == MouseEventType.MOUSE_UP:
+                    self.cancel_drag()
+                else:
+                    self._schedule_edge_scroll()
                 return None
             window = self.view.transcript.window
             info = window.render_info

@@ -13,6 +13,21 @@ animation. It pauses when hidden or off-screen and disappears when the conversat
 starts. Reduced-motion preferences and browsers without canvas use a still dotted
 logo. The animation runs locally in the browser and makes no model or tool requests.
 
+Chat tool activity appears in expandable cards for all integrations. Each card keeps
+its operation description and shows the returned output separately from any short
+summary. Assistant progress messages appear between steps; model reasoning is not
+displayed. Tool output is redacted and limited to 65,536 characters per card,
+with an explicit truncation notice. Declared output artifacts, concrete file paths
+and explicit file links retain their profile-scoped Preview, Download and Show in
+Files actions. Final reports also offer these actions for filenames matched to the
+current turn's output artifacts, or listed with an explicit save folder, including
+converted files. This works for tables, streaming replies and saved conversations.
+Commands, folders, unrelated bare filenames, skill references
+and internal spillover paths remain text. Tool-result instructions are not scanned
+for downloadable files. Resuming a conversation restores
+retained tool output without rerunning tools. If an older transcript has no output
+available, the card says so rather than claiming the tool returned nothing.
+
 :::tip
 Hosted-mode auth uses Nous Portal OAuth; if you also want the dashboard to talk to a real backend, `sci setup --portal` wires up the model and tool gateway too. See [Nous Portal](../../integrations/nous-portal.md).
 :::
@@ -60,6 +75,20 @@ sci dashboard --host 0.0.0.0
 # Start without opening browser
 sci dashboard --no-open
 ```
+
+## Updating from the dashboard
+
+**Update Sci** follows one update attempt at a time. Repeated updates start fresh
+status monitoring; a response from an older attempt cannot finish the current one.
+The dashboard reconnects while its server restarts and reads the saved update
+receipt afterward. A partial update is shown as needing attention, even when the
+source checkout was updated successfully.
+
+On Windows, eligible manually launched dashboards restart with their captured launch
+arguments and without opening another browser. If the server remains unreachable,
+the interface reports **Dashboard unavailable** instead of claiming success.
+Relaunch `sci dashboard --port <previous-port>` and reload the page to reconnect.
+Reconnecting does not submit another update.
 
 ## Managing multiple profiles
 
@@ -169,7 +198,12 @@ working/error states, and Copy controls.
 - **Workspace:** Select a known project/repository or another server path in
   the history rail. The preference applies to a new chat; a resumed chat keeps
   its own working context.
-- **Model:** The toolbar identifies the active model and links to model settings.
+- **Model:** The composer picker reads and switches the live conversation's model.
+  Its **Reasoning effort** selector follows the selected provider's supported
+  levels. The model and effort apply together, including in side conversations.
+  Selecting **Persist globally** also saves the owning profile's default; it still
+  switches this conversation. A selection during a response applies on the next
+  message. Main and side conversations each have their own selection.
 - **User input:** Native forms handle supported clarification, approval, secret,
   sudo, vault, and service-connection requests. Unsupported request types are
   reported explicitly.

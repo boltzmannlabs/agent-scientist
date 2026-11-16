@@ -48,6 +48,77 @@ def _inspect(data, profile="Mol_Probity", payload=None, extension=".pdb", filena
     return report, summary
 
 
+@pytest.mark.parametrize("mode", ["generated", "supplied", "mixed"])
+def test_molprobity_v2_supports_worker_generation_and_supplied_dictionaries(tmp_path, mode):
+    pytest.importorskip("gemmi")
+    from plugins.boltzmann.contracts import ContractStore
+    from plugins.boltzmann.file_validation import validate_file
+
+    # The supplied CIF is a parsing fixture, not a chemically validated dictionary.
+    dictionary = b"data_comp_LIG\nloop_\n_chem_comp_atom.atom_id\n_chem_comp_atom.type_symbol\nC1 C\n"
+    binding = {"component_id": "LIG", "chain_id": "B", "residue_number": 1,
+               "smiles": "C", "atom_mapping": {"C1": 0}}
+    document = {"schema": "molprobity-ligand-bundle.v2", "structures": []}
+    entries = []
+    if mode in {"generated", "mixed"}:
+        document["structures"].append({"path": "generated.pdb", "ligands": [
+            {**binding, "generate_dictionary": True}]})
+        entries.append(("generated.pdb", _pdb()))
+    if mode in {"supplied", "mixed"}:
+        document["structures"].append({"path": "supplied.pdb", "ligands": [
+            {**binding, "dictionary": "ligand.cif", "sha256": hashlib.sha256(dictionary).hexdigest()}]})
+        entries.extend([("supplied.pdb", _pdb()), ("ligand.cif", dictionary)])
+    entries.append(("ligand_manifest.json", json.dumps(document)))
+    source = tmp_path / "bundle.zip"
+    data = _zip(entries)
+    source.write_bytes(data)
+    report = validate_file(source, ContractStore().file_rule("Mol_Probity", "input_path"), {})
+    assert not report.errors, report.as_dict()
+    assert source.read_bytes() == data
+    inventory = report.inventory["data"]
+    assert inventory["ligand_bundle_schema"] == document["schema"]
+    if mode != "supplied":
+        assert "Worker-side AceDRG" in inventory["ligand_dictionary_generation"]
+
+
+@pytest.mark.parametrize("fault", ["v1", "false", "string", "integer", "both_modes",
+    "bad_selector", "missing_mapping", "too_large", "fragments", "metal", "isotope", "generation_count"])
+def test_molprobity_generation_does_not_weaken_input_checks(tmp_path, fault):
+    pytest.importorskip("gemmi")
+    pytest.importorskip("rdkit")
+    from plugins.boltzmann.contracts import ContractStore
+    from plugins.boltzmann.file_validation import validate_file
+
+    binding = {"generate_dictionary": True, "component_id": "LIG", "chain_id": "B",
+               "residue_number": 1, "smiles": "C", "atom_mapping": {"C1": 0}}
+    document = {"schema": "molprobity-ligand-bundle.v2", "structures": [
+        {"path": "complex.pdb", "ligands": [binding]}]}
+    entries = [("complex.pdb", _pdb())]
+    if fault == "v1": document["schema"] = "molprobity-ligand-bundle.v1"
+    if fault == "false": binding["generate_dictionary"] = False
+    if fault == "string": binding["generate_dictionary"] = "true"
+    if fault == "integer": binding["generate_dictionary"] = 1
+    if fault == "both_modes": binding.update(dictionary="extra.cif", sha256="a" * 64)
+    if fault == "bad_selector": binding["residue_number"] = 999
+    if fault == "missing_mapping": binding.pop("atom_mapping")
+    if fault == "too_large": binding["atom_mapping"] = {"C" + str(i): i for i in range(129)}
+    if fault == "fragments": binding.update(smiles="C.C", atom_mapping={"C1": 0, "C2": 1})
+    if fault == "metal": binding["smiles"] = "[Na+]"
+    if fault == "isotope": binding["smiles"] = "[13C]"
+    if fault == "generation_count":
+        for index in range(16):
+            component = f"L{index:02d}"
+            name = f"additional_{index}.pdb"
+            document["structures"].append({"path": name, "ligands": [
+                {**binding, "component_id": component}]})
+            entries.append((name, _pdb().replace(b"LIG", component.encode())))
+    entries.append(("ligand_manifest.json", json.dumps(document)))
+    source = tmp_path / "invalid-generation.zip"
+    source.write_bytes(_zip(entries))
+    report = validate_file(source, ContractStore().file_rule("Mol_Probity", "input_path"), {})
+    assert report.errors, report.as_dict()
+
+
 @pytest.mark.parametrize("fault", [None, "hash", "missing_member", "undeclared", "role_overlap",
     "duplicate_id", "duplicate_selector", "selector", "atom_names", "protected", "stereo", "isotope",
     "mapping_index", "wrong_version", "bad_json", "nonfinite", "duplicate_json_key", "no_manifest",
@@ -475,3 +546,46 @@ def test_auto_generic_zip_mapping_coverage_accounts_for_backbone_bundles(source,
     assert bool(report.warnings) is bool(prefix)
     if prefix:
         assert any("mapping metadata/adapters are uninspected" in warning for warning in report.warnings)
+
+
+@pytest.mark.parametrize("case", ["protein", "dimer", "water", "blank_chain", "ligand", "nonstandard",
+    "alternate", "models", "ambiguous_selector", "water_only", "zip_input", "method", "analysis_type",
+    "chain_id", "scale", "pH", "temperature"])
+def test_peppatch_preparation_matches_fixed_dual_analysis_contract(tmp_path, case):
+    """Parsing fixtures, not structures certified for a successful APBS calculation."""
+    pytest.importorskip("gemmi")
+    from plugins.boltzmann.contracts import ContractStore
+    from plugins.boltzmann.file_validation import validate_file
+
+    store = ContractStore()
+    payload = {"input_path": "fixture/prepared.pdb"}
+    overrides = {"method": "hydrophobic", "analysis_type": "electrostatic", "chain_id": "A",
+                 "scale": "crippen", "pH": 7, "temperature": 298}
+    if case in overrides:
+        payload[case] = overrides[case]
+        assert store.validate_payload("Pep_Patch", payload).errors
+        return
+    assert not store.validate_payload("Pep_Patch", payload).errors
+    data = _pdb(ligand=False)
+    water = b"HETATM  100    O HOH W 100       1.000   2.000   3.000  1.00 20.00           O\n"
+    if case == "dimer":
+        data = data.replace(b"END\n", b"TER\n") + data.replace(b"ALA A", b"ALA B")
+    if case == "water": data = data.replace(b"END\n", water + b"END\n")
+    if case == "blank_chain": data = data.replace(b"ALA A", b"ALA  ")
+    if case == "ligand": data = _pdb(ligand=True)
+    if case == "nonstandard": data = data.replace(b"ALA", b"MSE")
+    if case == "alternate": data = _pdb(ligand=False, alt="A")
+    if case == "models":
+        frame = data.replace(b"END\n", b"")
+        data = b"MODEL        1\n" + frame + b"ENDMDL\nMODEL        2\n" + frame + b"ENDMDL\nEND\n"
+    if case == "ambiguous_selector":
+        extra = b"HETATM  100   C2 GLY A   1       1.000   2.000   3.000  1.00 20.00           C\n"
+        data = data.replace(b"END\n", extra + b"END\n")
+    if case == "water_only": data = water + b"END\n"
+    suffix = ".zip" if case == "zip_input" else ".pdb"
+    if case == "zip_input": data = _zip([("protein.pdb", data)])
+    source = tmp_path / ("input" + suffix)
+    source.write_bytes(data)
+    report = validate_file(source, store.file_rule("Pep_Patch", "input_path"), payload)
+    assert bool(report.errors) is (case not in {"protein", "dimer", "water", "blank_chain", "zip_input"}), report.as_dict()
+    assert source.read_bytes() == data

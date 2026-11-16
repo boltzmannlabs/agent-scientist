@@ -148,8 +148,12 @@ def test_view_preserves_composers_scroll_and_defers_parent_output(monkeypatch):
                 _cprint('parent finished while side visible')
                 assert view.pending_parent == ['parent finished while side visible']
                 assert 'parent finished' not in view.transcript.text
+                from prompt_toolkit.selection import SelectionState
+                view.transcript.buffer.selection_state = SelectionState(max(0, position - 10))
+                selected = view.selected_text()
                 view.append('side response received while reading earlier text')
                 assert view.transcript.buffer.cursor_position == position
+                assert view.selected_text() == selected and selected
                 flushed = []
                 monkeypatch.setattr(cli_module, '_cprint', flushed.append)
                 view.select(False)

@@ -45,6 +45,7 @@ def test_unconfigured_profile_auth_is_explicit_deferred_and_isolated(tmp_path, m
     from sci_cli.science_profiles import create, ProfileSpec
     from sci_cli.science_profiles_sandbox import validate_runtime
     from sci_cli.boltzmann_setup import run
+    monkeypatch.setattr("plugins.boltzmann.model_gateway.catalog_models", lambda **_: ["discoveryrsi"])
     from sci_cli.plugins import get_plugin_manager, discover_plugins
     from sci_cli.callbacks import prompt_for_secret
     from plugins.boltzmann.auth import available
@@ -94,7 +95,12 @@ def test_unconfigured_profile_auth_is_explicit_deferred_and_isolated(tmp_path, m
             after = read_user_config_raw(a / "config.yaml")
             assert after["plugins"]["enabled"] == ["boltzmann"]
             assert after["platform_toolsets"]["cli"] == ["skills", "boltzmann"]
-            assert after["model"] == before["model"]
+            if legacy:
+                assert after["model"] == before["model"]
+            else:
+                assert after["model"]["provider"] == "boltzmann_models"
+                assert after["model"]["default"] == "discoveryrsi"
+                assert after["agent"]["reasoning_effort"] == "medium"
             assert after.get("terminal") == before.get("terminal")
             if legacy:
                 from sci_cli.science_profile_cli_policy import prepare, install
@@ -134,3 +140,26 @@ def test_unconfigured_profile_auth_is_explicit_deferred_and_isolated(tmp_path, m
         finally:
             manager.unload()
     assert "fixture-valid" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("authorized", [True, False])
+def test_quick_setup_keeps_connected_default_and_requests_setup_when_locked(tmp_path, monkeypatch, authorized):
+    from sci_cli import setup, setup_quick
+    config = {"model": {"provider": "boltzmann_models", "default": "discoveryrsi"},
+              "agent": {"reasoning_effort": "medium"}}
+    monkeypatch.setattr("sci_cli.boltzmann_setup.quick_setup_step", lambda *_: None)
+    monkeypatch.setattr("plugins.boltzmann.auth.available", lambda: authorized)
+    provider_setup = Mock()
+    monkeypatch.setattr(setup, "setup_model_provider", provider_setup)
+    for name in ("setup_terminal_backend", "_apply_default_agent_settings", "save_config", "_print_setup_summary"):
+        monkeypatch.setattr(setup, name, Mock())
+    monkeypatch.setattr(setup, "prompt_choice", lambda *_: 1)
+    monkeypatch.setattr("sci_cli.gateway.ensure_gateway_service", Mock())
+    monkeypatch.setattr(setup_quick, "_print_macos_fda_tip", lambda: None)
+    setup_quick._run_first_time_quick_setup(config, tmp_path, False)
+    if authorized:
+        provider_setup.assert_not_called()
+    else:
+        provider_setup.assert_called_once_with(config, quick=True)
+    assert config["model"]["default"] == "discoveryrsi"
+    assert config["agent"]["reasoning_effort"] == "medium"

@@ -56,7 +56,7 @@ and observed test outcomes. All five have callable contracts; recorded worker
 errors are disclosed uncertainties, not blanket missing-information blocks.
 
 Historical worker failures are not permanent prohibitions: disclose the recorded
-failure and possible charges, obtain approval, and allow an otherwise valid
+failure and possible charges, obtain approval in normal mode, and allow an otherwise valid
 request. An unavailable entry is not a service ban: its executable
 request is not established. State the specific missing information rather
 than inventing a payload or claiming that the service is discontinued.
@@ -94,7 +94,8 @@ of persisting a permanent tool limitation in a learned skill.
    more questions than the tool supports, use successive batches. When the
    tool is unavailable or reports `undelivered`, explain the unavailable dialog
    and ask in plain text. Skipped, cancelled, timed-out or unanswered questions
-   never supply values or approval; stop dependent work until answered.
+   never supply user values or approval. Only a YOLO `policy_response` may supply
+   a supported default or mode-authorized action; otherwise stop dependent work.
    Never ask, confirm, or offer a choice about
    the experiment name. Preserve a name only when the user explicitly provides
    one; otherwise omit `experiment_name` and let the connector generate a
@@ -118,6 +119,28 @@ validation instructions and singular LABEL help text are incomplete. Artificial
 labels require explicit smoke-test approval and are not measured activity.
 Revalidate and upload affected files when rule changes invalidate receipts.
 
+### YOLO experiment decisions
+
+Module references to partial-validation approval follow this mode policy;
+they do not add another approval step in YOLO.
+
+Classify clarification questions with `purpose`. In YOLO mode:
+- `missing_input` and `data_change` wait **120 seconds**; supply `recommended_answer`
+  and `recommendation_basis` only for a contract-supported default or a concrete
+  transformation of supplied data. Preserve originals. Report timed-out defaults
+  as policy decisions, never as user answers. Do not invent sequences, targets or paths.
+- `partial_validation`, `unverified_reference` and `execution_uncertainty` proceed
+  without another question. Retain and disclose the actual warnings and possible charges.
+- `provider_switch` always requires an explicit answer, with no timeout.
+- A user instruction to obtain approval overrides these rules: classify that question
+  as `explicit_approval`, with no timeout. Cancel, skip and undelivered dialogs never
+  authorize defaults. YOLO does not bypass authentication, profile access, invalid
+  inputs, duplicate-submission guards or receipt capacity limits.
+
+Omit `allow_partial_validation` to follow session policy. Set it explicitly to
+`false` when the user requested a validation approval gate, even in YOLO; set
+`true` after that approval. Outside YOLO, partial checks still require approval.
+
 Call `boltzmann_upload` with the actual local file, exact `job_name`,
 `input_field`, and reviewed `experiment_data` for mode-dependent file rules.
 The connector inspects a private snapshot and uploads those same checked bytes.
@@ -126,7 +149,7 @@ profile-scoped validation receipt with the storage reference.
 
 - **Invalid:** explain specific errors; fix inputs with the user's direction.
   No best-effort flag overrides known invalidity or security checks.
-- **Checks need approval:** show the actual unchecked aspects and possible service charges.
+- **Checks need approval in normal mode:** show the actual unchecked aspects and possible service charges.
   Ask: “Proceed with the documented request despite these unverified checks?”
   Only after explicit approval, repeat with `allow_partial_validation=true`.
   Retain approval for the same reviewed inputs when submitting. Renew it if
@@ -138,8 +161,9 @@ profile-scoped validation receipt with the storage reference.
 Never silently normalize headers or alter rows, molecular structures, scientific
 values or labels. Offer necessary conversions explicitly. No arbitrary CSV
 is valid just because its extension is `.csv`. Remote references without a
-current-profile receipt require explicit provenance review and best-effort
-approval; never invent or borrow another user's storage reference.
+current-profile receipt require provenance review and best-effort approval in
+normal mode; YOLO permits the attempted use with the uncertainty reported.
+Never invent or borrow another user's storage reference.
 
 ## Submit, track and report
 
@@ -148,7 +172,7 @@ upload references. Pass `experiment_name` only when the user explicitly gave a
 name; otherwise omit it and report the generated name returned by the connector.
 `experiment_name` belongs to the helper envelope, not the scientific payload
 unless separately documented there.
-Use `allow_partial_validation=true` only for approved partial checks above.
+Follow the YOLO/explicit-approval rules above for `allow_partial_validation`.
 
 Submission returns **accepted**, not completed. Retain its job name and document
 ID together. Poll only that job with `boltzmann_status`. Never duplicate an
@@ -173,8 +197,12 @@ status-check error, or user interruption. There is no overall queue/running
 time limit; individual network requests remain bounded and polling is interruptible.
 Progress displays the observed state and elapsed time without inventing a percentage.
 Once terminal, download returned artifacts, verify their contents and counts,
-then give the final report. Never resubmit or ask for a new status request just
-because a job is still pending/running.
+then give the final report. Include every returned `gcp_paths` value in the
+final report as `GCP artifact path: <path>`, alongside the local `output_paths`
+after download. These are distinct locations: do not substitute the local
+download path for the platform GCP path, and do not invent a path when the
+status result contains none. Never resubmit or ask for a new status request
+just because a job is still pending/running.
 
 Stopping the local wait does not cancel the remote calculation. Keep its job ID
 and resume checking that same job if requested. Closing SCI stops foreground

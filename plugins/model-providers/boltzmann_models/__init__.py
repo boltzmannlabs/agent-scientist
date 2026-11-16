@@ -47,7 +47,14 @@ class BoltzmannModels(ProviderProfile):
         return True
 
     def supported_reasoning_efforts(self, model=None):
-        return ()  # Gateway model IDs do not declare a reasoning-control contract.
+        from plugins.boltzmann.model_gateway import reasoning_efforts
+        return reasoning_efforts(model)
+
+    def build_api_kwargs_extras(self, *, reasoning_config=None, model=None, **kwargs):
+        from agent.reasoning_effort import clamp_effort, requested_effort
+        supported = self.supported_reasoning_efforts(model)
+        effort = clamp_effort(requested_effort(reasoning_config), supported) if supported else None
+        return {}, {"reasoning_effort": effort} if effort else {}
 
     def create_client(self, **kwargs):
         from plugins.boltzmann.model_client import BoltzmannClient

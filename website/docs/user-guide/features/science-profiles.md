@@ -27,6 +27,14 @@ conversation and opens a new chat in main. This also starts a new chat when main
 is already active. Saved conversations remain available through `/resume`, and the
 profile's configuration and credentials are preserved.
 Finish or cancel a running turn before switching.
+Explicit profile switches take precedence over the saved startup profile, including
+when the CLI reconnects through its background service. They do not change that
+saved startup preference.
+Switching to a named profile reconnects to an existing background runtime without reload or
+viewer-transfer questions. Its current work and cached conversation stay intact;
+source updates wait until that runtime is restarted. If the latest chat is owned
+by a separate foreground window, SCI opens a new chat in the target profile and
+leaves that window running. Use `/resume` to explicitly manage saved conversations.
 
 ## Omics coordinator foundation
 

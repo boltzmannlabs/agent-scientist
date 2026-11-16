@@ -1208,15 +1208,111 @@
       }
     },
     "Pep_Patch": {
-      "source": "modules/protein-toolbox.md",
+      "source": "PepPatch worker validation.py, peppatch_manifest.schema.json and complex_preparation.py; operator handoff 2026-11-12",
       "files": {
         "input_path": {
           "formats": [
-            "pdb"
+            "pdb",
+            "zip"
+          ],
+          "member_formats": [
+            "pdb",
+            "json"
           ],
           "header_case_sensitive": true,
-          "notes": "S3 path to PDB (upload first)",
-          "structure_profile": "protein_structure"
+          "notes": "One single-model PDB, never a batch. Protein-only raw PDB and sole-PDB ZIP need no manifest. A complex ZIP needs root peppatch_manifest.json binding every nonstandard non-HOH residue by exact selector and complete heavy-atom names/zero-based reference indices. Only the sole PDB, optional manifest and directories are accepted. Client checks syntax/identity, not SMILES chemistry or pose-state agreement; see peppatch-complex-inputs.md.",
+          "max_bytes": 52428800,
+          "structure_profile": "protein_structure",
+          "zip_manifest_name": "peppatch_manifest.json",
+          "zip_limits": {
+            "members": 64,
+            "expanded_bytes": 52428800,
+            "manifest_bytes": 1048576
+          },
+          "zip_manifest_schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "PepPatch complex input v1",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "schema",
+              "structure",
+              "ligands"
+            ],
+            "properties": {
+              "schema": {
+                "const": "peppatch-complex-input.v1"
+              },
+              "structure": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "ligands": {
+                "type": "array",
+                "minItems": 0,
+                "maxItems": 32,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "chain_id",
+                    "residue_number",
+                    "insertion_code",
+                    "component_id",
+                    "smiles",
+                    "atom_mapping",
+                    "chemistry_source"
+                  ],
+                  "properties": {
+                    "chain_id": {
+                      "type": "string",
+                      "minLength": 0,
+                      "maxLength": 1
+                    },
+                    "residue_number": {
+                      "type": "integer",
+                      "minimum": -999,
+                      "maximum": 9999
+                    },
+                    "insertion_code": {
+                      "type": "string",
+                      "maxLength": 1
+                    },
+                    "component_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 3
+                    },
+                    "smiles": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 10000
+                    },
+                    "chemistry_source": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4000
+                    },
+                    "atom_mapping": {
+                      "type": "object",
+                      "minProperties": 1,
+                      "maxProperties": 512,
+                      "propertyNames": {
+                        "minLength": 1,
+                        "maxLength": 4
+                      },
+                      "additionalProperties": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 511
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -1234,19 +1330,36 @@
       "source": "contract_sources/ligand-pharmacophore-reconciliation.md: validation CSV correction; public frontend required-field registry and active/inactive help text, explicit backend missing-LABELS diagnostic, and corrected submission acceptance. Supersedes the incomplete historical SMILES-only validation procedure.",
       "files": {
         "smiles_file": {
-          "formats": ["csv"],
-          "columns": ["SMILES"],
+          "formats": [
+            "csv"
+          ],
+          "columns": [
+            "SMILES"
+          ],
           "header_case_sensitive": true,
-          "values": {"SMILES": "smiles"},
+          "values": {
+            "SMILES": "smiles"
+          },
           "notes": "Recorded training CSV layout. Exact SMILES header and nonempty cells are required; molecular semantics and extra-column acceptance remain unverified."
         },
         "validation_file": {
-          "formats": ["csv"],
-          "columns": ["SMILES", "LABELS"],
+          "formats": [
+            "csv"
+          ],
+          "columns": [
+            "SMILES",
+            "LABELS"
+          ],
           "header_case_sensitive": true,
           "values": {
             "SMILES": "smiles",
-            "LABELS": {"type": "string", "enum": ["active", "inactive"]}
+            "LABELS": {
+              "type": "string",
+              "enum": [
+                "active",
+                "inactive"
+              ]
+            }
           },
           "notes": "Validation requires exact SMILES and LABELS headers. Public input help documents active/inactive text labels; its singular LABEL spelling conflicts with the required-field registry and explicit backend missing-LABELS diagnostic. Preserve labels and source SMILES; artificial labels require explicit smoke-test approval. Generic parsing does not establish biological activity, class balance or validation-set independence."
         }
@@ -3271,7 +3384,7 @@
             "zip"
           ],
           "content_format": "protein_structure_or_bundle",
-          "notes": "One structure or ZIP of structures. Optional root ligand_manifest.json (molprobity-ligand-bundle.v1) binds reviewed restraint CIFs to exact custom ligand residues; dictionary CIFs are auxiliary files, not candidate structures. See molprobity-ligand-bundles.md. Local shape/path/hash/selector checks do not replace worker chemistry validation; backend ZIP billing/deployment support still needs live confirmation.",
+          "notes": "One structure or ZIP. Optional root ligand_manifest.json: v1 supplies reviewed restraint CIFs; v2 also supports generate_dictionary:true with verified reference SMILES and exact atom mapping. AceDRG and compatibility validation run inside the worker; users install no generator. See molprobity-ligand-bundles.md. Generation does not guess chemistry or change structure coordinates. Local checks are not worker chemistry validation; backend ZIP forwarding/billing/deployed-image support needs confirmation.",
           "structure_profile": "Mol_Probity",
           "zip_manifest_schema": {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -3285,7 +3398,10 @@
             ],
             "properties": {
               "schema": {
-                "const": "molprobity-ligand-bundle.v1"
+                "enum": [
+                  "molprobity-ligand-bundle.v1",
+                  "molprobity-ligand-bundle.v2"
+                ]
               },
               "structures": {
                 "type": "array",
@@ -3311,8 +3427,6 @@
                         "type": "object",
                         "additionalProperties": false,
                         "required": [
-                          "dictionary",
-                          "sha256",
                           "component_id",
                           "chain_id",
                           "residue_number",
@@ -3320,6 +3434,10 @@
                           "atom_mapping"
                         ],
                         "properties": {
+                          "generate_dictionary": {
+                            "const": true,
+                            "description": "Only bundle v2. Generate inside worker from verified SMILES/mapping; mutually exclusive with dictionary and sha256."
+                          },
                           "dictionary": {
                             "type": "string",
                             "pattern": "\\.cif$",
@@ -3367,13 +3485,79 @@
                             },
                             "description": "Heavy atom name to zero-based reference SMILES atom index. Must be bijective."
                           }
+                        },
+                        "oneOf": [
+                          {
+                            "required": [
+                              "dictionary",
+                              "sha256"
+                            ],
+                            "not": {
+                              "required": [
+                                "generate_dictionary"
+                              ]
+                            }
+                          },
+                          {
+                            "required": [
+                              "generate_dictionary"
+                            ],
+                            "not": {
+                              "anyOf": [
+                                {
+                                  "required": [
+                                    "dictionary"
+                                  ]
+                                },
+                                {
+                                  "required": [
+                                    "sha256"
+                                  ]
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "schema": {
+                      "const": "molprobity-ligand-bundle.v1"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "structures": {
+                      "items": {
+                        "properties": {
+                          "ligands": {
+                            "items": {
+                              "required": [
+                                "dictionary",
+                                "sha256"
+                              ],
+                              "not": {
+                                "required": [
+                                  "generate_dictionary"
+                                ]
+                              }
+                            }
+                          }
                         }
                       }
                     }
                   }
                 }
               }
-            }
+            ]
           }
         },
         "quality_thresholds": {

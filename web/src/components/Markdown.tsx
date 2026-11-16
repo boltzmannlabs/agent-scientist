@@ -1,7 +1,7 @@
 import { useContext, useMemo, type ReactNode } from "react";
 import { OutputFileContext } from '@/components/files/output-file-context';
 import { OutputFile } from '@/components/files/OutputFile';
-import { linkedOutputFile, outputFileReference, splitFileText } from '@/lib/output-files';
+import { linkedOutputFile, fileActionReference, splitFileText } from '@/lib/output-files';
 import { StructureLink } from '@/components/structure/StructurePreview';
 import { structureSourceFromLink } from '@/lib/structure-source';
 
@@ -338,7 +338,7 @@ function InlineContent({
             );
           case "code":
             if (fileScope) {
-              const file = outputFileReference(node.content, undefined, /[/.\\]/.test(node.content));
+              const file = /[/\\]/.test(node.content) ? fileActionReference(node.content, undefined, true) : null;
               if (file) return <OutputFile key={i} file={file} scope={fileScope} />;
             }
             return (

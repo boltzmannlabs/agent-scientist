@@ -72,7 +72,7 @@ from sci_cli.background_chat_service import ChatService
 from sci_cli.pty_bridge import PtyBridge
 from tools.environments.local import served_profile_child_env
 home = Path({str(home)!r})
-def spawn(session_id, cwd, cols, rows, terminal_env=None):
+def spawn(session_id, cwd, cols, rows, terminal_env=None, launch_args=None):
     env = served_profile_child_env(target_home=home, inherit_credentials=True)
     env['PYTHONPATH'] = {str(ROOT)!r}
     env.update(terminal_env or {{}})

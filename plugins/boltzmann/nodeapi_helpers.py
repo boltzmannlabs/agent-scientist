@@ -658,10 +658,13 @@ def fetch_status(
                     "stage": "status", "status": "unknown", "job_name": collection_name,
                     "doc_id": doc_id, "safe_to_retry": False}
 
-        from .results import service_diagnostics
+        from .results import gcp_artifact_paths, service_diagnostics
         result = service_diagnostics(result, active_token)
         status = str(result["status"]).lower().strip()
         last_result = {**result, "job_name": collection_name, "doc_id": doc_id}
+        artifact_paths = gcp_artifact_paths(last_result)
+        if artifact_paths:
+            last_result["gcp_paths"] = artifact_paths
 
         if explicit_absence:
             return {**last_result, "stage": "status", "monitor_terminal_confirmed": True,

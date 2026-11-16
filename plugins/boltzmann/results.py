@@ -50,6 +50,32 @@ def service_diagnostics(result, token=""):
             for key, value in result.items()}
 
 
+def gcp_artifact_paths(result):
+    """Return platform artifact paths from a result's OutputData, excluding URLs."""
+    output_data = result.get("OutputData") if isinstance(result, dict) else None
+    paths = []
+
+    def collect(value):
+        if isinstance(value, dict):
+            for key, item in value.items():
+                normalized = re.sub(r"[^a-z]", "", str(key).lower())
+                if normalized in {"path", "gcppath", "gcppaths", "outputpath", "outputpaths"}:
+                    candidates = item if isinstance(item, list) else [item]
+                    for candidate in candidates:
+                        if (isinstance(candidate, str) and candidate.strip()
+                                and not candidate.lstrip().lower().startswith(("http://", "https://"))
+                                and candidate not in paths):
+                            paths.append(candidate)
+                else:
+                    collect(item)
+        elif isinstance(value, list):
+            for item in value:
+                collect(item)
+
+    collect(output_data)
+    return paths
+
+
 def status_retrieval_guidance(body):
     """Recognize a result-service blocker without inventing a scientific job state."""
     if not isinstance(body, dict):

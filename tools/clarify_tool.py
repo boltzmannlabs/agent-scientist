@@ -5,6 +5,7 @@ callback (cli.py, gateway/run.py, tui_gateway)."""
 import json
 import re
 from typing import Callable, Dict, List, Optional
+from tools.clarify_policy import GUIDANCE, PURPOSES
 
 MAX_CHOICES = 4  # the UI always appends an "Other (type your answer)" row
 MAX_QUESTIONS = 5  # independent questions per call
@@ -19,11 +20,12 @@ INPUT_DIALOG_GUIDANCE = (
     "free text, numbers, identifiers and file paths (the UI opens text entry). "
     "Batch independent questions together. Do not invent scientific options or "
     "treat a recommended/default choice as the user's answer. Skipped, cancelled "
-    "or timed-out questions do not supply inputs or approval; stop dependent work. "
+    "or timed-out questions do not supply user inputs or approval; only an explicit YOLO "
+    "policy_response can supply a supported default or mode-authorized action. "
     "If the dialog is unavailable or undelivered, explain that and ask in plain "
     "text. Headless tasks with no user must report missing required inputs "
     "without waiting for a dialog."
-)
+) + " " + GUIDANCE
 # Per-choice cap. Surfaces wrap long choice text (newlines kept), so anything longer is rejected here, at the
 # source, instead of a surface silently dropping a choice that ``choices_offered`` still reports as shown.
 MAX_CHOICE_CHARS = 8000
@@ -103,6 +105,14 @@ def _normalize_questions(questions) -> tuple:
         if not text:
             return None, f"questions[{index}].question must be non-empty text."
         choices = item.get("choices")
+        purpose = item.get("purpose", "explicit_approval")
+        if purpose not in PURPOSES:
+            return None, f"questions[{index}].purpose must be one of {PURPOSES}."
+        recommended = item.get("recommended_answer")
+        basis = item.get("recommendation_basis")
+        if recommended is not None and (not isinstance(recommended, str) or not recommended.strip()
+                                        or not isinstance(basis, str) or not basis.strip()):
+            return None, "A recommended_answer requires nonempty text and a recommendation_basis."
         if choices is not None:
             if not isinstance(choices, list) or not all(isinstance(c, str) for c in choices):
                 return None, f"questions[{index}].choices must be a list of strings."
@@ -116,10 +126,13 @@ def _normalize_questions(questions) -> tuple:
                 return None, (f"questions[{index}].choices has {len(choices)} entries but all are blank. "
                               "Send real labels, or omit choices to ask open-ended.")
             choices = cleaned or None
+        if choices and recommended is not None and strip_recommended(recommended) not in {strip_recommended(c) for c in choices}:
+            return None, "recommended_answer must match an offered choice."
         normalized.append({
             "qid": f"q{index}", "question": text,
             "choices": mark_recommended(list(choices)) if choices else None,
             "choices_offered": list(choices) if choices else None,
+            "purpose": purpose, "recommended_answer": recommended, "recommendation_basis": basis,
             "multi_select": bool(item.get("multi_select")) and bool(choices)})
     return normalized, None
 
@@ -173,9 +186,18 @@ def clarify_tool(questions, callback: Optional[Callable] = None) -> str:
             interactive.append(entry)
     if not interactive:
         return _result(normalized, {"answers": auto_answers, "outcome": "submitted"})
-    if callback is None:
-        return tool_error(_UNAVAILABLE)
     try:
+        from tools.approval import _yolo_active
+        if _yolo_active():
+            from tools.clarify_policy import ask_yolo
+            policy = json.loads(ask_yolo(interactive, callback, _result))
+            rows = iter(policy["responses"])
+            policy["responses"] = [
+                json.loads(_result([entry], {"answers": auto_answers, "outcome": "submitted"}))["responses"][0]
+                if entry["qid"] in auto_answers else next(rows) for entry in normalized]
+            return json.dumps(policy, ensure_ascii=False)
+        if callback is None:
+            return tool_error(_UNAVAILABLE)
         reply = callback(interactive)
         answers = dict(reply.get("answers") or {})
         answers.update(auto_answers)
@@ -235,6 +257,10 @@ CLARIFY_SCHEMA = {
                     "type": "object",
                     "properties": {
                         "question": {"type": "string"},
+                        "purpose": {"type": "string", "enum": list(PURPOSES),
+                                    "description": GUIDANCE},
+                        "recommended_answer": {"type": "string", "description": "Supported fallback for missing_input or data_change only; never fabricate a required scientific input."},
+                        "recommendation_basis": {"type": "string", "description": "Current contract/default or supplied input supporting the recommended_answer."},
                         "choices": {
                             "type": "array",
                             "items": {"type": "string", "maxLength": MAX_CHOICE_CHARS},
@@ -242,7 +268,7 @@ CLARIFY_SCHEMA = {
                         },
                         "multi_select": {"type": "boolean"},
                     },
-                    "required": ["question"],
+                    "required": ["question", "purpose"],
                 },
             },
         },
