@@ -7,9 +7,20 @@ from pathlib import Path
 import sys
 import zipfile
 
+import pytest
+
 from plugins.boltzmann.contracts import ContractStore
 from plugins.boltzmann.file_validation import validate_file
 from plugins.boltzmann import preflight
+
+
+@pytest.fixture(params=[False, True], ids=["without-gemmi", "with-gemmi"])
+def structure_parser(request, monkeypatch):
+    if request.param:
+        pytest.importorskip("gemmi")
+    else:
+        monkeypatch.setitem(sys.modules, "gemmi", None)
+    return request.param
 
 
 def _pdb(ligand=False):
@@ -33,7 +44,9 @@ def _zip(entries):
     return output.getvalue()
 
 
-def test_peppatch_legacy_and_complex_uploads_preserve_bytes_and_approval_policy(tmp_path, monkeypatch):
+def test_peppatch_legacy_and_complex_uploads_preserve_bytes_and_approval_policy(
+    tmp_path, monkeypatch, structure_parser,
+):
     monkeypatch.setattr(preflight, "current_key", lambda: "fixture-key")
     monkeypatch.setitem(sys.modules, "rdkit", None)
     store = ContractStore()
@@ -60,6 +73,7 @@ def test_peppatch_legacy_and_complex_uploads_preserve_bytes_and_approval_policy(
                 ("complex-integral-json.zip", _zip([("poses/complex.pdb", _pdb(True)),
                                        ("peppatch_manifest.json", json.dumps(integral))]), True)]
     for filename, contents, partial in fixtures:
+        partial = partial or not structure_parser
         source = tmp_path / filename
         source.write_bytes(contents)
         before = len(uploaded)
@@ -77,13 +91,18 @@ def test_peppatch_legacy_and_complex_uploads_preserve_bytes_and_approval_policy(
         assert bool(report.warnings) is partial, report.as_dict()
         assert len(report.upload_receipt_ids) == 1
         if partial:
-            assert any("worker" in warning and "chem" in warning.lower() for warning in report.warnings)
+            if structure_parser:
+                assert any("worker" in warning and "chem" in warning.lower() for warning in report.warnings)
+            else:
+                assert any("Gemmi is unavailable" in warning for warning in report.warnings)
             assert preflight.decision(report, False)["status"] == "approval_required"
         assert preflight.decision(report, True) is None
         assert payload == {"input_path": result["s3_path"]}
 
 
-def test_peppatch_rejects_bad_bundle_identity_and_manifest_shape_without_chemistry(tmp_path, monkeypatch):
+def test_peppatch_rejects_bad_bundle_identity_and_manifest_shape_without_chemistry(
+    tmp_path, monkeypatch, structure_parser,
+):
     monkeypatch.setitem(sys.modules, "rdkit", None)
     rule = ContractStore().file_rule("Pep_Patch", "input_path")
     document = _manifest()
@@ -94,35 +113,46 @@ def test_peppatch_rejects_bad_bundle_identity_and_manifest_shape_without_chemist
                          ("chemistry_source", " \t")):
         changed = deepcopy(document)
         changed["ligands"][0][field] = value
-        mutations.append(changed)
+        needs_parser = field in {"chain_id", "insertion_code", "component_id"} or value == {"XX": 0}
+        mutations.append((changed, needs_parser))
     changed = deepcopy(document)
     changed["ligands"].append(deepcopy(changed["ligands"][0]))
-    mutations.extend([changed, {**document, "ligands": []},
+    mutations.append(({**document, "ligands": []}, True))
+    mutations.extend((changed, False) for changed in [changed,
                       {**document, "structure": "absent.pdb"},
                       {**document, "structure": "../poses/complex.pdb"},
                       {**document, "schema": "wrong-version"},
                       {**document, "extra": "undocumented"}])
-    entries = [[("poses/complex.pdb", _pdb(True)), ("peppatch_manifest.json", json.dumps(changed))]
-               for changed in mutations]
+    entries = [([("poses/complex.pdb", _pdb(True)), ("peppatch_manifest.json", json.dumps(changed))], needs_parser)
+               for changed, needs_parser in mutations]
     entries.extend([
-        [("peppatch_manifest.json", json.dumps(document))],
-        [("a.pdb", _pdb()), ("b.pdb", _pdb())],
-        [("poses/complex.pdb", _pdb(True))],
-        [("protein.pdb", _pdb()), ("notes.txt", "extra")],
-        [("protein.pdb", _pdb()), ("extra.json", "{}")],
-        [("../escaped.pdb", _pdb())],
-        [("PROTEIN.PDB", _pdb()), ("protein.pdb", _pdb())],
-        [("poses/complex.pdb", _pdb(True)), ("peppatch_manifest.json", json.dumps(document).replace(
-            '"C1": 0', '"C1": 0, "C1": 0'))],
+        ([("peppatch_manifest.json", json.dumps(document))], False),
+        ([("a.pdb", _pdb()), ("b.pdb", _pdb())], False),
+        ([("poses/complex.pdb", _pdb(True))], True),
+        ([("protein.pdb", _pdb()), ("notes.txt", "extra")], False),
+        ([("protein.pdb", _pdb()), ("extra.json", "{}")], False),
+        ([("../escaped.pdb", _pdb())], False),
+        ([("PROTEIN.PDB", _pdb()), ("protein.pdb", _pdb())], False),
+        ([("poses/complex.pdb", _pdb(True)), ("peppatch_manifest.json", json.dumps(document).replace(
+            '"C1": 0', '"C1": 0, "C1": 0'))], False),
     ])
-    for index, members in enumerate(entries):
+    for index, (members, needs_parser) in enumerate(entries):
         source = tmp_path / f"bad_{index}.zip"
         original = _zip(members)
         source.write_bytes(original)
         report = validate_file(source, rule, {})
-        assert report.errors, (index, report.as_dict())
-        assert preflight.decision(report, True)["status"] == "not_started"
+        if needs_parser and not structure_parser:
+            assert not report.errors, (index, report.as_dict())
+            assert any("Gemmi is unavailable" in warning for warning in report.warnings)
+            assert preflight.decision(report, False)["status"] == "approval_required"
+        else:
+            assert report.errors, (index, report.as_dict())
+            assert preflight.decision(report, True)["status"] == "not_started"
         assert source.read_bytes() == original
     raw = tmp_path / "complex.pdb"
     raw.write_bytes(_pdb(True))
-    assert validate_file(raw, rule, {}).errors  # A residue name is not reference chemistry.
+    report = validate_file(raw, rule, {})
+    if structure_parser:
+        assert report.errors  # A residue name is not reference chemistry.
+    else:
+        assert preflight.decision(report, False)["status"] == "approval_required"
