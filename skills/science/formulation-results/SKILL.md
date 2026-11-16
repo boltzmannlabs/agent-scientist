@@ -2,7 +2,7 @@
 name: formulation-results
 description: Explain and report formulation optimization results.
 version: "1.1.0"
-author: Sci Agent
+author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
