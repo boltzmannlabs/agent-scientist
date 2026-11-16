@@ -176,6 +176,11 @@ working/error states, and Copy controls.
 - **Commands:** `/new` and `/reset` start a fresh conversation. Other supported
   commands use the shared command dispatcher; CLI-only dialogs are not
   automatically browser features.
+- **Planning:** Choose `/plan` from the slash-command suggestions, or send
+  `/plan <task>`. Bare `/plan` uses the conversation's current task. The selected
+  model prepares a plan for that request and is instructed to save it under the
+  workspace's `.sci/plans/` without implementing the changes. This applies to one
+  request; it does not switch models or enable a persistent mode.
 - **Stop:** Requests interruption and reports unconfirmed stops. This does not
   automatically cancel an already submitted remote scientific job.
 - **Reconnect:** The Reconnect action resumes the saved conversation and restores

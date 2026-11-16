@@ -14,11 +14,12 @@ class FakeGateway {
   stateHandlers = new Set<(state: string) => void>();
   closed = false;
   connect = vi.fn(async () => {});
-  request = vi.fn(async (method: string, params: Record<string, unknown>) => {
-    if (method === 'session.create' || method === 'session.resume') return {
+  request = vi.fn(async (method: string, params: Record<string, unknown>): Promise<Record<string, unknown>> => {
+    if (method === 'session.create' || method === 'session.resume' || method === 'session.branch_stored') return {
       session_id: `runtime-${params.profile}`, stored_session_id: `stored-${params.profile}`, messages: [],
       info: { model: `model-${params.profile}` }, message_count: 0,
     };
+    if (method === 'commands.catalog') return { pairs: [['/plan', 'Prepare a plan without implementing changes']] };
     return { status: 'streaming' };
   });
   constructor() { instances.push(this); }
@@ -116,4 +117,30 @@ it('isolates A→B→A and reconnects by resuming authoritative state without re
   await act(async () => (Array.from(container.querySelectorAll('button')).find(b => b.textContent === 'Reconnect')!).click());
   expect(third.request.mock.calls.filter(([method]) => method === 'prompt.submit')).toHaveLength(0);
   expect(third.request.mock.calls.filter(([method]) => method === 'session.resume')).toHaveLength(2);
+});
+
+it.each([false, true])('offers /plan and sends its backend planning instructions in the owning chat (side=%s)', async side => {
+  await render();
+  if (side) { await fill('/side'); await click('Send message'); }
+  const gw = instances.at(-1)!;
+  const original = gw.request.getMockImplementation()!;
+  const planningPrompt = '[/plan — plan mode]\nPrepare a plan for the requested task; do not implement it.';
+  gw.request.mockImplementation(async (method, params) => {
+    if (method === 'slash.exec') return { type: 'send', message: planningPrompt };
+    return original(method, params);
+  });
+  await fill('/pl');
+  const option = container.querySelector('[role=option]') as HTMLButtonElement;
+  expect(option?.textContent).toContain('/plan');
+  await act(async () => option.click());
+  expect((container.querySelector('.chat-composer textarea') as HTMLTextAreaElement).value).toBe('/plan ');
+  await fill('/plan Improve onboarding');
+  await click('Send message');
+  expect(gw.request).toHaveBeenCalledWith('slash.exec', {
+    profile: 'a', session_id: 'runtime-a', command: '/plan Improve onboarding',
+  });
+  expect(gw.request.mock.calls.filter(([method]) => method === 'prompt.submit')).toEqual([
+    ['prompt.submit', { profile: 'a', session_id: 'runtime-a', surface: 'web', text: planningPrompt }],
+  ]);
+  expect(container.querySelector('[role=log]')?.textContent).not.toContain(planningPrompt);
 });

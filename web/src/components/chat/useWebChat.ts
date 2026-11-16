@@ -5,7 +5,7 @@ import { chatReducer, emptyChat } from '@/lib/web-chat-state';
 
 const messageOf = (error: unknown) => error instanceof Error ? error.message : String(error);
 const secretMethods = new Set(['sudo', 'secret', 'vault.unlock_prompt', 'vault.code', 'vault.save_login']);
-const WEB_SLASH_SUGGESTIONS = new Set(['/side', '/compact', '/goal']);
+const WEB_SLASH_SUGGESTIONS = new Set(['/side', '/compact', '/goal', '/plan']);
 export const chatStorageKey = (profile: string) => `sci-web-chat:${profile || 'default'}`;
 export function readChatSession(profile: string): string {
   try { return sessionStorage.getItem(chatStorageKey(profile)) || ''; } catch { return ''; }
