@@ -1,6 +1,6 @@
 """Boot and lifecycle of the real Sci processes on native Windows.
 
-* The source launcher ``sci.exe`` reports checkout version and runs a
+* The source launcher ``sci.exe`` reports the canonical product release and runs a
   one-shot chat turn: the reply is
   printed, the prompt reached the wire, and both messages persisted to ``state.db`` under
   the session id the CLI announced.
@@ -27,7 +27,7 @@ from pathlib import Path
 
 import pytest
 
-from sci_cli.version_info import get_version_info
+from sci_cli.version_info import get_release_version
 from tests.e2e.core.windows._helpers import (
     WinHome,
     db_rows,
@@ -53,14 +53,13 @@ pytestmark = [pytest.mark.platforms("windows"), pytest.mark.integration, pytest.
 READY_TIMEOUT = 120.0
 
 
-def test_version_reports_checkout_identity(tmp_path: Path) -> None:
+def test_version_reports_product_release(tmp_path: Path) -> None:
     home = make_home(tmp_path, "http://127.0.0.1:9/v1")  # never contacted by --version
     res = run([str(sci_exe(home)), "--version"], home, timeout=120)
     assert res.returncode == 0, res.tail()
-    version = get_version_info().derived_version
-    assert version != "unknown", "the checkout must have a readable release or commit identity"
-    assert f"Sci Agent v{version} (" in res.stdout, (
-        f"--version does not report this checkout's {version}:\n{res.tail()}")
+    expected = f"Agent Scientist {get_release_version()}"
+    assert res.stdout.strip() == expected, (
+        f"--version does not report the canonical product release {expected!r}:\n{res.tail()}")
 
 
 def test_chat_oneshot_turn_persists(tmp_path: Path) -> None:
