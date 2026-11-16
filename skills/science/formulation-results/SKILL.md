@@ -1,7 +1,7 @@
 ---
 name: formulation-results
 description: Explain and report formulation optimization results.
-version: "1.2.0"
+version: "1.3.0"
 author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
@@ -44,6 +44,14 @@ Turn formulation optimization work into a traceable, understandable decision. Ap
 7. **Interpret and rank.** Apply stated hard constraints and target criteria to model outputs. Rank feasible evaluated candidates by the user's priorities, then show cost-effective alternatives and Pareto trade-offs where useful. Keep model prediction separate from experimental confirmation. Explain uncertainty and search coverage.
 8. **Recommend next steps.** Identify best overall and best cost-effective evaluated candidates when the data supports that distinction. State what would change the recommendation, unresolved risks, and a practical experiment/measurement plan to validate promising predictions.
 9. **Create the report.** Provide a concise chat summary and, when supported/requested, a professional PDF plus machine-readable tables. Check units, labels, generation mapping, interpretation and evidence status before delivery.
+
+## Agent decisions in results
+
+Include a visible Agent decisions table in the Run Summary and detailed report:
+question, actual agent-selected option, reason tied to the objective/inputs, and
+assumptions. Read the workflow's `references/agent-choice.md`. Preserve the draft
+ledger in report data; label choices as agent-selected rather than user-selected.
+Do not report the literal Agent Choice button as a model, recipe or actual result.
 
 ## Required run summary before the detailed report
 

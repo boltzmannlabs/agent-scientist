@@ -134,9 +134,9 @@ def test_three_scenarios_have_direct_enter_choices_without_checkboxes(tmp_path):
     _, value = call(tmp_path / 'draft.json', 'create', {'project_id': 'P1', 'mode': 'design', 'scenarios': rows})
     selector = value['delete_selector']
     assert selector['multi_select'] is False
-    assert [choice.split(' — ')[0] for choice in selector['choices'][:3]] == [r['id'] for r in rows]
-    assert selector['choices'][3] == 'More options'
-    assert value['delete_more_selector']['choices'] == ['Choose multiple scenarios', 'All scenarios', 'Previous']
+    assert [choice.split(' — ')[0] for choice in selector['base_choices'][:3]] == [r['id'] for r in rows]
+    assert selector['base_choices'][3] == 'More options'
+    assert value['delete_more_selector']['base_choices'] == ['Choose multiple scenarios', 'All scenarios', 'Previous']
     assert value['delete_more_selector']['multi_select'] is False
 
 
@@ -144,10 +144,10 @@ def test_long_lists_and_multiple_deletion_use_typed_ids_not_checkboxes(tmp_path)
     rows = [{'id': f'S{i}', 'name': f'Scenario {i}', 'model': 'rheology', 'recipe_ids': ['A']}
             for i in range(1, 9)]
     _, value = call(tmp_path / 'draft.json', 'create', {'project_id': 'P1', 'mode': 'design', 'scenarios': rows})
-    assert value['delete_selector']['choices'] == ['Choose a scenario', 'Choose multiple scenarios', 'All scenarios', 'Previous']
+    assert value['delete_selector']['base_choices'] == ['Choose a scenario', 'Choose multiple scenarios', 'All scenarios', 'Previous']
     assert value['delete_selector']['multi_select'] is False
     assert value['delete_id_selector']['multi_select'] is False
-    assert not value['delete_id_selector'].get('choices')
+    assert value['delete_id_selector']['choices']==['Agent Choice']
 
 
 def test_selecting_the_last_remaining_scenario_is_not_a_bulk_clear(tmp_path):
@@ -415,7 +415,7 @@ def test_recipe_picker_supports_large_catalogues_and_rejects_unknown_ids(tmp_pat
     assert all_selected['recipe_ids']==[r['recipe_id'] for r in recipes]
     if count>2:
         _,typed=call(path,'recipes',{'recipes':recipes,'answer':'Choose recipes'})
-        assert 'choices' not in typed['selector']
+        assert typed['selector']['choices']==['Agent Choice']
     code,invalid=call(path,'recipes',{'recipes':recipes,'answer':'R-missing'})
     assert code!=0 and invalid['status']=='error'
     assert path.read_bytes()==before
@@ -448,7 +448,7 @@ def test_run_choice_is_explicit_read_only_and_preserves_selected_scope(tmp_path,
     code,result=call(path,'run-choice',{'scenario_ids':['S2'],'answer':answer,'outcome':outcome})
     assert code==0 and result['status']==route
     assert result['scenario_ids']==['S2']
-    assert len(result['selector']['choices'])==2 and result['selector']['multi_select'] is False
+    assert len(result['selector']['base_choices'])==2 and result['selector']['multi_select'] is False
     assert path.read_bytes()==before
 
 
@@ -465,3 +465,52 @@ def test_confirm_review_only_marks_selected_resolved_scenario_ready(tmp_path):
     assert code==0 and confirmed['scenarios'][0]['status']=='ready'
     assert confirmed['scenarios'][0]['shared_inputs']=={'pipe_length_m':7}
     assert confirmed['scenarios'][1]==initial['scenarios'][1]
+
+
+@pytest.mark.parametrize('count', [1,2,3,4])
+def test_agent_choice_preserves_all_manual_options_without_native_truncation(tmp_path,count):
+    choices=[f'Option {i}' for i in range(count)]
+    code,q=call(tmp_path/'unused.json','question',{'question':'Choose an option','choices':choices})
+    assert code==0 and 'Agent Choice' in q['choices'] and len(q['choices'])<=4
+    reachable=[c for c in q['choices'] if c in choices]
+    if 'more_selector' in q:
+        more=q['more_selector'];assert len(more['choices'])<=4 and 'Agent Choice' in more['choices']
+        reachable += [c for c in more['choices'] if c in choices]
+    assert reachable==choices
+
+
+def test_delegation_is_pending_until_an_actual_option_and_reason_are_recorded(tmp_path):
+    path=tmp_path/'draft.json';initial=draft(path);before=path.read_bytes()
+    code,route=call(path,'run-choice',{'scenario_ids':['S1'],'answer':'Agent Choice','outcome':'submitted'})
+    assert code==0 and route['status']=='agent_choice' and path.read_bytes()==before
+    decision={'question':route['selector']['question'],'options':route['selector']['base_choices'],
+              'selected_option':'Go to Edit for review','reason':'Material inputs are unresolved; review is needed before the pumping comparison.',
+              'inputs_used':{'scenario_ids':['S1']},'assumptions':[]}
+    code,recorded=call(path,'record-decision',{'expected_revision':initial['revision'],'answer':'Agent Choice','outcome':'submitted','decision':decision})
+    assert code==0 and recorded['scenarios']==initial['scenarios']
+    assert recorded['agent_decisions'][0]['selected_option']=='Go to Edit for review'
+    assert recorded['agent_decisions'][0]['reason']==decision['reason']
+    assert call(path,'list')[1]['agent_decisions']==recorded['agent_decisions']
+    after=path.read_bytes()
+    for choice,reason,outcome in [('Not offered','reason','submitted'),('Go to Edit for review','','submitted'),('Go to Edit for review','reason','cancelled')]:
+        code,_=call(path,'record-decision',{'expected_revision':recorded['revision'],'answer':'Agent Choice','outcome':outcome,'decision':{**decision,'selected_option':choice,'reason':reason}})
+        assert code!=0 and path.read_bytes()==after
+
+
+def test_recipe_agent_choice_does_not_expand_to_all_without_resolution(tmp_path):
+    code,result=call(tmp_path/'unused.json','recipes',{'recipes':[{'recipe_id':'R-a','name':'A'}],'answer':'Agent Choice','outcome':'submitted'})
+    assert code==0 and result['status']=='agent_choice' and result['recipe_ids']==[]
+
+
+def test_all_emitted_workflow_questions_offer_agent_choice_within_ui_limit(tmp_path):
+    value=draft(tmp_path/'draft.json')
+    questions=[v for v in value.values() if isinstance(v,dict) and 'question' in v]
+    _,recipes=call(tmp_path/'unused.json','recipes',{'recipes':[{'recipe_id':'R-a','name':'A'},{'recipe_id':'R-b','name':'B'}]})
+    questions.append(recipes['selector'])
+    assert questions
+    for q in questions:
+        assert 'Agent Choice' in q['choices'] and len(q['choices'])<=4
+        if q.get('more_selector'):
+            assert 'Agent Choice' in q['more_selector']['choices']
+            assert len(q['more_selector']['choices'])<=4
+    assert 'Agent Choice' in value['edit_actions']

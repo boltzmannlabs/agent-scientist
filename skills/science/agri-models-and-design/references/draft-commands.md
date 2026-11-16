@@ -104,3 +104,21 @@ current model schema. Save edits via upsert as review_required first. Confirmati
 rejects absent/unresolved inputs, marks only the selected rows Ready and returns
 the parent list. It never executes physics. `edit_actions` supplies the Edit section /
 Confirm review / Previous question. Display current values before that question.
+
+## Agent Choice and overflow
+
+All returned selectors include Agent Choice. Use action_selector for the parent,
+and edit_actions for Edit. Canonical actions is not a button list. If a selector
+has more_selector, More choices opens it and Back to choices restores the original
+selector. Do not lose the overflow options. The question action (no draft needed)
+wraps any question/choices object with the same rules. For long candidate lists
+use numbered free-text selection with Agent Choice as a button, not a long array.
+
+Agent Choice returns agent_choice from recipe/run resolvers, without selecting
+anything or executing. Resolve it using the workflow's references/agent-choice.md;
+record the concrete selection and reasoning with record-decision before continuing.
+This mutation requires expected_revision, answer="Agent Choice", outcome="submitted"
+and decision with question, options, selected_option and reason. It preserves
+scenario contents and returns agent_decisions. It does not run physics. Transfer
+pre-draft decisions when the selected-mode draft is created. Retain the complete
+ledger in final report data and show its selections/reasons in the results.

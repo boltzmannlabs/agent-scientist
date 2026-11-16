@@ -1,7 +1,7 @@
 ---
 name: agri-formulation-workflow
 description: Evaluate and cost-optimize agricultural formulations.
-version: "2.3.0"
+version: "2.4.0"
 author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
@@ -80,6 +80,14 @@ when `project_id` is absent; retain its returned ID. The allowed ingredient role
 are active, carrier, matrix, solvent, surfactant, dispersant, binder, filler,
 coating, stabilizer and other. Do not invent roles or API fields.
 
+## Agent Choice in every option question
+
+Read [references/agent-choice.md](references/agent-choice.md) for all formulation
+questions with alternatives. Include Agent Choice, preserve manual options through
+the helper's overflow selectors, resolve a delegated choice from objectives and
+known inputs, and record its option/reason for the final results. This takes
+precedence over older fixed button examples, including the three-mode selector.
+
 ## Composition-based recipe names
 
 Give every recipe a descriptive name before saving and use it throughout recipe
@@ -100,6 +108,7 @@ Use these plain-string choices:
 - **DESIGN — Evaluate recipes under selected physical conditions**
 - **AI + PHYSICS DESIGN — Search physical parameter ranges, then evaluate shortlisted settings**
 - **NOT NOW — Recipes only**
+- **Agent Choice**
 
 Emphasize the two mode names in the preceding message; the question UI uses plain
 strings. Show recipes BEFORE opening the question. Do not finish with a full

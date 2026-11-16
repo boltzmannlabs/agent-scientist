@@ -30,6 +30,11 @@
 
 **Experimental validation status:** …
 
+## Agent decisions
+| Question | Agent-selected option | Reason based on objectives and inputs | Assumptions / evidence |
+|---|---|---|---|
+| … | … | … | … |
+
 ## Problem and decision criteria
 In plain language, the user wants … Constraints … Target specifications … Hard requirements … Preferences … Metric directions and units …
 

@@ -47,13 +47,12 @@ which to delete. Do not regenerate already deleted suggestions.
 
 Then ask exactly one parent question:
 **What would you like to do with these scenarios?**
-Choices: **Add scenario**, **Delete scenario**, **Edit scenario**, **Run scenarios**.
-Pass these four choices in that order as plain strings in `choices`, never
-objects with label/description fields. Use the question exactly as written;
-do not rename Run to mean starting input review. Run opens the single review-choice question described below, including for
-unreviewed rows; do not force the user through Edit first.
-Keep these same four actions even when the list is empty. Do not substitute Undo
-for Run or add a fifth button; Undo/Cancel remain typed navigation commands; Previous belongs to input steps.
+Use the helper's `action_selector`, which includes Agent Choice and keeps all
+manual actions reachable through More choices. Its canonical `actions` list is
+metadata, not a native button list. Follow the workflow's `references/agent-choice.md`
+for delegation, reasoning, decision recording and overflow navigation. This rule
+overrides older examples that list four manual buttons without Agent Choice.
+Run opens the review-choice question, with Agent Choice included.
 If Run is selected with an empty list, explain that a scenario must be added and
 show this same menu again without executing anything.
 
@@ -67,7 +66,8 @@ or cancelled question never runs calculations. Preserve existing recipes/results
 1. **Choose model.** Read `catalogue/models` and show all currently available keys in a
    compact numbered list grouped by purpose, with each model's readable title
    and key (for example, “Rheology & pumping — rheology”). Follow with a free-text `clarify`
-   asking for the model number or name, with no `choices` array at this stage.
+   asking for the model number or name through Other, with Agent Choice as a
+   button. Keep the full numbered model list in text.
    Do not replace this with two recommended buttons. Native clarify displays at most four
    choices: never pass a 21-choice array or silently limit the catalogue to four.
    The inventory includes physical models and analysis workflows. Sensitivity,
@@ -169,6 +169,8 @@ Skip — use defaults**. Do not replace Skip with a differently named default
 button or drop it simply because the group was visited already. Omit Skip only
 when no valid default is available, and explain why.
 
+Wrap these manual actions with the helper to include Agent Choice; overflow
+choices such as Previous/Skip remain reachable through More choices.
 Do not combine five or more buttons: native clarify shows only four. Use a
 separate selection step rather than losing Previous, Skip or an item to truncation.
 
@@ -245,7 +247,9 @@ When the user selects **Run scenarios**, show a short scope/setup summary (scena
 recipes, key conditions and supplied/default origins), then ask exactly ONE native
 question from the helper's `run_selector`:
 **Run these scenarios without review, or go to Edit for review?**
-Choices: **Run without review / Go to Edit for review**, `multi_select: false`.
+Choices: **Run without review / Go to Edit for review / Agent Choice**,
+`multi_select: false`. Resolve Agent Choice per the workflow guide and continue
+the actual selected route without repeating this question.
 Do not automatically execute on the parent Run action and do not reject an
 unreviewed row just because its review flag is unset.
 

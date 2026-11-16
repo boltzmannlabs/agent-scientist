@@ -1,7 +1,7 @@
 ---
 name: agri-models-and-design
 description: Run physical scenarios and constrained design searches.
-version: "2.3.1"
+version: "2.4.0"
 author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
@@ -105,6 +105,15 @@ The automatic path applies only to explicitly requested automatic campaigns; it 
 missing inputs, criteria or consent to exploratory assumptions. Honor recipes-only,
 cost-only, stop and other explicit limits. Keep unknown performance unassessed and
 recommend only a qualified best among the evaluated feasible scenarios.
+
+## Agent Choice
+
+Every option-based formulation question includes Agent Choice. Load the workflow
+skill's `references/agent-choice.md`. Use helper-decorated selectors and
+`action_selector`, rather than sending raw action lists. A delegated choice is
+resolved to an actual option from objectives/inputs, recorded with its reason,
+and continued without re-asking that question. Record decisions in the draft via
+record-decision; include them in final results.
 
 ## Run and Edit review
 

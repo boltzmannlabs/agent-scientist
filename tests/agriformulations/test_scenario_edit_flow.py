@@ -56,7 +56,16 @@ def test_edit_review_returns_to_run_and_uses_exact_changed_conditions(tmp_path):
     assert confirmed['scenarios'][1]==initial['scenarios'][1]
     assert len(Store(workspace).load(pid)['document']['analysis_runs'])==1
     assert confirmed['actions']==initial['actions']  # back at parent, no implicit execution
-    assert command('run-choice',{'scenario_ids':['S1'],'answer':choose(confirmed['run_selector'],0),'outcome':'submitted'})['status']=='run'
+    answer=choose(confirmed['run_selector'],2)
+    assert answer=='Agent Choice'
+    assert command('run-choice',{'scenario_ids':['S1'],'answer':answer,'outcome':'submitted'})['status']=='agent_choice'
+    recorded=command('record-decision',{'expected_revision':confirmed['revision'],'answer':answer,'outcome':'submitted','decision':{
+        'question':confirmed['run_selector']['question'],'options':confirmed['run_selector']['base_choices'],
+        'selected_option':'Run without review','reason':'The edited 7 m setup has been confirmed; run it to evaluate the requested pumping condition.',
+        'inputs_used':new_inputs,'scenario_ids':['S1'],'recipe_ids':[rid]}})
+    assert recorded['agent_decisions'][0]['inputs_used']['pipe_length_m']==7
+    # Resolve the delegated choice directly; there is no second manual question.
+    assert command('run-choice',{'scenario_ids':['S1'],'answer':recorded['agent_decisions'][0]['selected_option'],'outcome':'submitted'})['status']=='run'
     result=run(confirmed['scenarios'][0]['shared_inputs'])
     assert result['inputs']['pipe_length_m']==7
     assert result['result']['metrics']['pressure_bar']==pytest.approx(baseline['result']['metrics']['pressure_bar']*7/5)

@@ -14,6 +14,21 @@ import time
 ACTIONS = ['Add scenario', 'Delete scenario', 'Edit scenario', 'Run scenarios']
 
 
+def agent_question(question):
+    """Keep every manual choice accessible while reserving one native button."""
+    value = deepcopy(question)
+    choices = list(dict.fromkeys(value.get('choices') or []))
+    choices = [c for c in choices if c != 'Agent Choice']
+    value['base_choices'] = choices
+    value['choices'] = choices + ['Agent Choice'] if len(choices) <= 3 else [*choices[:2], 'More choices', 'Agent Choice']
+    if len(choices) > 3:
+        value['more_selector'] = {'question': value['question'],
+            'choices': [*choices[2:], 'Back to choices', 'Agent Choice'], 'multi_select': False}
+        if len(value['more_selector']['choices']) > 4:
+            raise ValueError('Use a numbered list and typed selection for more than four manual options')
+    return value
+
+
 def recipe_selection(payload):
     """Resolve explicit recipe choices without checkboxes or draft mutation."""
     recipes = payload.get('recipes')
@@ -27,6 +42,7 @@ def recipe_selection(payload):
     choices = ['All eligible recipes', *(labels if len(ids) <= 2 else ['Choose recipes']), 'Previous']
     selector = {'question': 'Which recipes should this scenario include?',
                 'choices': choices, 'multi_select': False}
+    selector = agent_question(selector)
     result = {'status': 'needs_input', 'recipe_ids': [], 'selector': selector,
               'recipes': [{'number': i + 1, **r} for i, r in enumerate(recipes)]}
     if payload.get('outcome', 'submitted') == 'cancelled':
@@ -36,11 +52,13 @@ def recipe_selection(payload):
     answer = payload.get('answer')
     if answer in (None, '', [], '[]') or (isinstance(answer, str) and not answer.strip()):
         return result
+    if answer == 'Agent Choice':
+        return dict(result, status='agent_choice')
     if answer == 'Previous':
         return dict(result, status='previous')
     if answer == 'Choose recipes':
-        return dict(result, selector={'question': 'Enter recipe numbers or saved IDs, separated by commas. Type Previous to go back.',
-                                      'multi_select': False})
+        return dict(result, selector=agent_question({'question': 'Enter recipe numbers or saved IDs, separated by commas. Type Previous to go back.',
+                                      'multi_select': False}))
     tokens = answer if isinstance(answer, list) else [answer]
     if tokens == ['All eligible recipes']:
         return dict(result, status='selected', recipe_ids=ids)
@@ -89,10 +107,10 @@ def run_choice(state, payload):
         status = 'cancelled'
     elif payload.get('outcome', 'submitted') == 'submitted':
         status = {'Run without review': 'run', 'Go to Edit for review': 'edit',
-                  'Previous': 'previous'}.get(answer, 'needs_input') if isinstance(answer, str) else 'needs_input'
+                  'Previous': 'previous', 'Agent Choice': 'agent_choice'}.get(answer, 'needs_input') if isinstance(answer, str) else 'needs_input'
     return {'status': status, 'scenario_ids': list(dict.fromkeys(ids)),
-            'selector': {'question': 'Run these scenarios without review, or go to Edit for review?',
-                         'choices': ['Run without review', 'Go to Edit for review'], 'multi_select': False}}
+            'selector': agent_question({'question': 'Run these scenarios without review, or go to Edit for review?',
+                         'choices': ['Run without review', 'Go to Edit for review'], 'multi_select': False})}
 
 
 def create(payload):
@@ -113,7 +131,23 @@ def apply(state, action, payload):
         raise ValueError('Draft changed; list it again before editing')
     updated = deepcopy(state)
     validate_scenarios(updated['scenarios'])
-    if action == 'confirm-review':
+    if action == 'record-decision':
+        decision = deepcopy(payload.get('decision'))
+        if payload.get('answer') != 'Agent Choice' or payload.get('outcome') != 'submitted':
+            raise ValueError('Record only an explicitly submitted Agent Choice')
+        if not isinstance(decision, dict) or any(not isinstance(decision.get(k), str) or not decision[k].strip()
+                                               for k in ('question', 'reason')):
+            raise ValueError('Record the question and a nonempty evidence-based reason')
+        choices = decision.get('options')
+        selected = decision.get('selected_option')
+        selected_items = selected if isinstance(selected, list) else [selected]
+        if not isinstance(choices, list) or not choices or any(not isinstance(c, str) for c in choices):
+            raise ValueError('Record the actual available options')
+        if not selected_items or any(not isinstance(c, str) or c not in choices or c in ('Agent Choice', 'More choices', 'Back to choices') for c in selected_items):
+            raise ValueError('Agent selection must resolve to an actual offered option')
+        decision['decision_id'] = 'D' + str(len(updated.get('agent_decisions', [])) + 1)
+        updated.setdefault('agent_decisions', []).append(decision)
+    elif action == 'confirm-review':
         ids = payload.get('scenario_ids')
         available = {r['id'] for r in updated['scenarios']}
         if payload.get('confirmation') != 'Confirm review':
@@ -198,7 +232,7 @@ def view(state):
             choices = ['Choose a scenario', 'Choose multiple scenarios', 'All scenarios', 'Previous']
         selector = {'question': 'Which scenario(s) should be deleted?',
                     'choices': choices, 'multi_select': False}
-    return {'revision': state['revision'], 'project_id': state['project_id'],
+    result = {'revision': state['revision'], 'project_id': state['project_id'],
             'mode': state['mode'], 'scenarios': rows,
             'delete_selector': selector,
             'run_selector': run_choice(state, {})['selector'] if rows else None,
@@ -213,6 +247,15 @@ def view(state):
                 'question': f'Delete all {len(rows)} draft scenarios? Saved scientific results will remain.',
                 'choices': ['Keep scenarios', f'Delete all {len(rows)} scenarios'], 'multi_select': False},
             'actions': ACTIONS, 'can_run': bool(rows) and all(r.get('status') == 'ready' for r in rows)}
+    for key in ('delete_selector', 'delete_more_selector', 'delete_id_selector', 'bulk_delete_confirmation'):
+        if result[key] is not None:
+            result[key] = agent_question(result[key])
+    result['action_selector'] = agent_question({'question': 'What would you like to do with these scenarios?',
+        'choices': ['Add scenario', 'Run scenarios', 'Edit scenario', 'Delete scenario'], 'multi_select': False})
+    result['edit_actions'] = ['Edit section', 'Confirm review', 'Previous', 'Agent Choice']
+    result['agent_decisions'] = deepcopy(state.get('agent_decisions', []))
+    return result
+
 
 
 def save(path, state):
@@ -269,7 +312,7 @@ def draft_lock(path, timeout=10):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['create', 'list', 'delete', 'undo', 'upsert', 'recipes', 'run-choice', 'confirm-review'])
+    parser.add_argument('action', choices=['create', 'list', 'delete', 'undo', 'upsert', 'recipes', 'run-choice', 'confirm-review', 'question', 'record-decision'])
     parser.add_argument('--draft', type=Path)
     parser.add_argument('--request-file', type=Path,
                         help='Read mutation payload as UTF-8 JSON data from this file')
@@ -283,6 +326,9 @@ def main():
             payload = json.load(sys.stdin)  # Compatibility with older clients.
         if not isinstance(payload, dict):
             raise ValueError('Command payload must be a JSON object')
+        if args.action == 'question':
+            print(json.dumps(agent_question(payload), ensure_ascii=False))
+            return 0
         if args.action == 'recipes':
             print(json.dumps(recipe_selection(payload), ensure_ascii=False))
             return 0
