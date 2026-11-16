@@ -2243,6 +2243,15 @@ cli:
     footer_roster_compact: "↑↓ · Enter követés · Ctrl+T bezárás"
     footer_detail: "Esc lista · PgUp/PgDn követés{steer} · x leállítás"
     footer_roster: "↑/↓ kijelölés · Enter követés{steer} · x leállítás · q/Ctrl+T bezárás"
+  jobs:
+    heading: "Háttérfeladatok · {count} · Ctrl+R összecsukás"
+    count: "{count} feladat"
+    id: "Feladat: …{id}"
+    last_check: "Utolsó ellenőrzés: {age} óta"
+    next_check: "Következő ellenőrzés: {delay}"
+    check_due: "A következő ellenőrzés esedékes"
+    more: "+{count} további háttérfeladat"
+
   dock:
     process_goal_label: "háttérfolyamat"
     last_output: "utolsó: {detail}"

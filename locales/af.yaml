@@ -2226,6 +2226,15 @@ cli:
     footer_roster_compact: "↑↓ · Enter volg · Ctrl+T sluit"
     footer_detail: "Esc lys · PgUp/PgDn volg{steer} · x stop"
     footer_roster: "↑/↓ kies · Enter volg{steer} · x stop · q/Ctrl+T sluit"
+  jobs:
+    heading: "Agtergrondtake · {count} · Ctrl+R vou in"
+    count: "{count} take"
+    id: "Taak: …{id}"
+    last_check: "Laaste kontrole: {age} gelede"
+    next_check: "Volgende kontrole: {delay}"
+    check_due: "Volgende kontrole is verskuldig"
+    more: "+{count} verdere agtergrondtake"
+
   dock:
     process_goal_label: "agtergrondproses"
     last_output: "laaste: {detail}"

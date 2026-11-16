@@ -63,6 +63,7 @@ def _make_runner(*, session_id: str = "parent-session") -> GatewayRunner:
     runner.pairing_store.is_approved.return_value = True
     runner._is_user_authorized = lambda _source: True
     runner._busy_input_mode = "interrupt"
+    runner._busy_text_mode = "interrupt"
     session_key = build_session_key(_make_event().source)
     entry = SimpleNamespace(session_key=session_key, session_id=session_id)
     session_store = SimpleNamespace(

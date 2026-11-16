@@ -2226,6 +2226,15 @@ cli:
     footer_roster_compact: "↑↓ · Enter лог · Ctrl+T закрыть"
     footer_detail: "Esc список · PgUp/PgDn лог{steer} · x остановить"
     footer_roster: "↑/↓ выбрать · Enter лог{steer} · x остановить · q/Ctrl+T закрыть"
+  jobs:
+    heading: "Фоновые задачи · {count} · Ctrl+R свернуть"
+    count: "Задач: {count}"
+    id: "Задача: …{id}"
+    last_check: "Последняя проверка: {age} назад"
+    next_check: "Следующая проверка: {delay}"
+    check_due: "Пора выполнить проверку"
+    more: "Ещё фоновых задач: {count}"
+
   dock:
     process_goal_label: "фоновый процесс"
     last_output: "последнее: {detail}"

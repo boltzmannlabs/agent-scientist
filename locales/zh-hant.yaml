@@ -2226,6 +2226,15 @@ cli:
     footer_roster_compact: "↑↓ · Enter 追蹤輸出 · Ctrl+T 關閉"
     footer_detail: "Esc 返回清單 · PgUp/PgDn 追蹤輸出{steer} · x 停止"
     footer_roster: "↑/↓ 選取 · Enter 追蹤輸出{steer} · x 停止 · q/Ctrl+T 關閉"
+  jobs:
+    heading: "背景工作 · {count} · Ctrl+R 收合"
+    count: "{count} 個工作"
+    id: "工作：…{id}"
+    last_check: "上次檢查：{age}前"
+    next_check: "下次檢查：{delay}"
+    check_due: "下次檢查已到期"
+    more: "還有 {count} 個背景工作"
+
   dock:
     process_goal_label: "背景程序"
     last_output: "最近：{detail}"

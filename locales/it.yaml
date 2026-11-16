@@ -2226,6 +2226,15 @@ cli:
     footer_roster_compact: "↑↓ · Invio segui · Ctrl+T chiudi"
     footer_detail: "Esc elenco · PgSu/PgGiù segui{steer} · x interrompi"
     footer_roster: "↑/↓ seleziona · Invio segui{steer} · x interrompi · q/Ctrl+T chiudi"
+  jobs:
+    heading: "Attività in background · {count} · Ctrl+R comprimi"
+    count: "{count} attività"
+    id: "Attività: …{id}"
+    last_check: "Ultimo controllo: {age} fa"
+    next_check: "Prossimo controllo: {delay}"
+    check_due: "Controllo da eseguire"
+    more: "+{count} altre attività in background"
+
   dock:
     process_goal_label: "processo in background"
     last_output: "ultimo: {detail}"

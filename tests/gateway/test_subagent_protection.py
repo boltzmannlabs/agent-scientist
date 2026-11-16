@@ -177,6 +177,7 @@ class TestBusyHandlerDemotesInterruptForSubagents:
         to the pre-#30170 interrupt path."""
         runner = _make_runner()
         runner._busy_input_mode = "interrupt"
+        runner._busy_text_mode = "interrupt"
         adapter = _make_adapter()
         event = _make_event(text="please stop")
         sk = build_session_key(event.source)
@@ -203,13 +204,13 @@ class TestBusyHandlerDemotesInterruptForSubagents:
         runner.adapters[event.source.platform] = adapter
 
         with patch("gateway.platforms.base.merge_pending_message_event"):
-            await runner._handle_active_session_busy_message(event, sk)
+            handled = await runner._handle_active_session_busy_message(event, sk)
 
+        # Plain text in queue mode is handed back to the base adapter, which
+        # preserves message boundaries and owns the silent next-turn queue.
+        assert handled is False
         parent.interrupt.assert_not_called()
-        content = adapter._send_with_retry.call_args.kwargs.get("content", "")
-        # The vanilla queue copy — NOT the #30170 "Subagent working" copy,
-        # because the user explicitly asked for queue mode.
-        assert "Subagent working" not in content
+        adapter._send_with_retry.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_steer_mode_still_routes_through_running_agent_steer(

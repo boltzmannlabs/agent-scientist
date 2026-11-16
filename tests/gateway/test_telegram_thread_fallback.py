@@ -346,6 +346,7 @@ async def test_gateway_runner_busy_ack_replies_to_triggering_message_for_telegra
     runner._busy_ack_ts = {}
     runner._draining = False
     runner._busy_input_mode = "interrupt"
+    runner._busy_text_mode = "interrupt"
     runner._is_user_authorized = lambda _source: True
 
     assert await runner._handle_active_session_busy_message(event, session_key) is True

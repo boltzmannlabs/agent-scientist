@@ -12999,7 +12999,7 @@
         "submission": "accepted",
         "evidence": "User notebook saved response, execution 6, inspected 2026-11-12",
         "http_status": 200,
-        "doc_id": "6af59f71042419d6c2a5ed85",
+        "doc_id": "<historical-job-id-redacted>",
         "platform_status": "queued",
         "outputs_verified": false,
         "csv_mode_verified": false
