@@ -120,8 +120,7 @@ class Chat:
         which profile answered is judged by the provider/state.db assertions, not by this wait."""
         def ready() -> bool:
             s = term.text()
-            return term.closed or ("❯" in s and "Session:" in s
-                                   and "startingagent" not in s and "summoningsci" not in s)
+            return term.closed or ("❯" in s and canon("─ ready │") in s)
         try:
             poll(ready, 120, "the TUI composer to be ready")
             assert not term.closed, f"/api/pty closed (code={term.close_code}) during TUI startup"
@@ -175,6 +174,8 @@ def dash_env(tmp_path: Path):
     _require_tui()
     tui_dir = _private_tui(tmp_path)
     sb = H.make_sandbox(tmp_path, ("default", "alpha", "beta"), responder=_echo_responder)
+    for profile in sb.profiles.values():
+        H.write_profile_home(profile, extra_config={"display": {"tui_native": True}})
     dash = H.Dashboard(sb, tmp_path / "dashboard.log", extra_env={"SCI_TUI_DIR": str(tui_dir)})
     ledger = ProcessLedger(dash.proc.pid)
     try:
@@ -187,8 +188,8 @@ def dash_env(tmp_path: Path):
 
 
 def _assert_labelled(term: WsTerm, profile: str) -> None:
-    assert canon(f"{profile} ❯") in term.text(), (
-        f"the TUI composer is not labelled with profile {profile!r}\n--- screen ---\n{term.dump()}")
+    assert canon(f"[{profile}]") in term.text(), (
+        f"the TUI status bar is not labelled with profile {profile!r}\n--- screen ---\n{term.dump()}")
 
 
 def _first_turn(chat: Chat, alpha: H.Profile, default: H.Profile, canary: str) -> WsTerm:

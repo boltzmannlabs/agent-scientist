@@ -36,14 +36,14 @@ def test_resume_search_cancel_selection_and_wizard_escape(tmp_path):
             child.submit('/activate')
             child.wait_for_text('Choose a profile')
             child.write('\x1b[B' * 60)
-            child.wait_for_text('❯ Cancel')
+            child.wait_for_text('◉ Cancel')
             child.wait_quiet()
             copies = child.count('Choose a profile')
             child.write('\x1b[B' * 30)
             child.wait_quiet()
             assert child.count('Choose a profile') == copies
             child.write('\x1b[A' * 60)
-            child.wait_for_text('❯ main — currently active')
+            child.wait_for_text('◉ main — currently active')
             child.write('\x1b')
             child.wait_for_text('Activation cancelled')
             with SessionDB(child.sci_home / 'state.db') as db:
@@ -70,7 +70,7 @@ def test_resume_search_cancel_selection_and_wizard_escape(tmp_path):
             child.wait_for_text('Search: SAVED_CONVERSATION')
             child.write('\r')
             child.wait_for_text('SAVED_SECOND_REPLY')
-            assert '◆ Sci:' not in child.text() and '● You:' not in child.text()
+            assert child.count('SAVED_MESSAGE') == 1 and child.count('SAVED_REPLY') == 1
             child.submit('/side side-context-question')
             child.wait_for_text('SIDE_CONTEXT_OK')
             child.write('\x1f')

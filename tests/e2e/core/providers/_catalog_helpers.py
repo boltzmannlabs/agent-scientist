@@ -112,6 +112,8 @@ class Row:
     # The declared transport is mandated by the provider's OWN host (e.g. a Responses-native
     # endpoint); at a foreign base URL the product speaks plain chat completions instead.
     host_mandated: bool = False
+    requires_custom_client: bool = False
+    allow_fallback: bool = True
 
     @property
     def dialect(self) -> str | None:
@@ -120,6 +122,9 @@ class Row:
     def skip_reason(self) -> str | None:
         if self.auth_type in UNREDIRECTABLE_AUTH:
             return f"{self.name}: {UNREDIRECTABLE_AUTH[self.auth_type]}"
+        if self.requires_custom_client:
+            return (f"{self.name}: provider-owned authorization/model protocol; exercised through "
+                    "the provider plugin integration suite, not the generic API-key fake")
         if self.name in KEYLESS_PROVIDERS:
             return f"{self.name}: {KEYLESS_PROVIDERS[self.name]}"
         return None
@@ -161,6 +166,7 @@ for p in providers.list_providers():
     out.append(dict(name=p.name, api_mode=p.api_mode, auth_type=p.auth_type, key_env=key,
                     base_url=p.base_url, aliases=list(p.aliases),
                     supports_model_listing=bool(p.supports_model_listing),
+                    requires_custom_client=bool(p.requires_custom_client), allow_fallback=bool(p.allow_fallback),
                     host_mandated=host_mandated_api_mode(p.base_url) is not None))
 print("CATALOG=" + json.dumps(out))
 """

@@ -50,7 +50,7 @@ _STATUS_BAR = re.compile(r"│ fake model")
 # The status bar's first cell once the startup session is live: "─ ready │ fake model │ …". Before
 # that it reads "summoning sci…" / "forging session…" / "starting agent…" / "resuming…".
 _READY = re.compile(r"─ ready │")
-_STATUS_ROW = re.compile(r"^ ─ (.+?) │")
+_STATUS_ROW = re.compile(r"^ (?:\[[^\]]+\] │ )?─ (.+?) │")
 # AF_UNIX sun_path is 108 bytes; stay well inside it.
 _SOCK_MAX = 100
 
@@ -252,7 +252,7 @@ class TmuxTui:
                    SCI_STATE_DB_GUARD_BYPASS="1", SCI_TUI_INLINE="1" if inline else "0",
                    SCI_TUI_DIR=str(tui_dir or private_tui_dir(root)))
         env.update(env_extra or {})
-        argv = [sys.executable, "-m", "sci_cli.main", "--tui", *args]
+        argv = [sys.executable, "-m", "sci_cli.main", "--tui", "--native", *args]
         subprocess.run(["tmux", "-S", self.sock, "-f", str(conf), "new-session", "-d", "-s", "p",
                         "-x", str(cols), "-y", str(rows), "-c", str(root / "work"), *argv],
                        env=env, check=True, timeout=30)
