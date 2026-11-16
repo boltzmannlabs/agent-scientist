@@ -40,7 +40,10 @@ interpretation or decision ledger. Do not describe it as the complete run report
 unless that content is present. Supply the complete Markdown companion with exact
 run scope and all required sections; label any broader PDF as a project export.
 If a configured renderer can produce the full narrative PDF, use it and verify
-its text/tables. Keep both artifacts traceable to the same saved run records.
+its text/tables. Use a font that supports the scientific symbols in the report
+or explicit ASCII notation such as s^-1 and Pa*s. Check rendered pages for missing
+glyph boxes, clipped text and unreadable tables; text extraction alone is not a
+visual check. Keep both artifacts traceable to the same saved run records.
 
 ## Completion check
 
