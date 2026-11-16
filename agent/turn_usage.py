@@ -273,7 +273,7 @@ def record_response_usage(
     # dropping aggregator spend. Price at the REAL model/provider from the aggregator slot.
     _agg_cost_model, _agg_cost_provider, _agg_cost_base_url = agent.model, agent.provider, agent.base_url
     _agg_slot = getattr(_moa_client, "last_aggregator_slot", None) if _moa_client is not None else None
-    if _agg_slot and _agg_slot.get("model"):
+    if isinstance(_agg_slot, dict) and isinstance(_agg_slot.get("model"), str) and _agg_slot["model"]:
         _agg_cost_model = _agg_slot["model"]
         _agg_cost_provider = _agg_slot.get("provider") or agent.provider
         _agg_cost_base_url = _agg_slot.get("base_url") or agent.base_url
