@@ -127,7 +127,9 @@ def _normalize_questions(questions) -> tuple:
                               "Send real labels, or omit choices to ask open-ended.")
             choices = cleaned or None
         if choices and recommended is not None and strip_recommended(recommended) not in {strip_recommended(c) for c in choices}:
-            return None, "recommended_answer must match an offered choice."
+            return None, (f"questions[{index}].recommended_answer must match an offered choice label exactly "
+                          "(the '(Recommended)' suffix may be omitted). Copy the choice label into "
+                          "recommended_answer and put explanatory text in recommendation_basis.")
         normalized.append({
             "qid": f"q{index}", "question": text,
             "choices": mark_recommended(list(choices)) if choices else None,
@@ -259,8 +261,8 @@ CLARIFY_SCHEMA = {
                         "question": {"type": "string"},
                         "purpose": {"type": "string", "enum": list(PURPOSES),
                                     "description": GUIDANCE},
-                        "recommended_answer": {"type": "string", "description": "Supported fallback for missing_input or data_change only; never fabricate a required scientific input."},
-                        "recommendation_basis": {"type": "string", "description": "Current contract/default or supplied input supporting the recommended_answer."},
+                        "recommended_answer": {"type": "string", "description": "Supported fallback for missing_input or data_change only. If choices are supplied, copy one offered choice label exactly; the '(Recommended)' suffix may be omitted. For free-text questions, provide only the proposed value. Put explanations in recommendation_basis. Never fabricate a required scientific input."},
+                        "recommendation_basis": {"type": "string", "description": "Explain the current contract/default or supplied input supporting recommended_answer. Keep this explanation separate from the answer or choice label."},
                         "choices": {
                             "type": "array",
                             "items": {"type": "string", "maxLength": MAX_CHOICE_CHARS},
