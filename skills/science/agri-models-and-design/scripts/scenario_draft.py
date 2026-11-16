@@ -29,6 +29,29 @@ def agent_question(question):
     return value
 
 
+def mode_choice(payload):
+    choices = ['DESIGN STUDY — Compare recipes under selected conditions',
+               'AI + PHYSICS DESIGN — Search parameter ranges and evaluate candidates',
+               'NOT NOW — Keep recipes without evaluation']
+    result = {'status': 'needs_input', 'mode': None,
+              'selector': agent_question({'question': 'Which design mode would you like to use?',
+                                         'choices': choices, 'multi_select': False})}
+    if payload.get('outcome', 'submitted') == 'cancelled':
+        return dict(result, status='cancelled')
+    if payload.get('outcome', 'submitted') != 'submitted':
+        return result
+    answer = payload.get('answer')
+    modes = dict(zip(choices, ['design', 'ai_physics', 'not_now']))
+    modes.update({'DESIGN — Evaluate recipes under selected physical conditions': 'design',
+                  'AI + PHYSICS DESIGN — Search physical parameter ranges, then evaluate shortlisted settings': 'ai_physics',
+                  'NOT NOW — Recipes only': 'not_now'})
+    if answer == 'Agent Choice':
+        return dict(result, status='agent_choice')
+    if isinstance(answer, str) and answer in modes:
+        return dict(result, status='selected', mode=modes[answer])
+    return result
+
+
 def recipe_selection(payload):
     """Resolve explicit recipe choices without checkboxes or draft mutation."""
     recipes = payload.get('recipes')
@@ -312,7 +335,7 @@ def draft_lock(path, timeout=10):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['create', 'list', 'delete', 'undo', 'upsert', 'recipes', 'run-choice', 'confirm-review', 'question', 'record-decision'])
+    parser.add_argument('action', choices=['create', 'list', 'delete', 'undo', 'upsert', 'recipes', 'run-choice', 'confirm-review', 'question', 'record-decision', 'mode-choice'])
     parser.add_argument('--draft', type=Path)
     parser.add_argument('--request-file', type=Path,
                         help='Read mutation payload as UTF-8 JSON data from this file')
@@ -326,6 +349,9 @@ def main():
             payload = json.load(sys.stdin)  # Compatibility with older clients.
         if not isinstance(payload, dict):
             raise ValueError('Command payload must be a JSON object')
+        if args.action == 'mode-choice':
+            print(json.dumps(mode_choice(payload), ensure_ascii=False))
+            return 0
         if args.action == 'question':
             print(json.dumps(agent_question(payload), ensure_ascii=False))
             return 0

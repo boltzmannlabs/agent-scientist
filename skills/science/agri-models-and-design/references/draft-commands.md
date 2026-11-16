@@ -122,3 +122,10 @@ and decision with question, options, selected_option and reason. It preserves
 scenario contents and returns agent_decisions. It does not run physics. Transfer
 pre-draft decisions when the selected-mode draft is created. Retain the complete
 ledger in final report data and show its selections/reasons in the results.
+
+`mode-choice` takes a request file (no draft needed) and returns the required
+Design Study / AI + Physics Design / Not now / Agent Choice selector. Pass the
+actual answer/outcome back to resolve it. selected returns mode=design/ai_physics/
+not_now. agent_choice is a delegation, not an already chosen mode. Empty or
+unsubmitted answers never authorize work. Use it for optimization requests too,
+not only after creating recipes; see workflow references/mode-selection.md.

@@ -1,16 +1,11 @@
 # Automatic baseline and cost/performance optimization
 
-Use this protocol inside an explicitly requested automatic optimization campaign.
-For recipe creation, the workflow skill's required DESIGN / AI + PHYSICS DESIGN /
-NOT NOW question takes precedence after showing saved recipes. Do not silently
-start this campaign or replace the selector with a vague simulation offer.
-Selected modes review inputs and wait for Run. Automatic execution does not
-authorize inventing missing chemistry, prices, properties or experimental outcomes.
-
-For requested/selected AI + Physics Design, the model skill's
-`references/ai-physics-inputs.md` takes precedence: collect staged input answers,
-show the setup and wait for Run. Automatic execution in this reference applies
-outside that mode.
+Use this protocol after the required mode decision in references/mode-selection.md,
+then selected-mode setup and the Run choice. This applies to every optimization
+request, including automatic ones and already-saved recipes. Do not begin cost,
+property or search setup questions before offering the mode choice. Automatic
+coordination of authorized work does not skip mode selection or authorize missing
+chemistry, prices, properties or experimental outcomes.
 
 ## Establish the reference and evaluation contract
 

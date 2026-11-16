@@ -1,7 +1,7 @@
 ---
 name: agri-formulation-workflow
 description: Evaluate and cost-optimize agricultural formulations.
-version: "2.4.0"
+version: "2.5.0"
 author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
@@ -97,6 +97,22 @@ Use active identity + pure-active concentration/basis + formulation type + the
 main distinguishing composition. A/B and V0/V1 labels supplement the name; they
 never replace it. Verify the saved name, composition and ID agree before display.
 
+## Required mode choice for every optimization request
+
+Before any formulation optimization, ask DESIGN STUDY / AI + PHYSICS DESIGN /
+NOT NOW / Agent Choice via native `clarify`. This includes existing recipes and
+requests to optimize, optimise, improve stability, reduce cost, compare alternatives
+or find the best formulation. Read
+[references/mode-selection.md](references/mode-selection.md) and use the model
+skill helper's `mode-choice` selector. Do not infer the mode from "optimize",
+"automatic", "run everything", "fully specified" or supplied parameter values.
+Ask this BEFORE pricing/property/setup questions or any simulations/search/cost
+campaign. Read-only baseline/catalogue discovery and a brief problem/recipe summary
+are allowed first. Do not regenerate existing recipes to reach the mode question.
+Only an explicitly selected mode, an answer to this selector, or explicit delegation
+of the mode decision resolves it. A direct, named standalone calculation is distinct
+from a formulation optimization request. This rule supersedes automatic routing.
+
 ## After saving recipes — required next-mode choice
 
 After creating/saving requested recipes, show their actual composition tables,
@@ -141,13 +157,11 @@ already supplied and show them for review; do not silently fill unseen defaults.
 ## Automatic Workflow
 
 Read [references/cost-performance-optimization.md](references/cost-performance-optimization.md)
-for explicitly requested automatic end-to-end optimization or grade/supplier
-comparisons. This section does not override the post-recipe mode choice above,
-a selected mode's guided input review, or either mode's Run action. Recipe-only
-creation ends with the required next-mode selector unless follow-up was declined.
-Within an explicitly authorized automatic campaign, choose evaluation and supported
-optimization operations from the objective. Package `next_modes` can inform the
-post-recipe choice; never treat it as permission to start calculations.
+inside the chosen mode after setup and execution authorization. The word
+"optimization" never bypasses mode selection, including in an automatic request.
+Select the mode first (or resolve explicit Agent Choice delegation), collect its
+inputs, and follow Run / Run without review / Edit. Once execution is authorized,
+coordinate the relevant simulations and comparison without repeated Run prompts.
 
 Automatically run every applicable scenario needed to assess the stated objectives,
 criteria and coupled dependencies. Select from the current catalogue; do not run
@@ -171,18 +185,18 @@ whether to provide quotes or defer the cost branch; never create a speculative
 variant grid or conditional cost winner in place of the question. On cancellation,
 keep the saved baseline, mark cost optimization blocked and stop that branch.
 Fully specified independent baseline checks may still run when requested.
-Once essential inputs are resolved, continue automatically without another Run
-question. An explicit stop/cancel remains stopped until the user resumes it.
+After mode selection and the Run choice authorize execution, continue the
+selected scope without another redundant Run question. An explicit stop/cancel remains stopped until the user resumes it.
 
 ## Manual Design Review
 
 Use the scenario editor after DESIGN or AI + PHYSICS DESIGN is selected, or when
 the user explicitly requests interactive scenario selection or setup review.
-Then load the model skill's `references/design-setup.md`. In this opt-in flow,
+Then load the model skill's `references/design-setup.md`. In this selected-mode flow,
 show the actual recipes before the mode question; defaults stay proposals until
 reviewed and calculations wait for Run. Keep its Add/Delete/Edit/Run parent loop,
-Previous/Skip navigation and selective-deletion safeguards. A plain formulation
-problem or automatic optimization request does not enter this editor.
+Previous/Skip navigation and selective-deletion safeguards. Optimization requests
+enter the chosen mode after the required mode decision.
 
 ## Procedure
 

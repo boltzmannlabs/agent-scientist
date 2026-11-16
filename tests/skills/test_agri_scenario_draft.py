@@ -514,3 +514,35 @@ def test_all_emitted_workflow_questions_offer_agent_choice_within_ui_limit(tmp_p
             assert 'Agent Choice' in q['more_selector']['choices']
             assert len(q['more_selector']['choices'])<=4
     assert 'Agent Choice' in value['edit_actions']
+
+
+@pytest.mark.parametrize('outcome', ['submitted','cancelled','timed_out','unavailable'])
+def test_optimization_mode_requires_actual_selection_and_never_changes_draft(tmp_path,outcome):
+    path=tmp_path/'draft.json';draft(path);before=path.read_bytes()
+    _,question=call(path,'mode-choice',{})
+    assert question['status']=='needs_input' and question['mode'] is None
+    selector=question['selector'];assert len(selector['choices'])==4 and 'Agent Choice' in selector['choices']
+    for index,expected in enumerate(['design','ai_physics','not_now','agent_choice']):
+        code,result=call(path,'mode-choice',{'answer':selector['choices'][index],'outcome':outcome})
+        assert code==0 and path.read_bytes()==before
+        if outcome=='submitted':
+            assert result['status']==('agent_choice' if expected=='agent_choice' else 'selected')
+            assert result['mode']==(None if expected=='agent_choice' else expected)
+        else:assert result['mode'] is None and result['status']!='selected'
+    assert call(path,'mode-choice',{'answer':'optimize automatically'})[1]['mode'] is None
+
+
+def test_native_mode_selection_resolves_design_study_without_execution(tmp_path):
+    from queue import Queue
+    from cli import SciCLI
+    from tools.clarify_tool import clarify_tool
+    path=tmp_path/'not-created.json'
+    _,options=call(path,'mode-choice',{})
+    def callback(entries):
+        q=entries[0];view=SciCLI.__new__(SciCLI);view._persist_prompt_summary=lambda *a:None
+        state={'questions':entries,'active':0,'answers':{},'choices':q['choices'],'selected':0,'multi_select':False,'response_queue':Queue()}
+        view._clarify_batch_enter(state)
+        return {'answers':state['response_queue'].get_nowait(),'outcome':'submitted'}
+    result=json.loads(clarify_tool([options['selector']],callback=callback))
+    _,selected=call(path,'mode-choice',{'answer':result['responses'][0]['user_response'],'outcome':result['outcome']})
+    assert selected['mode']=='design' and not path.exists()

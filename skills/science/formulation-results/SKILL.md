@@ -1,7 +1,7 @@
 ---
 name: formulation-results
 description: Explain and report formulation optimization results.
-version: "1.3.0"
+version: "1.4.0"
 author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
@@ -86,6 +86,13 @@ Include all six elements in the same row, adjacent note or short paragraph:
 6. **What next?** Next simulation, data request, formulation change or experimental validation.
 
 A compact table can use columns `Evaluation / formulation`, `Result`, `Meaning and target comparison`, `Evidence and likely drivers`, `Next step`. Follow it with a clear prediction/validation qualifier. For lengthy cases, use one short interpretation block per simulation and per generation.
+
+## Optimization handoff
+
+A formulation optimization request first requires the workflow's Design Study /
+AI + Physics Design / Not now / Agent Choice question, even with existing recipes.
+Show a short objective/baseline summary, then ask; do not substitute an optimization
+report or automatically run the search. Detailed reporting follows authorized work.
 
 ## Recipe creation handoff
 

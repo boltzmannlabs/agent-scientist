@@ -1,7 +1,7 @@
 ---
 name: agri-models-and-design
 description: Run physical scenarios and constrained design searches.
-version: "2.4.0"
+version: "2.5.0"
 author: Gopi Krishna, Agent Scientist
 license: MIT
 platforms: [linux, macos, windows]
@@ -66,6 +66,15 @@ Use this request shape directly rather than searching old scratch files for it.
 | Two-active reference/soil screen | `mixture_response`, `soil_fate` |
 | Parameter analysis/search | `sensitivity`, `robustness`, `inverse_design` |
 
+## Optimization entry point
+
+For every formulation optimization request, first follow the workflow's required
+mode choice using this helper's `mode-choice` command. Offer Design Study, AI +
+Physics Design, Not now and Agent Choice before solving or collecting setup inputs.
+Existing saved recipes and requests for "automatic optimization" do not bypass it.
+Only an already explicit mode selection or explicit mode delegation skips repeating
+that question. Do not automatically select inverse_design merely from "optimize".
+
 ## After recipe creation
 
 Follow the workflow skill's required post-recipe choice: show saved recipe tables
@@ -101,10 +110,9 @@ identity objective. After any search or substitution, replay all relevant baseli
 checks and compute production cost for the actual saved recipe. Use the workflow's
 comparison helper for cost savings, feasibility and trade-offs.
 
-The automatic path applies only to explicitly requested automatic campaigns; it does not override the workflow skill's post-recipe selector or either selected mode's input review and Run action. Ask only for essential
-missing inputs, criteria or consent to exploratory assumptions. Honor recipes-only,
-cost-only, stop and other explicit limits. Keep unknown performance unassessed and
-recommend only a qualified best among the evaluated feasible scenarios.
+Automatic coordination is an execution behavior AFTER mode selection, setup and
+the user's Run choice. It does not bypass the mode question for any optimization
+request. Ask for essential inputs in the selected mode and preserve explicit limits.
 
 ## Agent Choice
 
@@ -138,7 +146,7 @@ See `references/draft-commands.md` for the selection command.
 
 ## Manual Design Review
 
-When a post-recipe mode is selected, or the user asks for interactive setup or
+When a mode is selected after recipe creation or an optimization request, or the user asks for interactive setup or
 scenario selection, load `references/design-setup.md`. That selected-mode
 editor retains the Add/Delete/Edit/Run parent menu, staged fields, Previous/Skip,
 reviewed defaults and explicit Run. Initial recipes are shown before its mode
@@ -146,7 +154,7 @@ question. Completed Add/Delete/Edit operations return to the parent without runn
 Deletion uses radio choices for up to three scenarios; multiple deletion collects
 typed IDs. Empty selection removes nothing; All needs separate Keep-first confirmation.
 Use the metadata helper's --request-file interface; do not pipe into Python.
-These manual-only review rules do not block automatic objective-based execution.
+After the selected setup and Run choice, execute the authorized objective-based scope.
 
 ## Procedure
 
