@@ -1,0 +1,352 @@
+{
+  "format": 2,
+  "name": "peroxide_initiated_HBr_addition_to_propene",
+  "source": "User-requested standard radical-chain mechanism: peroxide-initiated anti-Markovnikov addition of HBr to propene.",
+  "rows": [
+    [
+      "I1",
+      "I1P"
+    ],
+    [
+      "I2",
+      "I2P"
+    ],
+    [
+      "P1",
+      "P1P"
+    ],
+    [
+      "P2",
+      "P2P"
+    ]
+  ],
+  "panels": [
+    {
+      "id": "I1",
+      "title": "Initiation 1: peroxide homolysis",
+      "species": [
+        {
+          "id": "peroxide",
+          "smiles": "[*:11][O:12][O:13][*:14]",
+          "abbrev": {
+            "11": "R",
+            "14": "R"
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "I1a",
+          "from": "peroxide:12-13",
+          "to": "peroxide:12",
+          "electrons": 1
+        },
+        {
+          "id": "I1b",
+          "from": "peroxide:12-13",
+          "to": "peroxide:13",
+          "electrons": 1
+        }
+      ]
+    },
+    {
+      "id": "I1P",
+      "title": "Alkoxy radicals",
+      "species": [
+        {
+          "id": "alkoxy",
+          "smiles": "[*:11][O:12]",
+          "abbrev": {
+            "11": "R"
+          },
+          "radicals": {
+            "12": 1
+          }
+        },
+        {
+          "id": "alkoxy2",
+          "smiles": "[*:14][O:13]",
+          "abbrev": {
+            "14": "R"
+          },
+          "radicals": {
+            "13": 1
+          },
+          "offset": [
+            1.2,
+            0
+          ]
+        }
+      ],
+      "texts": [
+        {
+          "text": "+",
+          "xy": [
+            2.55,
+            -0.25
+          ],
+          "align": "center"
+        }
+      ]
+    },
+    {
+      "id": "I2",
+      "title": "Initiation 2: Br radical formation",
+      "species": [
+        {
+          "id": "alkoxy",
+          "smiles": "[*:11][O:12]",
+          "abbrev": {
+            "11": "R"
+          },
+          "radicals": {
+            "12": 1
+          }
+        },
+        {
+          "id": "hbr_init",
+          "smiles": "[H:21][Br:22]"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "I2a",
+          "from": "alkoxy:12",
+          "to": [
+            "alkoxy:12",
+            "hbr_init:21"
+          ],
+          "electrons": 1
+        },
+        {
+          "id": "I2b",
+          "from": "hbr_init:21-22",
+          "to": [
+            "alkoxy:12",
+            "hbr_init:21"
+          ],
+          "electrons": 1
+        },
+        {
+          "id": "I2c",
+          "from": "hbr_init:21-22",
+          "to": "hbr_init:22",
+          "electrons": 1
+        }
+      ]
+    },
+    {
+      "id": "I2P",
+      "title": "Alcohol + Br radical",
+      "species": [
+        {
+          "id": "alcohol",
+          "smiles": "[*:11][O:12][H:21]",
+          "abbrev": {
+            "11": "R"
+          }
+        },
+        {
+          "id": "bromine",
+          "smiles": "[Br:22]",
+          "radicals": {
+            "22": 1
+          },
+          "radical_angles": {
+            "22": 90
+          },
+          "xy": {
+            "22": [
+              4.0,
+              0
+            ]
+          }
+        }
+      ],
+      "texts": [
+        {
+          "text": "+",
+          "xy": [
+            2.65,
+            0
+          ],
+          "align": "center"
+        }
+      ]
+    },
+    {
+      "id": "P1",
+      "title": "Propagation 1: Br radical addition",
+      "species": [
+        {
+          "id": "propene",
+          "smiles": "[CH2:1]=[CH:2][CH3:3]",
+          "show": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "id": "bromine",
+          "smiles": "[Br:22]",
+          "radicals": {
+            "22": 1
+          },
+          "radical_angles": {
+            "22": 90
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "P1a",
+          "from": "bromine:22",
+          "to": [
+            "propene:1",
+            "bromine:22"
+          ],
+          "electrons": 1
+        },
+        {
+          "id": "P1b",
+          "from": "propene:1-2",
+          "to": [
+            "propene:1",
+            "bromine:22"
+          ],
+          "electrons": 1
+        },
+        {
+          "id": "P1c",
+          "from": "propene:1-2",
+          "to": "propene:2",
+          "electrons": 1
+        }
+      ]
+    },
+    {
+      "id": "P1P",
+      "title": "Secondary carbon radical",
+      "species": [
+        {
+          "id": "bromopropyl",
+          "smiles": "[Br:22][CH2:1][CH:2][CH3:3]",
+          "radicals": {
+            "2": 1
+          },
+          "show": [
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P2",
+      "title": "Propagation 2: H abstraction",
+      "species": [
+        {
+          "id": "bromopropyl",
+          "smiles": "[Br:22][CH2:1][CH:2][CH3:3]",
+          "radicals": {
+            "2": 1
+          },
+          "show": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "id": "hbr_prop",
+          "smiles": "[H:31][Br:32]"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "P2a",
+          "from": "bromopropyl:2",
+          "to": [
+            "bromopropyl:2",
+            "hbr_prop:31"
+          ],
+          "electrons": 1
+        },
+        {
+          "id": "P2b",
+          "from": "hbr_prop:31-32",
+          "to": [
+            "bromopropyl:2",
+            "hbr_prop:31"
+          ],
+          "electrons": 1
+        },
+        {
+          "id": "P2c",
+          "from": "hbr_prop:31-32",
+          "to": "hbr_prop:32",
+          "electrons": 1
+        }
+      ]
+    },
+    {
+      "id": "P2P",
+      "title": "1-Bromopropane + regenerated Br radical",
+      "species": [
+        {
+          "id": "product",
+          "smiles": "[Br:22][CH2:1][CH:2]([H:31])[CH3:3]",
+          "show": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "id": "bromine_regenerated",
+          "smiles": "[Br:32]",
+          "radicals": {
+            "32": 1
+          },
+          "radical_angles": {
+            "32": 90
+          },
+          "near": {
+            "atom": "product:3",
+            "dir": 0,
+            "dist": 4
+          }
+        }
+      ],
+      "texts": [
+        {
+          "text": "+",
+          "near": "product:3",
+          "dir": 0,
+          "dist": 2
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "I1",
+      "to": "I1P",
+      "above": "heat or light"
+    },
+    {
+      "from": "I2",
+      "to": "I2P"
+    },
+    {
+      "from": "P1",
+      "to": "P1P"
+    },
+    {
+      "from": "P2",
+      "to": "P2P"
+    }
+  ]
+}

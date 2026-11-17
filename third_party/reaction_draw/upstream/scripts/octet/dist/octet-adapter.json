@@ -1,0 +1,151 @@
+{
+ "page": "octet-adapter.html",
+ "page_bytes": 578197,
+ "page_sha256": "d8bb69aaba3e09bae48152109e5fbfd81da21d1ddc1fbad8e742f3a2c63071da",
+ "octet_draw": {
+  "repository": "https://github.com/SamChemMan/Octet-Draw",
+  "commit": "934719abf213e0a8c9725256338bcbc0f305cab6",
+  "version": "1.1.1",
+  "pinned": "934719abf213e0a8c9725256338bcbc0f305cab6"
+ },
+ "esbuild": "0.28.2",
+ "adapter_sha256": "e30bc7ba90daf6755bf03a518ef182c96e9eead77ac8f8fd6488eda88729a018",
+ "stand_ins": [
+  "indigo-ketcher",
+  "@tauri-apps/api/core"
+ ],
+ "inputs": [
+  {
+   "file": "adapter.ts",
+   "bytes_in_page": 97530
+  },
+  {
+   "file": "Octet-Draw/package.json",
+   "bytes_in_page": 787
+  },
+  {
+   "file": "Octet-Draw/src/arial.ts",
+   "bytes_in_page": 695
+  },
+  {
+   "file": "Octet-Draw/src/axial.ts",
+   "bytes_in_page": 30
+  },
+  {
+   "file": "Octet-Draw/src/cdx.ts",
+   "bytes_in_page": 14214
+  },
+  {
+   "file": "Octet-Draw/src/cdxml.ts",
+   "bytes_in_page": 169571
+  },
+  {
+   "file": "Octet-Draw/src/cdxtags.ts",
+   "bytes_in_page": 20163
+  },
+  {
+   "file": "Octet-Draw/src/charset.ts",
+   "bytes_in_page": 3218
+  },
+  {
+   "file": "Octet-Draw/src/chem.ts",
+   "bytes_in_page": 2468
+  },
+  {
+   "file": "Octet-Draw/src/cip.ts",
+   "bytes_in_page": 2621
+  },
+  {
+   "file": "Octet-Draw/src/clean2d.ts",
+   "bytes_in_page": 104
+  },
+  {
+   "file": "Octet-Draw/src/common.ts",
+   "bytes_in_page": 27166
+  },
+  {
+   "file": "Octet-Draw/src/cycle.ts",
+   "bytes_in_page": 8231
+  },
+  {
+   "file": "Octet-Draw/src/docstyle.ts",
+   "bytes_in_page": 8689
+  },
+  {
+   "file": "Octet-Draw/src/edit.ts",
+   "bytes_in_page": 8508
+  },
+  {
+   "file": "Octet-Draw/src/export.ts",
+   "bytes_in_page": 5810
+  },
+  {
+   "file": "Octet-Draw/src/file.ts",
+   "bytes_in_page": 39847
+  },
+  {
+   "file": "Octet-Draw/src/isotopes.ts",
+   "bytes_in_page": 7029
+  },
+  {
+   "file": "Octet-Draw/src/jcamp.ts",
+   "bytes_in_page": 49
+  },
+  {
+   "file": "Octet-Draw/src/labels.ts",
+   "bytes_in_page": 7675
+  },
+  {
+   "file": "Octet-Draw/src/mass.ts",
+   "bytes_in_page": 256
+  },
+  {
+   "file": "Octet-Draw/src/measured.ts",
+   "bytes_in_page": 18194
+  },
+  {
+   "file": "Octet-Draw/src/metals.ts",
+   "bytes_in_page": 1740
+  },
+  {
+   "file": "Octet-Draw/src/oct.ts",
+   "bytes_in_page": 3092
+  },
+  {
+   "file": "Octet-Draw/src/pageplot.ts",
+   "bytes_in_page": 3744
+  },
+  {
+   "file": "Octet-Draw/src/query.ts",
+   "bytes_in_page": 7829
+  },
+  {
+   "file": "Octet-Draw/src/reaction.ts",
+   "bytes_in_page": 14387
+  },
+  {
+   "file": "Octet-Draw/src/render.ts",
+   "bytes_in_page": 94282
+  },
+  {
+   "file": "Octet-Draw/src/richtext.ts",
+   "bytes_in_page": 3150
+  },
+  {
+   "file": "Octet-Draw/src/rings.ts",
+   "bytes_in_page": 3666
+  },
+  {
+   "file": "Octet-Draw/src/spectrumplot.ts",
+   "bytes_in_page": 1411
+  },
+  {
+   "file": "Octet-Draw/src/stoich.ts",
+   "bytes_in_page": 1550
+  },
+  {
+   "file": "octet-stub:indigo-ketcher/binaryWasmNoRender",
+   "bytes_in_page": 52
+  }
+ ]
+}

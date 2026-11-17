@@ -146,6 +146,7 @@ If a skill is missing from this list but present in the repo, the catalog is reg
 | [`pydeseq2`](../user-guide/skills/bundled/science/science-transcriptomics-pydeseq2.md) | Analyze differential expression from bulk gene counts. | `science/transcriptomics/pydeseq2` |
 | [`pysam`](../user-guide/skills/bundled/science/science-genomics-pysam.md) | Inspect and process sequencing files with pysam. | `science/genomics/pysam` |
 | [`rdkit`](../user-guide/skills/bundled/science/science-chemistry-rdkit.md) | Inspect molecular structures, descriptors, and similarity. | `science/chemistry/rdkit` |
+| [`reaction-draw`](../user-guide/skills/bundled/science/science-chemistry-reaction-draw.md) | Draw chemical structures and reaction mechanisms. | `science/chemistry/reaction-draw` |
 | [`scanpy`](../user-guide/skills/bundled/science/science-single-cell-scanpy.md) | Analyze single-cell data with QC, clustering, and markers. | `science/single-cell/scanpy` |
 | [`scientific-critical-thinking`](../user-guide/skills/bundled/science/science-research-scientific-critical-thinking.md) | Assess evidence quality, bias, confounding, and claims. | `science/research/scientific-critical-thinking` |
 | [`scientific-software-integration`](../user-guide/skills/bundled/science/science-scientific-software-integration.md) | Use when adding scientific software as agent tools. | `science/scientific-software-integration` |

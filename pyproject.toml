@@ -824,6 +824,7 @@ include = [
   "plugins",
   "plugins.*",
   "third_party.agriformulations",
+  "third_party.reaction_draw",
   "providers",
   "providers.*",
   "sci_platform",
@@ -836,6 +837,11 @@ include = [
 
 [tool.setuptools.package-data]
 "third_party.agriformulations" = ["*.whl", "README.md", "manifest.json"]
+"third_party.reaction_draw" = [
+  "LICENSE", "NOTICE", "README.md", "provenance.json", "runtime/*.toml", "runtime/*.lock",
+  "upstream/**/*.py", "upstream/**/*.json", "upstream/**/*.md", "upstream/**/*.html",
+  "upstream/**/*.png", "upstream/**/*.ts", "upstream/**/*.mjs", "upstream/**/LICENSE", "upstream/**/NOTICE",
+]
 sci_cli = [
   "observability/schemas/*.json",
   "data/*.json",

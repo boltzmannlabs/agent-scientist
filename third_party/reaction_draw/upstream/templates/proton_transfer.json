@@ -1,0 +1,62 @@
+{
+  "format": 2,
+  "name": "proton_transfer",
+  "source": "Generic general-base proton transfer. Replace the residue, water/protonation states and arrow targets from the paper; the equilibrium position is unspecified.",
+  "panels": [
+    {
+      "id": "R",
+      "title": "General base and water",
+      "species": [
+        {
+          "id": "base",
+          "smiles": "[*:31][CH2:32][C:33]1=[CH:34][N:35]=[CH:36][NH:37]1",
+          "residue": {
+            "31": "His"
+          },
+          "note": "Replace His with the paper's residue label at this root; keep the reacting atoms explicit."
+        },
+        {
+          "id": "water",
+          "smiles": "[O:51]([H:52])[H:53]"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A1",
+          "from": "base:35",
+          "to": "water:52"
+        },
+        {
+          "id": "A2",
+          "from": "water:51-52",
+          "to": "water:51"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "Protonated base and hydroxide",
+      "species": [
+        {
+          "id": "base",
+          "smiles": "[*:31][CH2:32][C:33]1=[CH:34][N+:35]([H:52])=[CH:36][NH:37]1",
+          "residue": {
+            "31": "His"
+          }
+        },
+        {
+          "id": "water",
+          "smiles": "[O-:51][H:53]"
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "R",
+      "to": "P",
+      "kind": "equilibrium",
+      "above": "proton transfer"
+    }
+  ]
+}

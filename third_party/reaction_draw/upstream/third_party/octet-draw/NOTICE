@@ -1,0 +1,52 @@
+Octet Draw
+https://github.com/SamChemMan/Octet-Draw
+Licensed under the Apache License, Version 2.0. Octet Draw's LICENSE file at the commit below is the same Apache
+License 2.0 text as LICENSE at the top of this skill.
+
+What this repository contains of Octet Draw
+-------------------------------------------
+scripts/octet/dist/octet-adapter.html is one HTML page that holds a JavaScript bundle, made by
+scripts/octet/build.mjs with esbuild 0.28.2 from
+
+  * scripts/octet/adapter.ts (this repository's adapter), and
+  * these files of Octet Draw at commit 934719abf213e0a8c9725256338bcbc0f305cab6 (version 1.1.1), imported unchanged
+    through the build alias "octet-src": src/arial.ts, src/axial.ts, src/cdx.ts, src/cdxml.ts, src/cdxtags.ts,
+    src/charset.ts, src/chem.ts, src/cip.ts, src/clean2d.ts, src/common.ts, src/cycle.ts, src/docstyle.ts,
+    src/edit.ts, src/export.ts, src/file.ts, src/isotopes.ts, src/jcamp.ts, src/labels.ts, src/mass.ts,
+    src/measured.ts, src/metals.ts, src/oct.ts, src/pageplot.ts, src/query.ts, src/reaction.ts, src/render.ts,
+    src/richtext.ts, src/rings.ts, src/spectrumplot.ts, src/stoich.ts, and package.json (read for its version).
+
+esbuild compiles the TypeScript to JavaScript, removes code that is not used and does not keep comments.
+scripts/octet/dist/octet-adapter.json records the commit, the esbuild version, the SHA-256 of the page and of
+adapter.ts, and the number of bytes each file adds to the page.
+
+scripts/octet/adapter.ts calls Octet Draw's modules. Its drawing of the structure (one SVG path for each kind and
+color of ink, polygons written as M/L/Z paths) follows how Octet Draw's editor (src/Editor.tsx) draws a structure.
+
+What was changed
+----------------
+  * No Octet Draw source file was modified.
+  * The adapter uses Octet's dashed single/double bonds and square brackets for optional transition states.
+    It retains their input hydrogen counts in a native annotation and adds standard NumHydrogens attributes to
+    the TS nodes of Octet's CDXML output before writeOct saves it; Octet's source remains unchanged.
+  * Two imports that only Octet Draw's desktop app needs are replaced at build time by small stand-ins written in
+    build.mjs, so that no third-party package ends up in the page:
+      - "indigo-ketcher" (the chemistry engine that src/chem.ts starts when it is imported): the stand-in returns an
+        empty object; the adapter uses only chem.ts's glyph measurer, which does not need the engine;
+      - "@tauri-apps/api/core" (imported by src/export.ts for the desktop app's clipboard and file functions): the
+        stand-in throws "desktop-only function" if it is called; the SVG export that the adapter uses does not call it.
+  * The "// <source path>" comment that esbuild writes above each module is removed, and a one-line banner that
+    names Octet Draw, the commit and its license is put at the top of the script.
+
+Notices kept from the bundled files
+-----------------------------------
+Octet Draw's LICENSE has no separate copyright line, and Octet Draw has no NOTICE file at this commit.
+src/clean2d.ts of Octet Draw (a TypeScript port of Indigo's MoleculeCleaner2d) carries this notice, kept here:
+  Copyright (C) from 2009 to Present EPAM Systems. Licensed under the Apache License, Version 2.0
+  (http://www.apache.org/licenses/LICENSE-2.0).
+
+Third-party code in the page
+----------------------------
+None besides Octet Draw: the two npm packages Octet Draw's files import here (indigo-ketcher and @tauri-apps/api)
+are replaced by the stand-ins above. Rebuilding the page needs the npm package esbuild (MIT), which is a build tool
+and is not part of the page.

@@ -1,0 +1,253 @@
+{
+  "format": 2,
+  "name": "figure",
+  "source": "Standard textbook hydroxide-catalysed self-aldol condensation of acetaldehyde, including E1cB dehydration; constructed for the user request (no paper supplied).",
+  "expected_stereo": {
+    "aldol:5": "unspecified"
+  },
+  "panels": [
+    {
+      "id": "R",
+      "title": "1. Enolate formation",
+      "species": [
+        {
+          "id": "aldol",
+          "smiles": "[C:1]([H:7])([H:8])([H:9])[CH:2]=[O:3]"
+        },
+        {
+          "id": "base",
+          "smiles": "[O-:10][H:11]"
+        },
+        {
+          "id": "acceptor",
+          "smiles": "[CH3:4][CH:5]=[O:6]",
+          "show": [
+            4
+          ],
+          "near": {
+            "atom": "aldol:2",
+            "dir": 270,
+            "dist": 3.0
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "a1",
+          "from": "base:10",
+          "to": "aldol:7"
+        },
+        {
+          "id": "a2",
+          "from": "aldol:1-7",
+          "to": "aldol:1-2"
+        },
+        {
+          "id": "a3",
+          "from": "aldol:2=3",
+          "to": "aldol:3"
+        }
+      ]
+    },
+    {
+      "id": "E",
+      "title": "2. Carbon-carbon bond formation",
+      "species": [
+        {
+          "id": "aldol",
+          "smiles": "[C:1]([H:8])([H:9])=[CH:2][O-:3]"
+        },
+        {
+          "id": "acceptor",
+          "smiles": "[CH3:4][CH:5]=[O:6]",
+          "show": [
+            4
+          ]
+        },
+        {
+          "id": "base",
+          "smiles": "[O:10]([H:7])[H:11]"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "a4",
+          "from": "aldol:3",
+          "to": "aldol:2-3"
+        },
+        {
+          "id": "a5",
+          "from": "aldol:1=2",
+          "to": "acceptor:5"
+        },
+        {
+          "id": "a6",
+          "from": "acceptor:5=6",
+          "to": "acceptor:6"
+        }
+      ]
+    },
+    {
+      "id": "A",
+      "title": "3. Alkoxide protonation",
+      "species": [
+        {
+          "id": "aldol",
+          "smiles": "[C:1]([H:8])([H:9])([CH:2]=[O:3])[CH:5]([O-:6])[CH3:4]",
+          "show": [
+            4
+          ]
+        },
+        {
+          "id": "base",
+          "smiles": "[O:10]([H:7])[H:11]"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "a7",
+          "from": "aldol:6",
+          "to": "base:7"
+        },
+        {
+          "id": "a8",
+          "from": "base:10-7",
+          "to": "base:10"
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "title": "4. Alpha-deprotonation",
+      "species": [
+        {
+          "id": "aldol",
+          "smiles": "[C:1]([H:8])([H:9])([CH:2]=[O:3])[CH:5]([O:6][H:7])[CH3:4]",
+          "show": [
+            4
+          ]
+        },
+        {
+          "id": "base",
+          "smiles": "[O-:10][H:11]"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "a9",
+          "from": "base:10",
+          "to": "aldol:8"
+        },
+        {
+          "id": "a10",
+          "from": "aldol:1-8",
+          "to": "aldol:1-2"
+        },
+        {
+          "id": "a11",
+          "from": "aldol:2=3",
+          "to": "aldol:3"
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "title": "5. E1cB elimination",
+      "species": [
+        {
+          "id": "aldol",
+          "smiles": "[C:1]([H:9])(=[CH:2][O-:3])[CH:5]([O:6][H:7])[CH3:4]",
+          "show": [
+            4
+          ]
+        },
+        {
+          "id": "base",
+          "smiles": "[O:10]([H:8])[H:11]"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "a12",
+          "from": "aldol:3",
+          "to": "aldol:2-3"
+        },
+        {
+          "id": "a13",
+          "from": "aldol:1=2",
+          "to": "aldol:1-5"
+        },
+        {
+          "id": "a14",
+          "from": "aldol:5-6",
+          "to": "aldol:6"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "6. (E)-Crotonaldehyde",
+      "species": [
+        {
+          "id": "crotonaldehyde",
+          "smiles": "[O:3]=[CH:2]/[C:1]([H:9])=[CH:5]/[CH3:4]",
+          "show": [
+            4
+          ],
+          "expected_stereo": {
+            "1=5": "E"
+          }
+        },
+        {
+          "id": "hydroxide",
+          "smiles": "[O-:6][H:7]"
+        },
+        {
+          "id": "base",
+          "smiles": "[O:10]([H:8])[H:11]"
+        }
+      ],
+      "arrows": []
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "R",
+      "to": "E",
+      "kind": "equilibrium"
+    },
+    {
+      "from": "E",
+      "to": "A",
+      "kind": "equilibrium"
+    },
+    {
+      "from": "A",
+      "to": "B",
+      "kind": "equilibrium"
+    },
+    {
+      "from": "B",
+      "to": "D",
+      "kind": "equilibrium"
+    },
+    {
+      "from": "D",
+      "to": "P",
+      "kind": "single",
+      "above": "heat"
+    }
+  ],
+  "rows": [
+    [
+      "R",
+      "E",
+      "A"
+    ],
+    [
+      "B",
+      "D",
+      "P"
+    ]
+  ]
+}

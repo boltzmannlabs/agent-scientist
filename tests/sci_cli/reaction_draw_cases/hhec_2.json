@@ -1,0 +1,284 @@
+{
+  "format": 2,
+  "name": "hhec_mechanism",
+  "source": "Hopmann and Himo, J. Chem. Theory Comput. 2008, 4, 1129\u20131137, DOI 10.1021/ct8000443; Scheme 2 p.1131, computed Arg+/Tyr- reactant pp.1130\u20131131, proposed regeneration p.1135.",
+  "expected_stereo": {
+    "sub:1": "R"
+  },
+  "rows": [
+    [
+      "A",
+      "B"
+    ],
+    [
+      "C",
+      "D"
+    ]
+  ],
+  "panels": [
+    {
+      "id": "A",
+      "title": "1. Activation of the catalytic pair",
+      "species": [
+        {
+          "id": "tyr",
+          "smiles": "[*:21][CH2:22][c:23]1[cH:24][cH:25][c:26]([O:29][H:38])[cH:27][cH:28]1",
+          "residue": {
+            "21": "Tyr145"
+          }
+        },
+        {
+          "id": "arg",
+          "smiles": "[*:31][NH:32][C:33]([NH2:34])=[NH:35]",
+          "residue": {
+            "31": "Arg149"
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "a1",
+          "from": "arg:35",
+          "to": "tyr:38"
+        },
+        {
+          "id": "a2",
+          "from": "tyr:29-38",
+          "to": "tyr:29"
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "title": "2. (R)-2-Chloro-1-phenylethanol",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[c:6]1([C@@H:1]([O:3][H:5])[CH2:2][Cl:4])[cH:7][cH:8][cH:9][cH:10][cH:11]1"
+        },
+        {
+          "id": "tyr",
+          "smiles": "[*:21][CH2:22][c:23]1[cH:24][cH:25][c:26]([O-:29])[cH:27][cH:28]1",
+          "residue": {
+            "21": "Tyr145"
+          },
+          "offset": [
+            -9,
+            -1.73
+          ]
+        },
+        {
+          "id": "arg",
+          "smiles": "[*:31][NH:32][C:33]([NH2:34])=[NH+:35][H:38]",
+          "residue": {
+            "31": "Arg149"
+          },
+          "offset": [
+            -9,
+            -1.73
+          ]
+        },
+        {
+          "id": "ser",
+          "smiles": "[*:41][CH2:42][O:43][H:44]",
+          "residue": {
+            "41": "Ser132"
+          }
+        }
+      ],
+      "hbonds": [
+        [
+          "arg:38",
+          "tyr:29"
+        ],
+        [
+          "ser:44",
+          "sub:3"
+        ]
+      ],
+      "arrows": [
+        {
+          "id": "b1",
+          "from": "tyr:29",
+          "to": "sub:5"
+        },
+        {
+          "id": "b2",
+          "from": "sub:3-5",
+          "to": [
+            "sub:3",
+            "sub:2"
+          ]
+        },
+        {
+          "id": "b4",
+          "from": "sub:2-4",
+          "to": "sub:4"
+        }
+      ],
+      "lone_pairs": [
+        "tyr:29"
+      ]
+    },
+    {
+      "id": "C",
+      "title": "3. (R)-Styrene oxide + chloride",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[c:6]1([C@:1]2([H:12])[CH2:2][O:3]2)[cH:7][cH:8][cH:9][cH:10][cH:11]1",
+          "xy": {
+            "6": [
+              0.0,
+              0.0
+            ],
+            "1": [
+              -0.998,
+              0.06
+            ],
+            "12": [
+              -1.113,
+              1.054
+            ],
+            "2": [
+              -1.231,
+              -0.912
+            ],
+            "3": [
+              -1.957,
+              -0.225
+            ],
+            "7": [
+              0.551,
+              0.835
+            ],
+            "8": [
+              1.549,
+              0.775
+            ],
+            "9": [
+              1.996,
+              -0.119
+            ],
+            "10": [
+              1.445,
+              -0.954
+            ],
+            "11": [
+              0.447,
+              -0.894
+            ]
+          },
+          "keep_h": [
+            12
+          ]
+        },
+        {
+          "id": "tyr",
+          "smiles": "[*:21][CH2:22][c:23]1[cH:24][cH:25][c:26]([O:29][H:5])[cH:27][cH:28]1",
+          "residue": {
+            "21": "Tyr145"
+          }
+        },
+        {
+          "id": "arg",
+          "smiles": "[*:31][NH:32][C:33]([NH2:34])=[NH+:35][H:38]",
+          "residue": {
+            "31": "Arg149"
+          }
+        },
+        {
+          "id": "ser",
+          "smiles": "[*:41][CH2:42][O:43][H:44]",
+          "residue": {
+            "41": "Ser132"
+          }
+        },
+        {
+          "id": "chloride",
+          "smiles": "[Cl-:4]",
+          "near": "sub:2"
+        }
+      ],
+      "hbonds": [
+        [
+          "arg:38",
+          "tyr:29"
+        ],
+        [
+          "ser:44",
+          "sub:3"
+        ]
+      ],
+      "arrows": [
+        {
+          "id": "c1",
+          "from": "tyr:29-5",
+          "to": "tyr:29"
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "title": "4. Regenerated catalytic pair",
+      "species": [
+        {
+          "id": "tyr",
+          "smiles": "[*:21][CH2:22][c:23]1[cH:24][cH:25][c:26]([O-:29])[cH:27][cH:28]1",
+          "residue": {
+            "21": "Tyr145"
+          }
+        },
+        {
+          "id": "arg",
+          "smiles": "[*:31][NH:32][C:33]([NH2:34])=[NH+:35][H:38]",
+          "residue": {
+            "31": "Arg149"
+          }
+        },
+        {
+          "id": "bulk",
+          "smiles": "[H+:5]",
+          "near": {
+            "atom": "tyr:29",
+            "dir": 0,
+            "dist": 3
+          }
+        }
+      ],
+      "hbonds": [
+        [
+          "arg:38",
+          "tyr:29"
+        ]
+      ],
+      "texts": [
+        {
+          "text": "to bulk solvent",
+          "near": "bulk:5",
+          "dir": 270,
+          "dist": 1.2
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "A",
+      "to": "B",
+      "above": "activation / substrate binding"
+    },
+    {
+      "from": "B",
+      "to": "C",
+      "above": "concerted epoxide formation",
+      "below": "intramolecular S_{N}2"
+    },
+    {
+      "from": "C",
+      "to": "D",
+      "above": "proton / product release",
+      "below": "proton pathway unspecified"
+    }
+  ]
+}

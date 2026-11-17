@@ -1,0 +1,67 @@
+{
+  "format": 2,
+  "name": "chorismate_mutase_mechanism",
+  "source": "Ranaghan et al., Org. Biomol. Chem. 2004, 2, 968\u2013980, DOI 10.1039/b313759g. Chemistry and relative stereochemistry: Fig. 1, p. 968; atom labels: Fig. 2, p. 969. Catalytic interpretation: pp. 972, 979. Curved arrows added to express the concerted Claisen rearrangement; no discrete intermediate is proposed.",
+  "panels": [
+    {
+      "id": "R",
+      "title": "Chorismate",
+      "species": [
+        {
+          "id": "substrate",
+          "smiles": "[C:3]1([C:6](=[O:11])[O-:12])=[CH:2][C@@H:10]([O:13][C:7](=[CH2:9])[C:8](=[O:14])[O-:15])[C@H:1]([OH:16])[CH:4]=[CH:5]1"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A1",
+          "from": "substrate:10-13",
+          "to": "substrate:13-7"
+        },
+        {
+          "id": "A2",
+          "from": "substrate:7-9",
+          "to": [
+            "substrate:9",
+            "substrate:3"
+          ]
+        },
+        {
+          "id": "A3",
+          "from": "substrate:3-2",
+          "to": "substrate:2-10"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "Prephenate",
+      "species": [
+        {
+          "id": "substrate",
+          "smiles": "[C@:3]1([C:6](=[O:11])[O-:12])([CH2:9][C:7](=[O:13])[C:8](=[O:14])[O-:15])[CH:2]=[CH:10][C@@H:1]([OH:16])[CH:4]=[CH:5]1"
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "R",
+      "to": "P",
+      "above": "Chorismate mutase",
+      "below": "Concerted [3,3] shift",
+      "length": 8
+    }
+  ],
+  "expected_stereo": {
+    "R.substrate:10": "R",
+    "R.substrate:1": "R",
+    "P.substrate:3": "s",
+    "P.substrate:1": "s"
+  },
+  "numbers": {
+    "13": "O3",
+    "3": "C3",
+    "9": "C9"
+  }
+}

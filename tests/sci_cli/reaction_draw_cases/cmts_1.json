@@ -1,0 +1,154 @@
+{
+  "format": 2,
+  "name": "chorismate_mutase_mechanism",
+  "source": "Ranaghan et al., Org. Biomol. Chem. 2004, 2, 968\u2013980, DOI 10.1039/b313759g; Figs. 1\u20132, pp. 968\u2013969, TS stabilization discussion p. 972. Schematic chair-like TS; partial display bonds are not calculated bond orders.",
+  "panels": [
+    {
+      "id": "R",
+      "title": "Chorismate (diaxial conformer)",
+      "species": [
+        {
+          "id": "substrate",
+          "smiles": "[C:3]1([C:6](=[O:11])[O-:12])=[CH:2][C@@H:10]([O:13][C:7](=[CH2:9])[C:8](=[O:14])[O-:15])[C@H:1]([OH:16])[CH:4]=[CH:5]1",
+          "expected_stereo": {
+            "10": "R",
+            "1": "R"
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A1",
+          "from": "substrate:10-13",
+          "to": "substrate:13-7"
+        },
+        {
+          "id": "A2",
+          "from": "substrate:7-9",
+          "to": [
+            "substrate:9",
+            "substrate:3"
+          ]
+        },
+        {
+          "id": "A3",
+          "from": "substrate:3-2",
+          "to": "substrate:2-10"
+        }
+      ]
+    },
+    {
+      "id": "TS",
+      "title": "Chair-like transition state",
+      "species": [
+        {
+          "id": "state",
+          "smiles": "[C:3]12([*-:6])[CH:2][CH:10]([O:13][C:7]([CH2:9]2)[*-:8])[CH:1]([OH:16])[CH:4]=[CH:5]1",
+          "ts": true,
+          "bond_style": {
+            "3-9": "partial",
+            "10-13": "partial",
+            "3-2": "1.5",
+            "2-10": "1.5",
+            "13-7": "1.5",
+            "7-9": "1.5"
+          },
+          "xy": {
+            "3": [
+              1.6,
+              0.5
+            ],
+            "2": [
+              1.9,
+              1.5
+            ],
+            "10": [
+              1,
+              1
+            ],
+            "1": [
+              0,
+              1
+            ],
+            "4": [
+              -0.25,
+              0
+            ],
+            "5": [
+              0.75,
+              0
+            ],
+            "13": [
+              1.27,
+              -0.35
+            ],
+            "7": [
+              1,
+              -1.75
+            ],
+            "9": [
+              1.9,
+              -1.25
+            ],
+            "6": [
+              2.75,
+              0.7
+            ],
+            "8": [
+              0.134,
+              -2.25
+            ],
+            "16": [
+              0,
+              2.1
+            ]
+          },
+          "abbrev": {
+            "6": {
+              "text": "CO2",
+              "element": "C",
+              "chemical": true,
+              "charge": -1
+            },
+            "8": {
+              "text": "CO2",
+              "element": "C",
+              "chemical": true,
+              "charge": -1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "Prephenate",
+      "species": [
+        {
+          "id": "product",
+          "smiles": "[C@:3]1([C:6](=[O:11])[O-:12])([CH2:9][C:7](=[O:13])[C:8](=[O:14])[O-:15])[CH:2]=[CH:10][C@@H:1]([OH:16])[CH:4]=[CH:5]1",
+          "expected_stereo": {
+            "3": "s",
+            "1": "s"
+          }
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "R",
+      "to": "TS",
+      "above": "[3,3] rearrangement",
+      "below": "chorismate mutase"
+    },
+    {
+      "from": "TS",
+      "to": "P"
+    }
+  ],
+  "numbers": {
+    "3": "3",
+    "9": "9"
+  }
+}

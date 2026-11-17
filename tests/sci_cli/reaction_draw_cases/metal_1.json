@@ -1,0 +1,268 @@
+{
+  "format": 2,
+  "name": "carbonic_anhydrase_II_hydration",
+  "source": "User-requested canonical mechanism; Kim et al., Tracking solvent and protein movement during CO2 release in carbonic anhydrase II crystals, PNAS (2016), expressions 1 and 2, https://pmc.ncbi.nlm.nih.gov/articles/PMC4868437/. Net His64 proton transfer condenses the intervening water relay. Initial bicarbonate binding and ligand exchange are schematic.",
+  "panels": [
+    {
+      "id": "A",
+      "title": "1. Zinc-bound hydroxide attacks CO_{2}",
+      "species": [
+        {
+          "id": "zn",
+          "smiles": "[*:94][Zn+2:1]([*:96])([*:119])[O-:2][H:3]",
+          "bond_style": {
+            "94-1": "coord",
+            "1-96": "coord",
+            "1-119": "coord",
+            "1-2": "coord"
+          },
+          "residue": {
+            "94": "His94",
+            "96": "His96",
+            "119": "His119"
+          },
+          "xy": {
+            "1": [
+              0,
+              0
+            ],
+            "94": [
+              -1.6,
+              -1
+            ],
+            "96": [
+              -1.6,
+              1
+            ],
+            "119": [
+              0,
+              -1.8
+            ]
+          }
+        },
+        {
+          "id": "carbon",
+          "smiles": "[O:11]=[C:10]=[O:12]",
+          "show": [
+            10
+          ]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A1",
+          "from": "zn:2",
+          "to": [
+            "zn:2",
+            "carbon:10"
+          ]
+        },
+        {
+          "id": "A2",
+          "from": "carbon:10-12",
+          "to": "carbon:12"
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "title": "2. Water displaces bicarbonate",
+      "species": [
+        {
+          "id": "zn",
+          "smiles": "[*:94][Zn+2:1]([*:96])([*:119])[O:2]([H:3])[C:10](=[O:11])[O-:12]",
+          "bond_style": {
+            "94-1": "coord",
+            "1-96": "coord",
+            "1-119": "coord",
+            "1-2": "coord"
+          },
+          "residue": {
+            "94": "His94",
+            "96": "His96",
+            "119": "His119"
+          },
+          "xy": {
+            "1": [
+              0,
+              0
+            ],
+            "94": [
+              -1.6,
+              -1
+            ],
+            "96": [
+              -1.6,
+              1
+            ],
+            "119": [
+              0,
+              -1.8
+            ]
+          }
+        },
+        {
+          "id": "water",
+          "smiles": "[O:20]([H:21])[H:22]"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "B1",
+          "from": "zn:1-2",
+          "to": "zn:2"
+        },
+        {
+          "id": "B2",
+          "from": "water:20",
+          "to": [
+            "water:20",
+            "zn:1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "title": "3. Bicarbonate released; proton relay",
+      "species": [
+        {
+          "id": "zn",
+          "smiles": "[*:94][Zn+2:1]([*:96])([*:119])[O:20]([H:21])[H:22]",
+          "bond_style": {
+            "94-1": "coord",
+            "1-96": "coord",
+            "1-119": "coord",
+            "1-20": "coord"
+          },
+          "residue": {
+            "94": "His94",
+            "96": "His96",
+            "119": "His119"
+          },
+          "xy": {
+            "1": [
+              0,
+              0
+            ],
+            "94": [
+              -1.6,
+              -1
+            ],
+            "96": [
+              -1.6,
+              1
+            ],
+            "119": [
+              0,
+              -1.8
+            ]
+          }
+        },
+        {
+          "id": "bicarbonate",
+          "smiles": "[O:2]([H:3])[C:10](=[O:11])[O-:12]",
+          "show": [
+            10
+          ]
+        },
+        {
+          "id": "shuttle",
+          "smiles": "[*:31][CH2:32][C:33]1=[CH:34][N:35]=[CH:36][NH:37]1",
+          "residue": {
+            "31": "His64"
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "C1",
+          "from": "shuttle:35",
+          "to": "zn:21"
+        },
+        {
+          "id": "C2",
+          "from": "zn:20-21",
+          "to": "zn:20"
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "title": "4. Zinc-bound hydroxide regenerated",
+      "species": [
+        {
+          "id": "zn",
+          "smiles": "[*:94][Zn+2:1]([*:96])([*:119])[O-:20][H:22]",
+          "bond_style": {
+            "94-1": "coord",
+            "1-96": "coord",
+            "1-119": "coord",
+            "1-20": "coord"
+          },
+          "residue": {
+            "94": "His94",
+            "96": "His96",
+            "119": "His119"
+          },
+          "xy": {
+            "1": [
+              0,
+              0
+            ],
+            "94": [
+              -1.6,
+              -1
+            ],
+            "96": [
+              -1.6,
+              1
+            ],
+            "119": [
+              0,
+              -1.8
+            ]
+          }
+        },
+        {
+          "id": "shuttle",
+          "smiles": "[*:31][CH2:32][C:33]1=[CH:34][N+:35]([H:21])=[CH:36][NH:37]1",
+          "residue": {
+            "31": "His64"
+          }
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "A",
+      "to": "B",
+      "above": "addition"
+    },
+    {
+      "from": "B",
+      "to": "C",
+      "above": "ligand exchange"
+    },
+    {
+      "from": "C",
+      "to": "D",
+      "above": "net proton transfer"
+    }
+  ],
+  "rows": [
+    [
+      "A",
+      "B"
+    ],
+    [
+      "C",
+      "D"
+    ]
+  ],
+  "drawing": {
+    "charge_circles": false,
+    "dpi": 600
+  }
+}
