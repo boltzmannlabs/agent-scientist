@@ -2226,6 +2226,15 @@ cli:
     footer_roster_compact: "↑↓ · Enter 查看 · Ctrl+T 关闭"
     footer_detail: "Esc 返回列表 · PgUp/PgDn 查看{steer} · x 停止"
     footer_roster: "↑/↓ 选择 · Enter 查看{steer} · x 停止 · q/Ctrl+T 关闭"
+  jobs:
+    heading: "后台任务 · {count} · Ctrl+R 折叠"
+    count: "{count} 个任务"
+    id: "任务：…{id}"
+    last_check: "上次检查：{age}前"
+    next_check: "下次检查：{delay}"
+    check_due: "下次检查已到期"
+    more: "还有 {count} 个后台任务"
+
   dock:
     process_goal_label: "后台进程"
     last_output: "最近输出：{detail}"

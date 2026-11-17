@@ -14,6 +14,8 @@ from sci_cli.config import atomic_config_replace
 from agent.specialist_store import load, save
 from agent.specialist_extensions import extension_home
 
+pytestmark = pytest.mark.usefixtures("released_sci_version")
+
 
 class UI:
     def __init__(self, answers=()):
@@ -128,3 +130,19 @@ def test_manually_prepared_profile_contribution_installs_without_source_credenti
         assert extension_home(installed).parent == b / 'subagent-data'
         assert load(installed.name).package_info['id'] == manifest['id']
         validate(extension_home(installed) / 'package', require_lock=True)
+
+
+@pytest.mark.parametrize("runtime_version", ["unknown", "0.5.0"])
+def test_package_install_preserves_compatibility_gate_before_setup(tmp_path, monkeypatch, runtime_version):
+    import sci_yaml
+    root = example(tmp_path)
+    path = root / "manifest.yaml"
+    manifest = sci_yaml.safe_load(path.read_text(encoding="utf-8-sig"))
+    manifest["sci_requires"] = ">=1.0"
+    path.write_text(sci_yaml.safe_dump(manifest), encoding="utf-8")
+    monkeypatch.setattr("sci_cli.plugins_manifest.running_sci_version", lambda: runtime_version)
+    destination = tmp_path / "uncreated-profile"
+    with pytest.raises(ValueError, match="compatibility requirement"):
+        install(root, destination, SimpleNamespace(agent=None), UI())
+    assert not list((destination / "subagents").glob("*.json"))
+    assert not (destination / "subagent-data").exists()

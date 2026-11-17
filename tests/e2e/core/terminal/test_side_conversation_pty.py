@@ -42,6 +42,7 @@ def test_side_detour_rename_and_return_keep_parent_running(tmp_path):
             child.wait_ready()
             child.submit('parent-warm-question')
             child.wait_for_text('PARENT_WARM_DONE')
+            child.wait_quiet(0.5)
             child.wait_turns_persisted(1)
             child.submit('parent-held-question')
             assert entered.wait(30), child.dump()
@@ -90,6 +91,7 @@ def test_side_detour_rename_and_return_keep_parent_running(tmp_path):
             assert 'PARENT_WARM_DONE' not in child.text()
             child.submit('side-followup-question')
             child.wait_for_text('SIDE_FOLLOWUP_DONE')
+            child.wait_quiet(0.5)
             child.write('side-unsent-draft')
             child.wait_for_text('side-unsent-draft')
             child.write('\x1f')  # Ctrl+/ in legacy terminals
@@ -120,6 +122,11 @@ def test_side_detour_rename_and_return_keep_parent_running(tmp_path):
             assert child.proc.poll() is None
             assert child.exit() == 0
             saved = child.persisted_messages()
+            parent_id = renamed()[0]
+            side_saved = [row for row in saved if row[0] != parent_id]
+            assert any('side-first-question' in row[2] for row in side_saved)
+            assert any('side-followup-question' in row[2] for row in side_saved)
+            saved = [row for row in saved if row[0] == parent_id]
             assert not any('side-first-question' in str(row) or 'side-followup-question' in str(row) for row in saved)
             assert any('PARENT_HELD_DONE' in str(row) for row in saved)
         finally:
@@ -161,7 +168,9 @@ def test_side_tools_and_questions_use_normal_ui_without_answering_parent(tmp_pat
     def respond(record):
         messages = record['body'].get('messages') or []
         last_user = max(i for i, m in enumerate(messages) if m.get('role') == 'user')
-        question = str(messages[last_user].get('content'))
+        # The first side turn includes the pending parent context before the
+        # actual question. Route the fake by the submitted question, not that context.
+        question = str(messages[last_user].get('content')).rsplit('\n\n', 1)[-1]
         results = [m for m in messages[last_user + 1:] if m.get('role') == 'tool']
         if 'parent-needs-answer' in question:
             if results:
@@ -238,7 +247,7 @@ def test_side_tools_and_questions_use_normal_ui_without_answering_parent(tmp_pat
             child.wait_turns_persisted(2)
             assert child.exit() == 0
             assert not any('side-use-tools' in str(row) or 'SIDE_TOOL_FINISHED' in str(row)
-                           for row in child.persisted_messages())
+                           for row in child.persisted_messages() if not row[0].startswith('side-'))
         finally:
             release.touch()
             child.close()

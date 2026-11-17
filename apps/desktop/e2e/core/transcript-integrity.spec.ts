@@ -29,6 +29,7 @@ import {
   recordWebSockets,
   routePrimaryWebSocket,
   send,
+  steerQueued,
   splitProfileRoute,
   startTcpProxy,
   storedSessionForMarker,
@@ -132,6 +133,7 @@ test('transcript oracle holds across every transition', async () => {
       await provider.streamStarted(U(4))
       await expect(viewport(page)).toContainText(A(4))
       await send(page, `${U(5)} change course`, 'Enter', ws)
+      await steerQueued(page)
       await finished(U(5))
       hold.open()
       sessionA.expectUserMarkers.push(U(4), U(5))

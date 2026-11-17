@@ -195,6 +195,7 @@ $inheritedPath = $env:PATH
 $cargoBin = Join-Path $cargoHome 'bin'
 $expectedPath = $devDir + '\;' + $inheritedPath
 if ($cargoBin -notin ($expectedPath -split ';')) { $expectedPath = $cargoBin + ';' + $expectedPath }
+$expectedPath = $msvcBin + ';' + $expectedPath
 Initialize-SciArm64BuildTools -StateRoot $Root -OpenSSLRoot $openssl
 if ($env:CARGO_HOME -ne $cargoHome -or $env:RUSTUP_HOME -ne $rustupHome) { throw 'Rust homes lost' }
 if ($env:RUSTUP_TOOLCHAIN -ne 'caller-selected-toolchain') { throw 'Caller Rust toolchain lost' }
@@ -215,6 +216,17 @@ foreach ($i in 1..3) {
         if ((Get-Item "env:$name").Value -cne $prepared[$name]) { throw "Repeated setup changed $name" }
     }
 }
+# A later Git Bash step can shadow link.exe without invalidating VS markers.
+$gitBin = Join-Path $Root 'git usr bin'
+New-Item -ItemType Directory -Force $gitBin | Out-Null
+[IO.File]::WriteAllText((Join-Path $gitBin 'link.exe'), 'wrong linker')
+$env:PATH = $gitBin + ';' + $env:PATH
+Initialize-SciArm64BuildTools -StateRoot $Root -OpenSSLRoot $openssl
+if (($env:PATH -split ';')[0] -ne $msvcBin) { throw 'Git linker shadows MSVC' }
+if ($gitBin -notin ($env:PATH -split ';')) { throw 'Inherited Git tools lost' }
+$repairedPath = $env:PATH
+Initialize-SciArm64BuildTools -StateRoot $Root -OpenSSLRoot $openssl
+if ($env:PATH -cne $repairedPath) { throw 'Linker repair is not idempotent' }
 # Inherited VS markers are not sufficient if the SDK, install or architecture differs.
 foreach ($invalid in @('INCLUDE', 'LIB', 'VSCMD_ARG_HOST_ARCH', 'VSCMD_ARG_TGT_ARCH', 'VSINSTALLDIR')) {
     foreach ($name in $prepared.Keys) { Set-Item "env:$name" $prepared[$name] }

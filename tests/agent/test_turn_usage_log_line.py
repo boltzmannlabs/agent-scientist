@@ -3,6 +3,9 @@ provider's response id, and the serving upstream when the route reports one. Exi
 prefix of the line, so the fields are appended and optional."""
 import logging
 from types import SimpleNamespace
+from unittest.mock import MagicMock
+
+import pytest
 
 
 def _agent(tmp_path, monkeypatch):
@@ -64,3 +67,30 @@ def test_forensics_parser_reads_the_new_fields(tmp_path):
     assert [c["n"] for c in calls] == [3, 4]
     assert calls[0]["write"] == 28604 and calls[0]["id"] == "gen-1788636728-qMa1" and calls[0]["upstream"] == "Claude Platform on AWS"
     assert "write" not in calls[1] and "id" not in calls[1]
+
+
+@pytest.mark.parametrize("slot", [None, MagicMock(), {}, {"model": MagicMock()},
+                                  {"model": "actual-aggregator", "provider": "openrouter",
+                                   "base_url": "https://openrouter.ai/api/v1"}])
+def test_only_valid_aggregator_metadata_changes_the_billing_route(tmp_path, monkeypatch, caplog, slot):
+    from agent import turn_usage
+    from agent.usage_pricing import CostResult
+
+    a = _agent(tmp_path, monkeypatch)
+    a.client = SimpleNamespace(last_aggregator_slot=slot)
+    routes = []
+
+    def estimate(model, usage, *, provider, base_url, api_key):
+        routes.append((model, provider, base_url))
+        return CostResult(None, "unknown", "none", "fixture")
+
+    monkeypatch.setattr(turn_usage, "estimate_usage_cost", estimate)
+    expected = ((slot["model"], slot["provider"], slot["base_url"])
+                if isinstance(slot, dict) and isinstance(slot.get("model"), str)
+                else (a.model, a.provider, a.base_url))
+    try:
+        _line(a, caplog, SimpleNamespace(usage=_usage(0, 0, 100), id=None, model=a.model))
+    finally:
+        a.close()
+    assert routes == [expected]
+    assert a.session_input_tokens == 100

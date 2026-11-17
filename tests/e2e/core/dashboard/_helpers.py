@@ -29,6 +29,7 @@ from typing import Any, Callable
 import httpx
 import sci_yaml as yaml
 
+from tests.e2e.core._pm_dependencies import select_test_dependencies
 from tests.fakes.fake_llm_provider import FakeLLMServer
 
 from . import _reaper
@@ -186,8 +187,6 @@ def write_profile_home(p: Profile, extra_config: dict[str, Any] | None = None) -
 
 
 def _select_test_dependencies(sb: Sandbox) -> None:
-    from tests.e2e.core._pm_dependencies import select_test_dependencies
-
     select_test_dependencies(sb.sci_home, REPO_ROOT)
 
 

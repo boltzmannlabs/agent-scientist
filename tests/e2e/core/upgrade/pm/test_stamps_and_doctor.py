@@ -89,14 +89,24 @@ def test_managed_env_sci_can_check_for_updates(updated):
 
 def test_managed_env_sci_reports_the_checkout_as_the_install(updated):
     sb = updated["sb"]
+    # --version is a release label. Inspect install metadata through the same
+    # selected interpreter that owns this generation's console entrypoint.
+    metadata = P.ok(sb.run([sb.python, "-c", (
+        "import json; "
+        "from sci_cli.config import get_project_root, detect_install_method; "
+        "from sci_cli.version_info import get_release_version; "
+        "root = get_project_root(); "
+        "print(json.dumps({'root': str(root), 'method': detect_install_method(root), "
+        "'release': get_release_version()}))"
+    )], timeout=300))
+    info = json.loads(metadata.stdout)
     cp = P.ok(sb.run([_venv_sci(sb), "--version"], timeout=300))
-    shown = re.search(r"Install directory: (.+)", cp.stdout)
-    method = re.search(r"Install method: (.+)", cp.stdout)
+    assert cp.stdout.strip() == f"Agent Scientist {info['release']}", I.describe(cp)
     with known_failure(r"managed-environment sci reports install .*/environments/[0-9a-f]+/workspace",
                        "gated on #122425: the workspace copy carries no install metadata"):
-        assert shown and shown.group(1).strip() == str(sb.checkout) and method and method.group(1).strip() == "git", (
-            f"managed-environment sci reports install {shown and shown.group(1)} "
-            f"(method {method and method.group(1)}), not the checkout {sb.checkout}:\n{cp.stdout}")
+        assert info['root'] == str(sb.checkout) and info['method'] == "git", (
+            f"managed-environment sci reports install {info['root']} "
+            f"(method {info['method']}), not the checkout {sb.checkout}:\n{metadata.stdout}")
 
 
 def test_doctor_on_a_healthy_pm_install_reports_no_command_installation_problem(updated):

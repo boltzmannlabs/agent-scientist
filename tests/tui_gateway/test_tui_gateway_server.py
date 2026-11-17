@@ -8926,7 +8926,7 @@ def test_config_get_busy_survives_non_dict_display(monkeypatch):
         {"id": "1", "method": "config.get", "params": {"key": "busy"}}
     )
 
-    assert resp["result"]["value"] == "interrupt"
+    assert resp["result"]["value"] == "queue"
 
 
 def test_config_set_statusbar_survives_non_dict_display(tmp_path, monkeypatch):

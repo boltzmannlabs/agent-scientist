@@ -15,7 +15,7 @@ def _announce(cli, names):
 
 
 def test_repeated_tool_in_one_batch_prints_once():
-    cli = _make_cli(tool_progress="off")
+    cli = _make_cli(tool_progress="all")
     printed = _announce(cli, ["terminal", "terminal", "terminal", "read_file"])
     assert sum("preparing terminal" in p for p in printed) == 1
     assert sum("preparing read_file" in p for p in printed) == 1

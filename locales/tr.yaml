@@ -2226,6 +2226,15 @@ cli:
     footer_roster_compact: "↑↓ · Enter izle · Ctrl+T kapat"
     footer_detail: "Esc liste · PgUp/PgDn izle{steer} · x durdur"
     footer_roster: "↑/↓ seç · Enter izle{steer} · x durdur · q/Ctrl+T kapat"
+  jobs:
+    heading: "Arka plan görevleri · {count} · Ctrl+R daralt"
+    count: "{count} görev"
+    id: "Görev: …{id}"
+    last_check: "Son kontrol: {age} önce"
+    next_check: "Sonraki kontrol: {delay}"
+    check_due: "Sonraki kontrol zamanı geldi"
+    more: "+{count} arka plan görevi daha"
+
   dock:
     process_goal_label: "arka plan süreci"
     last_output: "son: {detail}"

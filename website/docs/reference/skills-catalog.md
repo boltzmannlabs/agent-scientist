@@ -128,12 +128,16 @@ If a skill is missing from this list but present in the repo, the catalog is reg
 
 | Skill | Description | Path |
 |-------|-------------|------|
+| [`agri-evidence-and-data`](../user-guide/skills/bundled/science/science-agri-evidence-and-data.md) | Research sources and fit formulation observations. | `science/agri-evidence-and-data` |
+| [`agri-formulation-workflow`](../user-guide/skills/bundled/science/science-agri-formulation-workflow.md) | Evaluate and cost-optimize agricultural formulations. | `science/agri-formulation-workflow` |
+| [`agri-models-and-design`](../user-guide/skills/bundled/science/science-agri-models-and-design.md) | Run physical scenarios and constrained design searches. | `science/agri-models-and-design` |
 | [`anndata`](../user-guide/skills/bundled/science/science-single-cell-anndata.md) | Manage annotated matrices and h5ad data structures. | `science/single-cell/anndata` |
 | [`biopython`](../user-guide/skills/bundled/science/science-bioinformatics-biopython.md) | Read biological files and perform sequence data analysis. | `science/bioinformatics/biopython` |
 | [`bioservices`](../user-guide/skills/bundled/science/science-bioinformatics-bioservices.md) | Query biological databases and map record identifiers. | `science/bioinformatics/bioservices` |
 | [`citation-management`](../user-guide/skills/bundled/science/science-research-citation-management.md) | Verify paper metadata and produce clean BibTeX references. | `science/research/citation-management` |
 | [`experimental-design`](../user-guide/skills/bundled/science/science-data-analysis-experimental-design.md) | Plan controls, replication, randomization, and blocking. | `science/data-analysis/experimental-design` |
 | [`exploratory-data-analysis`](../user-guide/skills/bundled/science/science-data-analysis-exploratory-data-analysis.md) | Inspect datasets, missingness, leakage, and distributions. | `science/data-analysis/exploratory-data-analysis` |
+| [`formulation-results`](../user-guide/skills/bundled/science/science-formulation-results.md) | Explain and report formulation optimization results. | `science/formulation-results` |
 | [`genomic-coordinates`](../user-guide/skills/bundled/science/science-genomics-genomic-coordinates.md) | Validate genomic intervals, assemblies, and conversions. | `science/genomics/genomic-coordinates` |
 | [`get-available-resources`](../user-guide/skills/bundled/science/science-computing-get-available-resources.md) | Check effective compute limits before heavy workloads. | `science/computing/get-available-resources` |
 | [`matchms`](../user-guide/skills/bundled/science/science-mass-spectrometry-matchms.md) | Clean and compare tandem mass spectra against libraries. | `science/mass-spectrometry/matchms` |

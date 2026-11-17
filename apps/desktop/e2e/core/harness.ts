@@ -584,6 +584,23 @@ export async function send(
     .toBe('accepted')
 }
 
+/** Explicitly redirect the live turn with the queued text (Enter only queues). */
+export async function steerQueued(page: Page): Promise<void> {
+  const drawer = page.locator('[data-slot="status-drawer-toggle"]')
+
+  if ((await drawer.getAttribute('aria-expanded')) === 'false') {
+    await drawer.click()
+  }
+
+  const section = page.getByRole('button', { name: /^1 Queued$/i })
+
+  if ((await section.getAttribute('aria-expanded')) !== 'true') {
+    await section.click()
+  }
+
+  await page.getByRole('button', { name: 'Steer — redirect the live turn now', exact: true }).click()
+}
+
 export async function currentSessionId(page: Page): Promise<string> {
   return page.evaluate(() => decodeURIComponent(location.hash.replace(/^#\/?/, '').split('?')[0] ?? ''))
 }

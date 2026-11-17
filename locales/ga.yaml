@@ -2226,6 +2226,15 @@ cli:
     footer_roster_compact: "↑↓ · Enter lean · Ctrl+T dún"
     footer_detail: "Esc liosta · PgUp/PgDn lean{steer} · x stop"
     footer_roster: "↑/↓ roghnaigh · Enter lean{steer} · x stop · q/Ctrl+T dún"
+  jobs:
+    heading: "Jabanna cúlra · {count} · Ctrl+R leac"
+    count: "{count} jab"
+    id: "Jab: …{id}"
+    last_check: "Seiceáil dheireanach: {age} ó shin"
+    next_check: "An chéad seiceáil eile: {delay}"
+    check_due: "Tá seiceáil dlite"
+    more: "+{count} jab cúlra eile"
+
   dock:
     process_goal_label: "próiseas cúlra"
     last_output: "is déanaí: {detail}"

@@ -75,10 +75,13 @@ jobs:
             runner: macos-15
           - label: darwin-x64
             runner: macos-15-intel
+          # Use the native hosted runners also exercised by tests-os. The
+          # organization has no larger-runner entitlement; custom 32-core
+          # labels leave these required jobs queued without a matching runner.
           - label: win32-x64
-            runner: windows-latest-32-core
+            runner: windows-latest
           - label: win32-arm64
-            runner: windows-latest-32-arm-core
+            runner: windows-11-arm
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:

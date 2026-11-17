@@ -225,7 +225,7 @@ Use `boltzmann_download(download_url)` for artifacts returned by the current job
 Omit `output_folder` unless the user explicitly requested another destination.
 The connector saves results in the owning profile's persistent workspace `outputs/`
 folder and returns its absolute `output_folder` and actual `output_paths`. Never
-choose `/tmp`, a scratch directory, or a temporary working directory for final
+choose a scratch directory or a temporary working directory for final
 results. Save conversions (such as CSV to FASTA) and verification reports beside
 the downloaded outputs; preserve existing files. This also applies to specialists
 and background continuations. Include the saved paths in the final response.

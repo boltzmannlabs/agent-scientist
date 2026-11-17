@@ -66,7 +66,7 @@ def test_approval_panel_and_hint_follow_the_live_catalog(swapped_catalog, monkey
 
     rendered = "".join(text for _style, text in cli._get_approval_display_fragments())
     assert "TITLE-SWAPPED" in rendered
-    assert "1. ONCE-SWAPPED" in rendered and "2. DENY-SWAPPED" in rendered
+    assert "◉ ONCE-SWAPPED" in rendered and "○ DENY-SWAPPED" in rendered
     assert "Allow once" not in rendered
 
     hint = "".join(text for _style, text in cli._tui_hint_text())

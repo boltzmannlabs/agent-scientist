@@ -120,7 +120,7 @@ def _tui_available() -> bool:
 
 SURFACES = {
     "cli": ["chat", "--cli", "--yolo"],
-    "tui": ["--tui", "--yolo"],
+    "tui": ["--tui", "--native", "--yolo"],
 }
 
 

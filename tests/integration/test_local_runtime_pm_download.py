@@ -41,7 +41,7 @@ def test_live_pinned_cuda_download_pause_resume_and_execute(tmp_path, monkeypatc
 
         def tick(done, total, ranges):
             original(done, total, ranges)
-            snapshots.append((done, total))
+            snapshots.append((done, total, {url: [list(span) for span in spans] for url, spans in ranges.items()}))
         return tick
 
     def observed_stage(job):
@@ -53,7 +53,9 @@ def test_live_pinned_cuda_download_pause_resume_and_execute(tmp_path, monkeypatc
             original(stage, done, total, label)
             if stage == "download" and label == "1/2":
                 first_archive_bytes = done
-            if stage == "download" and label == "2/2" and first_archive_bytes < done < total and not flowing.is_set():
+            # curl reports an unknown total (0) until the archive finishes.
+            # Gate on actual second-archive bytes, independently of that estimate.
+            if stage == "download" and label == "2/2" and first_archive_bytes < done and not flowing.is_set():
                 flowing.set()
                 assert release.wait(30)
         return tick
@@ -82,6 +84,10 @@ def test_live_pinned_cuda_download_pause_resume_and_execute(tmp_path, monkeypatc
         paused = wait_job(client, job_id, {"paused", "done", "error"})
         assert paused["status"] == "paused", paused
         assert binaries.installed_engine("cuda") is None
+        resume_boundary = len(snapshots)
+        first_archive = paused["ranges"][pinned[0]["url"]]
+        first_archive_bytes = sum(end - start for start, end in first_archive)
+        assert first_archive_bytes > 0
         assert client.post("/api/local-models/download/resume", json={"job_id": job_id}).json()["resumed"]
         completed = wait_job(client, job_id, {"done", "error"})
         assert completed["status"] == "done", completed
@@ -90,7 +96,15 @@ def test_live_pinned_cuda_download_pause_resume_and_execute(tmp_path, monkeypatc
     assert engine is not None
     fact = Facts(paths.facts_path()).get("llamacpp-cuda")
     assert fact["artifacts"] == [asset["sha256"] for asset in pinned]
-    assert [done for done, _ in snapshots] == sorted(done for done, _ in snapshots)
+    # curl restarts the interrupted archive; byte counters describe currently
+    # retained bytes, not cumulative traffic. Completed archives must survive.
+    assert len(snapshots) > resume_boundary > 0
+    for done, total, ranges in snapshots:
+        assert done == sum(end - start for spans in ranges.values() for start, end in spans)
+        assert 0 <= done and (total == 0 or done <= total)
+    for done, _total, ranges in snapshots[resume_boundary:]:
+        assert done >= first_archive_bytes
+        assert ranges[pinned[0]["url"]] == first_archive
     assert completed["done_bytes"] == completed["total_bytes"] > 0
     receipt = {"target": pm.current_target(), "tag": engine.tag,
                "download_bytes": completed["done_bytes"], "pause_bytes": paused["done_bytes"],

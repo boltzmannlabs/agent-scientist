@@ -63,8 +63,8 @@ def _frame_problem(tui: TmuxTui, upto: int, para: int) -> str:
     history = tui.rows(history=True)  # inline mode scrolls earlier prompts off the pane
     for t in range(1, upto + 1):
         echo = [r for r in history if f"zq{t}q" in r]
-        if [r.strip() for r in echo] != [f"❯ {PROMPTS[t]}"]:
-            return f"prompt {t} echo rows are {echo!r}, want one row reading '❯ {PROMPTS[t]}'"
+        if [r.strip() for r in echo] != [f"● You: {PROMPTS[t]}"]:
+            return f"prompt {t} echo rows are {echo!r}, want one row reading '● You: {PROMPTS[t]}'"
     return ""
 
 

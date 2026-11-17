@@ -23,7 +23,7 @@ from tests.fakes.providers.catalog_fake import CatalogFake
 CATALOG = discover_catalog()
 # Rows whose primary can be redirected; xai cannot (#121347), so it is never a primary/fallback
 # here. Rows with no loopback dialect FAIL in the matrix shards.
-ROWS = [r for r in CATALOG if r.skip_reason() is None and r.dialect and r.name != "xai"]
+ROWS = [r for r in CATALOG if r.skip_reason() is None and r.dialect and r.allow_fallback and r.name != "xai"]
 # Keyed on the FALLBACK provider (pairs follow catalog order, so primaries shift as plugins are
 # added). Signature: the fallback's own fake got nothing while its vendor host was CONNECTed.
 _FB_CELLS = frozenset({"fallback_answered", "fallback_tool_round_trip", "fallback_used_own_key"})

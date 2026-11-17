@@ -41,7 +41,7 @@ Do not blindly retry either attempt.
 The error does not establish whether Node routing, runtime-field injection, or another
 service component failed in those attempts. A later notebook response rejected a SMILES
 array with HTTP 400: `smiles must be a string type`. The corrected direct payload below
-returned **HTTP 200**, **queued**, and docId `6af59f71042419d6c2a5ed85` (25 credits),
+returned **HTTP 200**, **queued**, and docId `<historical-job-id-redacted>` (25 credits),
 as recorded in the user notebook execution 6. This confirms acceptance without client-supplied
 runtime identifiers, not completed computation or independent verification of their injection.
 CSV mode and prediction outputs remain unverified. Poll the existing job rather than duplicating it.
@@ -53,13 +53,13 @@ The tool remains enabled: accept new user-authorized requests through the normal
 submit → status → download workflow. The earlier missing-output error is historical,
 not a permanent execution restriction or a reason to refuse a new request.
 
-A read-only check of existing job `6af5af253fb9b718021334e2` on 2026-11-13
+A read-only check of existing job `<historical-job-id-redacted>` on 2026-11-13
 returned an authorization denial: `You don't have permission to perform this action`.
 This did not verify the backend repair, job completion or predictions. Use the
 owning profile's authorized credential; do not switch credentials or providers
 silently, bypass permissions, or resubmit an existing job.
 
-Historical job `6af5a5e2e1fce9fa279f8f35` returned
+Historical job `<historical-job-id-redacted>` returned
 `Output path not found in metadata` on 2026-11-12. If that error actually recurs,
 report the current job ID and retrieval blocker, and stop that attempt. Do not
 start recovery scripts, guess endpoints, or read credential files. A later

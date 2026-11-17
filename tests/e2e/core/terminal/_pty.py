@@ -129,6 +129,9 @@ class PtySci:
             # operator checkout's automatic dependency-repair/install path.
             SCI_DISABLE_LAZY_INSTALLS="1",
         )
+        if "--native" in argv_tail:
+            from tests.e2e.core.tui_pty._helpers import private_tui_dir
+            env["SCI_TUI_DIR"] = str(private_tui_dir(root))
         master, slave = os.openpty()
         self._set_winsize(master, rows, cols)
         self.master = master

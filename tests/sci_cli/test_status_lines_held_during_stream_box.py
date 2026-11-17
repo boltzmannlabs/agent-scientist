@@ -64,7 +64,10 @@ def test_status_line_waits_for_box_footer(cli_stub):
     cli._flush_stream()
     lines = [_plain(e) for e in emitted]
     notice = next(i for i, l in enumerate(lines) if "set 7" in l)
-    footer = next(i for i, l in enumerate(lines) if l.startswith("╰"))
+    # The current skin uses a horizontal rule; older skins used rounded corners.
+    # Assert the boundary ordering, not one particular border glyph.
+    footer = next(i for i, line in enumerate(lines)
+                  if line.strip() and not line.strip().strip("─╰╯"))
     second = next(i for i, l in enumerate(lines) if "Second paragraph" in l)
     assert second < footer < notice, lines
 

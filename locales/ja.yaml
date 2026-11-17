@@ -2226,6 +2226,15 @@ cli:
     footer_roster_compact: "↑↓ · Enter 追跡 · Ctrl+T 閉じる"
     footer_detail: "Esc 一覧 · PgUp/PgDn 追跡{steer} · x 停止"
     footer_roster: "↑/↓ 選択 · Enter 追跡{steer} · x 停止 · q/Ctrl+T 閉じる"
+  jobs:
+    heading: "バックグラウンドジョブ · {count} · Ctrl+R で折りたたむ"
+    count: "{count} 件のジョブ"
+    id: "ジョブ：…{id}"
+    last_check: "前回の確認：{age}前"
+    next_check: "次の確認：{delay}"
+    check_due: "次の確認時刻です"
+    more: "他 {count} 件のバックグラウンドジョブ"
+
   dock:
     process_goal_label: "バックグラウンドプロセス"
     last_output: "直前: {detail}"

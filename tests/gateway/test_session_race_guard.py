@@ -170,7 +170,8 @@ async def test_recent_telegram_followups_append_in_pending_queue():
 
     fake_agent.interrupt.assert_not_called()
     adapter = runner.adapters[Platform.TELEGRAM]
-    assert adapter._pending_messages[session_key].text == "part one\npart two"
+    assert adapter._pending_messages[session_key].text == "part one"
+    assert [event.text for event in runner._overflow_queue(session_key)] == ["part two"]
 
 
 # ------------------------------------------------------------------

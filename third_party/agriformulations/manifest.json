@@ -1,0 +1,12 @@
+{
+  "distribution": "sci-agriformulations",
+  "version": "1.3.0",
+  "wheel": "sci_agriformulations-1.3.0-py3-none-any.whl",
+  "sha256": "3c8603726f412c9be23103cc86b6dc7d4bc24d2b6abef3c8489753864a161760",
+  "wheel_bytes": 49788860,
+  "uncompressed_bytes": 61027638,
+  "installation": "Default Agent Scientist runtime dependency; no plugin or remote API",
+  "source_snapshot": "agri_tool/_engine/UPSTREAM_MANIFEST.json within wheel",
+  "source_build": "Maintained outside Agent Scientist; rebuild wheel and refresh uv.lock when changing it",
+  "package_changes": "agri_tool/_engine/PACKAGE_PATCHES.json within wheel"
+}

@@ -99,7 +99,7 @@ def verify_program(command, dep, home, ui):
     from tools.environments.local import served_profile_child_env
     # Child environment construction uses the owning scoped secret/terminal bridge.
     env = served_profile_child_env()
-    result = subprocess.run(command, cwd=home / 'workspace', env=env, capture_output=True, text=True, timeout=15)
+    result = subprocess.run(command, cwd=home / 'workspace', env=env, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=15)
     text = result.stdout + result.stderr
     if result.returncode or dep['version_contains'] not in text:
         raise ValueError('Program version check failed or did not match the declared version. No scientific job ran.')

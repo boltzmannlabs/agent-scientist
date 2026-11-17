@@ -8,7 +8,7 @@ import subprocess
 def evidence(root, manifest, *, repo=None, dev_ref='refs/remotes/origin/dev'):
     path = Path(root) / 'tests/validation.json'
     try:
-        report = json.loads(path.read_text(encoding='utf-8'))
+        report = json.loads(path.read_text(encoding='utf-8-sig'))
     except (OSError, ValueError) as exc:
         raise ValueError('Provide tests/validation.json using the contribution template.') from exc
     if not isinstance(report, dict) or report.get('package_id') != manifest['id'] or report.get('package_version') != manifest['version']:
@@ -24,7 +24,7 @@ def evidence(root, manifest, *, repo=None, dev_ref='refs/remotes/origin/dev'):
         raise ValueError('Integrated validation requires the full tested dev commit SHA.')
     repo = Path(repo)
     def git(*args):
-        return subprocess.run(['git', *args], cwd=repo, text=True, capture_output=True)
+        return subprocess.run(['git', *args], cwd=repo, text=True, encoding='utf-8', errors='replace', capture_output=True)
     if git('cat-file', '-e', commit + '^{commit}').returncode or git('merge-base', '--is-ancestor', commit, dev_ref).returncode:
         raise ValueError('Tested commit must exist in the fetched dev branch history.')
     relative = Path(root).resolve().relative_to(repo.resolve()).as_posix()

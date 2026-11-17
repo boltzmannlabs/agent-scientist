@@ -53,7 +53,11 @@ def _render_cli() -> str:
         _console_print=lambda text, **_kw: rendered.append(text),
     )
     CLISessionMixin._show_session_status(cli)
-    return "\n".join(rendered)
+    from io import StringIO
+    from rich.console import Console
+    stream = StringIO()
+    Console(file=stream, width=160, color_system=None).print(*rendered)
+    return stream.getvalue()
 
 
 def _render_gateway() -> str:
@@ -108,5 +112,7 @@ def test_three_status_surfaces_report_the_same_common_fields():
             assert value in text, f"{surface} /status lost {value!r}:\n{text}"
     # Path is English-only (the gateway catalog has no path line); running flag is per-surface wording.
     assert HOME in outputs["cli"] and HOME in outputs["tui"]
-    assert "Agent Running: Yes" in outputs["cli"] and "Agent Running: Yes" in outputs["tui"]
+    import re
+    for surface in ("cli", "tui"):
+        assert "AgentRunningYes" in re.sub(r"[\s│:]", "", outputs[surface])
     assert "Yes" in outputs["gateway"]

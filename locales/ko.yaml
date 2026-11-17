@@ -2226,6 +2226,15 @@ cli:
     footer_roster_compact: "↑↓ · Enter 로그 보기 · Ctrl+T 닫기"
     footer_detail: "Esc 목록 · PgUp/PgDn 로그 보기{steer} · x 중지"
     footer_roster: "↑/↓ 선택 · Enter 로그 보기{steer} · x 중지 · q/Ctrl+T 닫기"
+  jobs:
+    heading: "백그라운드 작업 · {count} · Ctrl+R 접기"
+    count: "작업 {count}개"
+    id: "작업: …{id}"
+    last_check: "마지막 확인: {age} 전"
+    next_check: "다음 확인: {delay}"
+    check_due: "다음 확인 시간입니다"
+    more: "백그라운드 작업 {count}개 더 있음"
+
   dock:
     process_goal_label: "백그라운드 프로세스"
     last_output: "최근: {detail}"
