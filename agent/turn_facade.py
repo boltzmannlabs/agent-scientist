@@ -145,6 +145,8 @@ class TurnFacadeMixin:
             from agent.specialist_policy import specialist_scope
             from agent.specialist_extensions import execution_scope
             self._specialist_user_request = user_message if isinstance(user_message, str) else ""
+            if getattr(self, '_specialist_policy', None) is None:
+                self._specialist_assignment = None
             with (bind_subagent_parent(self), scoped_runtime_main({}), track_in_interrupt_scope(self),
                   specialist_scope(getattr(self, "_specialist_policy", None)),
                   execution_scope(getattr(self, "_specialist_policy", None))):

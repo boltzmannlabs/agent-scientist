@@ -12,7 +12,7 @@ from agent.specialist_policy import SpecialistPolicy, specialist_scope
 from sci_cli.native_profile_creation import profile_scope
 
 
-def test_service_auth_is_profile_scoped_and_nested_permissions_only_narrow(tmp_path, monkeypatch):
+def test_service_auth_is_profile_scoped_and_approved_children_keep_their_reviewed_grants(tmp_path, monkeypatch):
     from agent.secret_scope import set_multiplex_active, get_secret
     from tools.registry import registry
     import model_tools
@@ -39,16 +39,15 @@ def test_service_auth_is_profile_scoped_and_nested_permissions_only_narrow(tmp_p
                     assert bool(definitions) is expected
                     assert json.loads(registry.dispatch('specialist_service_fixture', {}))['authorized'] is expected
         with profile_scope(homes[0], secrets={'SPECIALIST_FIXTURE_KEY': 'a-fixture'}):
-            save(Specialist('reviewer', 'Review', tools=('read_file',)))
+            save(Specialist('reviewer', 'Review', tools=('read_file',), sources=(str(homes[0]),)))
+            save(Specialist('lead', 'Coordinate', children=('reviewer',), automatic=True))
             lead = SimpleNamespace(enabled_toolsets=['file', 'delegation'], disabled_toolsets=[], platform='cli')
             capture(lead)
             lead._specialist_parent_tools = frozenset({'read_file', 'delegate_task'})
-            lead._specialist_policy = SpecialistPolicy('lead', str(homes[0].resolve()), 'r', frozenset({'delegate_task'}),
-                                                       frozenset(), frozenset({'reviewer'}), ('lead',), time.monotonic() + 30)
-            with pytest.raises(ValueError, match='exceed'):
-                resolve(lead, {'specialist': 'reviewer'})
-            lead._specialist_policy = replace(lead._specialist_policy, tools=frozenset({'read_file', 'delegate_task'}))
+            _, lead._specialist_policy = resolve(lead, {'specialist': 'lead'})
             _, child_policy = resolve(lead, {'specialist': 'reviewer'})
+            assert 'read_file' not in lead._specialist_policy.tools
+            assert 'read_file' in child_policy.tools
             assert child_policy.deadline <= lead._specialist_policy.deadline
             lead._specialist_policy = replace(lead._specialist_policy, ancestry=('lead', 'reviewer'))
             with pytest.raises(ValueError, match='cycle'):

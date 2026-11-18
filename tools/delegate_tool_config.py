@@ -82,11 +82,11 @@ def _warn_once(flag_name: str, message: str, *args: Any) -> None:
         globals()[flag_name] = True
         logger.warning(message, *args)
 
-def _get_oneshot_max_children() -> int:
-    """delegation.oneshot_max_children (total children per finite one-shot session; 0 = unlimited)."""
+def _get_oneshot_max_children() -> Optional[int]:
+    """None caps temporary helpers only; an explicit number caps all one-shot children."""
     return _knob(
-        "oneshot_max_children", None, lambda v: max(0, int(v)), 2,
-        "delegation.oneshot_max_children=%r is not a valid integer; using default 2",
+        "oneshot_max_children", None, lambda v: max(0, int(v)), None,
+        "delegation.oneshot_max_children=%r is not a valid integer; using automatic limits",
     )
 
 
@@ -442,7 +442,12 @@ def _load_config() -> dict:
     if os.environ.get("SCI_IGNORE_USER_CONFIG") != "1":
         try:
             from sci_cli.config import load_config_readonly
-            cfg = load_config_readonly().get("delegation") or {}
+            from agent.specialist_policy import current_policy
+            from contextlib import nullcontext
+            from agent.specialist_extensions import capability_scope
+            policy = current_policy()
+            with capability_scope(policy.home) if policy is not None else nullcontext():
+                cfg = load_config_readonly().get("delegation") or {}
             if isinstance(cfg, dict):
                 return cfg
         except Exception:

@@ -272,7 +272,8 @@ def _search_description(deferred_count: int, listing: Optional[str], listing_for
 
 
 def bridge_tool_schemas(deferred_count: int, listing: Optional[str] = None,
-                        listing_form: str = "", connections_granted: bool = False) -> List[Dict[str, Any]]:
+                        listing_form: str = "", connections_granted: bool = False,
+                        connector_batches: bool = False) -> List[Dict[str, Any]]:
     """Bridge tool schemas injected in place of deferred tools; kept short — every byte is paid
     every turn. ``listing`` is embedded in the tool_search description; per-tool forms say
     "skip search when you see the exact name", "groups" says search is mandatory."""
@@ -319,6 +320,8 @@ def bridge_tool_schemas(deferred_count: int, listing: Optional[str] = None,
             {
                 "calls": {
                     "type": "array",
+                    "minItems": 1,
+                    **({} if connections_granted or connector_batches else {"maxItems": 1}),
                     "items": {
                         "type": "object",
                         "properties": {
@@ -374,7 +377,8 @@ def assemble_tool_defs(tool_defs: List[Dict[str, Any]], *, context_length: Optio
         listing, listing_form = build_catalog_listing_with_form(
             deferrable, max_tokens=listing_budget)
     bridge = bridge_tool_schemas(len(deferrable), listing=listing, listing_form=listing_form,
-                                 connections_granted=connections_granted)
+                                 connections_granted=connections_granted,
+                                 connector_batches=any(name.startswith('connectors__') for name in _tool_def_names(deferrable)))
     tier = 1 if listing_form in ("full", "names", "mixed") else 2
     logger.info(
         "tool_search activated (tier %d): %d core/visible tools kept, %d deferred "

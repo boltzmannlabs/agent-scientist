@@ -161,6 +161,12 @@ def _handle_boltzmann_submit_inner(**kwargs):
     if missing:
         return json.dumps({"error": f"Missing required arguments: {', '.join(missing)}"})
 
+    from .assignment_evidence import check, save
+    mismatch = check('boltzmann_submit', {**kwargs, 'job_name': job_name, 'experiment_data': experiment_data,
+                                         'experiment_name': experiment_name})
+    if mismatch:
+        return json.dumps(mismatch)
+
     from .job_continuation import replay_error
     duplicate = replay_error(job_name, experiment_data)
     if duplicate:
@@ -199,13 +205,20 @@ def _handle_boltzmann_submit_inner(**kwargs):
 
     receipts = ReceiptStore()
     try:
-        attempt = receipts.begin_submission(job_name, getattr(report, "upload_receipt_ids", []), experiment_name)
+        attempt = receipts.begin_submission(job_name, getattr(report, "upload_receipt_ids", []), experiment_name,
+                                            payload=experiment_data)
+        save(attempt, required=True, job_name=job_name, experiment_name=experiment_name,
+             state='unknown', doc_id=None)
     except ReceiptStorageError as exc:
         return json.dumps({"error": str(exc), "stage": "receipt_reservation", "status": "not_started",
                            "submitted": False, "safe_to_retry": False,
                            "experiment_name": experiment_name})
     # Pending references are durable BEFORE the request. A timeout/crash cannot
     # leave these uploads looking unused and therefore eligible for expiration.
+    from .assignment_evidence import stopped
+    if stopped():
+        return json.dumps({'error': 'Execution stopped before submission. Reconcile the reserved attempt; no request sent.',
+                           'status': 'not_started', 'submitted': False, 'receipt_attempt_id': attempt})
     doc_id = submit_request(experiment_data, job_name, experiment_name, token=token, conv_id=conv_id)
 
     # Allow the auto-logged pending write to propagate before the next tool
@@ -222,6 +235,7 @@ def _handle_boltzmann_submit_inner(**kwargs):
                            "status": "unknown", "receipt_attempt_id": attempt, "safe_to_retry": False,
                            "experiment_name": experiment_name})
     receipt_warning = None
+    effect_warning = save(attempt, job_name=job_name, doc_id=doc_id, state='accepted')
     try:
         receipts.accept_submission(attempt, doc_id)
     except ReceiptStorageError as exc:
@@ -231,6 +245,7 @@ def _handle_boltzmann_submit_inner(**kwargs):
                        "stage": "submit", "status": "accepted", "validation": report.as_dict(),
                        "receipt_attempt_id": attempt,
                        **({"receipt_storage_warning": receipt_warning} if receipt_warning else {}),
+                       **({'assignment_evidence_warning': effect_warning} if effect_warning else {}),
                        "message": "Job accepted, not completed. Poll this job; do not submit again."})
 
 
@@ -245,6 +260,10 @@ def _handle_boltzmann_status_inner(**kwargs):
     if not job_name or not doc_id:
         missing = [k for k in ("job_name", "doc_id") if not kwargs.get(k)]
         return json.dumps({"error": f"Missing required arguments: {', '.join(missing)}. You must provide the job_name and doc_id returned by boltzmann_submit."})
+    from .assignment_evidence import tracked_job, observe_outputs
+    if not tracked_job(job_name, doc_id):
+        return json.dumps({'error': 'This job is not recorded for the execution assignment. Reconcile its provenance '
+                          'instead of substituting historical results.', 'status': 'not_started'})
 
     conv_id = _get_conv_id(kwargs)
     token = _get_api_key()
@@ -256,6 +275,9 @@ def _handle_boltzmann_status_inner(**kwargs):
                           wait_until_terminal=True)
     try:
         ReceiptStore().observe(job_name, doc_id, result)
+        warning = observe_outputs(job_name, doc_id, result)
+        if warning:
+            raise ReceiptStorageError(warning)
     except ReceiptStorageError:
         # Keep the remote result and ID, even when local bookkeeping fails.
         if isinstance(result, dict):
@@ -284,6 +306,11 @@ def _handle_boltzmann_download_inner(**kwargs):
     download_url = kwargs.get("download_url")
     if not download_url:
         return json.dumps({"error": "Missing required argument: download_url"})
+    from .assignment_evidence import download_origin
+    try:
+        provenance = download_origin(download_url)
+    except ReceiptStorageError as exc:
+        return json.dumps({'error': str(exc), 'status': 'not_started'})
     try:
         output_folder = str(output_directory(kwargs.get("output_folder")))
         os.makedirs(output_folder, exist_ok=True)
@@ -295,6 +322,13 @@ def _handle_boltzmann_download_inner(**kwargs):
     token = _get_api_key()
     result = download_from_signed_url([download_url], output_folder, token=token)
     if isinstance(result, dict):
+        from agent.specialist_assignment import current_assignment, record_artifacts
+        if current_assignment() is not None:
+            try:
+                record_artifacts(result.get('output_paths', []), **provenance)
+            except (OSError, ValueError, RuntimeError) as exc:
+                result['assignment_evidence_warning'] = ('Downloaded artifacts could not be recorded (' +
+                    type(exc).__name__ + '). Preserve these files and reconcile their provenance before auditing.')
         return json.dumps({**result, "output_folder": output_folder})
     return result
 
@@ -312,6 +346,10 @@ def _handle_boltzmann_upload_inner(**kwargs):
     if not job or not field:
         return json.dumps({"error": "Provide job_name and input_field so the actual upload can be checked against its intended use.",
                            "stage": "validation", "status": "not_started"})
+    from .assignment_evidence import check
+    mismatch = check('boltzmann_upload', kwargs)
+    if mismatch:
+        return json.dumps(mismatch)
     token = _get_api_key()
     result = validated_upload(local_path, job, field, kwargs.get("experiment_data") or {},
                               kwargs.get("allow_partial_validation"),

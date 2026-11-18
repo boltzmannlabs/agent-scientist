@@ -63,9 +63,17 @@ class _Batch:
         from agent.specialist_runs import record
         from agent.specialist_policy import SpecialistPolicy
         if isinstance(getattr(child, "_specialist_policy", None), SpecialistPolicy):
+            from agent.specialist_assignment import evidence
+            result.update(evidence(child))
             result["specialist"] = child._specialist_policy.name
             result["run_id"] = child._subagent_id
             result["delivery"] = task.get("delivery", "final")
+            if result.get('status') != 'completed' or result.get('task_outcome') in {'blocked', 'incomplete', 'failed'}:
+                result['handoff_note'] = (
+                    'Review the concrete missing requested work in this report. A limited assessment does not '
+                    'undo completed execution. If the user requires this specialist or hierarchy, do not '
+                    'silently replace it with the parent or another worker. Preserve outputs and accepted '
+                    'job IDs, continue independent authorized work, and report any remaining blocker plainly.')
             try:
                 record(child, task["goal"], result)
             except (OSError, ValueError) as exc:

@@ -66,11 +66,18 @@ def _chunks(response):
 
 
 class BoltzmannClient:
+    completion_response_mode = 'complete'
+
     def __init__(self, **kwargs):
         from openai import OpenAI
+        from httpx import Timeout
 
         self._home = owner_home()
         self._kwargs = {**kwargs, "max_retries": 0}
+        # This endpoint produces no chunks during inference. Keep connection and
+        # write failures bounded, but let a healthy response finish unless the
+        # caller explicitly supplied a request timeout.
+        self._kwargs.setdefault('timeout', Timeout(None, connect=30, write=1800, pool=30))
         self._kwargs.setdefault("api_key", "boltzmann-login-required")
         with owner_scope(self._home):
             self._kwargs.setdefault("base_url", endpoint())
@@ -117,11 +124,15 @@ class AsyncChunks:
 
 
 class AsyncBoltzmannClient:
+    completion_response_mode = 'complete'
+
     def __init__(self, *, owner=None, **kwargs):
         from openai import AsyncOpenAI
+        from httpx import Timeout
 
         self._home = owner or owner_home()
         self._kwargs = {**kwargs, "max_retries": 0}
+        self._kwargs.setdefault('timeout', Timeout(None, connect=30, write=1800, pool=30))
         self._sdk = AsyncOpenAI(**self._kwargs)
         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
 

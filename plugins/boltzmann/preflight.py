@@ -106,15 +106,33 @@ def validated_upload(local_path, job, field, payload, approved, upload):
         if blocked:
             return blocked
         digest = hashlib.sha256(snapshot.read_bytes()).hexdigest()
+        from agent.specialist_assignment import check_input
+        mismatch = check_input(source, digest)
+        if mismatch:
+            report.errors.append(mismatch)
+            return decision(report, approved)
         receipt = {"authorization": fingerprint(current_key()), "sha256": digest,
                    "contract": _contract_digest(store, job, field), "context": _context(rule, payload),
                    "validation": report.as_dict(), "inventory": report.inventory}
         receipts = ReceiptStore()
         try:
+            from agent.specialist_assignment_bindings import needs_input_binding, record_input_binding
+            if needs_input_binding('boltzmann_submit', ('experiment_data', field), sha256=digest, selectors={'job_name': job}):
+                reusable = receipts.reusable_upload(receipt, lambda value: _receipt_key(job, field, value))
+                if reusable:
+                    storage, identity = reusable
+                    record_input_binding('boltzmann_submit', ('experiment_data', field), storage,
+                                         sha256=digest, selectors={'job_name': job})
+                    return {'s3_path': storage, 'stage': 'upload', 'status': 'uploaded', 'sha256': digest,
+                            'receipt_id': identity, 'reused': True, 'validation': report.as_dict()}
             reservation = receipts.reserve_upload(receipt)
         except ReceiptStorageError as exc:
             return {"error": str(exc), "stage": "receipt_reservation", "status": "not_started",
                     "uploaded": False, "submitted": False, "safe_to_retry": False}
+        from .assignment_evidence import stopped
+        if stopped():
+            return {'error': 'Execution stopped before upload. Its unused reservation is retained for reconciliation.',
+                    'status': 'not_started', 'uploaded': False, 'receipt_id': reservation}
         try:
             storage = upload(str(snapshot))
         except Exception:
@@ -135,6 +153,8 @@ def validated_upload(local_path, job, field, payload, approved, upload):
             if len(summary.get("candidates", [])) == 1:
                 summary["candidates"][0]["candidate_id"] = _candidate_id(storage, rule["structure_profile"])
         receipts.complete_upload(reservation, _receipt_key(job, field, storage), storage, receipt)
+        record_input_binding('boltzmann_submit', ('experiment_data', field), storage,
+                             sha256=digest, selectors={'job_name': job})
     except (OSError, ValueError, RuntimeError):
         return {"error": "File uploaded, but finalizing its reserved receipt failed. No job was submitted. " + GUIDANCE,
                 "stage": "upload", "status": "partial", "s3_path": storage,

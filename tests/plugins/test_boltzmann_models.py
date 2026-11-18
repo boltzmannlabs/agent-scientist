@@ -115,10 +115,17 @@ def platform(tmp_path, monkeypatch):
             }
             result["usage"].update(state.get("usage_override", {}))
             result.update(state.get("metadata", {}))
+            if 'response_entered' in state:
+                state['response_entered'].set()
+                assert state['response_release'].wait(15), 'test did not release the response'
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
-            self.wfile.write(json.dumps(result).encode())
+            try:
+                self.wfile.write(json.dumps(result).encode())
+            except (BrokenPipeError, ConnectionResetError):
+                if 'response_entered' not in state:
+                    raise
 
         def log_message(self, *args):
             pass
@@ -337,6 +344,7 @@ def test_gated_sdk_clients_sync_async_streaming_and_profiles(platform, model):
         client = profile.create_client(
             api_key=runtime["api_key"], base_url=runtime["base_url"]
         )
+        assert client.timeout.read is None and client.timeout.connect is not None
         chunks = list(
             client.chat.completions.create(
                 model=model,
@@ -359,7 +367,10 @@ def test_gated_sdk_clients_sync_async_streaming_and_profiles(platform, model):
         assert selected == model
 
         async def request():
+            from httpx import Timeout
+            assert async_client.timeout.read is None and async_client.timeout.connect is not None
             selected_client = async_client.with_options(timeout=5)
+            assert Timeout(selected_client.timeout).read == 5
             chunks = await selected_client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": "Fixture"}],
@@ -1046,3 +1057,78 @@ def test_saved_gateway_default_answers_first_turn_without_reselection(platform, 
                 agent.close()
     assert state['requests'] and all(row['stream'] is False for row in state['requests'])
     assert not state['updates']
+
+
+@pytest.mark.parametrize('streaming', [False, True])
+def test_complete_response_wait_outlives_chunk_deadline_and_can_be_stopped(platform, streaming):
+    """Real SDK/socket: silence before a JSON response is normal; Stop still retires it."""
+    import math
+    import time
+    from agent.chat_completion_helpers import _StreamingCall, _resolve_nonstream_watchdogs
+    from agent.chat_completion_nonstream import _NonStreamRequest
+    from agent.memory_provider import spawn_context_thread
+    from run_agent import AIAgent
+
+    state, _, home, _, base = platform
+    with profile_scope(home):
+        agent = AIAgent(model='glm', provider='boltzmann_models', api_key='fixture-a', base_url=base,
+            api_mode='chat_completions', enabled_toolsets=[], quiet_mode=True,
+            skip_context_files=True, skip_memory=True, max_iterations=2)
+        try:
+            kwargs = {'model': 'glm', 'messages': [{'role': 'user', 'content': 'Hello'}]}
+            assert math.isinf(_resolve_nonstream_watchdogs(agent, kwargs).stale_timeout)
+            # Both a successful delayed response and a stopped response use the
+            # production request-local client/monitor, not a fake completion.
+            for stop in (False, True):
+                state['response_entered'], state['response_release'] = threading.Event(), threading.Event()
+                agent._interrupt_requested = False
+                request = _StreamingCall(agent, kwargs, None) if streaming else _NonStreamRequest(agent, kwargs)
+                outcome = {}
+
+                def run():
+                    try:
+                        outcome['response'] = request.run()
+                    except BaseException as exc:
+                        outcome['error'] = exc
+
+                thread = spawn_context_thread(run, name='test-complete-response')
+                thread.start()
+                try:
+                    assert state['response_entered'].wait(5), outcome
+                    if streaming:
+                        assert math.isinf(request._stream_stale_timeout)
+                        assert request._stream_timeouts()[1] is None
+                        request.last_chunk_time['t'] = time.time() - 10_000
+                    else:
+                        request.call_start = time.time() - 10_000
+                    if stop:
+                        agent.interrupt('Stop requested by test', hard_cancel=True)
+                        thread.join(5)
+                        assert not thread.is_alive(), 'Stop did not release the caller'
+                        assert isinstance(outcome.get('error'), InterruptedError), outcome
+                        assert 'response' not in outcome
+                    else:
+                        state['response_release'].set()
+                        thread.join(5)
+                        assert not thread.is_alive() and 'error' not in outcome, outcome
+                        assert outcome['response'].choices[0].message.content == 'Fixture report: SCI_TOOL_OK'
+                finally:
+                    state['response_release'].set()
+                    thread.join(5)
+            assert len(state['requests']) == 2 and not state['updates']
+        finally:
+            agent.close()
+        from sci_cli.config import read_user_config_raw
+        cfg = read_user_config_raw(home / 'config.yaml')
+        cfg['providers']['boltzmann_models'].update(request_timeout_seconds=7, stale_timeout_seconds=9)
+        atomic_config_replace(home / 'config.yaml', cfg)
+        explicit = AIAgent(model='glm', provider='boltzmann_models', api_key='fixture-a', base_url=base,
+            api_mode='chat_completions', enabled_toolsets=[], quiet_mode=True,
+            skip_context_files=True, skip_memory=True, max_iterations=2)
+        try:
+            limited = _StreamingCall(explicit, kwargs, None)
+            limited._resolve_stale_timeout()
+            assert limited._stream_stale_timeout == 9 and limited._stream_timeouts()[1] == 7
+            assert _resolve_nonstream_watchdogs(explicit, kwargs).stale_timeout == 9
+        finally:
+            explicit.close()

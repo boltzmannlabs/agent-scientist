@@ -165,6 +165,9 @@ class _NonStreamRequest:
                 phase = "reconnect"
             elif last_event_ts is not None:
                 phase = "post_event"
+            from agent.completion_wait import waits_for_complete_response
+            if waits_for_complete_response(self.agent):
+                phase = 'complete_response'
             watchdog = wn.codex_watchdog_deadline(stale_timeout=wd.stale_timeout,
                 ttfb_enabled=wd.ttfb_enabled, ttfb_timeout=wd.ttfb_timeout,
                 last_event_ts=last_event_ts, last_progress_ts=last_progress_ts,

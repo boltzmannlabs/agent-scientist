@@ -72,6 +72,11 @@ Effort selection does not enable thinking-text display.
 - The gateway currently accepts **non-streaming JSON only**. SCI waits for the
   full response and adapts it to its existing renderer; tokens are not delivered
   incrementally by the server.
+- Waiting for that complete response has no default read or no-chunk deadline.
+  SCI continues its activity heartbeat and Stop remains available. Explicit provider/model
+  timeouts and run budgets are respected; connection, write and pool failures still recover
+  through the existing request lifecycle. Accepted scientific jobs keep their durable IDs
+  and monitoring records independently of a model response or interruption.
 - Provider-reported token usage, including cached/reasoning counts when returned,
   uses SCI's existing usage reporting. Thinking visibility follows SCI's display
   setting; this integration does not enable thinking display.

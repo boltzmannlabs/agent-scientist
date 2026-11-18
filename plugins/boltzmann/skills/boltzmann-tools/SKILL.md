@@ -15,6 +15,45 @@ fallback, or credential capture in chat. Authorization and profile restrictions
 are enforced independently of catalog visibility. Missing authorization requires
 `/add_boltzmann` in the active profile; deferred activation may require a new session.
 
+## Saved-specialist execution
+
+When a saved specialist hierarchy will execute scientific work, the parent prepares the
+exact input files and freezes `delegate_task.assignment` before execution. Include:
+
+- `inputs`: prepared local input paths (not reference manuals).
+- `tool_arguments.boltzmann_submit`: required `job_name`, requested `experiment_data`
+  parameters and any required `experiment_name`. For multiple job types, use a list of
+  argument objects. Omit a not-yet-known uploaded storage reference, or bind that
+  field as `{"$input": "/absolute/path/to/frozen/input.csv"}`. Never freeze a
+  descriptive placeholder as a literal reference. The validated receipt resolves
+  the marker without changing the scientific parameters.
+- `max_submissions`: the authorized total per job name across the whole assignment.
+
+If contracts or inputs first need discovery/preparation, use an informational specialist
+pass, then let the parent freeze the execution contract. This is internal task preparation,
+not an additional user approval. Descendants cannot replace the contract. A missing contract
+blocks scientific writes and returns the prepared requirements to the parent.
+Complete each budgeted job's submission parameters before dispatch; an incomplete execution
+contract is returned to the parent before children or uploads start. Correct the metadata and
+retry the dispatch, rather than repeatedly launching workers with the same missing contract.
+
+Dispatch the requested root once. Execution finishes before its dependent audit starts;
+pass the exact recorded output paths in `tasks[].artifacts`. Initial uploads must match
+frozen input bytes. Subsequent uploads may use recorded output/derived files after a prior
+step reaches a confirmed terminal state. Preserve original outputs; use new paths for
+derived files. Native `write_file`/`patch` and scientific downloads record artifact hashes.
+Files created through arbitrary scripts are not automatically certified as task outputs.
+
+Accepted and uncertain submission attempts consume the assignment's budget. Re-uploading
+the same bytes, changing a label, provider failures or worker timeouts do not authorize
+another submission. Reconcile existing IDs and receipts. On restart, use the saved
+`assignment_id` from run history as `assignment: {"resume": "<id>"}`; do not create a new
+assignment to bypass an unresolved attempt. Do not infer zero charges from a missing summary.
+Descendants inherit the contract; omit `assignment` on nested dispatches or reference
+the same resume ID. For an older unbound upload placeholder, call the normal upload
+tool with the unchanged frozen file: it revalidates and reuses a matching receipt
+without another remote upload. Do not edit internal assignment or receipt files.
+
 ## Three authoritative contracts
 
 - `references/tool-contracts.v1.json`: catalog, exact job names, request schemas,

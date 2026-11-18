@@ -90,12 +90,12 @@ class TestBatchPlaceholderGoals(unittest.TestCase):
         self.assertIn("placeholder", result["error"].lower())
 
     def test_unexpanded_angle_template_marker_rejected(self):
-        result = _call([{"goal": GOOD_A}, {"goal": "Implement <feature_name> end to end"}])
+        result = _call([{"goal": GOOD_A}, {"goal": "<feature_name>"}])
         self.assertIn("error", result)
         self.assertIn("template", result["error"].lower())
 
     def test_unexpanded_brace_template_marker_rejected(self):
-        result = _call([{"goal": GOOD_A}, {"goal": "Summarize {file_path} for the report"}])
+        result = _call([{"goal": GOOD_A}, {"goal": "{file_path}"}])
         self.assertIn("error", result)
         self.assertIn("template", result["error"].lower())
 
@@ -110,6 +110,8 @@ class TestBatchPlaceholderGoals(unittest.TestCase):
             'Update the fixture to emit {"key": 1} for the happy path',
             "Add a glob rule matching src/{a,b}/*.py to the lint config",
             "Rewrite the loop so {i} interpolates via f-strings correctly",
+            "Submit using <the uploaded S3 reference from step 3> after the upload finishes",
+            "Document how the template substitutes {file_path} for the report",
         ]
         for bad_free_goal in code_goals:
             with patch("tools.delegate_tool._run_single_child") as mock_run:
@@ -124,9 +126,9 @@ class TestBatchPlaceholderGoals(unittest.TestCase):
 
     def test_multiword_placeholder_shapes_still_rejected(self):
         for marker_goal in (
-            "Deploy the service to <target environment> when ready",
-            "Backfill rows for {customer id} in the billing table",
-            "Ship <FEATURE-NAME> behind the beta flag",
+            "<target environment>",
+            "{customer id}",
+            "<FEATURE-NAME>",
         ):
             result = _call([{"goal": GOOD_A}, {"goal": marker_goal}])
             self.assertIn("error", result, marker_goal)

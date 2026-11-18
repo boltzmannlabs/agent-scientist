@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional
 
 from tools.terminal_tool import set_approval_callback as _set_subagent_approval_cb  # noqa: F401  (used via _ChildRun.await_child)
 from utils import is_truthy_value
+from agent.specialist_policy import SpecialistPolicy, owner_profile_delegation
 
 logger = logging.getLogger(__name__)
 
@@ -390,6 +391,8 @@ def _build_children(
     from agent.specialist_runtime import build_child, resolve
     try:
         plans = [resolve(parent_agent, task) for task in task_list]
+        from agent.specialist_assignment import persist
+        persist(parent_agent)
     except (ValueError, OSError) as exc:
         return [], str(exc)
     children = []
@@ -439,26 +442,31 @@ def _build_children(
     return children, None
 
 
-def _oneshot_spawn_budget(parent_agent: Any, requested: int) -> Optional[str]:
-    """Charge *requested* children against the finite one-shot session's total (delegation.oneshot_max_children);
-    the error text tells the model to do the work inline. Interactive and gateway sessions are never charged."""
+def _oneshot_spawn_budget(parent_agent: Any, requested: int, *, tasks=None) -> Optional[str]:
+    """Limit incidental helpers without truncating a reviewed named workflow by default."""
     from agent.oneshot_footprint import is_single_query_session
     if not is_single_query_session():
         return None
     cap = _get_oneshot_max_children()
+    if cap is None:
+        cap = 2
+        if tasks is not None:
+            requested = sum(not task.get('specialist') for task in tasks)
     if cap <= 0:
         return None
     spent = getattr(parent_agent, "_oneshot_children_spawned", 0)
     if spent + requested > cap:
         return (
             f"Delegation budget for this one-shot run is exhausted ({spent}/{cap} subagents used; "
-            f"delegation.oneshot_max_children). Do the remaining work yourself in this session — reviewing "
-            f"your own diff and running the tests inline is expected here, not a delegated review."
+            f"delegation.oneshot_max_children). Preserve completed results and report the remaining work. "
+            f"Do not replace a required specialist or independent review with your own work. "
+            f"A user-configured limit must be changed by the user before further delegation."
         )
     parent_agent._oneshot_children_spawned = spent + requested
     return None
 
 
+@owner_profile_delegation
 def delegate_task(
     goal: Optional[str] = None, context: Optional[str] = None, tasks: Optional[List[Dict[str, Any]]] = None,
     max_iterations: Optional[int] = None, role: Optional[str] = None, background: Optional[bool] = None,
@@ -466,6 +474,7 @@ def delegate_task(
     subagent_id: Optional[str] = None, message: Optional[str] = None, parent_agent=None,
     credentials_cfg: Optional[Dict[str, Any]] = None,
     query: str = "", page: int = 1,
+    assignment: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Spawn child agents (single ``goal`` or ``tasks=[...]`` batch) or control running ones. ``action``
     list/steer/stop run synchronously and bypass the pause gate, depth limit and async dispatch. ``role`` is legacy
@@ -501,6 +510,8 @@ def delegate_task(
 
     depth = getattr(parent_agent, "_delegate_depth", 0)
     max_spawn = _get_max_spawn_depth()
+    if isinstance(getattr(parent_agent, '_specialist_policy', None), SpecialistPolicy) and not _get_orchestrator_enabled():
+        return tool_error('Nested specialist delegation is disabled for this profile; no child was started.')
     if depth >= max_spawn:
         return tool_error(
             f"Delegation depth limit reached (depth={depth}, max_spawn_depth={max_spawn}). Raise "
@@ -535,7 +546,13 @@ def delegate_task(
         task_images, err = _coerce_task_images(task_list, images)
     if err:
         return tool_error(err)
-    err = _oneshot_spawn_budget(parent_agent, len(task_list))
+    task_list = [dict(task) for task in task_list]
+    from agent.specialist_assignment import prepare
+    try:
+        prepare(parent_agent, task_list, assignment)
+    except (ValueError, OSError) as exc:
+        return tool_error(str(exc))
+    err = _oneshot_spawn_budget(parent_agent, len(task_list), tasks=task_list)
     if err:
         return tool_error(err)
 
@@ -751,6 +768,7 @@ registry.register(
         background=False, output_schema=args.get("output_schema"),
         images=args.get("images"), action=args.get("action"), subagent_id=args.get("subagent_id"), message=args.get("message"),
         parent_agent=kw.get("parent_agent"), query=args.get("query", ""), page=args.get("page", 1),
+        assignment=args.get('assignment'),
     ),
     check_fn=check_delegate_requirements,
     emoji="🔀",

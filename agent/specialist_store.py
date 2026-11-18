@@ -39,15 +39,22 @@ class Specialist:
     enabled: bool = True
     needs_review: bool = False
     max_iterations: int = 30
-    timeout_seconds: int = 900
+    timeout_seconds: int = 0
     revision: str = field(default_factory=lambda: uuid4().hex)
-    version: int = 1
+    version: int = 2
 
     @classmethod
     def parse(cls, raw):
         if not isinstance(raw, dict) or set(raw) - set(cls.__dataclass_fields__):
             raise ValueError("Invalid specialist definition: unknown fields or non-object input.")
         data = dict(raw)
+        # Version 1 always supplied a 15-minute default, even when the user
+        # never chose a deadline. Keep custom limits; remove that implicit cap.
+        legacy = type(data.get('version', 1)) is int and data.get('version', 1) == 1
+        if legacy:
+            if data.get('timeout_seconds', 900) == 900:
+                data['timeout_seconds'] = 0
+            data['version'] = 2
         docs = data.get('source_documents', [])
         if not isinstance(docs, (list, tuple)) or any(
             not isinstance(doc, dict) or set(doc) != {'source', 'label', 'text'} or
@@ -93,7 +100,7 @@ class Specialist:
             parts = path.replace("\\", "/").split("/")
             if not sep or skill not in item.skills or not path or path.startswith("/") or any(p in ("", ".", "..") for p in parts) or ":" in path:
                 raise ValueError("Skill modules must reference a selected skill and a safe relative file path.")
-        if type(item.version) is not int or item.version != 1:
+        if type(item.version) is not int or item.version != 2:
             raise ValueError("Unsupported specialist version; update SCI before editing it.")
         for key in ("purpose", "instructions", "output", "revision"):
             value = getattr(item, key)
@@ -104,15 +111,22 @@ class Specialist:
                 raise ValueError(f"{key} must be true or false.")
         if sum(len(doc['text']) for doc in item.source_documents) + len(item.instructions) > 100_000:
             raise ValueError('Combined instruction/reference text exceeds 100,000 characters; select smaller sources.')
-        for key in ("max_iterations", "timeout_seconds"):
-            if type(getattr(item, key)) is not int or getattr(item, key) < 1:
-                raise ValueError(f"{key} must be a positive whole number.")
+        if type(item.max_iterations) is not int or item.max_iterations < 1:
+            raise ValueError('max_iterations must be a positive whole number.')
+        if type(item.timeout_seconds) is not int or item.timeout_seconds < 0:
+            raise ValueError('timeout_seconds must be a nonnegative whole number (0 means no total deadline).')
         for child in item.children:
             validate_name(child)
             if child == item.name:
                 raise ValueError("A specialist cannot delegate to itself.")
         if len(json.dumps(asdict(item)).encode()) > _MAX_BYTES:
             raise ValueError("Specialist definition exceeds 256 KB; use smaller instructions and references.")
+        if legacy and item.package_info.get('definition_digest'):
+            # A format migration is not a local edit to a reviewed package.
+            from sci_cli.subagent_package_install import definition_digest
+            original = replace(item, version=1, timeout_seconds=raw.get('timeout_seconds', 900))
+            if item.package_info['definition_digest'] == definition_digest(original):
+                item = replace(item, package_info={**item.package_info, 'definition_digest': definition_digest(item)})
         return item
 
 

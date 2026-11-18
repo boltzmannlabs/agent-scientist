@@ -130,6 +130,14 @@ auxiliary conversion then preserves their authorization policy instead of
 rebuilding an unguarded SDK client. The bundled `boltzmann_models` provider is a
 concrete example of these hooks.
 
+A custom client whose endpoint returns only a complete JSON response can declare the class
+attribute `completion_response_mode = 'complete'`. The main and child request monitors then
+wait without an implicit no-chunk deadline, while retaining activity notices and cancellation.
+The adapter should use an unlimited default read timeout with finite connect/write/pool
+timeouts. Explicit provider/model request and stale timeouts and run budgets remain respected.
+Keep this capability on both synchronous and asynchronous adapters and preserve it in
+`with_options()`; ordinary streaming clients keep their existing watchdog policy.
+
 ## Declaring model capabilities
 
 Sci resolves per-model capabilities (`supports_reasoning`, `supports_vision`,
