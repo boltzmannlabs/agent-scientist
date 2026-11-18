@@ -26,100 +26,40 @@ export function outputFileReference(value: string, origin?: string, allowRelativ
   return name && name !== '.' && name !== '..' ? { path, name } : null;
 }
 
-/** Automatic chat actions need evidence of a file, not just a path-shaped token. */
-export function fileActionReference(value: string, origin?: string, allowRelative = false, declaredFile = false): OutputFileReference | null {
-  const file = outputFileReference(value, origin, allowRelative);
-  if (!file) return null;
-  const path = file.path.replace(/\\/g, '/');
-  // Internal instructions and spillover are readable references, not deliverables.
-  if (/(?:^|\/)(?:skills|references)\//i.test(path)
-    || /(?:^|\/)cache\/spillover\//i.test(path)
-    || /(?:^|\/)\.sci\/cache\//i.test(path)) return null;
-  const hasSuffix = /^[^.].*\.[\p{L}\p{N}_-]+$/u.test(file.name);
-  if (/^\/[^/]+$/.test(path) && !hasSuffix) return null; // Slash commands and root folders (e.g. /tmp).
-  if (!hasSuffix && !declaredFile) return null;
-  // A bare filename in inline code is commonly a source/schema mention.
-  if (!allowRelative && !path.includes('/')) return null;
-  return file;
-}
-
-export function linkedOutputFile(href: string, origin?: string): OutputFileReference | null {
-  const value = href.trim().replace(/^<(.+)>$/, '$1');
-  try {
-    return fileActionReference(/^(?:https?:|file:|sandbox:)/i.test(value) ? value : decodeURIComponent(value), origin, true);
-  } catch { return null; }
-}
-
-export function splitFileText(text: string): { text: string; file?: OutputFileReference }[] {
-  const whole = fileActionReference(text);
-  // A whole line or quoted/inline-code reference may contain spaces.
-  if (whole && (whole.path.slice(1).includes('/') || /^[a-z]:/i.test(whole.path))) {
-    return [{ text, file: whole }];
-  }
-  const result: { text: string; file?: OutputFileReference }[] = [];
-  const pattern = /(?:^|[\s(])((?:sandbox:)?\/(?!\/)[^\s`<>"'|\])]+|[a-z]:[\\/][^\s`<>"'|\])]+)/gi;
-  let end = 0;
-  for (const match of text.matchAll(pattern)) {
-    const token = match[1].replace(/[.,;:]+$/, '');
-    const file = fileActionReference(token);
-    if (!file || (!file.path.slice(1).includes('/') && !file.name.includes('.'))) continue;
-    const start = match.index! + match[0].indexOf(match[1]);
-    result.push({ text: text.slice(end, start) }, { text: token, file });
-    end = start + token.length;
-  }
-  result.push({ text: text.slice(end) });
-  return result;
-}
-
-/** Only declared artifacts or explicit save/download notices become tool-result cards. */
+/** Cards come only from structured tool output_paths, never prose or storage metadata. */
 export function outputFilesInResult(text: string): OutputFileReference[] {
   const found = new Map<string, OutputFileReference>();
-  const add = (value: string, declaredFile = false) => { const file = fileActionReference(value, undefined, true, declaredFile); if (file && found.size < 20) found.set(file.path, file); };
   let visited = 0;
-  function walk(value: unknown, depth = 0, artifact = false, pathField = false, declaredFile = false) {
-    if (++visited > 1000 || depth > 8) return;
-    if (typeof value === 'string' && pathField) add(value, declaredFile);
-    else if (Array.isArray(value)) value.forEach(row => walk(row, depth + 1, artifact, pathField, declaredFile));
-    else if (value && typeof value === 'object') Object.entries(value).forEach(([key, row]) => {
-      const collection = /^(?:files|artifacts|outputs|output_files)$/.test(key);
-      const fileField = /^(?:output_file|download_file)$/.test(key) || (artifact && /^(?:path|file_path|local_path)$/.test(key));
-      const outputPath = /^(?:local_path|download_path|output_path|output_paths|saved_path)$/.test(key);
-      walk(row, depth + 1, artifact || collection, collection || fileField || outputPath, collection || fileField);
-    });
-  }
-  try { walk(JSON.parse(text)); return [...found.values()]; } catch { /* Non-JSON results may contain save notices. */ }
-  for (const line of text.replace(/```[\s\S]*?```/g, '').split('\n')) {
-    if (!/^\s*(?:saved|downloaded|created|output file|artifact)\b/i.test(line)) continue;
-    for (const match of line.matchAll(/`([^`]+)`|\[[^\]]*\]\(([^)]+)\)/g)) {
-      const file = match[2] ? linkedOutputFile(match[2], typeof window === 'undefined' ? undefined : window.location.origin) : fileActionReference(match[1]);
-      if (file) add(file.path, true);
+  function walk(value: unknown, depth = 0) {
+    if (++visited > 1000 || depth > 8 || !value || typeof value !== 'object') return;
+    if (Array.isArray(value)) { value.forEach(row => walk(row, depth + 1)); return; }
+    const record = value as Record<string, unknown>;
+    if (Array.isArray(record.output_paths)) {
+      for (const path of record.output_paths) {
+        if (typeof path !== 'string') continue;
+        const file = outputFileReference(path, undefined, true);
+        if (file && found.size < 20) found.set(file.path, file);
+      }
     }
-    splitFileText(line).forEach(part => { if (part.file) add(part.file.path); });
+    // Standard tool-call / parallel-call envelopes. Do not inspect args, skill
+    // content, examples, arbitrary metadata or GCP storage references.
+    for (const key of ['result', 'results', 'data', 'tools']) {
+      const child = record[key];
+      if (typeof child === 'string') {
+        try { walk(JSON.parse(child), depth + 1); } catch { /* Plain output is not an artifact declaration. */ }
+      } else walk(child, depth + 1);
+    }
   }
+  try { walk(JSON.parse(text)); } catch { /* Text alone cannot declare downloadable outputs. */ }
   return [...found.values()];
 }
 
-/** Resolve filenames in a final report only against observed outputs or its stated save folder. */
+/** Final answers reuse exact tool-declared paths; filenames never create new paths. */
 export function outputFilesInResponse(text: string, known: OutputFileReference[] = []): OutputFileReference[] {
   const prose = text.replace(/```[\s\S]*?```/g, '');
   const found = new Map<string, OutputFileReference>();
-  // A folder is context for the listed files, never itself a download target.
-  const folderMatch = prose.match(/\b(?:saved in|saved to|output folder|output directory|results directory)\s*[:=]?\s*[`"']?((?:\/(?!\/)|[a-z]:[\\/])[^\r\n`"'<>]*?)(?=[`"'\r\n)]|$)/i);
-  const folder = folderMatch?.[1].trim().replace(/[\\/]$/, '');
-  const candidates = [...known].sort((a, b) => b.name.length - a.name.length);
-  for (const file of candidates) {
-    const start = prose.indexOf(file.name);
-    if (start < 0 || prose.includes(file.path)) continue; // Absolute references already have inline actions.
-    if (fileActionReference(file.path, undefined, true, true)) found.set(file.path, file);
-  }
-  if (folder) {
-    const filename = /(?:^|[\s`*|(])([\p{L}\p{N}_-][\p{L}\p{N}_.-]*\.[\p{L}\p{N}_-]+)(?=$|[\s`*|/),;])/gu;
-    for (const match of prose.matchAll(filename)) {
-      const name = match[1];
-      if (candidates.some(file => file.name === name) || prose.includes(`${folder}/${name}`)) continue;
-      const file = fileActionReference(`${folder}/${name}`, undefined, true);
-      if (file) found.set(file.path, file);
-    }
+  for (const file of known) {
+    if (prose.includes(file.name)) found.set(file.path, file);
   }
   return [...found.values()].slice(0, 20);
 }

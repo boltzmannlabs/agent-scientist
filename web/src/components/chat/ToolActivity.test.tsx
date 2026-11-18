@@ -45,7 +45,7 @@ it('renders generic live operations, results and artifacts without replacing des
   await render();
   await emit('tool.start', { tool_id: 'shell', name: 'terminal', preview: 'Inspect example.txt' });
   await emit('message.interim', { text: 'I am checking the results.' });
-  await emit('tool.complete', { tool_id: 'shell', name: 'terminal', summary: 'Command finished', result: { output: 'hello world', exit_code: 0, output_path: '/tmp/report.csv' } });
+  await emit('tool.complete', { tool_id: 'shell', name: 'terminal', summary: 'Command finished', result: { output: 'hello world', exit_code: 0, output_paths: ['/tmp/report.csv'] } });
   const card = container.querySelector('details')!;
   expect(card.querySelector('summary')?.textContent).toContain('Inspect example.txt');
   expect(card.textContent).toContain('Command finished');

@@ -6,7 +6,6 @@ import { copyTextToClipboard } from '@/lib/clipboard';
 import type { WebChatState } from '@/lib/web-chat-state';
 import type { ReactNode } from 'react';
 import { useProfileScope } from '@/contexts/useProfileScope';
-import { OutputFileContext } from '@/components/files/output-file-context';
 import { OutputFile } from '@/components/files/OutputFile';
 import { outputFilesInResult, outputFilesInResponse, type OutputFileReference, type OutputFileScope } from '@/lib/output-files';
 
@@ -38,7 +37,7 @@ export function ChatTranscript({ state, children, onSuggestion, active = true, s
     try { if (!await copyTextToClipboard(text)) throw new Error('Clipboard unavailable'); setCopied(id); setCopyError(''); }
     catch { setCopyError('Could not copy. Select the response text and copy it manually.'); }
   }
-  return <OutputFileContext.Provider value={fileScope}><div className="chat-scroll" ref={scroll} onScroll={() => {
+  return <div className="chat-scroll" ref={scroll} onScroll={() => {
     const e = scroll.current; if (e) pinned.current = e.scrollHeight - e.scrollTop - e.clientHeight < 100;
   }}>
     <div className="chat-transcript" role="log" aria-label="Conversation" aria-live="off">
@@ -68,7 +67,7 @@ export function ChatTranscript({ state, children, onSuggestion, active = true, s
       {children}
       {(state.error || copyError) && <div className="chat-error" role="alert">{state.error || copyError}</div>}
     </div>
-  </div></OutputFileContext.Provider>;
+  </div>;
 }
 
 function ResponseFiles({ text, known, scope }: { text: string; known: OutputFileReference[]; scope: OutputFileScope }) {

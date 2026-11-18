@@ -17,14 +17,13 @@ Chat tool activity appears in expandable cards for all integrations. Each card k
 its operation description and shows the returned output separately from any short
 summary. Assistant progress messages appear between steps; model reasoning is not
 displayed. Tool output is redacted and limited to 65,536 characters per card,
-with an explicit truncation notice. Declared output artifacts, concrete file paths
-and explicit file links retain their profile-scoped Preview, Download and Show in
-Files actions. Final reports also offer these actions for filenames matched to the
-current turn's output artifacts, or listed with an explicit save folder, including
-converted files. This works for tables, streaming replies and saved conversations.
-Commands, folders, unrelated bare filenames, skill references
-and internal spillover paths remain text. Tool-result instructions are not scanned
-for downloadable files. Resuming a conversation restores
+with an explicit truncation notice. Preview, Download and Show in Files cards use
+only the exact `output_paths` returned by tools. Final reports reuse those same
+paths, preserving profile and conversation context. Plain filenames, Markdown
+links and stated output folders never create additional file cards. GCP artifact
+paths, temporary files, instructions and internal references remain ordinary text.
+Files created by scripts need an explicit `output_paths` result to appear as cards.
+Resuming a conversation restores
 retained tool output without rerunning tools. If an older transcript has no output
 available, the card says so rather than claiming the tool returned nothing.
 
