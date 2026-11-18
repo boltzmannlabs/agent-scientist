@@ -197,12 +197,16 @@ status-check error, or user interruption. There is no overall queue/running
 time limit; individual network requests remain bounded and polling is interruptible.
 Progress displays the observed state and elapsed time without inventing a percentage.
 Once terminal, download returned artifacts, verify their contents and counts,
-then give the final report. Include every returned `gcp_paths` value in the
-final report as `GCP artifact path: <path>`, alongside the local `output_paths`
-after download. These are distinct locations: do not substitute the local
-download path for the platform GCP path, and do not invent a path when the
-status result contains none. Never resubmit or ask for a new status request
-just because a job is still pending/running.
+then give the final report. Show only the actual local `output_paths` returned
+by successful downloads as result files, with descriptive labels and the exact
+saved paths. Do not include `gcp_paths`, bucket/object keys, signed URLs or a
+"GCP artifact paths" section in user-facing progress or final responses. Those
+are internal storage references, not files the user can open through SCI's local
+file actions. Do not invent local paths from cloud filenames or list archive
+members as downloaded files unless they were actually extracted and saved.
+Report job identity, result verification, scientific caveats and download errors
+as appropriate. Never resubmit or ask for a new status request just because a
+job is still pending/running.
 
 Stopping the local wait does not cancel the remote calculation. Keep its job ID
 and resume checking that same job if requested. Closing SCI stops foreground
