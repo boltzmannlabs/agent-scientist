@@ -51,8 +51,10 @@ def test_picker_switches_saved_profiles_and_resumes_without_reconfiguration(save
             ui.choose.assert_called_once()
             assert f"{source} — currently active" in ui.choose.call_args.args[1]
             assert cli._pending_profile_home == str(saved_profiles[target])
-            assert cli._pending_relaunch == ["--cli", "-p", "default" if target == "main" else target,
-                                            "--resume", f"{target}-conversation"]
+            expected = ["--cli", "-p", "default" if target == "main" else target]
+            if target != "main":
+                expected.extend(["--resume", f"{target}-conversation"])
+            assert cli._pending_relaunch == expected
             cli._app.loop.call_soon_threadsafe.assert_called_once_with(cli._app.exit)
             assert cli.agent is agent and cli.conversation_history == history
     with profile_scope(saved_profiles["a"]):

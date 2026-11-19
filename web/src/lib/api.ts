@@ -85,6 +85,7 @@ export function getManagementProfile(): string {
 // has its own per-job profile params), profiles themselves — is machine-global or
 // self-scoped and must NOT be rewritten.
 const PROFILE_SCOPED_PREFIXES = [
+  "/api/boltzmann",
   "/api/status",
   "/api/gateway",
   "/api/analytics",
@@ -1114,9 +1115,10 @@ export const api = {
     fetchJSON<UpdateCheckResponse>(
       `/api/sci/update/check${force ? "?force=true" : ""}`,
     ),
-  getActionStatus: (name: string, lines = 200) =>
+  getActionStatus: (name: string, lines = 200, options?: { signal?: AbortSignal }) =>
     fetchJSON<ActionStatusResponse>(
       `/api/actions/${encodeURIComponent(name)}/status?lines=${lines}`,
+      { signal: options?.signal },
     ),
 
   // Dashboard plugins
@@ -1530,6 +1532,7 @@ export interface GatewayMigratePlan {
 }
 
 export interface ActionResponse {
+  action_id?: string;
   archive?: string;
   name: string;
   ok: boolean;
@@ -2027,6 +2030,8 @@ interface FetchJSONOptions {
 }
 
 export interface ActionStatusResponse {
+  action_id?: string;
+  receipt?: { outcome?: string; action_id?: string | null };
   exit_code: number | null;
   lines: string[];
   name: string;
@@ -2676,6 +2681,7 @@ export interface ModelInfoResponse {
 export type { ModelOptionProvider, ModelOptionsResult };
 
 export interface AuxiliaryTaskAssignment {
+  reasoning_effort?: string | null;
   task: string;
   provider: string;
   model: string;
@@ -2684,7 +2690,7 @@ export interface AuxiliaryTaskAssignment {
 
 export interface AuxiliaryModelsResponse {
   tasks: AuxiliaryTaskAssignment[];
-  main: { provider: string; model: string };
+  main: { provider: string; model: string; reasoning_effort?: string };
 }
 
 export interface MoaModelSlot {
@@ -2721,6 +2727,7 @@ export interface MoaConfigResponse {
 }
 
 export interface ModelAssignmentRequest {
+  reasoning_effort?: string | null;
   confirm_expensive_model?: boolean;
   scope: "main" | "auxiliary";
   provider: string;

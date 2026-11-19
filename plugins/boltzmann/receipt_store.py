@@ -235,18 +235,62 @@ class ReceiptStore:
     def get(self, key):
         return self.find(key)[0]
 
-    def begin_submission(self, job, identities, experiment_name=""):
-        if not identities:
+    def reusable_upload(self, receipt, key_for_storage):
+        """Find an existing reference for a revalidated frozen input, without uploading."""
+        with self._locked():
+            self._migrate()
+            for row in sorted(self._rows().values(), key=lambda row: row['created'], reverse=True):
+                if row['kind'] != 'upload' or row['state'] != 'uploaded':
+                    continue
+                previous = row['receipt']
+                if (all(previous.get(key) == receipt[key] for key in ('authorization', 'sha256', 'contract', 'context'))
+                        and row['key'] == key_for_storage(row['storage_path'])):
+                    return row['storage_path'], row['id']
+        return None
+
+    def begin_submission(self, job, identities, experiment_name="", *, payload=None):
+        from agent.specialist_assignment import current_assignment
+        assignment = current_assignment()
+        if not identities and assignment is None:
             return None
         with self._locked():
             self._migrate()
             rows = self._rows()
             if any(i not in rows or rows[i]["kind"] != "upload" for i in identities):
                 raise ReceiptStorageError("An input receipt expired before submission; validate the input again. No job submitted.")
+            assignment_fields = {}
+            if assignment is not None:
+                # Different uploads of the same bytes are the same scientific input.
+                replacements = {rows[i]['storage_path']: {'sha256': rows[i]['receipt']['sha256']}
+                                for i in identities}
+
+                def canonical(value):
+                    if isinstance(value, str):
+                        return replacements.get(value, value)
+                    if isinstance(value, dict):
+                        return {k: canonical(v) for k, v in value.items()}
+                    if isinstance(value, list):
+                        return [canonical(v) for v in value]
+                    return value
+
+                digest = hashlib.sha256(json.dumps([job, canonical(payload)], sort_keys=True,
+                                                   allow_nan=False).encode()).hexdigest()
+                previous = [row for row in rows.values() if row['kind'] == 'submission'
+                            and row.get('assignment_id') == assignment.id and row['job'] == job]
+                duplicate = next((row for row in previous if row.get('fingerprint') == digest), None)
+                if duplicate:
+                    raise ReceiptStorageError('This assignment already reserved or submitted these inputs. '
+                                              f"Attempt {duplicate['id']}; job ID {duplicate['doc_id'] or 'unknown'}. "
+                                              'Reconcile that attempt; do not submit again.')
+                limit = json.loads(assignment.contract)['max_submissions'].get(job)
+                if limit is not None and len(previous) >= limit:
+                    raise ReceiptStorageError('Assignment submission limit reached. Reuse/reconcile existing attempts; '
+                                              'no additional job was started.')
+                assignment_fields = {'assignment_id': assignment.id, 'fingerprint': digest}
             return self._reserve({"id": uuid.uuid4().hex, "kind": "submission", "job": job,
                                   "experiment_name": experiment_name,
                                   "doc_id": None, "state": "unknown", "receipts": sorted(set(identities)),
-                                  "created": time.time(), "terminal_at": None}, REFERENCE_BYTES + 4096)
+                                  "created": time.time(), "terminal_at": None, **assignment_fields}, REFERENCE_BYTES + 4096)
 
     def accept_submission(self, attempt, doc_id):
         if not attempt:
@@ -277,6 +321,11 @@ class ReceiptStore:
                 else:
                     row.update(state="unknown", terminal_at=None)
                 self._write(row)
+                from .assignment_evidence import save
+                warning = save(row['id'], job_name=job, doc_id=doc_id, state=row['state'],
+                               terminal_confirmed=terminal)
+                if warning:
+                    raise ReceiptStorageError(warning)
             self._cleanup(rows)
 
     def inspect(self):

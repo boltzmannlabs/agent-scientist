@@ -27,6 +27,10 @@ def record(child, goal, result=None):
                "provider": str(getattr(child, 'provider', '') or ''),
                "model_note": "This run keeps its assigned model/provider; parent model switches apply to new assignments.",
                "parent_session_id": getattr(child, "_parent_session_id", None),
+               "parent_run_id": getattr(child, '_parent_subagent_id', None),
+               "root_run_id": getattr(child, '_specialist_root_run_id', None) or run_id,
+               "depth": getattr(child, '_delegate_depth', 1),
+               "assignment_id": getattr(policy.assignment, 'id', None),
                "transcript": getattr(child, "_live_transcript_path", None)}
     else:
         from agent.specialist_results import assess_entry
@@ -44,10 +48,19 @@ def history(home=None):
         raise ValueError("Run receipt directory must not be a symbolic link.")
     active = {r["subagent_id"]: r for r in list_active_subagents()}
     rows = []
+    assignments = {}
     for path in root.glob("sa-*.json"):
         if path.is_symlink():
             continue
         row = json.loads(path.read_text(encoding="utf-8-sig"))
+        identity = row.get('assignment_id')
+        if isinstance(identity, str) and len(identity) == 32 and all(c in '0123456789abcdef' for c in identity):
+            if identity not in assignments:
+                from agent.specialist_assignment import Assignment, evidence
+                from types import SimpleNamespace
+                assignment = Assignment(identity, str(root.parent.resolve()), '', '')
+                assignments[identity] = evidence(SimpleNamespace(_specialist_policy=SimpleNamespace(assignment=assignment)))
+            row['assignment_evidence'] = assignments[identity]
         if isinstance(row.get('result'), dict):
             from agent.specialist_results import assess_entry
             row['result'] = assess_entry(dict(row['result']))

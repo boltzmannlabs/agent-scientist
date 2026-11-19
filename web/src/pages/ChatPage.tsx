@@ -10,7 +10,6 @@ import { ChatRequest } from '@/components/chat/ChatRequest';
 import { readChatSession, useWebChat } from '@/components/chat/useWebChat';
 import { useProfileScope } from '@/contexts/useProfileScope';
 import { usePageHeader } from '@/contexts/usePageHeader';
-import { api } from '@/lib/api';
 import { readStoredWorkspace } from '@/lib/chat-workspaces';
 import '@/components/chat/chat.css';
 
@@ -58,7 +57,6 @@ function ChatConversation({ active, profile, resume, workspace, onNew }: ChatCon
   const chat = useWebChat({ profile, resume, cwd });
   const [historyOpen, setHistoryOpen] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
-  const [modelLabel, setModelLabel] = useState('');
   const [modelNotice, setModelNotice] = useState('');
   const [controlsOpen, setControlsOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -80,7 +78,7 @@ function ChatConversation({ active, profile, resume, workspace, onNew }: ChatCon
       <p>YOLO skips approval prompts for guarded actions in this session.</p>
       <button type="button" className="chat-control-choice" onClick={() => { void chat.setControl('yolo', chat.info.yolo ? 'off' : 'on'); }}><ShieldCheck size={16} />{chat.info.yolo ? 'Turn YOLO off' : 'Enable YOLO for this session'}</button>
       <label>Fast mode<select value={chat.info.fast ? 'fast' : 'normal'} onChange={event => void chat.setControl('fast', event.target.value)}><option value="normal">Normal</option><option value="fast">Fast</option></select></label>
-      <label>Reasoning<select value={chat.info.reasoning_effort || 'medium'} onChange={event => void chat.setControl('reasoning', event.target.value)}>{['none','minimal','low','medium','high','xhigh','max','ultra'].map(value => <option key={value} value={value}>{value}</option>)}</select></label>
+      <p>Choose reasoning effort in the model picker.</p>
     </div>}
     {statusOpen && <div className="chat-control-popover chat-status-popover" role="status">
       <strong>Session status</strong><p>{chat.state.busy ? chat.state.status || 'Working…' : 'Ready'} · {chat.info.model || 'Model unknown'}</p>
@@ -111,7 +109,7 @@ function ChatConversation({ active, profile, resume, workspace, onNew }: ChatCon
         onSteer={text => chat.steer(text)}
         commands={chat.commands}
         toolbar={promptToolbar}
-        modelLabel={modelLabel || chat.info.model || 'Choose model'} onChooseModel={() => { setModelNotice(''); setModelPickerOpen(true); }} onSend={async (text, files) => {
+        modelLabel={chat.info.model || 'Choose model'} onChooseModel={() => { setModelNotice(''); setModelPickerOpen(true); }} onSend={async (text, files) => {
         if (/^\/(new|reset)\s*$/i.test(text)) { onNew(); return true; }
         if (/^\/side\s*$/i.test(text)) { setHistoryOpen(false); setSideVersion(value => value + 1); setSideOpen(true); return true; }
         return chat.send(text, files);
@@ -119,17 +117,13 @@ function ChatConversation({ active, profile, resume, workspace, onNew }: ChatCon
       {modelNotice && <div className="chat-model-notice" role="status">{modelNotice}</div>}
       </>}
       {modelPickerOpen && <ModelPickerDialog
-        loader={() => api.getModelOptions(profile)}
+        loader={chat.getModelOptions}
+        reasoningEffort={chat.info.reasoning_effort}
         title="Choose model"
-        onApply={async ({ provider, model, confirmExpensiveModel, persistGlobal }) => {
-          const result = persistGlobal
-            ? await api.setModelAssignment({ confirm_expensive_model: confirmExpensiveModel, scope: 'main', provider, model }, profile)
-            : await chat.setModel(provider, model, confirmExpensiveModel);
-          if (!result.confirm_required && persistGlobal) {
-            setModelNotice(`${model} saved as the default for new conversations.`);
-          } else if (!result.confirm_required) {
-            setModelLabel(model);
-            setModelNotice('deferred' in result && result.deferred ? `${model} will be used after the current response.` : `${model} is now active in this conversation.`);
+        onApply={async ({ provider, model, confirmExpensiveModel, persistGlobal, reasoningEffort }) => {
+          const result = await chat.setModel(provider, model, confirmExpensiveModel, persistGlobal, reasoningEffort);
+          if (!result.confirm_required) {
+            setModelNotice(`${result.deferred ? `${model} will be used on the next message.` : `${result.value || model} is now active in this conversation.`}${persistGlobal ? (result.deferred ? ' The profile default will also be saved when applied.' : ' Also saved as the profile default.') : ''}`);
           }
           return result;
         }}
@@ -142,7 +136,6 @@ function ChatConversation({ active, profile, resume, workspace, onNew }: ChatCon
 function SideConversation({ profile, cwd, parentSessionId, onClose }: { profile: string; cwd: string; parentSessionId: string; onClose: () => void }) {
   const chat = useWebChat({ profile, resume: '', cwd, storageKey: `${profile}:side`, parentSessionId });
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
-  const [modelLabel, setModelLabel] = useState('');
   const [modelNotice, setModelNotice] = useState('');
   const toolbar = <div className="chat-prompt-toolbar">
     <span className="chat-side-label">SIDE CONVERSATION</span>
@@ -157,16 +150,13 @@ function SideConversation({ profile, cwd, parentSessionId, onClose }: { profile:
       onCompact={() => void chat.send('/compact')} onQueue={text => chat.send(text, [], true)} onSteer={text => chat.steer(text)}
       commands={chat.commands}
       toolbar={toolbar}
-      modelLabel={modelLabel || chat.info.model || 'Choose model'}
+      modelLabel={chat.info.model || 'Choose model'}
       onChooseModel={() => { setModelNotice(''); setModelPickerOpen(true); }}
       onSend={(text, files) => chat.send(text, files)} onStop={chat.stop} />
-    {modelPickerOpen && <ModelPickerDialog loader={() => api.getModelOptions(profile)} title="Choose model"
-      onApply={async ({ provider, model, confirmExpensiveModel, persistGlobal }) => {
-        const result = persistGlobal
-          ? await api.setModelAssignment({ confirm_expensive_model: confirmExpensiveModel, scope: 'main', provider, model }, profile)
-          : await chat.setModel(provider, model, confirmExpensiveModel);
-        if (!result.confirm_required && persistGlobal) setModelNotice(`${model} saved as the default for new conversations.`);
-        else if (!result.confirm_required) { setModelLabel(model); setModelNotice('deferred' in result && result.deferred ? `${model} will be used after the current response.` : `${model} is now active in this conversation.`); }
+    {modelPickerOpen && <ModelPickerDialog loader={chat.getModelOptions} title="Choose model" reasoningEffort={chat.info.reasoning_effort}
+      onApply={async ({ provider, model, confirmExpensiveModel, persistGlobal, reasoningEffort }) => {
+        const result = await chat.setModel(provider, model, confirmExpensiveModel, persistGlobal, reasoningEffort);
+        if (!result.confirm_required) setModelNotice(`${result.deferred ? `${model} will be used on the next message.` : `${result.value || model} is now active in this conversation.`}${persistGlobal ? (result.deferred ? ' The profile default will also be saved when applied.' : ' Also saved as the profile default.') : ''}`);
         return result;
       }} onClose={() => setModelPickerOpen(false)} />}
   </>;

@@ -668,14 +668,16 @@ function AuxiliaryTasksModal({
             key={`picker-${refreshKey}`}
             loader={api.getModelOptions}
             alwaysGlobal
+            reasoningEffort={aux?.tasks.find(t => t.task === picker.task)?.reasoning_effort || undefined}
             title={`Set Auxiliary: ${
               AUX_TASKS.find((t) => t.key === picker.task)?.label ??
               picker.task
             }`}
-            onApply={async ({ provider, model, confirmExpensiveModel }) => {
+            onApply={async ({ provider, model, confirmExpensiveModel, reasoningEffort }) => {
               const result = await api.setModelAssignment({
                 confirm_expensive_model: confirmExpensiveModel,
                 scope: "auxiliary",
+                reasoning_effort: reasoningEffort,
                 task: picker.task,
                 provider,
                 model,
@@ -906,17 +908,18 @@ function MoaModelsModal({
           loader={api.getModelOptions}
           alwaysGlobal
           title="Select MoA Model"
-          onApply={async ({ provider, model }) => {
+          onApply={async ({ provider, model, reasoningEffort }) => {
             if ((provider || "").toLowerCase() === "moa") {
               setError("MoA presets can't reference or aggregate the Mixture of Agents provider (no recursive MoA).");
               return;
             }
             setError(null);
             updateSelectedPreset((prev) => {
-              if (picker.kind === "aggregator") return { ...prev, aggregator: { provider, model } };
+              const effort = reasoningEffort ? { reasoning_effort: reasoningEffort } : {};
+              if (picker.kind === "aggregator") return { ...prev, aggregator: { ...prev.aggregator, provider, model, ...effort } };
               return {
                 ...prev,
-                reference_models: prev.reference_models.map((slot, i) => i === picker.index ? { ...slot, provider, model } : slot),
+                reference_models: prev.reference_models.map((slot, i) => i === picker.index ? { ...slot, provider, model, ...effort } : slot),
               };
             });
           }}
@@ -958,8 +961,10 @@ function ModelSettingsPanel({
     provider,
     model,
     confirmExpensiveModel,
+    reasoningEffort,
   }: {
     confirmExpensiveModel?: boolean;
+    reasoningEffort?: string;
     scope: "main" | "auxiliary";
     task: string;
     provider: string;
@@ -967,6 +972,7 @@ function ModelSettingsPanel({
   }) => {
     const result = await api.setModelAssignment({
       confirm_expensive_model: confirmExpensiveModel,
+      reasoning_effort: reasoningEffort,
       scope,
       task,
       provider,
@@ -1074,9 +1080,11 @@ function ModelSettingsPanel({
             loader={api.getModelOptions}
             alwaysGlobal
             title="Set Main Model"
-            onApply={async ({ provider, model, confirmExpensiveModel }) => {
+            reasoningEffort={aux?.main.reasoning_effort}
+            onApply={async ({ provider, model, confirmExpensiveModel, reasoningEffort }) => {
               const result = await applyAssignment({
                 confirmExpensiveModel,
+                reasoningEffort,
                 scope: "main",
                 task: "",
                 provider,

@@ -10,6 +10,7 @@ loopback provider.
 from __future__ import annotations
 
 import json
+import re
 
 import pytest
 
@@ -66,7 +67,7 @@ def test_install_lands_on_head_and_publishes_sci(journey: Journey) -> None:
     pinned = installed["pinned"]
     assert pinned == m.head, fail_with(m, f"bootstrap marker pins {pinned}, expected {m.head}", run)
     version = journey["version"]
-    assert version.returncode == 0 and "Sci Agent v" in version.stdout, fail_with(
+    assert version.returncode == 0 and re.fullmatch(r"Agent Scientist \S+\s*", version.stdout), fail_with(
         m, "the published sci.exe cannot report its version", version)
 
 

@@ -18,7 +18,7 @@ SCIENCE_LOGO_MIN_COLUMNS = 70
 
 @lru_cache(maxsize=1)
 def science_art():
-    return json.loads(files("sci_cli").joinpath("data/science-terminal-art.json").read_text(encoding="utf-8"))
+    return json.loads(files("sci_cli").joinpath("data/science-terminal-art.json").read_text(encoding="utf-8-sig"))
 
 
 def science_welcome_panel(*, skin, profile, model, provider, cwd, tool_count,
@@ -38,7 +38,12 @@ def science_welcome_panel(*, skin, profile, model, provider, cwd, tool_count,
     ]
     if context_length:
         rows.append(("Context", f"{context_length:,} tokens" + (" (pinned)" if context_pinned else "")))
-    fields = key_value_table(rows, skin=skin, expand=True)
+    # Stacked details keep values readable when two table columns would leave
+    # only a few characters for paths and profile names in narrow terminals.
+    fields = (
+        Group(*(Text.assemble((f"{label}: ", dim), str(value)) for label, value in rows))
+        if width < 50 else key_value_table(rows, skin=skin, expand=True)
+    )
     if width >= SCIENCE_LOGO_MIN_COLUMNS:
         brand = Text("\n".join(logo if logo is not None else science_art()["boltzmann"]), style=skin.get_color("banner_title"), no_wrap=True)
         brand.append("\n       BOLTZMANN LABS", style=f"bold {dim}")
@@ -58,7 +63,10 @@ def science_welcome_panel(*, skin, profile, model, provider, cwd, tool_count,
     if yolo:
         if not compact:
             content.append(Text())
-        content.append(Text("⚠ YOLO mode — all approval prompts bypassed", style=skin.get_color("ui_warn")))
+        content.append(Text(
+            "⚠ YOLO mode — command approvals bypassed; provider changes and explicit approval requests still require your answer",
+            style=skin.get_color("ui_warn"),
+        ))
     return Panel(
         Group(*content), box=box.ROUNDED, padding=(0, 1) if compact else (1, 2),
         border_style=skin.get_color("banner_border"),

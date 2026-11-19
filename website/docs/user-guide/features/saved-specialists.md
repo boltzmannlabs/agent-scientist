@@ -52,6 +52,15 @@ model request. Adding the same file under References or manually selecting `read
 Additional instructions also accepts an instruction-file path. Invalid paths ask again without
 discarding earlier answers. Updating an older bare-path definition imports its contents for review.
 
+When editing, press Enter on a blank purpose or expected-output answer to keep its saved value.
+For existing additional instructions, choose **Keep current instructions**, **Replace instructions**,
+**Append instructions**, or **Clear instructions**. Append preserves the saved text and adds a new
+paragraph; Replace substitutes the complete text. **Back** and **Done** return to the specialist
+review without cancelling the edit; saving still happens in the review. **Cancel** exits the wizard
+and retains the draft. A blank instruction answer keeps the saved text,
+and a blank reference-location answer skips adding a reference. Save the review, then use `/new`
+for the updated specialist to take effect in a new conversation.
+
 Searchable selectors have Select all, Clear selection and Done. When a search is active,
 **Select matching / Clear matching** affect only the matching results. Unfiltered Select all
 covers the entire section. You can deselect individual entries afterward.
@@ -257,8 +266,8 @@ Private setup files can remain after a failed or cancelled draft, particularly O
 approved package-runner downloads. The UI identifies the private destination. No parent settings
 are rewritten. Copy/duplicate/export/import deliberately omit private capabilities and credentials;
 configure them again in the destination. Parent-driven automatic selection and explicit runs both
-work. Nested specialists with their own private capability scope currently require direct assignment
-from the owning profile, rather than delegation through another specialist.
+work. Approved child specialists can also use their own private capability scopes when invoked
+by another specialist in the same owning profile; their private tools are not added to the lead.
 
 Private capability scope controls SCI discovery, configuration and credentials. It does not create
 an operating-system sandbox: approved terminal programs and local MCP servers still have their
@@ -281,12 +290,17 @@ fully into the child's task context, without shell-template preprocessing or aut
 installation. Loading linked skill reference files remains possible through the selected skill.
 
 The exact selected tool names are enforced during direct calls, tool discovery and programmatic
-registry dispatch. A child cannot gain tools that its parent/profile did not grant. Adding a tool
+registry dispatch. Each named child uses its own reviewed profile/private grants. Permission to
+invoke a child does not give its parent direct access to that child's tools or credentials. Adding a tool
 to an MCP server later does not automatically add it to an existing specialist.
 
 Tool choices show locally available metadata without probing services. Actual availability is
 checked when constructing the child. Configure missing MCPs, plugins or credentials using the
 existing SCI flows, then start a new conversation.
+
+Approved inherited tools use the owning conversation's selected toolsets, including connections
+explicitly selected for that session. Profile defaults do not replace that selection during
+nested delegation. Specialist grants, disabled toolsets and profile isolation still apply.
 
 Boltzmann is presented as **one “Boltzmann job tools” package** containing upload, submit, status,
 download and diagnostic operations. The five helpers are not separate picker entries. The package
@@ -366,18 +380,143 @@ Children cannot open user clarification dialogs. They must return missing inputs
 requirements to the parent. Existing execution approval rules still apply; this feature does
 not enable blanket automatic approval.
 
+## Approved child specialists
+
+The review menu offers **Approved children**. Select existing, enabled specialists in the same
+profile; save, then use `/new` before assigning the lead. For example, create a reviewer, edit a
+coordinator with `/Update_subagent coordinator`, select the reviewer under Approved children,
+and run `/subagent run coordinator <assignment>` in a new conversation.
+
+Children can have their own private skills, selected modules, MCPs and service credentials.
+Approved inherited MCPs retain the owning session's registry scope, including CLI processes
+that started without profile multiplexing. Private capability homes remain separate. Normal
+`tool_search`, `tool_describe` and `tool_call` work through this path; children do not need
+custom stdio connection scripts to reach an already configured, approved MCP.
+The coordinator uses `delegate_task(action="catalog")` to see only its approved children and
+assigns work with `tasks[].specialist`. Each child receives its own saved instructions plus the
+explicit assignment context. Original reports stay in that child's receipt; the lead processes
+the returned result and finishes its own assignment. Missing setup is reported without replacing
+the specialist or bypassing an authorization gate.
+
+On save, SCI checks child availability and cycles. If needed, it offers to enable the required
+profile-level `delegation.max_spawn_depth` and `delegation.orchestrator_enabled` settings. Main is
+depth 0; main → coordinator → reviewer requires depth 2. Settings are written only after saving
+the reviewed definition. A configuration-write failure is reported separately; the existing
+runtime limits remain enforced. Other profiles and the current cached prompt are unchanged.
+
 ## Execution limits
 
-The ordinary wizard does not ask about child specialists, iteration counts or runtime seconds.
-Internal limits remain to prevent runaway work: new definitions have a maximum of 30 model
-iterations and 900 seconds, further bounded by the existing profile/delegation settings. These are
-execution safeguards, not an exact dollar spending cap. Service charges still follow the existing
-approval policy. Older customized limits and child grants are preserved when editing; any retained
-child grants appear in the review.
+### Reliable execution and dependent reviews
 
-The existing nested-delegation permission checks remain: children cannot exceed a lead's tools or
-skills, create cycles, extend its deadline or multiply its iteration budget. New specialists do not
-receive child-delegation grants from this simplified wizard.
+SCI passes the original user assignment unchanged through a specialist hierarchy. A parent
+handoff supplies the child's responsibility; it cannot replace that original specification.
+Dispatch rejects launching a specialist alongside its descendants. Independent parallel
+specialists remain supported, including legitimate comparison/review assignments.
+
+For an explicit saved-specialist command or its equivalent named-root request, an omitted
+`tasks[].specialist` is filled with that requested name before dispatch. The ordinary saved
+definition, permissions and run-receipt path then apply. An explicitly different specialist
+is rejected. Naming a role only in a temporary agent's instructions does not select the saved
+specialist. Ordinary delegation without an assignment contract remains available.
+
+For scientific execution, the parent prepares an internal `delegate_task.assignment`
+contract: exact input files, required tool arguments and per-job submission limits. This
+does not require a new user command or permission prompt. An informational planning pass
+can discover the required schema first. Once execution is configured, descendants cannot
+change its inputs, parameters or budget. Multiple job types can have separate argument
+rules and submission limits in the same workflow.
+
+A newly declared execution budget must have matching nonempty submission parameters before
+any child starts. Missing metadata is returned to the parent for correction without freezing
+an unusable assignment or starting uploads. Existing records remain readable for recovery;
+the scientific adapter also refuses an upload under a legacy incomplete execution contract.
+
+Do not freeze an unknown upload URL as ordinary text. For a file argument that will be uploaded
+by a child, use `{"$input": "/absolute/path/to/input.csv"}` at that argument's position. For example,
+`experiment_data.smiles` can hold this marker while the path is also listed in `assignment.inputs`.
+After validation and receipt persistence, the adapter binds the returned reference to the frozen
+file checksum, tool, job and input field. Other arguments still match the frozen values exactly.
+Older angle-bracket upload placeholders are resolved only when the same validated evidence exists;
+arbitrary placeholder strings do not grant permission. Literal remote references still match literally.
+Markers may also name recorded artifacts from confirmed prior stages; the existing downstream
+input-provenance rules apply. Frozen original input checksums keep priority.
+For an older unbound assignment, a normal upload call revalidates the frozen local file and can
+reuse its existing receipt when authorization, checksum, contract, field and validation context
+match. That restores the binding without another remote upload. Resume the existing assignment;
+do not edit its journal or create a replacement merely to change a future file reference.
+
+Input bytes are hashed before delegation and checked again against the upload snapshot.
+Scientific submission capacity is reserved atomically before the service call. All branches
+share that budget; uploading identical bytes under different storage paths or changing an
+experiment label does not authorize a duplicate request. Accepted and unresolved attempts
+remain recorded even when the worker fails or times out. An intentional repeat is a new
+explicit assignment, not automatic recovery of an uncertain submission.
+
+A dependent review receives exact paths in `tasks[].artifacts`, including original frozen
+inputs and recorded outputs together. SCI verifies their unchanged bytes before starting
+the reviewer; a new artifact record cannot override a frozen input's checksum. Errors identify
+the affected path, so other valid paths can stay in the handoff. Scientific downloads and native file writes record paths and hashes; signed
+download credentials are not retained. Within scientific execution, downloads must come
+from the recorded jobs' status responses. Historical files cannot satisfy this handoff.
+After a prior step has a confirmed terminal outcome, recorded results and newly written
+derived files can serve as subsequent inputs. Use new filenames for derived data. Arbitrary
+terminal/Python side effects are not automatically certified as scientific artifacts.
+
+Reports created through native `write_file`/`patch` may be updated as work progresses. The journal
+records the current checksum and previous checksums; it does not archive the previous file contents.
+Downloaded scientific outputs remain immutable evidence. A reviewer receives the checksum current
+at dispatch, and a native read detects changes after that handoff. This is provenance checking,
+not filesystem isolation for arbitrary terminal or Python code.
+
+The inherited structured contract is the source of truth for input checksums and parameters;
+do not retype hashes into child instructions. Selected skills and modules are already loaded
+for the child. Reuse their schemas and combine related local checks in a concise script rather
+than repeatedly loading instructions or sending entire artifacts back into context.
+
+For one-shot CLI runs, `delegation.oneshot_max_children: null` (the default) limits incidental
+temporary helpers to two while allowing reviewed saved hierarchies to use their existing
+depth, iteration and permission limits. An explicit numeric cap still applies to all children;
+existing configured caps are preserved. A required independent reviewer must not be replaced
+by the executor when a cap is reached.
+
+`execute_code` remains available to specialists whose grants include it. Unattended code
+execution honors existing session or profile authorization, just like the other approval gates.
+Without that authorization, `approvals.single_query_mode: deny` still blocks arbitrary local
+Python; selecting a specialist does not itself authorize a script. Interactive CLI execution
+keeps its existing behavior.
+
+Run receipts include `assignment_id`. A private
+`subagent-runs/assignment-<id>.json` stores the original request, frozen contract and effect
+evidence alongside ordinary run history, using atomic writes and a 1 MiB record limit.
+Evidence is retained for reconciliation; it is not automatically deleted on worker timeout.
+After restart, the parent can pass `assignment: {"resume": "<id>"}` to reload that profile's
+existing contract and reuse recorded jobs. This resumes orchestration, not an old live
+worker. Profile permissions, authorization and normal execution limits are rechecked.
+Descendants inherit the existing assignment automatically; they may omit `assignment` or pass
+the same `resume` ID. They cannot replace its inputs, parameters or allowance.
+
+Failed runs return assignment-wide known effects and an explicit reconciliation warning.
+Timeout results retain bounded partial streamed output and available model/provider, token and
+cost information. Their usage is marked incomplete; unavailable counts or costs are not zero.
+The parent can inspect existing jobs before deciding what remains; a null summary never
+means no scientific work occurred. These guards validate declared inputs and provenance;
+they do not independently establish scientific correctness or eliminate provider outages.
+
+The ordinary wizard does not ask for iteration counts or runtime seconds.
+Internal limits remain to prevent runaway work: new definitions have a maximum of 30 model
+iterations, further bounded by the existing profile/delegation settings. There is no implicit
+total-time deadline: `timeout_seconds: 0` means work may continue while healthy. Explicit positive
+deadlines still bound the specialist and its descendants. Version-1 definitions using the old
+automatic 900-second default load without that cap; other custom limits are preserved. Version-2
+definitions can explicitly choose 900 seconds too. Definitions are migrated on read without
+rewriting existing profile files. Network deadlines, inactivity detection, cancellation and
+iteration budgets remain active. These are execution safeguards, not an exact dollar spending cap.
+Service charges still follow the existing approval policy; retained child grants appear in review.
+
+Nested assignments require an approved child edge, current enabled/reviewed definitions and
+unchanged revisions/private setup. Children cannot create delegation cycles, extend the lead's
+deadline or multiply its shared iteration budget. Disabling/editing the lead or child prevents
+new assignments from its old snapshot. Children receive no delegation grant until explicitly selected.
 
 There is no small fixed limit on saved definitions. Concurrent execution is bounded by the existing
 delegation settings; this feature does not add an unlimited task queue.
@@ -386,7 +525,8 @@ delegation settings; this feature does not add an unlimited task queue.
 
 Every constructed named run gets a private receipt and uses the existing live transcript and
 child session storage. Status includes the specialist name, run ID, outcome, available result/error,
-and transcript path. Budget-exhausted results retain their truncation indicator.
+and transcript path. Nested receipts also identify the parent run, root run and depth.
+Budget-exhausted results retain their truncation indicator.
 
 A saved definition survives restarts. Active execution is process-local: closing/stopping the owning
 session may stop its children, and this feature does not automatically resume interrupted work.
@@ -694,12 +834,18 @@ enable for the next conversation** and `/new`. Recovery reads local metadata and
 install, run the program or probe an MCP. If installed plugin tools need discovery, loading their
 code requires a separate explicit choice. Cancelling review leaves saved grants unchanged.
 
-A model response finishing successfully does not mean its assigned work completed. An explicit
-`Outcome: BLOCKED BEFORE EXECUTION`, incomplete/failed outcome header, or JSON `task_outcome` is
-recorded as failed with its specific task outcome. Run-history views also interpret those explicit
-headers in older receipts without silently rewriting the retained evidence. The raw report and
-stored tool activity remain intact. Subagents receive the authoritative runtime `sa-…` identifier;
-blocked-report delivery shows it separately from any model-written report/file label.
+A model response finishing successfully does not mean its assigned work completed. Declared
+`task_outcome` values and explicit outcome headers are retained separately from runtime execution
+status. A normally finished worker is not relabelled failed because its assessment says
+incomplete. Such declarations return to the parent's normal loop for reconciliation rather than
+silently ending the workflow. Actual cancellation, transport failures and a response containing
+only a short plan retain their runtime failure handling. Historical receipts are not rewritten.
+
+Main and specialists report requested outputs, concrete missing work and relevant limitations.
+They do not add verdicts, ratings or scorecards unless requested. Missing backend method details
+do not add a requirement to reproduce completed calculations. Explicitly requested assessment
+formats remain supported, and original specialist reports remain intact. A required named role
+must not be silently replaced by the parent after a blocker; failure handoffs repeat that guidance.
 
 
 Controlled verification covers private skill/MCP/plugin discovery, child execution, A → B → A

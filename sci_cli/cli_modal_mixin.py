@@ -1022,6 +1022,13 @@ class CLIModalMixin:
         from cli import CLI_CONFIG, _DIM, _RST, _cprint
         from tools.clarify_gateway import resolve_clarify_timeout
 
+        # Drain visible assistant content before a question overlays the terminal,
+        # including providers that never emit a tool-generation-start callback.
+        if getattr(self, '_stream_box_opened', False):
+            self._flush_stream()
+        from sci_cli.cli_render import _wait_for_pending_paints
+        if not _wait_for_pending_paints(getattr(self, '_app', None)):
+            return {"answers": {}, "outcome": "cancelled"}
         timeout = resolve_clarify_timeout(CLI_CONFIG)
         response_queue = queue.Queue()
         state = {

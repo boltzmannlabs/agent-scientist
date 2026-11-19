@@ -46,6 +46,9 @@ class StreamingWaitMonitor:
             watchdog = ("stream stale", stale - waiting_secs) if stale is not None and stale != float("inf") else None
             diag = getattr(getattr(self, "clients", None), "diag", None)
             phase = "post_chunk" if isinstance(diag, dict) and diag.get("first_chunk_at") else "first_chunk"
+            from agent.completion_wait import waits_for_complete_response
+            if waits_for_complete_response(self.agent):
+                phase = 'complete_response'
             if not self._mon.wait_notice.should_emit(phase, watchdog):
                 self.agent._touch_activity(f"waiting for stream response ({waiting_secs}s, {phase})")
                 return

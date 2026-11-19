@@ -580,7 +580,8 @@ def discover_mcp_tools(allowed_mcp_names: Optional[List[str]] = None) -> List[st
     """Entry point: load config, connect servers, register tools. [] without the ``mcp``
     package; idempotent (only servers missing from a previous call are retried).
 
-    ``allowed_mcp_names``: spawn only the MCP servers named in it (built-in toolset names in the
+    ``allowed_mcp_names``: accepts bare server names and canonical ``mcp-<server>`` toolsets;
+    spawn only the MCP servers named in it (built-in toolset names in the
     list simply don't match); ``None`` spawns every configured server. Used by
     ``sci -z -t <toolsets>`` to skip cold-starting servers the caller doesn't need (10-60s
     each); it only affects which servers start, not which names ``-t`` validation can see."""
@@ -591,7 +592,8 @@ def discover_mcp_tools(allowed_mcp_names: Optional[List[str]] = None) -> List[st
         return []
     if allowed_mcp_names is not None:
         allowed_set = {str(n) for n in allowed_mcp_names}
-        filtered = {name: cfg for name, cfg in servers.items() if name in allowed_set}
+        filtered = {name: cfg for name, cfg in servers.items()
+                    if name in allowed_set or f'mcp-{name}' in allowed_set}
         if len(filtered) != len(servers):
             logger.debug("MCP discovery filter: spawning %d/%d configured server(s) per --toolsets filter "
                          "(skipped: %s)", len(filtered), len(servers), ",".join(sorted(set(servers) - set(filtered))))

@@ -192,7 +192,10 @@ def test_dislike_targets_are_closed_per_signal(marks):
 
 def test_setting_change_sends_only_the_schema_key_and_the_backend_decides_the_direction(marks):
     config = marks.home / "config.yaml"
-    config.write_text("display:\n  compact: true\n  skin: neon-theme\n")
+    from sci_cli.config_defaults import DEFAULT_CONFIG
+    compact = not DEFAULT_CONFIG["display"]["compact"]
+    skin = DEFAULT_CONFIG["display"]["skin"]
+    config.write_text(f"display:\n  compact: {str(compact).lower()}\n  skin: {skin}\n")
     _rpc("shared_metrics.desktop_dislike", signal="setting_off_default", setting="display.compact")
     _rpc("shared_metrics.desktop_dislike", signal="setting_off_default", setting="display.skin")
     _rpc("shared_metrics.desktop_dislike", signal="setting_off_default", setting="providers.my-secret-box.api_key")

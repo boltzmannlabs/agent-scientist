@@ -4,6 +4,7 @@ sciNpmLib.buildNpmPackage {
   dirs = [
     "web"
     "apps/shared"
+    "sci_cli/data/science-terminal-art.json"
     "apps/ui"
     "README.md"
     "scripts/build/web.mjs"

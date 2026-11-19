@@ -4,11 +4,28 @@ This bundled provider uses the same profile-local account as the Boltzmann
 scientific tools. It does not require a separate model API key.
 
 1. Run `/boltzmann_login` and authenticate your account.
-2. Open `/model` (or `sci model`), choose **boltzmann_models**, then choose
+2. The first successful connection in a native profile selects
+   **boltzmann_models → discoveryrsi**, with **medium** effort, for new
+   conversations when DiscoveryRSI is advertised by the authenticated gateway.
+   Re-login preserves later model choices. Existing conversations and older
+   isolated profiles keep their settings.
+3. Open `/model` (or `sci model`), choose **boltzmann_models**, then choose
    a model from the gateway's authenticated `/v1/models` catalog, including
    **discoveryrsi-q4ks** when advertised by your gateway.
-3. Confirm the model selection. Saved defaults apply to new conversations;
+4. Confirm the model selection. Saved defaults apply to new conversations;
    `/model` uses the existing explicit conversation-switch flow.
+
+To make a choice the persistent default for CLI startup, `/new` and new web chats:
+
+```text
+/model discoveryrsi-q4ks --provider boltzmann_models --global
+```
+
+The saved provider is part of the selection. A model with the same name saved under
+`custom` uses a generic client; the Boltzmann provider uses its authorized, non-streaming
+gateway adapter and account reporting. A session-only selection leaves the previous
+default in place. CLI `/new` restores the saved provider, endpoint and API mode even
+when the model name itself is unchanged. Other profiles keep their own selected defaults.
 
 The selected ID is sent as `model`, for example `"model": "glm"`. There is no
 additional `provider` request field. Responses may identify the underlying
@@ -34,7 +51,19 @@ the same authorization checks, including asynchronous clients.
 There is no automatic switch to another account or provider after a failure.
 Removing or replacing the key is checked again on the next request, including
 requests using an already-created client. Login enables scientific tools for a
-new conversation; choosing a model is a separate explicit action.
+new conversation and saves the initial model default without switching a live chat.
+
+## Reasoning effort
+
+DiscoveryRSI accepts `low`, `medium`, and `high` through the top-level
+`reasoning_effort` request field. The web model picker offers those declared
+levels and applies the effort with the model selection. Its persistence checkbox
+also saves effort as the owning profile's default. Main, side and auxiliary
+requests use the same guarded gateway client.
+
+Other Boltzmann routes retain gateway-managed effort until a control contract is
+declared for them. SCI omits unsupported reasoning fields for those routes.
+Effort selection does not enable thinking-text display.
 
 ## Responses, usage and credits
 
@@ -43,6 +72,11 @@ new conversation; choosing a model is a separate explicit action.
 - The gateway currently accepts **non-streaming JSON only**. SCI waits for the
   full response and adapts it to its existing renderer; tokens are not delivered
   incrementally by the server.
+- Waiting for that complete response has no default read or no-chunk deadline.
+  SCI continues its activity heartbeat and Stop remains available. Explicit provider/model
+  timeouts and run budgets are respected; connection, write and pool failures still recover
+  through the existing request lifecycle. Accepted scientific jobs keep their durable IDs
+  and monitoring records independently of a model response or interruption.
 - Provider-reported token usage, including cached/reasoning counts when returned,
   uses SCI's existing usage reporting. Thinking visibility follows SCI's display
   setting; this integration does not enable thinking display.

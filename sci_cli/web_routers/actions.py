@@ -67,6 +67,8 @@ _UPDATE_REFUSAL_ERROR_CODES = {
 def _finish_action(name: str, exit_code: Optional[int], pid: Optional[int]) -> None:
     """Record a terminal result and drop the live-process registries for ``name``."""
     _ACTION_RESULTS[name] = {"exit_code": exit_code, "pid": pid}
+    if action_id := _ACTION_IDS.get(name):
+        _ACTION_RESULTS[name]["action_id"] = action_id
     for registry in (_ACTION_PROCS, _ACTION_COMMANDS, _ACTION_IDS):
         registry.pop(name, None)
 
@@ -248,9 +250,17 @@ async def update_sci():
             response["action_id"] = action_id
         return response
 
+    # A restarted dashboard lost its Popen registry; the install's existing
+    # update lock still owns the operation. Reattach instead of spawning again.
+    from sci_cli.update_lock import read_live_update
+    if holder := read_live_update():
+        return {"ok": True, "pid": holder.pid, "name": "sci-update", "already_running": True}
+
     action_id = secrets.token_hex(16)
     with http_failure("Failed to spawn sci update", 500, "Failed to start update"):
-        proc = _spawn_sci_action(["update"], "sci-update", env_overrides={"SCI_ACTION_ID": action_id})
+        proc = _spawn_sci_action(["update"], "sci-update", env_overrides={
+            "SCI_ACTION_ID": action_id, "SCI_UPDATE_CORRELATION_ID": action_id,
+        })
     return {"ok": True, "pid": proc.pid, "name": "sci-update", "action_id": action_id}
 
 
@@ -333,13 +343,13 @@ def _completed_exit_code(
     """Exit code for an action with no live process: in-memory result, else durable evidence."""
     if result is not None:
         return result.get("exit_code")
+    if receipt is not None and receipt.get("outcome") in ("success", "partial", "failed"):
+        # The receipt is authoritative after a dashboard restart, including
+        # when a log marker predates a failed restart step. ``partial`` maps
+        # to exit 1 like the CLI.
+        return 0 if receipt["outcome"] == "success" else 1
     if durable_action_id:
         return 0
-    if receipt is not None and receipt.get("outcome") in ("success", "partial"):
-        # No in-memory result and no log marker (e.g. log rotated), but the
-        # receipt proves a completed run: report its outcome rather than a
-        # null clients time out on. ``partial`` maps to exit 1 like the CLI.
-        return 0 if receipt["outcome"] == "success" else 1
     return None
 
 
@@ -353,11 +363,24 @@ async def get_action_status(name: str, lines: int = 200):
     log_dir = _server_path("_ACTION_LOG_DIR")
     requested_lines = min(max(lines, 1), 2000)
     tail = _tail_lines(log_dir / log_file_name, requested_lines)
+    proc = _ACTION_PROCS.get(name)
+    result = _ACTION_RESULTS.get(name)
+    action_id = _ACTION_IDS.get(name) or (result or {}).get("action_id")
+    recovered_update = None
 
     durable_update_action_id = None
     update_receipt_summary = None
     if name == "sci-update":
+        if proc is None:
+            from sci_cli.update_lock import read_live_update
+            recovered_update = read_live_update()
+            if recovered_update is not None:
+                action_id = _ACTION_IDS.get(name)
         durable_update_action_id = _durable_completed_update_action_id(_tail_lines(log_dir / "update.log", 2000))
+        if action_id and durable_update_action_id != action_id:
+            durable_update_action_id = None
+        if recovered_update is not None:
+            durable_update_action_id = None
         if durable_update_action_id:
             marker = f"=== sci-update completed {durable_update_action_id} ==="
             if marker not in tail:
@@ -368,10 +391,13 @@ async def get_action_status(name: str, lines: int = 200):
         # the outcome instead of inferring it from liveness probes.
         # See #81193, #87359, #91277.
         update_receipt_summary = _latest_update_receipt_summary()
+        if recovered_update is not None or (action_id and update_receipt_summary
+                and update_receipt_summary.get("action_id") != action_id):
+            update_receipt_summary = None
 
-    proc = _ACTION_PROCS.get(name)
-    if proc is None:
-        result = _ACTION_RESULTS.get(name)
+    if recovered_update is not None:
+        running, exit_code, pid = True, None, recovered_update.pid
+    elif proc is None:
         running = False
         pid = result.get("pid") if result else None
         exit_code = _completed_exit_code(result, durable_update_action_id, update_receipt_summary)
@@ -385,8 +411,9 @@ async def get_action_status(name: str, lines: int = 200):
             _finish_action(name, exit_code, pid)
 
     response = {"name": name, "running": running, "exit_code": exit_code, "pid": pid, "lines": tail}
-    if durable_update_action_id:
-        response["action_id"] = durable_update_action_id
+    completed_id = durable_update_action_id or (update_receipt_summary or {}).get("action_id")
+    if action_id or completed_id:
+        response["action_id"] = action_id or completed_id
     if update_receipt_summary is not None:
         response["receipt"] = update_receipt_summary
     return response
@@ -416,6 +443,7 @@ def _latest_update_receipt_summary() -> Optional[Dict[str, Any]]:
     try:
         post = receipt.get("post_update") or {}
         return {
+            "action_id": receipt.get("correlation_id"),
             **{k: receipt.get(k) for k in ("outcome", "started_at", "finished_at")},
             "pre_sha": (receipt.get("pre_update") or {}).get("sha"),
             "post_sha": post.get("sha"), "post_version": post.get("version"),

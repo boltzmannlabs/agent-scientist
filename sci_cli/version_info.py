@@ -299,6 +299,25 @@ def get_version_info() -> VersionInfo:
     return info
 
 
+def get_release_version() -> str:
+    """Product label only; leave updater/plugin provenance and its comparisons intact."""
+    info = get_version_info()
+    repo_dir = _resolve_repo_dir() if info.source == "git" else None
+    if repo_dir is not None:
+        tags = _run_git(repo_dir, "tag", "--merged", "HEAD", "--list", "v[0-9]*", "[0-9]*")
+        releases = [tag for tag in (tags or "").splitlines()
+                    if STABLE_TAG_RE.fullmatch("v" + tag.removeprefix("v"))]
+        # SCI moved from four-part to three-part releases. An older, numerically
+        # larger tag must not hide the nearer release; both tag spellings exist.
+        tag = _run_git(
+            repo_dir, "describe", "--tags", "--abbrev=0",
+            *(arg for release in releases for arg in ("--match", release)), "HEAD",
+        ) if releases else None
+        if tag:
+            return tag.removeprefix("v")
+    return info.base_version
+
+
 def get_code_identity(refresh: bool = False) -> dict:
     """Return the running install's code identity as a flat dict.
 

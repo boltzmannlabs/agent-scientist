@@ -1215,6 +1215,9 @@ def _resolve_nonstream_watchdogs(agent, api_kwargs: dict) -> _NonStreamWatchdogs
     # The effort floor on the STALE timeout lives inside _compute_non_stream_stale_timeout so the
     # run-budget cap still bounds it; here the floor only raises the TTFB/idle implicit defaults.
     stale_timeout = agent._compute_non_stream_stale_timeout(api_kwargs)
+    from agent.completion_wait import waits_for_complete_response, complete_response_stale_timeout
+    if waits_for_complete_response(agent):
+        stale_timeout = complete_response_stale_timeout(agent, streaming=False)
     codex = agent.api_mode == "codex_responses"
     openai_codex_backend = _is_openai_codex_backend(agent)
     est_tokens = estimate_request_context_tokens(api_kwargs)
@@ -3030,7 +3033,7 @@ class _StreamingCall(StreamingWaitMonitor):
 
     # ── chat_completions wire ───────────────────────────────────────────
 
-    def _stream_timeouts(self) -> tuple[float, float, float]:
+    def _stream_timeouts(self) -> tuple[float, float | None, float]:
         """``(write, read, connect/pool)`` socket timeouts. Per-provider
         ``request_timeout_seconds`` wins over SCI_API_TIMEOUT (1800s) and
         SCI_STREAM_READ_TIMEOUT (120s); connect/pool cover the handshake, not
@@ -3039,6 +3042,9 @@ class _StreamingCall(StreamingWaitMonitor):
         base = cfg if cfg is not None else env_float("SCI_API_TIMEOUT", 1800.0)
         if cfg is not None:
             return base, cfg, min(base, 60.0)
+        from agent.completion_wait import waits_for_complete_response
+        if waits_for_complete_response(self.agent) and 'SCI_STREAM_READ_TIMEOUT' not in os.environ:
+            return base, None, 30.0
         read = env_float("SCI_STREAM_READ_TIMEOUT", 120.0)
         stale = self._stream_stale_timeout
         if read == 120.0 and self.agent.base_url and is_local_endpoint(self.agent.base_url):
@@ -3981,6 +3987,10 @@ class _StreamingCall(StreamingWaitMonitor):
         SCI_LOCAL_STREAM_STALE_TIMEOUT — an infinite one stalled sessions on a
         crashed endpoint forever. Cloud values scale with context size and are
         floored for known reasoning models (else BrokenPipeError from the gateway)."""
+        from agent.completion_wait import waits_for_complete_response, complete_response_stale_timeout
+        if waits_for_complete_response(self.agent):
+            self._stream_stale_timeout = complete_response_stale_timeout(self.agent)
+            return
         base = _configured_stale_base(self.agent)
         if base == 180.0 and self.agent.base_url and is_local_endpoint(self.agent.base_url):
             self._stream_stale_timeout = _local_stream_stale_timeout_default()

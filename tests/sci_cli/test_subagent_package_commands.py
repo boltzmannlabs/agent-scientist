@@ -1,4 +1,8 @@
 """Package CLI dispatch and embedded release catalogs work without runtime-state copying."""
+
+import pytest
+
+
 from pathlib import Path
 from types import SimpleNamespace
 import base64
@@ -9,6 +13,8 @@ from sci_cli.specialist_commands import dispatch
 from sci_cli.native_profile_creation import profile_scope
 from sci_cli.config import atomic_config_replace
 from agent.specialist_store import load
+
+pytestmark = pytest.mark.usefixtures("released_sci_version")
 
 
 class UI:

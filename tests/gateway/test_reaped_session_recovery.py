@@ -64,6 +64,7 @@ def _make_runner(store) -> GatewayRunner:
     runner._pending_messages = {}
     runner._voice_mode = {}
     runner._background_tasks = set()
+    runner._busy_input_mode = runner._busy_text_mode = "interrupt"
     runner._draining = False
     runner._restart_requested = False
     runner._restart_task_started = False

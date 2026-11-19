@@ -49,7 +49,7 @@ The top-level manifest fields are:
 
 | Field | Meaning |
 | --- | --- |
-| `schema_version` | Integer 1 |
+| `schema_version` | Integer 1 for existing packages, or 2 for hierarchy-capable packages |
 | `id`, `name` | Stable package ID and suggested local name; lowercase identifier |
 | `version` | Quoted semantic version; bump for substantive content changes |
 | `authors`, `license`, `description` | Attribution, redistribution license and purpose |
@@ -60,14 +60,97 @@ The top-level manifest fields are:
 | `skill_files` | Optional `<declared-skill>#<relative-module-file>` selections |
 | `dependencies` | Program, plugin, MCP and/or Boltzmann requirements described below |
 | `references` | Approved relative files/public URLs, label, license and access mode |
-| `limits` | Positive `max_iterations` and `timeout_seconds` |
+| `limits` | Positive `max_iterations`; v2 accepts `timeout_seconds: 0` for no overall deadline. V1 retains positive timeouts. |
 | `platforms` | Nonempty supported platforms, e.g. `[any]` or `[linux-amd64]` |
 | `fixtures` | Nonempty input/expected JSON file pairs with optional description |
 | `automatic` | Optional boolean: matching-task use as well as explicit requests |
+| `children` | V2-only list of role, package ID and compatible version requirements |
 
-Unknown fields are rejected. `children` is unsupported in v1; `unresolved` marks a
+Unknown fields are rejected. Nonempty `children` is unsupported in v1; `unresolved` marks a
 noninstallable draft and must be cleared by supplying real requirements before a PR.
 Use the starter manifest as a complete syntactically valid example.
+
+## Package hierarchies
+
+The existing create → prepare package → local test → PR to dev → test merged dev →
+promote to main process also applies to a team of specialists. Each specialist has its
+own package. A schema-v2 parent declares its approved children, for example:
+
+```yaml
+schema_version: 2
+# Other required fields remain as described above.
+tools: [delegate_task]
+children:
+  - role: reader
+    package: table-reader
+    version: '>=1.0.0,<2.0.0'
+  - role: reviewer
+    package: table-reviewer
+    version: '>=1.0.0,<2.0.0'
+limits:
+  max_iterations: 30
+  timeout_seconds: 0
+```
+
+Use `{{child.reader}}` and `{{child.reviewer}}` in instructions or skill text to refer
+to the installed local names. A parent must declare `delegate_task`. Each child declares
+its own tools, skills, references and setup dependencies; those capabilities do not become
+the parent's direct tools. Children can themselves declare children. Role names are unique
+within their parent; several roles or parents may reference the same package.
+Set `automatic: false` on workers intended only for explicit assignments or approved
+parent delegation; their parent can still invoke them through its reviewed child grants.
+
+Install the parent through the existing command:
+
+```text
+/subagent package install catalog:table-team --name my-team
+```
+
+SCI resolves child IDs against the reviewed release catalog. For local source testing,
+place child folders beside the parent's folder using their package IDs as folder names.
+A standalone parent ZIP requires its children in the release catalog. No arbitrary remote
+package lookup or contributed setup script is introduced. The catalog supplies one version
+per ID; all declared ranges must accept that version. Missing packages, incompatible ranges,
+invalid relationships and cycles are reported before setup starts.
+
+Review shows the complete tree's package versions/digests. Dependencies are prepared before
+parents, using the existing capability and credential consent flows. A renamed parent works:
+local child names are generated without overwriting conflicting specialists, and instruction
+tokens are bound to the actual names. An unchanged, ready managed child with matching content,
+grants and relationships can be reused. An unrelated same-named specialist is never adopted.
+
+Definitions are published children first and parent last, after review. Cancelling preparation
+does not replace existing definitions, though approved downloads/private setup may remain as
+reported. Missing setup leaves a newly installed parent disabled. Retrying can reuse its
+retained setup. An incomplete update preserves the previously working team. Updated children
+use new local definitions rather than overwriting a child used by an existing team. Superseded
+children and artifacts remain available; this operation does not delete them.
+Updating a child directly does not overwrite a definition referenced by another
+specialist. Update the parent hierarchy or install the child under a new local name.
+
+The existing hierarchy review offers the required delegation depth if necessary. Changes
+apply to new conversations after `/new`; current prompts and tool snapshots remain unchanged.
+Normal runtime delegation uses the saved approved children. Missing, disabled,
+or independently replaced child packages produce an explicit hierarchy/setup error rather than a
+silent role substitution. This distributes existing saved children; it does not create new
+temporary role definitions dynamically during a task.
+
+Reviewed local instruction customizations retain their normal execution behavior. They are
+not silently reused or overwritten as pristine catalog definitions during package updates.
+
+When a compatible child changes but the parent source/version does not, `/subagent package
+updates` can report a hierarchy update. Updating the parent reviews that new combination.
+Customized local definitions remain protected by the existing rename/cancel flow.
+
+For promotion, the parent's integrated test commit must cover the entire reachable hierarchy.
+The validator compares every child package's execution content with that exact fetched dev
+commit, excluding only validation evidence and generated integrity files. A changed child
+therefore requires a new parent integration test even if its version still satisfies the range.
+Evidence-only corrections do not require a package version bump. Versions and integrity digests
+are recorded in the generated release catalog and printed by the catalog validator. Inert
+validation does not run contributor scripts or certify scientific correctness.
+
+## Service and program requirements
 
 An existing skill uses `{id: 'provider:skill', kind: existing}` with optional `sha256`
 of its skill-view text. A custom skill uses `{id: my-skill, kind: package,

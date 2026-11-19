@@ -35,10 +35,10 @@ def auth_server(monkeypatch):
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             state["calls"].append(self.path)
-            if urlparse(self.path).path == "/artifact.csv":
+            if urlparse(self.path).path == state.get("artifact_path", "/artifact.csv"):
                 self.send_response(200)
                 self.end_headers()
-                self.wfile.write(b"id,value\nfixture-1,1\nfixture-2,2\n")
+                self.wfile.write(state.get("artifact_bytes", b"id,value\nfixture-1,1\nfixture-2,2\n"))
                 return
             authenticating = self.path == "/api/agent-authenticate"
             if authenticating:
@@ -377,6 +377,66 @@ def test_fresh_authorized_connector_executes_fixture_job_without_local_plugin(tm
             manager.unload()
 
 
+def test_peppatch_pdb_submission_and_primary_zip_download_use_existing_connector(tmp_path, monkeypatch, auth_server):
+    """Real discovery/auth/upload/status/download over loopback; no scientific backend."""
+    import io
+    import zipfile
+
+    pytest.importorskip("gemmi")
+    state, endpoint = auth_server
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("SCI_HOME", str(tmp_path / "peppatch"))
+    monkeypatch.delenv("SCI_BUNDLED_PLUGINS", raising=False)
+    monkeypatch.delenv("conv_id", raising=False)
+    monkeypatch.chdir(tmp_path)
+    raw = io.BytesIO()
+    with zipfile.ZipFile(raw, "w") as archive:
+        archive.writestr("electrostatic_patches.csv", "type,npoints,area,area_unit,main_residue_original\npositive,3,1,angstrom^2,A:ALA1\n")
+        archive.writestr("hydrophobic_patches.csv", "type,npoints,area,area_unit,main_residue_original,score_unit\nhydrophobic,3,1,angstrom^2,A:ALA1,dimensionless\n")
+        archive.writestr("analysis_report.md", "Technical transport fixture, not a scientific measurement.\n")
+        archive.writestr("analysis_metadata.json", json.dumps({"status": "completed", "electrostatic": {"status": "completed"},
+                                                               "hydrophobic": {"status": "completed"}}))
+    state.update(upload_path="fixture/peppatch.pdb", artifact_path="/artifact.zip", artifact_bytes=raw.getvalue())
+    base = endpoint.removesuffix("/api/agent-authenticate")
+    state["result_override"] = {"status": "Success", "OutputData": {"outputFilePath": {
+        "path": "users/fixture/Pep_Patch/pep_patch/fixture-job.zip", "download_link": [base + "/artifact.zip"]}}}
+    with profile(tmp_path / "peppatch"):
+        manager, module = discover(monkeypatch, endpoint)
+        try:
+            assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
+            monkeypatch.setitem(module.tools.file_upload.__globals__, "_UPLOAD_URL", base + "/upload")
+            monkeypatch.setitem(module.tools.submit_request.__globals__, "_SUBMIT_URL", base + "/submit")
+            monkeypatch.setitem(unwrap(module.tools.fetch_status).__globals__, "_FETCH_URL", base + "/result")
+            source = tmp_path / "prepared.pdb"
+            source.write_text("ATOM      1    N ALA A   1       0.000   0.000   0.000  1.00 20.00           N\n"
+                              "ATOM      2   CA ALA A   1       1.000   1.000   0.000  1.00 20.00           C\n"
+                              "ATOM      3    C ALA A   1       2.000   0.000   0.000  1.00 20.00           C\nEND\n")
+            original = source.read_bytes()
+            uploaded = json.loads(module.tools.handle_boltzmann_upload(
+                local_path=str(source), job_name="Pep_Patch", input_field="input_path", experiment_data={}))
+            assert uploaded["status"] == "uploaded", uploaded
+            assert source.read_bytes() == original and original in state["upload_bytes"]
+            payload = {"input_path": uploaded["s3_path"]}
+            submitted = json.loads(module.tools.handle_boltzmann_submit(
+                job_name="Pep_Patch", experiment_name="fixture-surface", experiment_data=payload))
+            assert submitted["status"] == "accepted", submitted
+            assert state["submission"] == {"job_name": "Pep_Patch", "experimentName": "fixture-surface", "experimentData": payload}
+            status = json.loads(module.tools.handle_boltzmann_status(job_name="Pep_Patch", doc_id=submitted["doc_id"]))
+            result = json.loads(module.tools.handle_boltzmann_download(
+                download_url=status["OutputData"]["outputFilePath"]["download_link"][0],
+                output_folder=str(tmp_path / "outputs")))
+            downloaded = Path(result["output_paths"][0])
+            assert downloaded.suffix == ".zip" and downloaded.read_bytes() == raw.getvalue()
+            with zipfile.ZipFile(downloaded) as archive:
+                assert set(archive.namelist()) == {"electrostatic_patches.csv", "hydrophobic_patches.csv",
+                                                  "analysis_report.md", "analysis_metadata.json"}
+                assert json.loads(archive.read("analysis_metadata.json"))["hydrophobic"]["status"] == "completed"
+            assert state["calls"].count("/submit") == 1
+            assert state["calls"].count("/artifact.zip") == 1
+        finally:
+            manager.unload()
+
+
 def test_partial_file_preflight_upload_and_submit_with_real_profile_receipts(tmp_path, monkeypatch, auth_server):
     state, endpoint = auth_server
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -440,6 +500,61 @@ def test_partial_file_preflight_upload_and_submit_with_real_profile_receipts(tmp
             assert state["calls"].count("/submit") == 1
         finally:
             manager.unload()
+
+
+def test_yolo_partial_upload_and_unreceipted_submit_stay_session_scoped(tmp_path, monkeypatch, auth_server):
+    from tools.approval import enable_session_yolo, disable_session_yolo
+    from tools.approval_context import set_current_session_key, reset_current_session_key
+
+    state, endpoint = auth_server
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    water = tmp_path / "water.xyz"
+    water.write_text("3\nwater\nO 0 0 0\nH 0 0 1\nH 0 1 0\n")
+    enable_session_yolo("yolo-science-a")
+    try:
+        for index, (name, key) in enumerate((("a", "yolo-science-a"), ("b", "normal-science-b"), ("a", "yolo-science-a"))):
+            with profile(tmp_path / name):
+                token = set_current_session_key(key)
+                manager, module = discover(monkeypatch, endpoint)
+                try:
+                    assert "SAVED" in capture(manager, monkeypatch, "fixture-valid")[0]
+                    base = endpoint.removesuffix("/api/agent-authenticate")
+                    monkeypatch.setitem(module.tools.file_upload.__globals__, "_UPLOAD_URL", base + "/upload")
+                    monkeypatch.setitem(module.tools.submit_request.__globals__, "_SUBMIT_URL", base + "/submit")
+                    args = {"local_path": str(water), "job_name": "Single_Point_Energy", "input_field": "molecule_path"}
+                    before = state["calls"].count("/upload")
+                    blocked = json.loads(module.tools.handle_boltzmann_upload(**args, allow_partial_validation=False))
+                    assert blocked["approval_required"]
+                    uploaded = json.loads(module.tools.handle_boltzmann_upload(**args))
+                    if name == "b":
+                        assert uploaded["approval_required"]
+                        assert state["calls"].count("/upload") == before
+                        continue
+                    assert uploaded["status"] == "uploaded", uploaded
+                    assert uploaded["validation"]["warnings"] and uploaded["validation"]["info"]
+                    assert state["calls"].count("/upload") == before + 1
+                    # A supplied platform reference without a local receipt is
+                    # attempted only in YOLO; warnings remain in the final response.
+                    payload = {"task_name": f"fixture-{index}", "molecule_path": "fixture/external.xyz",
+                               "method": "B3LYP", "basis": "def2-TZVP", "charge": 0,
+                               "spin_multiplicity": "1", "dispersion": "D3BJ"}
+                    result = json.loads(module.tools.handle_boltzmann_submit(job_name="Single_Point_Energy", experiment_data=payload))
+                    assert result["status"] == "accepted", result
+                    assert any("receipt" in w for w in result["validation"]["warnings"])
+                    before_submit = state["calls"].count("/submit")
+                    invalid = json.loads(module.tools.handle_boltzmann_submit(
+                        job_name="Single_Point_Energy", experiment_data={**payload, "spin_multiplicity": 1}))
+                    assert invalid["validation"]["errors"]
+                    assert state["calls"].count("/submit") == before_submit
+                    state["revoked"] = True
+                    denied = json.loads(module.tools.handle_boltzmann_upload(**args))
+                    assert denied.get("authorization_required"), denied
+                    state["revoked"] = False
+                finally:
+                    manager.unload()
+                    reset_current_session_key(token)
+    finally:
+        disable_session_yolo("yolo-science-a")
 
 
 def test_binding_affinity_uses_authorized_connector_for_direct_and_uploaded_inputs(tmp_path, monkeypatch, auth_server):

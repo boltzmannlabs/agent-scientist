@@ -1,4 +1,8 @@
 """Portable Boltzmann dependencies authenticate only in recipient private scope, never by parent fallback."""
+
+import pytest
+
+
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -10,6 +14,8 @@ from sci_cli.config import atomic_config_replace
 from agent.specialist_extensions import extension_home, capability_scope
 from agent.specialist_runtime import capture, resolve
 from sci_cli.science_profiles_catalog import BOLTZMANN_WORKFLOW_TOOLS
+
+pytestmark = pytest.mark.usefixtures("released_sci_version")
 
 
 class UI:

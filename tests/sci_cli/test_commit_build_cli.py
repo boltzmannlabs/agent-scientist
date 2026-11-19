@@ -58,8 +58,8 @@ finally:
     assert result.returncode == (0 if args == ["--version"] else 2), result.stdout + result.stderr
     assert "AUDIT=[]" in result.stdout, result.stdout + result.stderr
     if args == ["--version"]:
-        assert "1.2.3+gabcdef12" in result.stdout
-        assert "commit-build" in result.stdout
+        release = json.loads((root / "install-stamp.json").read_text())["baseVersion"]
+        assert result.stdout.splitlines() == [f"Agent Scientist {release}", "AUDIT=[]"]
     else:
         assert MESSAGE in result.stdout
         assert "Manage updates from within the desktop app" not in result.stdout

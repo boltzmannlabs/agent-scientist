@@ -19,6 +19,10 @@ class FakeGateway {
       session_id: `runtime-${params.profile}`, stored_session_id: `stored-${params.profile}`, messages: [],
       info: { model: `model-${params.profile}` }, message_count: 0,
     };
+    if (method === 'model.options') return { model: `model-${params.profile}`, provider: 'boltzmann_models', providers: [
+      { slug: 'boltzmann_models', name: 'Boltzmann models', models: ['qwen', 'glm', 'discoveryrsi'], is_current: true,
+        capabilities: { discoveryrsi: { fast: false, reasoning: true, supported_efforts: ['low', 'medium', 'high'], can_disable_reasoning: false } } },
+    ] };
     if (method === 'commands.catalog') return { pairs: [['/plan', 'Prepare a plan without implementing changes']] };
     return { status: 'streaming' };
   });
@@ -117,6 +121,39 @@ it('isolates A→B→A and reconnects by resuming authoritative state without re
   await act(async () => (Array.from(container.querySelectorAll('button')).find(b => b.textContent === 'Reconnect')!).click());
   expect(third.request.mock.calls.filter(([method]) => method === 'prompt.submit')).toHaveLength(0);
   expect(third.request.mock.calls.filter(([method]) => method === 'session.resume')).toHaveLength(2);
+});
+
+it.each([
+  { side: false, persist: false, deferred: false, effort: 'low' },
+  { side: false, persist: true, deferred: false, effort: 'medium' },
+  { side: true, persist: true, deferred: true, effort: 'high' },
+])('switches the actual conversation and follows backend identity ($side/$persist/$deferred)', async ({ side, persist, deferred, effort }) => {
+  await render();
+  if (side) { await fill('/side'); await click('Send message'); }
+  const gw = instances.at(-1)!;
+  const original = gw.request.getMockImplementation()!;
+  gw.request.mockImplementation(async (method, params) => {
+    if (method === 'config.set') return { key: 'model', value: 'discoveryrsi', confirm_required: false, deferred };
+    return original(method, params);
+  });
+  await click('Choose model. Current model: model-a');
+  expect(gw.request).toHaveBeenCalledWith('model.options', expect.objectContaining({ session_id: 'runtime-a', profile: 'a' }));
+  const dialog = document.querySelector('[role=dialog]')!;
+  expect(dialog.textContent).toContain('current: model-a');
+  await act(async () => (Array.from(dialog.querySelectorAll('button')).find(b => b.textContent?.trim() === 'discoveryrsi')!).click());
+  await act(async () => {
+    const select = dialog.querySelector('[aria-label="Reasoning effort"]') as HTMLSelectElement;
+    select.value = effort; select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  if (persist) await act(async () => (dialog.querySelector('#model-picker-persist-global') as HTMLElement).click());
+  await act(async () => (Array.from(dialog.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Switch')!).click());
+  expect(gw.request).toHaveBeenCalledWith('config.set', expect.objectContaining({
+    session_id: 'runtime-a', profile: 'a', key: 'model',
+    value: `discoveryrsi --provider boltzmann_models${persist ? ' --global' : ''} --reasoning ${effort}`,
+  }));
+  expect(container.querySelector('.chat-model-picker')?.textContent).toContain(deferred ? 'model-a' : 'discoveryrsi');
+  await act(async () => gw.emit('session.info', { model: 'glm', provider: 'boltzmann_models' }));
+  expect(container.querySelector('.chat-model-picker')?.textContent).toContain('glm');
 });
 
 it.each([false, true])('offers /plan and sends its backend planning instructions in the owning chat (side=%s)', async side => {

@@ -403,6 +403,11 @@ def test_discover_mcp_tools_spawns_only_allowed_servers(monkeypatch):
     _mcp_discovery.discover_mcp_tools(allowed_mcp_names=["terminal", "code-mcp"])
     assert set(seen) == {"code-mcp"}
 
+    # The canonical toolset spelling must work before registration creates aliases.
+    seen.clear()
+    _mcp_discovery.discover_mcp_tools(allowed_mcp_names=["terminal", "mcp-code-mcp"])
+    assert set(seen) == {"code-mcp"}
+
     # `-t terminal` — no MCP server in the filter: skip the whole MCP load,
     # including the ~260ms `mcp` SDK import.
     seen.clear()

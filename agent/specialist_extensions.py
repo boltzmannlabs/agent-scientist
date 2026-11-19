@@ -21,11 +21,11 @@ def extension_home(item, owner=None):
 
 
 @contextmanager
-def capability_scope(home):
+def capability_scope(home, *, multiplex=True):
     from agent.secret_scope import set_multiplex_context, reset_multiplex_context
     from sci_cli.native_profile_creation import profile_scope
     from tools.terminal_scope import install_and_reset_profile_terminal_scope
-    token = set_multiplex_context(True)
+    token = set_multiplex_context(multiplex)
     try:
         with profile_scope(Path(home)), install_and_reset_profile_terminal_scope(Path(home)):
             yield
@@ -72,9 +72,9 @@ def without_private(item):
                    skill_files=tuple(r for r in item.skill_files if r.partition('#')[0] not in item.private_skills))
 
 
-def private_definitions(item):
+def private_definitions(item, owner=None):
     """Discover approved private MCPs in their own registry scope, never the parent registry."""
-    home = extension_home(item)
+    home = extension_home(item, owner=owner)
     if home is None:
         return []
     from tools.mcp_tool_discovery import discover_mcp_tools
@@ -107,7 +107,7 @@ def install_parent_proxies(policy, entries):
         if entry.name not in policy.tools or entry.name in policy.private_tools or entry.name in DEFAULT_TOOLS | {'skill_view', 'skills_list'}:
             continue
         def handler(args, _entry=entry, **kwargs):
-            with capability_scope(policy.home):
+            with capability_scope(policy.home, multiplex=policy.owner_multiplex):
                 # Registry dispatch owns async bridging and signature filtering.
                 return registry.dispatch(_entry.name, args, **kwargs)
         registry.register(name=entry.name, toolset=entry.toolset, schema=entry.schema,

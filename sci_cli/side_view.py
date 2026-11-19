@@ -142,6 +142,7 @@ class SideView:
             # Main resize-replay geometry does not describe the alternate screen.
             _set_chrome_floor(None)
             if not visible:
+                self.container.cancel_drag()
                 pending, self.pending_parent = self.pending_parent, []
                 with output_scope(None):
                     for text in pending:
@@ -152,6 +153,7 @@ class SideView:
     def clear(self):
         def reset():
             from prompt_toolkit.history import InMemoryHistory
+            self.container.cancel_drag()
             self._ansi = ""
             self.lexer.lines = [[]]
             self.side_buffer.history = InMemoryHistory()

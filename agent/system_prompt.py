@@ -755,6 +755,8 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     _help_guidance_slot = len(stable_parts)
     stable_parts.append(SCI_AGENT_HELP_GUIDANCE_NO_SKILLS)
     stable_parts.extend(_guidance_parts(agent))
+    from agent.reporting import RESULT_REPORTING_GUIDANCE
+    stable_parts.append(RESULT_REPORTING_GUIDANCE)
     skills_prompt = _skills_prompt(agent)
     # Skill-pointer variant requires BOTH skill_view AND the sci-agent skill
     # in the rendered index (pure string check — inherits the index's stability).

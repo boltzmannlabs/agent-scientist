@@ -1266,6 +1266,12 @@ def check_execute_code_guard(code: str, env_type: str, has_host_access: bool = F
     if _yolo_active() or approval_mode == "off":
         return _approved()
 
+    # Match the other approval gates: recorded permission remains valid when the
+    # same authorized work continues without an interactive approval surface.
+    session_key = get_current_session_key()
+    if is_approved(session_key, pattern_key):
+        return _approved()
+
     # (-q clears the presence flags, but its unattended context resolves first anyway.)
     approval_callback, is_cli, is_gateway, is_ask = _presence()
     # No user is present to approve arbitrary code in -q / cron / unattended
@@ -1287,14 +1293,8 @@ def check_execute_code_guard(code: str, env_type: str, has_host_access: bool = F
     if not is_gateway and not is_ask:
         return _approved()
 
-    session_key = get_current_session_key()
     # Built only past the early-return gates so common paths don't copy a potentially-large script into this string.
     command = f"execute_code <<'PY'\n{code}\nPY"
-
-    # Without this, "Approve session" / "Always" choices are stored but never
-    # consulted, so every execute_code call re-prompts (#39275).
-    if is_approved(session_key, pattern_key):
-        return _approved()
 
     # Smart mode: an APPROVE only suppresses the redundant whole-script prompt; the per-call terminal() guards still
     # run independently. The gateway renders the pending payload to Discord/Slack, so the script body is redacted for

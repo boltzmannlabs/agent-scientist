@@ -2226,6 +2226,15 @@ cli:
     footer_roster_compact: "↑↓ · Enter verfolgen · Ctrl+T schließen"
     footer_detail: "Esc Übersicht · PgUp/PgDn verfolgen{steer} · x stoppen"
     footer_roster: "↑/↓ auswählen · Enter verfolgen{steer} · x stoppen · q/Ctrl+T schließen"
+  jobs:
+    heading: "Hintergrundaufgaben · {count} · Ctrl+R einklappen"
+    count: "{count} Aufgaben"
+    id: "Aufgabe: …{id}"
+    last_check: "Letzte Prüfung: vor {age}"
+    next_check: "Nächste Prüfung: {delay}"
+    check_due: "Nächste Prüfung fällig"
+    more: "+{count} weitere Hintergrundaufgaben"
+
   dock:
     process_goal_label: "Hintergrundprozess"
     last_output: "zuletzt: {detail}"

@@ -2226,6 +2226,15 @@ cli:
     footer_roster_compact: "↑↓ · Enter متابعة · Ctrl+T إغلاق"
     footer_detail: "Esc القائمة · PgUp/PgDn متابعة{steer} · x إيقاف"
     footer_roster: "↑/↓ اختيار · Enter متابعة{steer} · x إيقاف · q/Ctrl+T إغلاق"
+  jobs:
+    heading: "مهام الخلفية · {count} · Ctrl+R للطي"
+    count: "{count} مهام"
+    id: "المهمة: …{id}"
+    last_check: "آخر فحص: منذ {age}"
+    next_check: "الفحص التالي: {delay}"
+    check_due: "حان موعد الفحص التالي"
+    more: "+{count} مهام خلفية أخرى"
+
   dock:
     process_goal_label: "عملية في الخلفية"
     last_output: "الأخير: {detail}"

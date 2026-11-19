@@ -15,7 +15,7 @@ def assess(child, entry):
 
 
 def assess_entry(entry):
-    """Interpret an explicit task-outcome header; completing an answer is not completing its task."""
+    """Retain declared task outcomes separately from the worker's execution status."""
     if entry.get('status') != 'completed' or entry.get('exit_reason') != 'completed':
         return entry
     text = str(entry.get('summary') or '').strip()
@@ -32,9 +32,10 @@ def assess_entry(entry):
                 outcome = declared
     if outcome:
         outcome = 'blocked' if outcome.startswith('blocked') else outcome
-        entry.update(status='failed', exit_reason=outcome, task_outcome=outcome,
-                     error=f'Specialist reported {outcome} execution. Its original report and tool evidence are retained; '
-                           'no automatic retry or replacement was started.')
+        # A report may describe limited evidence while the worker finished normally.
+        # The parent still receives the declaration and decides what requested work
+        # remains; prose is not a transport/process failure signal.
+        entry['task_outcome'] = outcome
         return entry
     # A narrowly recognized promise with zero tool activity is not a delivered task.
     # This does not attempt to certify arbitrary answers or replace declared output-schema checks.

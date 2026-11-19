@@ -232,8 +232,8 @@ _BUDGET_WARNING_FRACTION = 0.8
 def _budget_warning_text(idle_seconds: float, child_timeout: float) -> str:
     return (
         f"[delegation budget warning] No progress signal for {idle_seconds:.0f}s of your {child_timeout:.0f}s "
-        "inactivity window. Finish the current step and return your summary now — the work is discarded if the "
-        "window elapses."
+        "inactivity window. Return completed results and identify remaining work before the wait stops. "
+        "Saved artifacts and accepted job IDs remain available for recovery; do not repeat accepted work."
     )
 
 def _warn_child_budget(child: Any, idle_seconds: float, child_timeout: float) -> None:
@@ -249,8 +249,8 @@ def _warn_child_budget(child: Any, idle_seconds: float, child_timeout: float) ->
 def _child_activity_fingerprint(child: Any) -> tuple:
     """``(completed calls, current tool, activity clock)`` — the progress signals the heartbeat's stale verdict
     already watches. A child waiting on an in-flight LLM completion is ALIVE: its activity clock ticks while the
-    provider works (``direct_api_call``'s 15s heartbeat) and the call itself is bounded by the per-call stale
-    watchdog, so at the delegation layer it must not read as stuck (#116001)."""
+    provider works. Request monitoring owns the provider's wait/cancellation policy;
+    the delegation layer must not treat a live response wait as stuck (#116001)."""
     try:
         summary = child.get_activity_summary() or {}
     except Exception:
@@ -722,6 +722,7 @@ class _ChildRun:
     parent_task_id: Optional[str] = None
     wall_start: float = 0.0
     parent_reads_snapshot: list = field(default_factory=list)
+    partial_output: str = ''
 
     def elapsed(self) -> float:
         return round(time.monotonic() - self.child_start, 2)
@@ -730,6 +731,7 @@ class _ChildRun:
         """Stream callback forwarding the child's reply text up the progress relay so gateway watch windows mirror it
         live (subagent.text → message.delta). Inert under CLI/TUI: their progress handlers ignore non-tool events."""
         if delta:
+            self.partial_output = (self.partial_output + delta)[-8000:]
             _safe_progress(self.child_progress_cb, "subagent.text", preview=delta)
 
     def attach_worktree(self, entry_dict: Dict[str, Any]) -> Dict[str, Any]:
@@ -795,13 +797,13 @@ class _ChildRun:
         A configured cap used to be a dispatch-to-death stopwatch, so it only ever killed children the runtime had
         already judged healthy: all 75 reported deaths happened while waiting on an in-flight LLM completion, none
         mid-tool (#116001). A provider serving multi-minute completions is progress — the child's activity clock
-        ticks during the wait and the request is bounded by the per-call stale watchdog — so the budget restarts on
+        ticks during the wait and request monitoring owns cancellation — so the budget restarts on
         every sign of progress, exactly the signals the heartbeat's stale verdict reads. Genuinely frozen children
         keep two authorities: this budget (when configured) and the heartbeat's stale threshold.
         """
         from agent.specialist_policy import SpecialistPolicy
         policy = getattr(self.child, "_specialist_policy", None)
-        hard_deadline = policy.deadline if isinstance(policy, SpecialistPolicy) else None
+        hard_deadline = policy.deadline if isinstance(policy, SpecialistPolicy) and policy.deadline != float('inf') else None
         if child_timeout is None:
             settled.wait(timeout=max(0.0, hard_deadline - time.monotonic()) if hard_deadline is not None else None)
             return
@@ -850,7 +852,7 @@ class _ChildRun:
         child_timeout = _get_child_timeout()
         policy = getattr(child, "_specialist_policy", None)
         from agent.specialist_policy import SpecialistPolicy
-        if isinstance(policy, SpecialistPolicy):
+        if isinstance(policy, SpecialistPolicy) and policy.deadline != float('inf'):
             remaining = max(0.01, policy.deadline - time.monotonic())
             child_timeout = remaining if child_timeout is None else min(child_timeout, remaining)
         executor = DaemonThreadPoolExecutor(
@@ -896,6 +898,8 @@ class _ChildRun:
         is_timeout = isinstance(exc, (FuturesTimeoutError, TimeoutError))
         # What actually ended the wait: the stale threshold pre-empts a longer configured cap.
         timeout_cause = stale_after if stale_after is not None else child_timeout
+        specialist_deadline = getattr(getattr(child, '_specialist_policy', None), 'deadline', None)
+        deadline_reached = (isinstance(specialist_deadline, (int, float)) and specialist_deadline <= time.monotonic())
         duration = self.elapsed()
         logger.warning("Subagent %d %s after %.1fs", task_index, "timed out" if is_timeout else f"raised {type(exc).__name__}", duration)
         child_api_calls = 0
@@ -915,6 +919,10 @@ class _ChildRun:
                 logger.warning("Subagent %d 0-API-call timeout — diagnostic written to %s", task_index, diagnostic_path)
         if not is_timeout:
             _err = str(exc)
+        elif deadline_reached:
+            _err = (f'Specialist total runtime deadline reached after {duration:.1f}s and {child_api_calls} API call(s). '
+                    'This is the assignment deadline, not proof of inactivity or remote-job failure. '
+                    'Reconcile recorded effects before retrying.')
         elif stale_after is not None:
             _err = (
                 f"Subagent stopped making progress after {child_api_calls} API call(s) — no activity for "
@@ -940,12 +948,31 @@ class _ChildRun:
             "timeout_seconds": timeout_cause if is_timeout else None,
             "timed_out_after_seconds": duration if is_timeout else None,
             "timeout_phase": "before_first_llm_call" if before_first_call else "after_llm_calls" if is_timeout else None,
+            'timeout_reason': ('assignment_deadline' if deadline_reached else 'heartbeat_stale' if stale_after is not None
+                               else 'inactivity') if is_timeout else None,
             # How long the child had been silent when the wait ended: distinguishes a slow provider from a runaway
             # without transcript forensics (#116001).
             "last_event_age": _child_last_event_age(child) if is_timeout else None,
             "_child_role": getattr(child, "_delegate_role", None),
             "diagnostic_path": diagnostic_path,
+            "partial_output": self.partial_output or None,
+            "model": _str_or_none(getattr(child, 'model', None)),
+            "provider": _str_or_none(getattr(child, 'provider', None)),
+            "tokens": {
+                key: _num(value) if isinstance(value, (int, float)) else None
+                for key, value in (('input', getattr(child, 'session_prompt_tokens', None)),
+                                   ('output', getattr(child, 'session_completion_tokens', None)))
+            },
+            "usage_complete": False,
         }
+        cost = getattr(child, 'session_estimated_cost_usd', None)
+        cost_status = getattr(child, 'session_cost_status', None)
+        _error_entry['cost_status'] = cost_status if isinstance(cost_status, str) else 'unknown'
+        _error_entry['cost_usd'] = cost if isinstance(cost, (int, float)) and _error_entry['cost_status'] not in {'', 'unknown'} else None
+        if getattr(child, 'session_usage_reported_calls', None) == 0 and child_api_calls:
+            _error_entry['tokens'] = {'input': None, 'output': None}
+        if isinstance(cost, (int, float)):
+            _error_entry['_child_cost_usd'] = cost
         self.finish_failed(_error_entry, _late_pending_steer, preview=f"Timed out after {duration}s" if is_timeout else str(exc))
         close_deferred = is_timeout and not future.done()
         if close_deferred:

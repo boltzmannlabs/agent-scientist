@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from .model_gateway import catalog_models, endpoint, owner_home, owner_scope
+from .model_gateway import catalog_models, endpoint, owner_home, owner_scope, reasoning_efforts
 from .model_response import remember_response
 
 
@@ -30,9 +30,17 @@ def _request(home, base_url, kwargs):
     kwargs.pop("stream_options", None)
     extra.pop("stream", None)
     extra.pop("stream_options", None)
-    for field in ("reasoning_effort", "reasoning"):
-        kwargs.pop(field, None)
-        extra.pop(field, None)
+    effort = kwargs.pop("reasoning_effort", extra.pop("reasoning_effort", None))
+    reasoning = kwargs.pop("reasoning", extra.pop("reasoning", None))
+    if effort is None and isinstance(reasoning, dict) and reasoning.get("enabled") is not False:
+        effort = reasoning.get("effort")
+    supported = reasoning_efforts(model)
+    if supported and effort is not None:
+        from agent.reasoning_effort import clamp_effort
+        normalized = clamp_effort(str(effort).lower(), supported)
+        if normalized not in supported:
+            raise ValueError("Unknown Boltzmann reasoning effort; choose low, medium or high.")
+        kwargs["reasoning_effort"] = normalized
     if model == "codex":
         kwargs.pop("max_tokens", None)
         extra.pop("max_tokens", None)
@@ -58,11 +66,18 @@ def _chunks(response):
 
 
 class BoltzmannClient:
+    completion_response_mode = 'complete'
+
     def __init__(self, **kwargs):
         from openai import OpenAI
+        from httpx import Timeout
 
         self._home = owner_home()
         self._kwargs = {**kwargs, "max_retries": 0}
+        # This endpoint produces no chunks during inference. Keep connection and
+        # write failures bounded, but let a healthy response finish unless the
+        # caller explicitly supplied a request timeout.
+        self._kwargs.setdefault('timeout', Timeout(None, connect=30, write=1800, pool=30))
         self._kwargs.setdefault("api_key", "boltzmann-login-required")
         with owner_scope(self._home):
             self._kwargs.setdefault("base_url", endpoint())
@@ -109,11 +124,15 @@ class AsyncChunks:
 
 
 class AsyncBoltzmannClient:
+    completion_response_mode = 'complete'
+
     def __init__(self, *, owner=None, **kwargs):
         from openai import AsyncOpenAI
+        from httpx import Timeout
 
         self._home = owner or owner_home()
         self._kwargs = {**kwargs, "max_retries": 0}
+        self._kwargs.setdefault('timeout', Timeout(None, connect=30, write=1800, pool=30))
         self._sdk = AsyncOpenAI(**self._kwargs)
         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
 

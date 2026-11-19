@@ -6229,13 +6229,14 @@
       "module_id": "protein-toolbox",
       "status": "active",
       "source": "modules/protein-toolbox.md",
-      "description": "Pep_Patch",
+      "description": "Compute separate electrostatic and hydrophobic surface-patch descriptors on one joint protein or protein-ligand structure; return both CSVs in one result ZIP. These are not binding-affinity or catalytic-activity predictions.",
+      "product_documentation": "peppatch-complex-inputs.md#peppatch-preparation-and-results",
       "execution_blocked": false,
       "request_schema": {
         "type": "object",
         "properties": {
           "input_path": {
-            "description": "S3 path to PDB (upload first)",
+            "description": "Uploaded prepared protein PDB or sole-PDB ZIP; a protein-ligand complex ZIP additionally requires root peppatch_manifest.json with verified reference chemistry. Upload first; submit only the returned platform path.",
             "type": "string",
             "x-input-kind": "file"
           }
@@ -6243,7 +6244,7 @@
         "required": [
           "input_path"
         ],
-        "additionalProperties": true
+        "additionalProperties": false
       },
       "review_notes": [],
       "examples": [],
@@ -12144,6 +12145,7 @@
       },
       "review_notes": [
         "In measurement_only mode the connector ignores supplied quality_thresholds before validation/submission, matching the worker. In validation, a nonempty supported object or uploaded JSON path is required.",
+        "For nonstandard noncovalent ligands, use molprobity-ligand-bundle.v2 with generate_dictionary:true and verified SMILES plus exact atom mapping to generate inside the worker; do not install AceDRG on the user machine. Existing supplied-dictionary v1/v2 and ordinary structures remain supported. See molprobity-ligand-bundles.md. Never infer molecular identity/protonation from coordinates or remove stereo labels; generation is conditional on supported chemistry and deployed worker capability.",
         "For a confirmed terminal failure specifically caused by missing ligand restraints or unknown ligand atom types, follow molprobity-ligand-bundles.md#recovery-after-a-missing-ligand-dictionary-failure. With explicit user pre-authorization covering recovery credits, prepare and validate a reviewed custom-ligand ZIP and submit one separately named replacement without asking for cost approval again. Do not retry pending/unknown outcomes, invent ligand chemistry, or bypass authorization and input-validation requirements.",
         "The latest recorded reference submission was accepted but remained pending without artifacts. This is not completed validation; do not duplicate a pending job."
       ],
@@ -12999,7 +13001,7 @@
         "submission": "accepted",
         "evidence": "User notebook saved response, execution 6, inspected 2026-11-12",
         "http_status": 200,
-        "doc_id": "6af59f71042419d6c2a5ed85",
+        "doc_id": "<historical-job-id-redacted>",
         "platform_status": "queued",
         "outputs_verified": false,
         "csv_mode_verified": false

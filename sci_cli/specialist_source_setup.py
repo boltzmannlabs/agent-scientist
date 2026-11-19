@@ -3,6 +3,33 @@ from dataclasses import replace
 from agent.specialist_sources import instruction_fields, load_reference
 
 
+def edit_instructions(ui, item):
+    action = 'Replace instructions'
+    if item.instructions:
+        action = ui.choose('Additional instructions: edit saved text, or return to review with Back / Done',
+                           ['Keep current instructions', 'Replace instructions', 'Append instructions',
+                            'Clear instructions', 'Back', 'Done', 'Cancel'])
+    if action in ('Keep current instructions', 'Back', 'Done'):
+        return item
+    if action == 'Clear instructions':
+        return replace(item, instructions='', instruction_source='')
+    value = ui.ask('Instructions text or Markdown file path (blank keeps current; none clears when replacing):',
+                   allow_blank=True)
+    if not value.strip():
+        return item
+    if action == 'Replace instructions' and value.strip().lower() == 'none':
+        return replace(item, instructions='', instruction_source='')
+    from agent.specialist_sources import instruction_path
+    if instruction_path(value):
+        fields = purpose_fields(ui, initial=value)
+        text, source = fields.get('instructions', fields['purpose']), fields.get('instruction_source', '')
+    else:
+        text, source = value, ''
+    if action == 'Append instructions':
+        return replace(item, instructions=item.instructions.rstrip() + '\n\n' + text, instruction_source='')
+    return replace(item, instructions=text, instruction_source=source)
+
+
 def purpose_fields(ui, *, current=None, initial=None):
     value = initial
     while True:

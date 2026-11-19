@@ -27,6 +27,7 @@ _PHASE_TEXT = {
     # Chat-completions streaming path
     "first_chunk": "{n}s waiting for the first stream chunk",
     "post_chunk": "stream open; {n}s without stream output",
+    "complete_response": "{n}s waiting for the complete response",
 }
 
 

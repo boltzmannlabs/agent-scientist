@@ -39,6 +39,12 @@ import os
 import re
 import sys
 
+# Siblings import this facade during startup. Module/script launchers must share
+# the same instance, or a second import re-applies sticky profile selection after
+# the explicit -p flag has already been consumed.
+if __name__ == "__main__":
+    sys.modules["sci_cli.main"] = sys.modules[__name__]
+
 # Inline path math so ``python sci_cli/main.py`` (script mode: sys.path[0]
 # is sci_cli/, not the repo root) can import sci_cli._startup_fast.
 _bootstrap_root = os.path.realpath(os.path.join(os.path.dirname(__file__), os.pardir))

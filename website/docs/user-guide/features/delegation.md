@@ -364,6 +364,11 @@ A child that exhausts its budget returns with `exit_reason: max_iterations` and 
 
 By default there is **no wall-clock timeout** on subagents. Children fail only from what they're actually doing — API errors, tool errors, or hitting their iteration budget — never from a delegation-level stopwatch. Earlier releases shipped a hard cap (300s, later 600s), which kept killing legitimately busy children mid-task: deep code reviews, large research fan-outs, and slow reasoning models routinely need more than 10 minutes while making steady progress the whole time.
 
+An adapter that returns only a complete model response keeps sending activity heartbeats during
+that wait, without a default no-chunk or read deadline. Stop and explicitly configured limits
+remain available. Ending a response wait does not delete accepted scientific jobs or their
+downloaded outputs; recovery reconciles saved job IDs instead of repeating submissions.
+
 Genuinely stuck children are still detected on every runtime, with or without a configured cap: the heartbeat staleness monitor watches each child's progress signals (API calls, tool starts, activity-timestamp ticks). A child whose progress is completely frozen past the stale threshold — 450s idle between turns, 1200s while inside a tool — is interrupted and its wait is **abandoned**: the parent gets a `status: "timeout"` entry whose error reads `Subagent stopped making progress after N API call(s) — no activity for 450s (heartbeat stale threshold); the pending worker was abandoned.` The wait ends even in one-shot runs (`sci chat -Q`, Bot Chat one-shot, cron) that have no gateway inactivity watchdog behind them, so a wedged child can no longer hold the turn or its session lease forever. An in-flight model wait still counts as progress — subagents refresh the activity clock while waiting on the provider, so a slow local / long-prefill completion is not treated as stalled.
 
 If you want a cap anyway (e.g. cost control on unattended cron-driven delegation), opt in per-install:
@@ -558,7 +563,7 @@ delegate_task(
 
 **Cost warning:** With `max_spawn_depth: 3` and `max_concurrent_children: 3`, the tree can reach 3×3×3 = 27 concurrent leaf agents. Each extra level multiplies spend — raise `max_spawn_depth` intentionally.
 
-**One-shot runs are capped separately.** `sci chat -q` / `--oneshot` sessions may spawn at most `delegation.oneshot_max_children` subagents in total (default `2`, `0` = unlimited). A one-shot run has no later turn to receive results, and in benchmark trajectories most of its spawns were "independently review my own work" rather than parallel work — each such child re-pays a cold system prompt and re-reads the repo. Interactive and gateway sessions are unaffected.
+**One-shot runs limit incidental helpers.** In `sci chat -q` / `--oneshot`, `delegation.oneshot_max_children: null` (the default) limits temporary helpers to two. Reviewed saved specialists instead use their existing hierarchy and iteration limits, so a workflow can reach its required auditor. An explicit integer caps all children, including saved specialists; `0` disables this cap. Existing numeric settings are preserved. On exhaustion SCI reports the remaining work without substituting an executor for an independent reviewer. Interactive and gateway sessions are unaffected.
 
 ## Lifetime and Durability
 

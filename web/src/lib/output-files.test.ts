@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from 'vitest';
-import { downloadOutputFile, linkedOutputFile, outputFileReference, outputFilesInResult, outputFilesLink, splitFileText } from './output-files';
+import { downloadOutputFile, outputFileReference, outputFilesInResult, outputFilesInResponse, outputFilesLink } from './output-files';
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); delete window.__SCI_SESSION_TOKEN__; });
 
@@ -10,24 +10,31 @@ it('recognizes files independently of extensions, preserves paths and scope, and
     const path = '/workspace/outputs/' + name;
     const file = outputFileReference(path)!;
     expect(file).toEqual({ path, name });
-    expect(outputFilesInResult(JSON.stringify({ result: { files: [{ path }] } }))).toEqual([file]);
-    expect(outputFilesInResult(JSON.stringify({ provider_specific_result: { arbitrary_name: path } }))).toEqual([file]);
-    expect(splitFileText(path).find(part => part.file)?.file).toEqual(file);
+    expect(outputFilesInResult(JSON.stringify({ result: { output_paths: [path] } }))).toEqual([file]);
+    expect(outputFilesInResult(JSON.stringify({ provider_specific_result: { arbitrary_name: path } }))).toEqual([]);
     const query = new URL(outputFilesLink(file, { profile: 'lab a', sessionId: 'saved&1' }), 'https://sci.test').searchParams;
     expect(query.get('path')).toBe('/workspace/outputs');
     expect(query.get('file')).toBe(path); expect(query.get('profile')).toBe('lab a'); expect(query.get('session_id')).toBe('saved&1');
   }
   expect(outputFileReference('file:///C:/Lab/run%20one/file.csv')?.path).toBe('C:/Lab/run one/file.csv');
   expect(outputFileReference('C:\\Lab\\run one\\file.csv')?.name).toBe('file.csv');
-  expect(linkedOutputFile('/workspace/report%20one.csv')?.path).toBe('/workspace/report one.csv');
-  expect(linkedOutputFile('</workspace/report one.csv>')?.path).toBe('/workspace/report one.csv');
   const relative = outputFileReference('outputs/report.csv', undefined, true)!;
   expect(new URL(outputFilesLink(relative, { profile: 'a', sessionId: 'saved' }), 'https://sci.test').searchParams.get('path')).toBe('outputs');
-  expect(splitFileText('Saved /workspace/report.csv, and /workspace/report.bin.').filter(part => part.file).map(part => part.file!.name)).toEqual(['report.csv', 'report.bin']);
   for (const path of ['https://other.test/report.csv', 'javascript:/report.csv', '//other/report.csv',
     'file://other/report.csv', '\\\\other\\report.csv', '/project/bad\0.txt', '/project/bad\n.txt']) expect(outputFileReference(path, 'https://sci.test')).toBeNull();
-  expect(splitFileText('https://other.test/report.csv').some(part => part.file)).toBe(false);
   expect(outputFilesInResult('```python\nprint("/workspace/secret.csv")\n```')).toEqual([]);
+});
+
+it('reads only output_paths and excludes GCP, instructions, unrelated fields and inferred filenames', () => {
+  const local = '/workspace/outputs/docking_res.json';
+  const result = { output_paths: [local], gcp_paths: ['bucket/job/docking_res.json'],
+    path: '/workspace/input.csv', files: [{ path: '/workspace/unused.csv' }],
+    content: 'Saved `/workspace/example.csv`', metadata: { output_paths: ['/workspace/example.csv'] } };
+  expect(outputFilesInResult(JSON.stringify(result))).toEqual([{ path: local, name: 'docking_res.json' }]);
+  expect(outputFilesInResult(JSON.stringify({ results: [{ result: JSON.stringify(result) }] }))).toEqual([{ path: local, name: 'docking_res.json' }]);
+  expect(outputFilesInResult('Saved `/workspace/example.csv`')).toEqual([]);
+  expect(outputFilesInResult(JSON.stringify({ gcp_paths: ['bucket/job/res.json'] }))).toEqual([]);
+  expect(outputFilesInResponse('Saved in /workspace/outputs/\nnot-downloaded.csv')).toEqual([]);
 });
 
 it('checks errors with authenticated HEAD then uses native downloads without buffering bytes or persisting tokens', async () => {
@@ -50,4 +57,14 @@ it('checks errors with authenticated HEAD then uses native downloads without buf
     await expect(downloadOutputFile(file, { profile: 'a' })).rejects.toThrow();
   }
   expect(click).toHaveBeenCalledOnce();
+});
+
+
+it('resolves result filenames across formats without guessing a folder or using hidden references', () => {
+  const known = [{ name: 'report.pdf', path: '/workspace/project one/report.pdf' }];
+  expect(outputFilesInResponse('Download report.pdf and an unrelated.csv', known)).toEqual(known);
+  expect(outputFilesInResponse('Read `contract.json`. Use `/add_boltzmann` or `/tmp`.')).toEqual([]);
+  expect(outputFilesInResponse('Results saved in `C:\\Lab\\outputs\\`\n\n| File |\n| --- |\n| results.csv / structure.pdb |').map(file => file.path)).toEqual([]);
+  expect(outputFilesInResponse('Saved in /custom/cache/spillover/\ncall_123.txt')).toEqual([]);
+  expect(outputFilesInResponse('Saved in /workspace/outputs/\n```python\nprint("example.csv")\n```')).toEqual([]);
 });

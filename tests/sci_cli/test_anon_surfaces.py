@@ -211,4 +211,8 @@ def test_cli_chat_status_names_the_free_tier(isolated_store):
     )
     CLISessionMixin._show_session_status(cli)
 
-    assert anon_auth.FREE_TIER_STATUS_LINE in rendered[0]
+    from io import StringIO
+    from rich.console import Console
+    stream = StringIO()
+    Console(file=stream, width=120, color_system=None).print(*rendered)
+    assert anon_auth.FREE_TIER_STATUS_LINE in stream.getvalue()

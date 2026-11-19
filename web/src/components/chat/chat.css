@@ -54,6 +54,9 @@
 .chat-tool summary { display: flex; align-items: center; gap: 9px; cursor: pointer; color: #bbb; }
 .chat-tool summary span { flex: 1; }
 .chat-tool pre { margin-top: 12px; font-size: 12px; }
+.chat-tool-context { display: block; color: #aaa; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.chat-tool summary .chat-tool-state { flex: 0 0 auto; font-size: 12px; color: #aaa; }
+.chat-tool-summary { margin-top: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .chat-progress { display: flex; width: fit-content; align-items: center; gap: 9px; margin: 18px 0 8px; padding: 9px 13px; border: 1px solid #29242d; border-radius: 999px; background: #100e12; color: #c9bdce; font-size: 13px; }
 .chat-progress svg { color: #c49ccf; }
 .chat-composer-area { position: relative; width: 100%; max-width: 876px; margin: 0 auto; padding: 10px 28px max(14px, env(safe-area-inset-bottom)); }

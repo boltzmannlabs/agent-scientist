@@ -16,7 +16,7 @@ def _write_shell_block(path: Path, block: str) -> None:
     # Follow a user's dotfile symlink instead of replacing the link itself.
     path = path.resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
-    original = path.read_text(encoding='utf-8') if path.exists() else ''
+    original = path.read_text(encoding='utf-8-sig') if path.exists() else ''
     start, end = original.find(_BEGIN), original.find(_END)
     if (start < 0) != (end < 0) or (start >= 0 and end < start):
         raise ValueError(f'Incomplete SCI PATH block in {path}; repair the marked block and retry.')

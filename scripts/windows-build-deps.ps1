@@ -187,9 +187,8 @@ function Initialize-SciArm64BuildTools {
     if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue)) { throw 'ARM64 C++ compiler is unavailable after environment setup' }
     # With VSCMD_ARG_TGT_ARCH exported, rustc's cc crate takes link.exe from PATH
     # instead of asking vswhere. Under Git Bash that is coreutils' link.exe, so
-    # pin the MSVC linker explicitly. PATH order is the caller's (a reused
-    # environment keeps Git Bash's order), so take it from the developer
-    # environment's own tools directory instead.
+    # pin the MSVC linker explicitly using the developer environment's tools
+    # directory, then restore that directory's PATH priority below for Meson.
     $linker = if ($env:VCToolsInstallDir) { Join-Path $env:VCToolsInstallDir 'bin\HostARM64\ARM64\link.exe' }
     if (-not $linker -or -not (Test-Path -LiteralPath $linker)) {
         throw "MSVC link.exe is missing from VCToolsInstallDir '$env:VCToolsInstallDir'"
@@ -204,6 +203,12 @@ function Initialize-SciArm64BuildTools {
     $env:RUSTUP_HOME = [IO.Path]::GetFullPath($env:RUSTUP_HOME)
     $cargoBin = Join-Path $env:CARGO_HOME 'bin'
     if ($cargoBin -notin ($env:PATH -split ';')) { $env:PATH = "$cargoBin;$env:PATH" }
+    # Git Bash prepends coreutils' link.exe even to an activated VS environment.
+    # Meson (pandas) discovers link.exe via PATH, unlike Cargo's explicit pin.
+    # Restore the compiler directory for every child build, including warm reuse.
+    $compilerBin = Split-Path -Parent $linker
+    $otherPaths = @($env:PATH -split ';' | Where-Object { $_ -ne $compilerBin })
+    $env:PATH = $compilerBin + ';' + ($otherPaths -join ';')
     $rustup = Get-Command rustup.exe -ErrorAction SilentlyContinue
     if (-not $rustup) {
         $installer = Join-Path $buildRoot 'rustup-init.exe'

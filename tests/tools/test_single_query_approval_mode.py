@@ -287,6 +287,34 @@ class TestSingleQueryExecuteCode:
 # Edge cases: single-query mode interaction with other mechanisms
 # ---------------------------------------------------------------------------
 
+@pytest.mark.parametrize('marker', ['SCI_SINGLE_QUERY_SESSION', 'SCI_CRON_SESSION'])
+def test_recorded_code_authorization_is_reused_without_cross_profile_or_session_leaks(tmp_path, monkeypatch, marker):
+    from pathlib import Path
+    from agent.specialist_extensions import capability_scope
+    from sci_cli.config import atomic_config_replace
+    monkeypatch.setattr(Path, 'home', lambda: tmp_path)
+    monkeypatch.setenv(marker, '1')
+    monkeypatch.setattr(approval_module, '_YOLO_MODE_FROZEN', False)
+    homes = [tmp_path / name for name in ('a', 'b')]
+    for home, permissions in zip(homes, [['execute_code'], []]):
+        home.mkdir()
+        atomic_config_replace(home / 'config.yaml', {'approvals': {'single_query_mode': 'deny', 'cron_mode': 'deny'},
+                                                    'command_allowlist': permissions})
+    for home in (homes[0], homes[1], homes[0]):
+        with capability_scope(home):
+            result = approval_module.check_execute_code_guard('print(42)', 'local')
+            assert result['approved'] is (home == homes[0]), result
+    with capability_scope(homes[1]):
+        token = approval_context.set_current_session_key('test-session')
+        try:
+            approval_module.approve_session('test-session', 'execute_code')
+            assert approval_module.check_execute_code_guard('print(42)', 'local')['approved']
+            approval_module.clear_session('test-session')
+            assert not approval_module.check_execute_code_guard('print(42)', 'local')['approved']
+        finally:
+            approval_context.reset_current_session_key(token)
+
+
 class TestSingleQueryModeInteractions:
     """Single-query mode should NOT interfere with other approval mechanisms."""
 

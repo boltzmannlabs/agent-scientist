@@ -74,6 +74,7 @@ class ChatService:
             raise ValueError("session.background_idle_timeout must be non-negative.")
 
     def _spawn(self, session_id, cwd, cols, rows, launch_args=None, terminal_env=None):
+        from sci_constants import profile_name_for_home
         from tools.environments.local import served_profile_child_env
         from sci_cli._launchers import runtime_command
         args = list(launch_args or ["--cli", "--no-daemon", "chat"])
@@ -90,7 +91,10 @@ class ChatService:
                      "SCI_IGNORE_USER_CONFIG", "SCI_SAFE_MODE", "SCI_SESSION_SOURCE",
                      "SCI_SESSION_SOURCE_EXPLICIT", "TERMINAL_CWD"):
             env.pop(name, None)
-        command = runtime_command(repo, args, home=self.home)
+        # A worker belongs to this service, even when bare `sci` defaults to a
+        # different sticky profile. SCI_HOME alone does not pin the root profile.
+        command = runtime_command(repo, ["-p", profile_name_for_home(self.home) or "default", *args],
+                                  home=self.home)
         return PtyBridge.spawn(command, cwd=cwd, env=env, cols=cols, rows=rows)
 
     def _lookup(self, key=None, pid=None):
@@ -159,11 +163,11 @@ class ChatService:
             key = uuid.uuid4().hex
             launch_args = params.get("launch_args")
             if launch_args is not None:
-                from sci_cli.main import _light_chat_parser
+                from sci_cli._parser import build_top_level_parser
                 if not isinstance(launch_args, list) or not all(isinstance(a, str) for a in launch_args):
                     raise ValueError("Invalid chat launch arguments.")
                 try:
-                    parsed = _light_chat_parser().parse_args(launch_args)
+                    parsed = build_top_level_parser()[0].parse_args(launch_args)
                 except SystemExit:
                     raise ValueError("Invalid chat launch arguments.") from None
                 if parsed.command != "chat" or not parsed.no_daemon or not parsed.cli:

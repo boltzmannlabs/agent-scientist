@@ -26,55 +26,42 @@ export function outputFileReference(value: string, origin?: string, allowRelativ
   return name && name !== '.' && name !== '..' ? { path, name } : null;
 }
 
-export function linkedOutputFile(href: string, origin?: string): OutputFileReference | null {
-  const value = href.trim().replace(/^<(.+)>$/, '$1');
-  try {
-    return outputFileReference(/^(?:https?:|file:|sandbox:)/i.test(value) ? value : decodeURIComponent(value), origin, true);
-  } catch { return null; }
-}
-
-export function splitFileText(text: string): { text: string; file?: OutputFileReference }[] {
-  const whole = outputFileReference(text);
-  // A whole line or quoted/inline-code reference may contain spaces.
-  if (whole && (whole.path.slice(1).includes('/') || /^[a-z]:/i.test(whole.path))) {
-    return [{ text, file: whole }];
-  }
-  const result: { text: string; file?: OutputFileReference }[] = [];
-  const pattern = /(?:^|[\s(])((?:sandbox:)?\/(?!\/)[^\s`<>"'|\])]+|[a-z]:[\\/][^\s`<>"'|\])]+)/gi;
-  let end = 0;
-  for (const match of text.matchAll(pattern)) {
-    const token = match[1].replace(/[.,;:]+$/, '');
-    const file = outputFileReference(token);
-    if (!file || (!file.path.slice(1).includes('/') && !file.name.includes('.'))) continue;
-    const start = match.index! + match[0].indexOf(match[1]);
-    result.push({ text: text.slice(end, start) }, { text: token, file });
-    end = start + token.length;
-  }
-  result.push({ text: text.slice(end) });
-  return result;
-}
-
-/** Structured paths plus standalone/quoted paths; bounded discovery never reads files. */
+/** Cards come only from structured tool output_paths, never prose or storage metadata. */
 export function outputFilesInResult(text: string): OutputFileReference[] {
   const found = new Map<string, OutputFileReference>();
-  const add = (value: string, relative = false) => { const file = outputFileReference(value, undefined, relative); if (file && found.size < 20) found.set(file.path, file); };
   let visited = 0;
-  function walk(value: unknown, depth = 0, pathField = false) {
-    if (++visited > 1000 || depth > 8) return;
-    if (typeof value === 'string') add(value, pathField);
-    else if (Array.isArray(value)) value.forEach(row => walk(row, depth + 1, pathField));
-    else if (value && typeof value === 'object') Object.entries(value).forEach(([key, row]) =>
-      walk(row, depth + 1, /^(?:path|local_path|download_path|output_path|file_path|saved_path|output_file|files|artifacts|outputs)$/.test(key)));
-  }
-  try { walk(JSON.parse(text)); } catch { /* Non-JSON tool results are ordinary text. */ }
-  for (const line of text.replace(/```[\s\S]*?```/g, '').split('\n')) {
-    for (const match of line.matchAll(/`([^`]+)`|\[[^\]]*\]\(([^)]+)\)/g)) {
-      const file = match[2] ? linkedOutputFile(match[2], typeof window === 'undefined' ? undefined : window.location.origin) : outputFileReference(match[1]);
-      if (file) add(file.path, true);
+  function walk(value: unknown, depth = 0) {
+    if (++visited > 1000 || depth > 8 || !value || typeof value !== 'object') return;
+    if (Array.isArray(value)) { value.forEach(row => walk(row, depth + 1)); return; }
+    const record = value as Record<string, unknown>;
+    if (Array.isArray(record.output_paths)) {
+      for (const path of record.output_paths) {
+        if (typeof path !== 'string') continue;
+        const file = outputFileReference(path, undefined, true);
+        if (file && found.size < 20) found.set(file.path, file);
+      }
     }
-    splitFileText(line).forEach(part => { if (part.file) add(part.file.path); });
+    // Standard tool-call / parallel-call envelopes. Do not inspect args, skill
+    // content, examples, arbitrary metadata or GCP storage references.
+    for (const key of ['result', 'results', 'data', 'tools']) {
+      const child = record[key];
+      if (typeof child === 'string') {
+        try { walk(JSON.parse(child), depth + 1); } catch { /* Plain output is not an artifact declaration. */ }
+      } else walk(child, depth + 1);
+    }
   }
+  try { walk(JSON.parse(text)); } catch { /* Text alone cannot declare downloadable outputs. */ }
   return [...found.values()];
+}
+
+/** Final answers reuse exact tool-declared paths; filenames never create new paths. */
+export function outputFilesInResponse(text: string, known: OutputFileReference[] = []): OutputFileReference[] {
+  const prose = text.replace(/```[\s\S]*?```/g, '');
+  const found = new Map<string, OutputFileReference>();
+  for (const file of known) {
+    if (prose.includes(file.name)) found.set(file.path, file);
+  }
+  return [...found.values()].slice(0, 20);
 }
 
 export function outputFileQuery(path: string, scope: OutputFileScope): URLSearchParams {

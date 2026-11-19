@@ -132,7 +132,10 @@ def _set_model(rid, params, key, value, session):
         failed_agent_init = (
             failed_agent_init and session.get("agent") is None and session.get("agent_error") is not None
             and session.get("agent_ready") is failed_ready and failed_ready.is_set())
-        if session.get("agent") is None and not explicit_provider.strip() and not failed_agent_init:
+        # An in-flight constructor already captured its model. Saving an override
+        # alone cannot switch the agent it is about to attach.
+        if (session.get("agent") is None and not failed_agent_init
+                and (not explicit_provider.strip() or session.get("agent_build_started"))):
             _start_agent_build(sid, session)
             if init_err := _cfgset_await_agent(session, rid):
                 return init_err
@@ -471,7 +474,7 @@ _CONFIG_SETTERS = {
     "model": _set_model, "fast": _set_fast, "busy": _set_busy, "verbose": _set_verbose, "focus": _set_focus,
     "approval_mode": _set_approval_mode, "approvals.mode": _set_word, "yolo": _set_yolo,
     "reasoning": _set_reasoning, "details_mode": _set_word, "thinking_mode": _set_word,
-    "density": _set_toggle, "battery": _set_toggle, "theme": _set_word,
+    "density": _set_toggle, "battery": _set_toggle,
     "statusbar": _set_toggle, "mouse": _set_toggle, "indicator": _set_word, "voice.voice_chat_mode": _set_word,
     "cwd": _set_cwd, "terminal.cwd": _set_cwd, "workdir": _set_cwd,
     "prompt": _set_prompt, "personality": _set_personality, "skin": _set_skin}

@@ -40,6 +40,11 @@ def test_dev_checks_source_without_forcing_shared_snapshot_edits(tmp_path, monke
     base=commit(repo,'Initial package')
     command.main(['--write-snapshot'])
     command.main(['--check-snapshot'])
+    # Spelling the same semantic version differently cannot authorize changed code.
+    manifest=yaml.safe_load((root / 'manifest.yaml').read_text());manifest['version']='1.0'
+    (root / 'manifest.yaml').write_text(yaml.safe_dump(manifest))
+    with pytest.raises(ValueError, match='higher version'):
+        command.main(['--base', base])
     manifest=yaml.safe_load((root / 'manifest.yaml').read_text());manifest['version']='1.1.0'
     (root / 'manifest.yaml').write_text(yaml.safe_dump(manifest))
     report=json.loads((root / 'tests/validation.json').read_text());report['package_version']='1.1.0'
@@ -78,3 +83,53 @@ def test_main_promotion_requires_tested_dev_content_without_evidence_version_loo
     report['package_version']='1.1.0';path.write_text(json.dumps(report))
     with pytest.raises(ValueError,match='changed since'):
         command.main(['--base',base,'--promotion'])
+
+
+def test_promotion_retests_unchanged_parent_when_child_content_changes(tmp_path, monkeypatch):
+    import sci_yaml as yaml
+    repo, root, command = world(tmp_path, monkeypatch)
+    child = root.parent / 'reader'
+    middle = root.parent / 'coordinator'
+    shutil.copytree(root, child)
+    shutil.copytree(root, middle)
+    manifests, reports = {}, {}
+    members = ((root, 'table-reviewer'), (middle, 'coordinator'), (child, 'reader'))
+    for folder, identity in members:
+        value = yaml.safe_load((folder / 'manifest.yaml').read_text())
+        value.update(schema_version=2, id=identity, name=identity)
+        if folder == root:
+            value.update(children=[{'role': 'coordinate', 'package': 'coordinator', 'version': '>=1,<2'}], tools=['delegate_task'])
+        elif folder == middle:
+            value.update(children=[{'role': 'read', 'package': 'reader', 'version': '>=1,<2'}], tools=['delegate_task'])
+        (folder / 'manifest.yaml').write_text(yaml.safe_dump(value))
+        report = json.loads((folder / 'tests/validation.json').read_text())
+        report['package_id'] = identity
+        (folder / 'tests/validation.json').write_text(json.dumps(report))
+        manifests[identity], reports[identity] = value, report
+    base = commit(repo, 'Original hierarchy')
+    git(repo, 'update-ref', 'refs/remotes/origin/dev', base)
+    for folder, identity in members:
+        reports[identity]['integrated'] = {'status': 'passed', 'tested_commit': base,
+            'environment': 'Controlled Git fixture', 'checks': ['Installed team fixture']}
+        (folder / 'tests/validation.json').write_text(json.dumps(reports[identity]))
+    command.main(['--base', base, '--promotion', '--write-snapshot'])
+    manifests['reader']['version'] = '1.1.0'
+    reports['reader']['package_version'] = '1.1.0'
+    (child / 'manifest.yaml').write_text(yaml.safe_dump(manifests['reader']))
+    (child / 'instructions.md').write_text('Updated child behavior')
+    (child / 'tests/validation.json').write_text(json.dumps(reports['reader']))
+    tested = commit(repo, 'New compatible child version')
+    git(repo, 'update-ref', 'refs/remotes/origin/dev', tested)
+    reports['reader']['integrated']['tested_commit'] = tested
+    (child / 'tests/validation.json').write_text(json.dumps(reports['reader']))
+    with pytest.raises(ValueError, match='child hierarchy changed since'):
+        command.main(['--base', base, '--promotion', '--write-snapshot'])
+    reports['coordinator']['integrated']['tested_commit'] = tested
+    (middle / 'tests/validation.json').write_text(json.dumps(reports['coordinator']))
+    # The root must also be retested when only its grandchild changed.
+    with pytest.raises(ValueError, match='child hierarchy changed since'):
+        command.main(['--base', base, '--promotion', '--write-snapshot'])
+    reports['table-reviewer']['integrated']['tested_commit'] = tested
+    (root / 'tests/validation.json').write_text(json.dumps(reports['table-reviewer']))
+    command.main(['--base', base, '--promotion', '--write-snapshot'])
+    command.main(['--base', base, '--promotion', '--check-snapshot'])

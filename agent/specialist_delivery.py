@@ -37,6 +37,9 @@ def reports_from_results(results):
                     (f'\n\nPartial output:\n{text}' if text else ''))
         elif not isinstance(text, str) or not text:
             return None
+        if full.get('recorded_effects') or full.get('evidence_error'):
+            text += '\n\nRecorded external work:\n' + json.dumps(full.get('recorded_effects', []), ensure_ascii=False)
+            text += '\n' + full.get('recovery_note', '')
         if len(results) > 1:
             text = f"Specialist: {row['specialist']}\n\n{text}"
         reports.append(text)
@@ -47,15 +50,25 @@ def report_from_event(event):
     if event.get('type') != 'async_delegation' or event.get('task_failure_notice'):
         return None
     results = event.get('results') or []
+    if any(row.get('task_outcome') in {'blocked', 'incomplete', 'failed'} for row in results if isinstance(row, dict)):
+        return None
     if any(isinstance(row, dict) and row.get('delivery', 'final') != 'final' for row in results):
         return None  # The normal completion turn lets the parent process an intermediate review.
     return reports_from_results(results)
 
 
 def stage_sync(parent, results):
-    # A pod lead must still finish its own assignment after receiving child results.
-    if parent is None or getattr(parent, '_specialist_policy', None) is not None:
+    if parent is None:
         return
+    if any(row.get('task_outcome') in {'blocked', 'incomplete', 'failed'} for row in results if isinstance(row, dict)):
+        parent._specialist_intermediate_turn = (getattr(parent, '_current_turn_id', None),)
+        return  # Let the parent explain missing work; a report label is not a failed worker.
+    # A pod lead must still finish its own assignment after receiving child results.
+    if getattr(parent, '_specialist_policy', None) is not None:
+        return
+    if any(row.get('assignment_id') and row.get('status') != 'completed' for row in results):
+        parent._specialist_intermediate_turn = (getattr(parent, '_current_turn_id', None),)
+        return  # Reconcile effects through the normal parent loop, never restart the failed task automatically.
     if any(isinstance(row, dict) and row.get('delivery', 'final') != 'final' for row in results):
         parent._specialist_intermediate_turn = (getattr(parent, '_current_turn_id', None),)
         return  # The existing tool result is the continuation; never synthesize a user turn.

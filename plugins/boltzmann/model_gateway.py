@@ -8,6 +8,44 @@ from sci_constants import get_sci_home
 PROVIDER = "boltzmann_models"
 DEFAULT_BASE_URL = "https://sciagent.boltzmann.co.in/v1"
 LOGIN_REQUIRED = "You are not authorized to use Boltzmann models in this profile. Run /boltzmann_login to connect your account."
+DEFAULT_MODEL = "discoveryrsi"
+DEFAULT_EFFORT = "medium"
+
+
+def reasoning_efforts(model):
+    """Gateway-confirmed controls; other gateway routes keep server-managed effort."""
+    return ("low", "medium", "high") if model == DEFAULT_MODEL else ()
+
+
+def save_login_default():
+    """Select the first connected account's default without touching a live agent."""
+    from .auth import available, current_key
+    from sci_cli.config import _CONFIG_LOCK, get_config_path, read_user_config_raw, atomic_config_replace
+    from sci_cli.model_switch import ModelSwitchResult, apply_model_selection
+
+    with owner_scope():
+        key, base = current_key(), endpoint()
+        if not available():
+            raise PermissionError(LOGIN_REQUIRED)
+        if DEFAULT_MODEL not in (catalog_models() or []):
+            return "Model default unchanged: DiscoveryRSI is not available in the gateway catalog. Choose a model under Models when the gateway is available."
+        with _CONFIG_LOCK:
+            if not available() or current_key() != key or endpoint() != base:
+                raise ValueError("Boltzmann login changed while selecting its default.")
+            raw = read_user_config_raw()
+            raw["model"] = apply_model_selection(raw.get("model"), ModelSwitchResult(
+                success=True, new_model=DEFAULT_MODEL, target_provider=PROVIDER,
+                base_url=base, api_mode="chat_completions"))
+            raw.setdefault("agent", {})["reasoning_effort"] = DEFAULT_EFFORT
+            aliases = {PROVIDER, "boltzmann-models"}
+            catalog = raw.get("model_catalog") or {}
+            if "excluded_providers" in catalog:
+                catalog["excluded_providers"] = [p for p in catalog["excluded_providers"] if str(p).lower() not in aliases]
+            for name, entry in (raw.get("providers") or {}).items():
+                if name in aliases and isinstance(entry, dict) and entry.get("enabled") is False:
+                    entry["enabled"] = True
+            atomic_config_replace(get_config_path(), raw)
+    return "New-conversation default: boltzmann_models / discoveryrsi · medium effort."
 
 
 def owner_home():

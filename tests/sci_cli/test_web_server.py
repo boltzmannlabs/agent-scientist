@@ -1431,9 +1431,11 @@ CONFIG_SCHEMA = ProviderConfigSchema(
             "name": "sci-update",
             "action_id": "a" * 32,
         }
-        assert calls == [
-            (["update"], "sci-update", {"SCI_ACTION_ID": "a" * 32})
-        ]
+        assert len(calls) == 1
+        command, name, env = calls[0]
+        assert command == ["update"] and name == "sci-update"
+        assert env["SCI_ACTION_ID"] == resp.json()["action_id"]
+        assert env["SCI_UPDATE_CORRELATION_ID"] == env["SCI_ACTION_ID"]
 
     def test_update_sci_reuses_running_action(self, monkeypatch, tmp_path):
         monkeypatch.setattr("sci_cli.web_server.PROJECT_ROOT", tmp_path)

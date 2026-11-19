@@ -53,6 +53,25 @@ def _terminal_columns(default: int = 80) -> int:
 class CLIStreamMixin:
     """Streaming output, reasoning preview, tool progress callbacks, and busy-command spinner for the interactive CLI"""
 
+    def _on_interim_assistant_message(self, text: str, *, already_streamed: bool = False) -> None:
+        """Keep assistant context visible before tools/questions in non-streaming chat.
+
+        Tool progress and reasoning visibility do not govern user-facing content.
+        Streaming chats use the existing delta renderer instead of this callback.
+        """
+        if already_streamed or not isinstance(text, str) or not text.strip():
+            return
+        from cli import CLI_CONFIG, ChatConsole
+        from gateway.display_config import resolve_display_setting
+        from sci_cli.cli_render import assistant_message_panel
+
+        if not resolve_display_setting(CLI_CONFIG, "cli", "interim_assistant_messages", True):
+            return
+        if getattr(getattr(self, "agent", None), "suppress_status_output", False):
+            return
+        ChatConsole().print(assistant_message_panel(
+            text, mode=self.final_response_markdown, width=self._scrollback_box_width()))
+
     def _on_thinking(self, text: str) -> None:
         """Called by agent when thinking starts/stops. Updates TUI spinner."""
         if getattr(getattr(self, "agent", None), "_mute_notification_reply", False):
@@ -646,10 +665,12 @@ class CLIStreamMixin:
         Fires once per tool CALL, so a batch of parallel calls to the same tool printed the same
         line N times (#10478); repeats within one generation batch are coalesced. The set is
         cleared when a tool actually starts (``tool.started``), i.e. on the next batch."""
-        from cli import _cprint
         if getattr(self, '_stream_box_opened', False):
             self._flush_stream()
             self._stream_box_opened = False
+        if getattr(self, "tool_progress_mode", "all") == "off":
+            return
+        from cli import _cprint
         self._close_reasoning_box()
         announced = self.__dict__.setdefault("_tool_gen_announced", set())
         if tool_name in announced:
@@ -751,6 +772,12 @@ class CLIStreamMixin:
             self._invalidate()
             return
         if event_type != "tool.started":
+            return
+        if self.tool_progress_mode == "off":
+            # Quiet mode also covers the live spinner. Tool previews can contain
+            # commands/paths even when no scrollback history is committed.
+            self._tool_start_time = 0.0
+            self._invalidate()
             return
         if function_name and not function_name.startswith("_"):
             from agent.display import get_tool_preview_max_len, tool_row_emoji

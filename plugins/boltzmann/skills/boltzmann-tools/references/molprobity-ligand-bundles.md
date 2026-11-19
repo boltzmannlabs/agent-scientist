@@ -7,12 +7,75 @@ structures and ordinary structure ZIPs remain supported.
 
 ## Preparation
 
-For an unsupported noncovalent substrate, obtain a chemistry-reviewed restraint
-CIF plus a verified reference SMILES and exact atom mapping. Do not infer bond
-orders, protonation or ideal restraint targets from the tested pose. Do not
+For a nonstandard noncovalent substrate, prefer worker-side generation below
+when no suitable reviewed dictionary is available. Alternatively supply a
+chemistry-reviewed restraint CIF plus a verified reference SMILES and exact atom
+mapping. Do not infer bond orders, protonation or ideal restraint targets from the tested pose. Do not
 invent dictionaries, remove ligands to make validation succeed, or strip stereo
 labels to bypass unsupported cases. A dictionary generator needs separate
-reviewed molecular inputs; this connector does not generate dictionaries.
+reviewed molecular inputs; the connector never installs or runs AceDRG locally.
+
+## Worker-side generation: no user software installation
+
+The updated MolProbity worker contains AceDRG 0.334.0 and a pinned chemistry
+compatibility profile. For generation, create a ZIP containing the unchanged
+complete structure and the following root manifest. Do not include a fabricated
+dictionary or checksum. Example shape only: all molecule values, atom names and
+selectors must match the actual input.
+
+```json
+{
+  "schema": "molprobity-ligand-bundle.v2",
+  "structures": [{
+    "path": "structures/complex.pdb",
+    "ligands": [{
+      "generate_dictionary": true,
+      "component_id": "LIG",
+      "chain_id": "B",
+      "residue_number": 1,
+      "smiles": "CCO",
+      "atom_mapping": {"C1": 0, "C2": 1, "O1": 2}
+    }]
+  }]
+}
+```
+
+Use verified ligand chemistry from the workflow's molecular records/paper and
+authoritative chemical references. Map the exact submitted atom names to the
+zero-based atom indices of the supplied heavy-atom SMILES, not residue numbers
+or arbitrary atom order. If molecular identity, chemical state or mapping is
+uncertain, obtain the missing evidence; neither the worker nor the agent may
+guess it from coordinates. Do not require users to install AceDRG, CCP4, Phenix,
+or Docker locally. Normal connector authorization and any local inspection
+limitations still apply; no new client dependency is introduced by generation.
+
+Set `generate_dictionary` to the JSON boolean `true`, not a string. Omit
+`dictionary` and `sha256` for that binding. The v2 protocol also accepts supplied
+dictionary/hash bindings, but never both modes in one binding. All instances of
+each custom component must be declared. Existing v1 supplied bundles and ordinary
+structures remain supported. Never add generation fields to `experiment_data`:
+the request still contains only the existing `input_path`, `execution_mode` and
+validation-only thresholds.
+
+Generation requires one connected molecule using only C, N, O, S, P, F, Cl, Br,
+I, B, Si or Se, with at most 128 heavy atoms, at most 16 distinct generated
+dictionaries per job, and 300 seconds per generation. These are input limits,
+not a guarantee that every allowed molecule will generate successfully.
+Specified stereo/isotopes, custom covalent links, salts/disconnected
+fragments and metal-containing generation are not supported. Do not remove
+chemical information to bypass these exclusions. The worker preserves the
+structure's bytes/coordinates, disables generator protonation changes, checks
+the generated graph/charges/hydrogens/mapping/restraints, and stops on mismatch.
+It does not establish experimental protonation or assay relevance. Dictionaries
+are reused only within the same job when their exact chemistry/mapping match.
+
+Retain the generated dictionary from `restraints_used/` and its preparation
+record in `ligand_dictionaries_used.json`. Later reuse requires compatible
+chemistry, names/mapping and worker profile; never copy another user's storage
+reference. Generation failures occur inside a submitted job and may consume
+credits. There is no silent retry, ligand removal, protein-only fallback, or
+automatic additional-cost approval. Deployment must be confirmed before using
+v2 against a worker that may still be on the older image.
 
 ```text
 complexes.zip
@@ -23,11 +86,12 @@ complexes.zip
 
 The manifest must be UTF-8 JSON at the exact ZIP root. Its complete machine
 schema is `tools.Mol_Probity.files.input_path.zip_manifest_schema` in
-`file-input-contracts.v1.json`, using protocol `molprobity-ligand-bundle.v1`.
+`file-input-contracts.v1.json`. The table below describes supplied dictionaries
+(v1, or the supplied mode of v2).
 
 | Field | Required | Meaning |
 |---|---|---|
-| `schema` | yes | Literal `molprobity-ligand-bundle.v1`. |
+| `schema` | yes | `molprobity-ligand-bundle.v1` or `molprobity-ligand-bundle.v2`; this table covers supplied dictionaries only. |
 | `structures` | yes | Nonempty array of candidate entries. |
 | `structures[].path` | yes | Exact canonical relative ZIP member path to a supported structure. |
 | `structures[].ligands` | yes | Custom dictionary bindings; `[]` means no custom dictionary. |
@@ -59,15 +123,18 @@ repeating the same input or silently falling back to protein-only validation.
    Missing job IDs, unknown outcomes, pending/running jobs, authentication,
    connectivity and credit-calculation errors do not authorize this recovery.
 2. Establish the ligand's identity, protonation/charge and exact atom mapping
-   from reviewed molecular inputs. Obtain a matching restraint CIF, or generate
-   one with an appropriate available preparation tool and validate it. Do not
+   from reviewed molecular inputs. Use a matching reviewed restraint CIF, or,
+   when the deployed worker supports v2 and the chemistry is supported, request
+   generation inside the worker as described above. Do not require a local
+   AceDRG, CCP4, Phenix or Docker installation. Do not
    write guessed bond orders, charges, stereochemistry or restraint targets from
    the coordinate pose. If the necessary chemistry cannot be established, stop
    and explain what is missing; additional-cost approval cannot supply evidence.
 3. Make a new ZIP using the existing protocol above, preserving the original
    complete complex, coordinates, atom labels and residue numbering. Include
-   the reviewed dictionary and root manifest; check the dictionary hash, residue
-   selector, reference SMILES and atom mapping. Validate and upload the new ZIP
+   the root manifest and either the reviewed dictionary with its actual hash,
+   or a v2 `generate_dictionary: true` binding without a dictionary/hash. Check
+   selectors, reference SMILES and atom mapping. Validate and upload the new ZIP
    through the connector. Do not overwrite the original or merely resubmit it.
 4. When the user has explicitly pre-authorized this ligand-dictionary recovery
    **including additional credits**, submit one corrected replacement job without
@@ -85,8 +152,9 @@ unsupported chemistry, or independently required approval for unchecked local
 validation. Resolve those specific blockers without asking again for a cost
 approval already granted. Without explicit recovery-cost authorization, obtain
 it before creating an additional billable job. This is workflow guidance using
-existing preparation/upload/submit tools, not a new dictionary generator or a
-background retry mechanism.
+existing preparation/upload/submit tools, not a client-side dictionary generator
+or a background retry mechanism. For generation, retain the actual dictionary
+and preparation provenance returned by the replacement job.
 
 ## Limits and local coverage
 
@@ -110,7 +178,7 @@ and target quality, experimental protonation or assay relevance. The worker must
 validate these. Missing parsers and remaining checks require explicit best-effort
 approval; approval cannot bypass known-invalid input.
 
-Version 1 does not support specified stereo/isotopic ligands, stereospecific
+Neither bundle version supports specified stereo/isotopic ligands, stereospecific
 dictionary restraints, custom covalent links, link/modification/global-energy
 dictionaries or polymer/water replacement. Some restrictions require the worker's
 CCTBX path and remain unchecked locally. There is no protein-only fallback for

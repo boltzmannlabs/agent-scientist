@@ -282,9 +282,10 @@ _HISTORY_ASSISTANT_DETAIL_KEYS = (
 _HISTORY_ROLES = frozenset({"user", "assistant", "tool", "system"})
 
 
-def _history_to_messages(history: list[dict], *, profile_home=None, image_urls: bool = True) -> list[dict]:
+def _history_to_messages(history: list[dict], *, profile_home=None, image_urls: bool = True, tool_output: bool = False) -> list[dict]:
     """``image_urls=False`` is the ``inline_images=false`` projection (#116511): image parts render ``[image]``
-    so a remote client's history read stays kilobytes instead of re-transmitting every stored attachment."""
+    so a remote client's history read stays kilobytes instead of re-transmitting every stored attachment.
+    ``tool_output`` adds bounded, redacted output for the web's expandable tool cards."""
     from agent.history_commentary import project_history_commentary
 
     messages = []
@@ -320,14 +321,16 @@ def _history_to_messages(history: list[dict], *, profile_home=None, image_urls: 
             from agent.conversation_compression import _extract_steer_text_from_message
             content_text = _extract_steer_text_from_message(m) or content_text
         if role == "tool":
+            from tui_gateway.tool_display import tool_display_text
             tc_name, tc_args = tool_call_args.get(m.get("tool_call_id") or "", (None, None))
             name = tc_name or m.get("tool_name") or "tool"
             args = tc_args or {}
             # `context` is an 80-char preview; ship args so a full-call renderer isn't truncated.
             labels = _bridged_tool_labels(name, args)
             messages.append({"role": "tool", "name": name, "context": _tool_ctx(name, args),
+                             **({"text": tool_display_text(m["content"])} if tool_output and "content" in m else {}),
                              # Edit cards need the original result; other tool outputs
-                             # remain omitted from this compact display projection.
+                             # use the bounded display text above.
                              **({"content": m.get("content")} if name in {"write_file", "patch", "skill_manage"} else {}),
                              **{key: m[key] for key in ("tool_call_id", "timestamp", "display_metadata")
                                 if m.get(key) is not None},

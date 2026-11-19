@@ -455,7 +455,7 @@ def target_bytes(art: IconArt, kind: str, arg: object) -> bytes:
         return art.web_favicon.read_bytes()
     if kind == "web_ico":
         buf = io.BytesIO()
-        img = render(art.web_favicon.read_text(encoding="utf-8"), max(arg))
+        img = render(art.web_favicon.read_text(encoding="utf-8-sig"), max(arg))
         img.save(buf, format="ICO", sizes=[(s, s) for s in arg])
         return buf.getvalue()
     if kind == "svg":

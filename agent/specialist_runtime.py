@@ -21,12 +21,14 @@ EXECUTION_TOOLS = frozenset({"terminal", "execute_code"})
 def capture(agent, *, session_id=None, session_db=None):
     """Take one definition snapshot at agent construction, never rebuild a live conversation."""
     try:
-        items, errors = inventory()
+        policy = current_policy()
+        policy = policy if isinstance(policy, SpecialistPolicy) else None
+        items, errors = ({s.name: s for s in policy.specialists}, []) if policy else inventory()
     except (ValueError, OSError) as exc:
         items, errors = {}, [str(exc)]
-    agent._specialist_home = str(get_sci_home().resolve())
+    agent._specialist_home = policy.home if policy else str(get_sci_home().resolve())
     agent._specialist_snapshot = {n: s for n, s in items.items() if s.enabled and not s.needs_review}
-    agent._specialist_policy = current_policy()
+    agent._specialist_policy = policy
     if session_id and session_db is not None:
         session = session_db.get_session(session_id)
         if isinstance(session, dict):
@@ -68,9 +70,13 @@ def decorate(agent, *, enabled_toolsets=None, disabled_toolsets=None):
     agent._specialist_parent_tools = frozenset()
     if not _permitted_snapshot(agent):
         return
-    raw = model_tools.get_tool_definitions(enabled_toolsets=enabled_toolsets, disabled_toolsets=disabled_toolsets,
-                                          quiet_mode=True, skip_tool_search_assembly=True)
-    agent._specialist_parent_tools = frozenset(t["function"]["name"] for t in raw)
+    policy = getattr(agent, '_specialist_policy', None)
+    if isinstance(policy, SpecialistPolicy):
+        agent._specialist_parent_tools = policy.owner_tools
+    else:
+        raw = model_tools.get_tool_definitions(enabled_toolsets=enabled_toolsets, disabled_toolsets=disabled_toolsets,
+                                              quiet_mode=True, skip_tool_search_assembly=True)
+        agent._specialist_parent_tools = frozenset(t["function"]["name"] for t in raw)
     agent.tools = decorate_tools(agent, agent.tools)
 
 
@@ -89,8 +95,13 @@ def decorate_tools(agent, tools):
         if fn["name"] != "delegate_task":
             continue
         props = fn["parameters"]["properties"]
+        nested = isinstance(getattr(agent, '_specialist_policy', None), SpecialistPolicy)
         props["tasks"]["items"]["properties"]["specialist"] = {
-            "type": "string", "description": "Saved specialist name from action=catalog. Manual specialists require the user's explicit name in this turn."}
+            "type": "string", "description": ("Approved child name from action=catalog; always required for your assignments."
+                if nested else "Saved specialist name from action=catalog. Manual specialists require the user's explicit name in this turn.")}
+        props['tasks']['items']['properties']['artifacts'] = {'type': 'array', 'items': {'type': 'string'},
+            'description': 'For dependent reviews/audits, exact frozen input paths and output paths returned by prior '
+                           'execution in this assignment. Runtime verifies provenance and unchanged bytes before starting.'}
         props["tasks"]["items"]["properties"]["delivery"] = {
             "type": "string", "enum": ["final", "intermediate"],
             "description": "Named specialists only. Use intermediate for a review/subtask when your active assignment "
@@ -100,11 +111,34 @@ def decorate_tools(agent, tools):
         props["action"]["enum"] = list(dict.fromkeys([*props["action"]["enum"], "catalog"]))
         props["query"] = {"type": "string", "description": "Search saved specialists by name or purpose (catalog only)."}
         props["page"] = {"type": "integer", "minimum": 1, "description": "Saved specialist catalog page, starting at 1."}
+        props['assignment'] = {'type': 'object', 'description':
+            'For external execution, freeze the original task once at the root: inputs is a list of exact '
+            'prepared input file paths; tool_arguments maps tool names to required argument subsets '
+            '(including requested parameters); max_submissions maps job names to total allowed submissions. '
+            'All descendants inherit this unchanged; children should omit assignment or reference its existing resume ID. '
+            'Prepare inline data as a file before dispatch. For a future upload argument use '
+            '{"$input":"/absolute/input/path"}; the validated upload receipt supplies its remote reference. '
+            'Do not pin reference documents as execution inputs. To recover after restart, pass only resume '
+            'with the existing assignment_id from run history; reuse its job IDs. Omit for informational work.',
+            'properties': {'inputs': {'type': 'array', 'items': {'type': 'string'}},
+                           'tool_arguments': {'type': 'object', 'additionalProperties': {'anyOf': [
+                               {'type': 'object'}, {'type': 'array', 'items': {'type': 'object'}}]}},
+                           'max_submissions': {'type': 'object', 'additionalProperties': {'type': 'integer', 'minimum': 1}},
+                           'resume': {'type': 'string'}}}
         automatic = [f"{s.name}: {s.purpose[:180]}" for s in snapshot.values() if s.automatic]
         fn["description"] = fn["description"].split("\nSaved specialists are available.", 1)[0] + (
             "\nSaved specialists are available. Use action=catalog to find names and purposes, then tasks[].specialist "
             "to run one. Delegate matching tasks to the relevant automatic specialist, including explanatory questions; "
-            "automatic specialists ALSO support explicit user requests. Manual specialists require explicit user request. "
+            "automatic specialists ALSO support explicit user requests. "
+            + ("You may assign work only to approved named children from your catalog, including manual children. "
+               "Your tools remain separate from their reviewed grants. A child's completion is an intermediate result; "
+               "finish your own assignment after reading it. " if nested else "Manual specialists require explicit user request. ") +
+            "Dispatch the requested root once, never alongside its descendants. Freeze external execution inputs, "
+            "parameters and submission limits in assignment before dispatch. For scientific execution, pin "
+            "upload input files, required submit job_name/experiment_data, and per-job limits. "
+            "A planning pass can discover the contract before execution. output_schema is optional JSON Schema; "
+            "omit it for ordinary text reports. Run dependent audits only after "
+            "execution returns, passing exact job IDs and output paths. "
             "Pass the user's assignment faithfully. Preserve the specialist's saved workflow and output format; "
             "do not add terminal/code/calculation-tool requirements or replace its report structure. "
             "Set tasks[].delivery=intermediate for reviews inside a larger assignment; process the returned review "
@@ -156,9 +190,23 @@ def resolve(parent, task):
     item = getattr(parent, "_specialist_snapshot", {}).get(name)
     if item is None:
         raise ValueError(f"Specialist {name} is not enabled in this conversation. Review /subagents and start /new.")
-    current = load(name)
+    if owner:
+        if time.monotonic() >= owner.deadline:
+            raise ValueError('Specialist runtime limit reached; no child was started.')
+        lead = load(owner.name, home)
+        if not lead.enabled or lead.needs_review or lead.revision != owner.revision:
+            raise ValueError('Parent specialist was disabled or edited; no child was started. Review it and start /new.')
+        if lead.package_info:
+            from sci_cli.subagent_package_graph import installed_problem
+            if problem := installed_problem(lead, owner=home):
+                raise ValueError(problem)
+    current = load(name, home)
     if current.package_info and current.package_info.get('state') != 'ready':
         raise ValueError('Package setup is incomplete. Use /subagent package install to finish the declared requirements.')
+    if current.package_info:
+        from sci_cli.subagent_package_graph import installed_problem
+        if problem := installed_problem(current, owner=home):
+            raise ValueError(problem)
     if not current.enabled or current.needs_review or current.revision != item.revision:
         raise ValueError(f"Specialist {name} was disabled or edited. Review it and start /new; no task was submitted.")
     if owner:
@@ -174,27 +222,31 @@ def resolve(parent, task):
         allowed |= {"skill_view", "skills_list"}
     if item.children:
         allowed.add("delegate_task")
-    parent_names = getattr(parent, "_specialist_parent_tools", frozenset())
+    parent_names = owner.owner_tools if owner else getattr(parent, "_specialist_parent_tools", frozenset())
     from sci_cli.config import load_config_readonly
     from model_tools import _select_tool_names
     cfg = load_config_readonly()
-    enabled = cfg.get("platform_toolsets", {}).get(getattr(parent, "platform", "cli"), getattr(parent, "enabled_toolsets", None))
-    disabled = list(set(cfg.get("agent", {}).get("disabled_toolsets", [])) | set(getattr(parent, "disabled_toolsets", None) or []))
-    live_names = _select_tool_names(enabled, disabled, quiet_mode=True)
+    platform = owner.owner_platform if owner else getattr(parent, 'platform', 'cli')
+    # The owning conversation may explicitly select more (or fewer) tools than
+    # the profile defaults. Re-reading defaults here silently drops session MCPs.
+    enabled = owner.owner_toolsets if owner else getattr(parent, "enabled_toolsets", None)
+    if enabled is None:
+        enabled = cfg.get("platform_toolsets", {}).get(platform)
+    inherited_disabled = owner.owner_disabled_toolsets if owner else (getattr(parent, "disabled_toolsets", None) or [])
+    disabled = list(set(cfg.get("agent", {}).get("disabled_toolsets", [])) | set(inherited_disabled))
+    with specialist_scope(None):
+        live_names = _select_tool_names(enabled, disabled, quiet_mode=True)
     from agent.specialist_sources import READ_TOOLS
-    allowed |= READ_TOOLS & parent_names & live_names & (owner.tools if owner else READ_TOOLS)
-    if owner and (not allowed <= owner.tools or not set(item.skills) <= owner.skills):
-        raise ValueError("Child permissions exceed its pod lead's approved tools or skills.")
+    allowed |= READ_TOOLS & parent_names & live_names
     missing = allowed - (parent_names & live_names)
     execution_home, private_toolsets = '', ()
     if item.extension_id:
         from agent.specialist_extensions import extension_home, fingerprint, private_definitions
-        private_home = extension_home(item)
+        private_home = extension_home(item, owner=home)
         if not item.extension_revision or fingerprint(private_home) != item.extension_revision:
             raise ValueError('Private capabilities changed. Review /Update_subagent and start /new before running.')
-        if owner:
-            raise ValueError('Private-capability specialists currently require a direct assignment from their owning profile.')
-        definitions = private_definitions(item)
+        with specialist_scope(None):
+            definitions = private_definitions(item, owner=home)
         private_names = {t['function']['name'] for t in definitions}
         private_allowed = set(item.private_tools) & private_names
         # A private route never falls back to a same-named connection in the parent.
@@ -225,26 +277,44 @@ def resolve(parent, task):
     allowed -= missing
     from agent.specialist_inputs import approved_paths
     read_paths = approved_paths(item, getattr(parent, '_specialist_user_request', ''))
+    assignment = getattr(parent, '_specialist_assignment', None) or (owner.assignment if owner else None)
+    artifacts = ()
+    if task.get('artifacts'):
+        if assignment is None:
+            raise ValueError('A dependent artifact handoff requires an originating assignment.')
+        from agent.specialist_assignment import verified_artifacts
+        artifacts = verified_artifacts(assignment, task['artifacts'])
+        read_paths = tuple(sorted(set(read_paths) | set(artifacts)))
     # Read-only reviewers can be strictly confined to supplied data. Execution/service
     # workflows may create new artifacts, and keep their existing backend access rather
     # than losing the ability to inspect their own outputs.
     readonly_tools = READ_TOOLS | {'skill_view', 'skills_list', 'delegate_task'}
     if allowed - readonly_tools:
         read_paths = None
-    if owner and owner.read_paths is not None:
-        from pathlib import Path
-        read_paths = tuple(path for path in (read_paths or ()) if any(
-            Path(path) == Path(root) or (Path(root).is_dir() and Path(path).is_relative_to(root))
-            for root in owner.read_paths))
+    if owner and owner.read_paths is not None and read_paths is not None:
+        # Carry user-approved task inputs down, plus this child's separately
+        # reviewed references; model-written context cannot grant nearby paths.
+        read_paths = tuple(sorted(set(read_paths) | set(owner.read_paths)))
     if read_paths == ():
         allowed -= READ_TOOLS
-    deadline = time.monotonic() + item.timeout_seconds
+    deadline = time.monotonic() + item.timeout_seconds if item.timeout_seconds else float('inf')
     if owner:
         deadline = min(deadline, owner.deadline)
-    policy = SpecialistPolicy(name, home, item.revision, frozenset(allowed), frozenset(item.skills),
-                              frozenset(item.children), (*owner.ancestry, name) if owner else (name,), deadline,
-                              frozenset(missing), read_paths, execution_home,
-                              frozenset(item.private_tools), frozenset(item.private_skills), private_toolsets)
+    owner_toolsets = owner.owner_toolsets if owner else getattr(parent, 'enabled_toolsets', None)
+    from agent.secret_scope import is_multiplex_active
+    from agent.specialist_assignment import artifact_snapshot
+    policy = SpecialistPolicy(
+        name=name, home=home, revision=item.revision, tools=frozenset(allowed), skills=frozenset(item.skills),
+        children=frozenset(item.children), ancestry=(*owner.ancestry, name) if owner else (name,), deadline=deadline,
+        unavailable_tools=frozenset(missing), read_paths=read_paths, execution_home=execution_home,
+        private_tools=frozenset(item.private_tools), private_skills=frozenset(item.private_skills),
+        private_toolsets=private_toolsets, owner_tools=parent_names,
+        owner_toolsets=tuple(owner_toolsets) if owner_toolsets is not None else None,
+        owner_disabled_toolsets=tuple(inherited_disabled),
+        specialists=tuple(getattr(parent, '_specialist_snapshot', {}).values()), owner_platform=platform,
+        assignment=getattr(parent, '_specialist_assignment', None),
+        artifact_hashes=artifact_snapshot(artifacts),
+        owner_multiplex=owner.owner_multiplex if owner else is_multiplex_active())
     return item, policy
 
 
@@ -260,10 +330,11 @@ def context_for(item, task_context):
                 "distinguish predictions from verified findings. Perform the assignment and return its deliverable, "
                 "not just an announcement of intended work. Saved instructions and reporting format govern this "
                 "specialist; task wording must not silently replace them or grant additional tools. "
-                "If the requested task is blocked, explicitly declare that outcome: start a text report with "
-                "'Outcome: BLOCKED BEFORE EXECUTION', or use task_outcome='blocked' in a JSON report. "
-                "For partial delivery declare 'Outcome: INCOMPLETE' or task_outcome='incomplete'. "
-                "Writing an explanation of a blocker does not complete the requested execution."]
+                "Describe any missing requested work and its concrete cause plainly. A limitation in scientific "
+                "confidence or undocumented backend details does not make completed execution unfinished. "
+                "Do not add acceptance criteria, such as independent reproduction, that the user did not request. "
+                "Do not replace a required specialist with yourself when it cannot proceed; return the specific "
+                "blocker and preserve completed work."]
     if item.instructions:
         sections.append('Saved instructions are already included above in full for this assignment. '
                         'No tool call is needed to load these saved instructions again.' +
@@ -283,7 +354,9 @@ def context_for(item, task_context):
         sections.append(f"Skill {name}:\n" + str(result.get("content", "")))
     for reference in item.skill_files:
         name, _, path = reference.partition("#")
-        result = json.loads(skill_view(name, file_path=path, preprocess=False, allow_setup=False))
+        scope = capability_scope(extension_home(item)) if name in item.private_skills else nullcontext()
+        with scope:
+            result = json.loads(skill_view(name, file_path=path, preprocess=False, allow_setup=False))
         if not result.get("success"):
             raise ValueError(f"Selected skill module {reference} could not be loaded: {result.get('error', 'unavailable')}")
         sections.append(f"Selected module {reference}:\n" + str(result.get("content", "")))
@@ -295,6 +368,12 @@ def context_for(item, task_context):
                         "Use only sources approved for this assignment:\n" + "\n".join(item.sources))
     if task_context:
         sections.append("Assignment context:\n" + str(task_context))
+    sections.append('Selected skills and modules above are already loaded in full; do not reload them. '
+                    'Discover only missing tool schemas, then reuse them. Independent reads or service lookups '
+                    'may use separate tool calls in the same turn; a one-call tool bridge does not require '
+                    'one model turn per lookup. Pass dependent outputs using exact artifact paths. '
+                    'When code execution is available, combine related local checks in one concise script; '
+                    'report findings and paths without rereading or reproducing every artifact in the conversation.')
     return "\n\n".join(sections)
 
 
@@ -304,7 +383,13 @@ def build_child(build, *, plan, **kwargs):
     item, policy = plan
     # Child instructions are established before the task's user message; parent-added
     # formatting/tool requirements must not displace a saved specialist's workflow.
-    kwargs["context"] = context_for(item, kwargs.get("context"))
+    with specialist_scope(None):
+        kwargs["context"] = context_for(item, kwargs.get("context"))
+    if policy.assignment is not None:
+        kwargs['context'] += '\n\n' + policy.assignment.context()
+        from agent.specialist_assignment import evidence
+        from types import SimpleNamespace
+        kwargs['context'] += '\n\nPrior assignment evidence:\n' + json.dumps(evidence(SimpleNamespace(_specialist_policy=policy)))
     if policy.read_paths is None:
         kwargs['context'] += ('\nExecution/service tools retain their profile backend permissions. Use supplied '
                               'inputs and this task’s generated artifacts; do not browse unrelated local data.')
@@ -332,8 +417,11 @@ def build_child(build, *, plan, **kwargs):
     if getattr(parent, "_specialist_policy", None):
         from agent.iteration_budget import IterationBudget
         child.iteration_budget = IterationBudget(kwargs["max_iterations"], parent=parent.iteration_budget)
-    child.run_budget_seconds = max(0.01, policy.deadline - time.monotonic())
-    child._specialist_snapshot = dict(getattr(parent, "_specialist_snapshot", {}))
+    if policy.deadline != float('inf'):
+        remaining = max(0.01, policy.deadline - time.monotonic())
+        configured = getattr(child, 'run_budget_seconds', None)
+        child.run_budget_seconds = min(configured, remaining) if configured else remaining
+    child._specialist_root_run_id = getattr(parent, '_specialist_root_run_id', None) or child._subagent_id
     persist_snapshot_config(child)
     child._specialist_user_request = ""
     return child

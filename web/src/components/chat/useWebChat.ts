@@ -1,7 +1,8 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
-import { looksLikeSlashCommand, parseSlashCommand, parseCommandDispatch, JsonRpcGatewayError, type ServerRequest, type SessionResumeResult, type SessionLiveInfo, type SlashExecResult, type GatewayEvent, type ConnectionRequestPayload, type ConnectionAnswer, type ConnectionRespondResult, type SessionControlReadResult, type SessionControlSnapshot, type CommandsCatalogResult, type ConfigSetResult } from '@sci/shared';
+import { looksLikeSlashCommand, parseSlashCommand, parseCommandDispatch, JsonRpcGatewayError, type ServerRequest, type SessionResumeResult, type SessionLiveInfo, type SlashExecResult, type GatewayEvent, type ConnectionRequestPayload, type ConnectionAnswer, type ConnectionRespondResult, type SessionControlReadResult, type SessionControlSnapshot, type CommandsCatalogResult, type ConfigSetResult, type ModelOptionsResult } from '@sci/shared';
 import { GatewayClient } from '@/lib/gatewayClient';
 import { chatReducer, emptyChat } from '@/lib/web-chat-state';
+import { toolActivity } from '@/lib/tool-activity';
 
 const messageOf = (error: unknown) => error instanceof Error ? error.message : String(error);
 const secretMethods = new Set(['sudo', 'secret', 'vault.unlock_prompt', 'vault.code', 'vault.save_login']);
@@ -48,8 +49,8 @@ export function useWebChat({ profile, resume, cwd, storageKey = profile, parentS
         'message.delta': () => dispatch({ type: 'delta', text }),
         'message.interim': () => dispatch({ type: 'interim', text }),
         'message.complete': () => { locked.current = false; dispatch({ type: 'complete', text, status: String(p.status || ''), error: String(p.error || p.failure_reason || p.warning || '') }); },
-        'tool.start': () => dispatch({ type: 'tool', id: String(p.tool_id), name: String(p.name), text: String(p.preview || p.context || ''), running: true }),
-        'tool.complete': () => dispatch({ type: 'tool', id: String(p.tool_id), name: String(p.name), text: String(p.summary || p.result_text || ''), running: false }),
+        'tool.start': () => dispatch({ type: 'tool', ...toolActivity(p, true) }),
+        'tool.complete': () => dispatch({ type: 'tool', ...toolActivity(p, false) }),
         'tool.generating': () => dispatch({ type: 'status', text: `Preparing ${String(p.name)}…` }),
         'status.update': () => dispatch({ type: 'status', text }),
         'session.info': () => setInfo(prev => ({ ...prev, ...p })),
@@ -218,14 +219,22 @@ export function useWebChat({ profile, resume, cwd, storageKey = profile, parentS
       if (key === 'reasoning') setInfo(prev => ({ ...prev, reasoning_effort: value }));
     } catch (error) { dispatch({ type: 'notice', text: `${key} setting was not changed: ${messageOf(error)}` }); }
   }
-  async function setModel(provider: string, model: string, confirmExpensiveModel = false): Promise<ConfigSetResult> {
+  async function getModelOptions(options?: { refresh?: boolean }) {
+    const gw = gateway.current;
+    if (!gw || !online || !runtime.current) throw new Error('Chat is not connected. Reconnect before choosing a model.');
+    return gw.request<ModelOptionsResult>('model.options', {
+      profile, session_id: runtime.current, include_unconfigured: true, refresh: Boolean(options?.refresh),
+    });
+  }
+  async function setModel(provider: string, model: string, confirmExpensiveModel = false, persistGlobal = false, reasoningEffort?: string): Promise<ConfigSetResult> {
     const gw = gateway.current;
     if (!gw || !online || !runtime.current) throw new Error('Chat is not connected. Reconnect before changing the model.');
     const result = await gw.request<ConfigSetResult>('config.set', {
       profile, session_id: runtime.current, key: 'model',
-      value: `${model} --provider ${provider}`, confirm_expensive_model: confirmExpensiveModel,
+      value: `${model} --provider ${provider}${persistGlobal ? ' --global' : ''}${reasoningEffort ? ` --reasoning ${reasoningEffort}` : ''}`, confirm_expensive_model: confirmExpensiveModel,
     });
-    if (!result.confirm_required) setInfo(prev => ({ ...prev, model, provider }));
+    if (!result.confirm_required && !result.deferred) setInfo(prev => ({ ...prev, model: String(result.value || model), provider,
+      ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}) }));
     return result;
   }
   async function controlAction(action: string) {
@@ -260,5 +269,5 @@ export function useWebChat({ profile, resume, cwd, storageKey = profile, parentS
     });
     if (response.settled) setConnection(null);
   }
-  return { connection, answerConnection, setPrefill, state, online, loading, storedId, info, control, commands, requests, prefill, send, steer, setControl: setChatControl, setModel, controlAction, stop, answer, reconnect: () => reconnect.current() };
+  return { connection, answerConnection, setPrefill, state, online, loading, storedId, info, control, commands, requests, prefill, send, steer, setControl: setChatControl, getModelOptions, setModel, controlAction, stop, answer, reconnect: () => reconnect.current() };
 }

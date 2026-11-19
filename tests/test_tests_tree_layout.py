@@ -26,10 +26,11 @@ TESTS_ROOT = REPO_ROOT / "tests"
 # "compat": frozen pre-PM updater import surface (tests/compat/README.md) — the
 # audited names live only in history, so there is no source package to mirror.
 # "installation": python driver for the tests/install shell e2e assets.
+# "agriformulations": integration tests for the bundled third-party wheel and skills.
 # "_fixtures": topic modules tests/conftest.py is split into — suite-wide
 # plumbing (env filtering, live-system guard, platform gating), not tests.
 _NON_MIRROR_DIRS = {
-    "compat", "installation", "_fixtures",
+    "compat", "installation", "_fixtures", "agriformulations",
     "ci", "conformance", "dashboard", "desktop", "docker", "e2e", "evals",
     "fakes", "fixtures", "honcho_plugin", "install", "integration", "manual",
     "monitoring", "openviking_plugin", "perf_guards", "scripts", "secret_sources",

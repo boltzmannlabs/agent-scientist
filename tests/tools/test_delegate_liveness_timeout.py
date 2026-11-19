@@ -108,3 +108,31 @@ def test_frozen_child_is_still_abandoned_when_the_cap_elapses(monkeypatch):
     assert entry["timeout_seconds"] == _CAP_SECONDS
     assert entry["last_event_age"] is not None and entry["last_event_age"] > 0.3, entry
     assert child.interrupted.is_set()
+
+
+def test_specialist_total_deadline_is_reported_separately_from_inactivity(monkeypatch):
+    from agent.specialist_policy import SpecialistPolicy
+    from sci_constants import get_sci_home
+    child = _SlowButLiveChild(total_seconds=10, advance=True, initial_calls=1)
+    child.session_prompt_tokens = 120
+    child.session_completion_tokens = 30
+    child.session_cost_status = 'unknown'
+    child._specialist_policy = SpecialistPolicy('worker', str(get_sci_home()), 'fixture', frozenset(),
+        frozenset(), frozenset(), ('worker',), time.monotonic() + 0.35)
+    entry = _run(child, monkeypatch, cap=5)
+    assert entry['status'] == 'timeout'
+    assert entry['timeout_reason'] == 'assignment_deadline'
+    assert 'not proof of inactivity' in entry['error']
+    assert child.interrupted.is_set()
+    assert entry['tokens'] == {'input': 120, 'output': 30}
+    assert entry['usage_complete'] is False and entry['cost_usd'] is None
+
+
+def test_saved_specialist_has_no_implicit_total_deadline(monkeypatch):
+    from agent.specialist_policy import SpecialistPolicy
+    from sci_constants import get_sci_home
+    child = _SlowButLiveChild(total_seconds=2.1, advance=True)
+    child._specialist_policy = SpecialistPolicy('worker', str(get_sci_home()), 'fixture', frozenset(),
+        frozenset(), frozenset(), ('worker',), float('inf'))
+    entry = _run(child, monkeypatch, cap=None)
+    assert entry['status'] == 'completed' and not child.interrupted.is_set(), entry

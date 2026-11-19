@@ -1371,6 +1371,7 @@ class AIAgent(
             max_iterations=function_args.get("max_iterations"), role=function_args.get("role"),
             background=False, images=function_args.get("images"),
             action=function_args.get("action"), query=function_args.get("query", ""), page=function_args.get("page", 1),
+            assignment=function_args.get('assignment'),
             subagent_id=function_args.get("subagent_id"), message=function_args.get("message"), parent_agent=self,
         )
 

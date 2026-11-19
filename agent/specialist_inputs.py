@@ -24,6 +24,17 @@ def approved_paths(item, user_request):
 
 
 def check_read(policy, name, args):
+    if name == 'read_file' and isinstance(args.get('path'), str):
+        target = str(Path(args['path']).expanduser().resolve())
+        expected = dict(policy.artifact_hashes).get(target)
+        if expected:
+            from agent.specialist_assignment import _digest
+            try:
+                unchanged = _digest(Path(target)) == expected
+            except OSError:
+                unchanged = False
+            if not unchanged:
+                return 'The handed-off artifact changed after dispatch. Ask the parent for a fresh verified handoff.'
     if policy.read_paths is None or name not in {'read_file', 'search_files'}:
         return None
     raw = args.get('path')

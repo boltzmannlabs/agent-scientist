@@ -125,12 +125,13 @@ def test_every_catalog_tool_has_explicit_contract_coverage():
             assert prop["x-input-kind"] in {"file", "value", "file_or_value", "artifact"}
         assert (store.root / contract["source"]).is_file() or contract["status"] != "active"
         if contract.get("product_documentation"):
-            document, anchor = contract["product_documentation"].split("#", 1)
+            document, _, anchor = contract["product_documentation"].partition("#")
             guide = store.root / document
             assert guide.is_file()
             headings = {line[3:].strip().lower().replace(" ", "-") for line in guide.read_text().splitlines()
                         if line.startswith("## ")}
-            assert anchor in headings
+            if anchor:
+                assert anchor in headings
 
 
 def test_product_documentation_is_rendered_without_modifying_execution_schema():
