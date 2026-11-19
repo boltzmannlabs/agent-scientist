@@ -1,0 +1,6 @@
+{
+  "fixture_kind": "SYNTHETIC_METADATA_ONLY",
+  "validator_status": "PASS",
+  "scientific_execution": false,
+  "note": "Structural spec validation only; never evidence of model quality, weights reality or readiness."
+}

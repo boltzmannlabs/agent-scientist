@@ -1,0 +1,61 @@
+{
+  "package_id": "application-aware-grna-designer",
+  "package_version": "1.1.0",
+  "local": {
+    "status": "passed",
+    "environment": "Installed SCI source strict schema; Python3.14.7; Linux x86_64; local inert package/metadata checks only",
+    "checks": [
+      "Installed SCI strict portable-package schema passed (no lock generation, no contributed code executed by schema check)",
+      "Leaf tool grants checked against the installed specialist BLOCKED set; automatic matching disabled",
+      "Eight synthetic metadata fixtures passed, including missing inputs, exact identifiers, pathogen review-only gate and inactive plant design",
+      "CLI request-contract smoke test passed; explicitly reports no scientific execution",
+      "Dependency catalog/requirements inventories and three synthetic software-metadata checker cases passed",
+      "Actual core executable dependency metadata matched; no native scientific inference or installation",
+      "Actual analysis executable dependency metadata matched; no native scientific inference or installation",
+      "Actual rs3 executable dependency metadata matched; no native scientific inference or installation",
+      "Actual crispron executable dependency metadata matched; no native scientific inference or installation",
+      "Actual editing executable dependency metadata matched; no native scientific inference or installation",
+      "Actual behive executable dependency metadata matched; no native scientific inference or installation",
+      "Actual crispria executable dependency metadata matched; no native scientific inference or installation",
+      "Actual R4.5.3 and four R package versions matched; metadata only, no scientific execution",
+      "Five isolated Conda environment recipe files parsed; no clean solver/install test performed",
+      "Output contract parsed; null best_design and no experimental validation are explicit"
+    ]
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "Owning-profile installation, installer-enforced grants and dev-branch integration remain untested; separate prompt-equivalent live behavioral tests are recorded below.",
+    "checks": []
+  },
+  "live_behavioral": {
+    "status": "passed_with_recovered_checker_errors",
+    "scope": "Three live delegated contexts following rendered package instructions; NOT an installed-profile integration or comprehensive scientific validation",
+    "model": "gpt-6.1-sol",
+    "scenarios": 7,
+    "verified_scenario_outcomes": 7,
+    "native_evaluation": {
+      "model": "BE-Hive HEK293T/BE4 any-edit efficiency",
+      "rows": 9975,
+      "prediction_difference_from_verified_prior": 0.0,
+      "spearman": 0.16576576051572114,
+      "pearson": 0.1763573815160444,
+      "note": "Weak external accuracy correctly retained; this is model reproducibility, not efficacy improvement"
+    },
+    "checks": [
+      "Parent independently recomputed native measured-label correlations and source/output hashes",
+      "Parent full JSON Schema validation of native run record passed",
+      "Three intake and three evidence/permission boundary decisions passed"
+    ],
+    "issues": [
+      "Two self-corrected added-checker mistakes:position-zero convention and bitwise CSV label comparison",
+      "Malformed-request rejection needs a separate output schema",
+      "LLM/context overhead was high relative to native process runtime"
+    ],
+    "not_tested": [
+      "Owning-profile installation and runtime tool-grant enforcement",
+      "All modality workflows or independent new-target design quality",
+      "External connectors,clinical outcomes or experimental efficacy"
+    ]
+  }
+}

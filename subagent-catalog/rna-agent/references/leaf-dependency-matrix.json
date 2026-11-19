@@ -1,0 +1,85 @@
+{
+  "matrix_version": 1,
+  "note": "Leaf dependency matrix: what each approved leaf needs to run, its pins and the satisfaction route. Metadata only; version_contains matches the leaf manifests. Setup always executes through parent-approved commands (leaf package install review or an approved recipe); this matrix never installs anything.",
+  "leaves": [
+    {
+      "name": "application-aware-sirna-designer",
+      "package": "application-aware-sirna-designer >= 1.1.0",
+      "programs": [
+        { "id": "python_core", "pin": ">=3.12", "match": "Python 3.", "role": "stdlib scripts (preflight, audits, validation)", "required_for": "core routing/audit" },
+        { "id": "python_qa", "pin": "3.13.x", "match": "Python 3.13.", "role": "harness QA + jsonschema strict checks", "required_for": "strict record/spec QA" },
+        { "id": "python_rnai", "pin": "3.13.x", "match": "Python 3.13.", "role": "RN.Ai efficacy environment", "required_for": "native efficacy endpoints" },
+        { "id": "python_rnaispline", "pin": "3.13.x", "match": "Python 3.13.", "role": "RNAiSpline restricted scorer", "required_for": "optional secondary efficacy" },
+        { "id": "python_oligoformer", "pin": "3.8.x", "match": "Python 3.8.", "role": "OligoFormer generation environment", "required_for": "candidate generation" },
+        { "id": "python_analysis", "pin": "3.13.x", "match": "Python 3.13.", "role": "analysis environment", "required_for": "result analysis" },
+        { "id": "rnafold", "pin": "2.7.2", "match": "2.7.2", "role": "ViennaRNA structure", "required_for": "structure endpoints" },
+        { "id": "rnaplfold", "pin": "2.7.2", "match": "2.7.2", "role": "ViennaRNA accessibility", "required_for": "structure endpoints" },
+        { "id": "rnaduplex", "pin": "2.7.2", "match": "2.7.2", "role": "ViennaRNA duplex dG", "required_for": "duplex gate" },
+        { "id": "bowtie2", "pin": "2.5.5", "match": "2.5.5", "role": "transcript-index off-target alignment", "required_for": "specificity endpoints" }
+      ],
+      "integrations": [
+        { "id": "boltzmann", "kind": "boltzmann", "role": "parent-owned RNA workflow services", "authorization": "recipient authorization at install; deferrable" }
+      ],
+      "satisfaction_routes": [
+        "leaf package install review binds host executables (program id -> path, version-checked)",
+        "pinned envs per the leaf dependencies/ recipes (conda, fresh prefixes only)",
+        "bio-tools via the leaf's separate conda recipe"
+      ],
+      "parent_assets": ["approved source roots", "transcript/reference manifests", "frozen gate manifests", "output roots"]
+    },
+    {
+      "name": "application-aware-grna-designer",
+      "package": "application-aware-grna-designer >= 1.4.0",
+      "programs": [
+        { "id": "python_harness", "pin": ">=3.12", "match": "Python 3.", "role": "harness scripts", "required_for": "core routing/audit" },
+        { "id": "python3", "pin": ">=3.12", "match": "Python 3.", "role": "stdlib scripts", "required_for": "core" },
+        { "id": "python_rs3", "pin": "3.8.20", "match": "Python 3.8.", "role": "RuleSet3 environment", "required_for": "RS3 on-target" },
+        { "id": "python_crispron", "pin": "3.9.23", "match": "Python 3.9.", "role": "CRISPRon environment", "required_for": "CRISPRon on-target" },
+        { "id": "python_editing", "pin": "3.10.21", "match": "Python 3.10.", "role": "prime-editing ensemble (PRIDICT2/DeepPrime)", "required_for": "prime editing" },
+        { "id": "python_behive", "pin": "3.7.12", "match": "Python 3.7.", "role": "BE-Hive base-editing", "required_for": "base editing" },
+        { "id": "python_crispria", "pin": "2.7.15", "match": "Python 2.7.", "role": "legacy CRISPRi/a", "required_for": "legacy regulation routes" },
+        { "id": "rscript", "pin": "4.5.3", "match": "4.5.3", "role": "crisprDesign/crisprScore R stack", "required_for": "knockout runner" },
+        { "id": "python_cbe", "pin": "3.10.14", "match": "Python 3.10.", "role": "CBE feature generation", "required_for": "CBE endpoint" },
+        { "id": "rnafold_cbe", "pin": "2.5.1", "match": "2.5.1", "role": "CBE RNAfold features", "required_for": "CBE endpoint" },
+        { "id": "rscript_rfcombined", "pin": "4.3.3", "match": "4.3.3", "role": "RFcombined R stack", "required_for": "base-editing references" }
+      ],
+      "integrations": [],
+      "satisfaction_routes": [
+        "leaf package install review binds host executables (version-checked)",
+        "eleven separate conda recipes in the leaf dependencies/ (never merged)"
+      ],
+      "parent_assets": ["reference assemblies/annotations", "prior-run bases (R library paths)", "measured-label benchmarks", "output roots"]
+    },
+    {
+      "name": "rna-model-discovery",
+      "package": "rna-model-discovery >= 1.1.1",
+      "programs": [
+        { "id": "python_core", "pin": ">=3.12", "match": "Python 3.", "role": "stdlib scripts (preflight, spec validation, registry CLI)", "required_for": "all core modes" }
+      ],
+      "integrations": [],
+      "satisfaction_routes": [
+        "system python3 is sufficient (stdlib-only scripts)",
+        "optional jsonschema interpreter for strict Draft 2020-12 checks"
+      ],
+      "parent_assets": ["shared registry path", "search/egress authorization naming sources", "offline evidence bundles when supplied"]
+    },
+    {
+      "name": "rna-model-execution",
+      "package": "rna-model-execution >= 1.0.0",
+      "programs": [
+        { "id": "python_core", "pin": ">=3.12", "match": "Python 3.", "role": "stdlib scripts (preflight, report validation, registry CLI)", "required_for": "all core modes" },
+        { "id": "git", "pin": "any", "match": "git version", "role": "clones at pinned commits", "required_for": "INSTALL mode" },
+        { "id": "env_manager", "pin": "venv or conda", "match": "any", "role": "fresh isolated environments", "required_for": "INSTALL mode" }
+      ],
+      "integrations": [],
+      "satisfaction_routes": [
+        "system python3 for scripts; host git; python -m venv or conda for isolation",
+        "model-specific dependencies resolved per ModelIntegrationSpec inside the fresh environment"
+      ],
+      "parent_assets": ["ModelIntegrationSpec", "fresh approved destinations", "egress/install authorization", "shared registry path", "input manifests"]
+    }
+  ],
+  "shared_assets": [
+    { "id": "shared_registry", "provided_by": "parent", "consumed_by": ["rna-model-discovery", "rna-model-execution", "rna-agent"], "note": "parent-owned JSON registry; state ladder enforced by the packaged registry CLI" }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "status": "PASS_RECORD_CONSISTENCY_ONLY",
+  "errors": [],
+  "warnings": [],
+  "completed_native_stages_declared": 0,
+  "scientific_execution": false,
+  "model_readiness_verified": false,
+  "authorization_granted": false,
+  "structural_schema_checked": true
+}

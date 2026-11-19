@@ -1,0 +1,74 @@
+{
+  "evidence_class": "HISTORICAL_EXECUTED_MODEL_ENDPOINT_SUMMARIES_NOT_PACKAGE_TESTS",
+  "configuration_campaign": "07_configuration_benchmarks/Run_20261116T071844Z",
+  "replacement_campaign": "08_published_replacement_audit/Run_20261116T092051Z",
+  "historical_source_reports": [
+    "07_configuration_benchmarks/Run_20261116T071844Z/README.md",
+    "08_published_replacement_audit/Run_20261116T092051Z/native_CBE/REPORT.md"
+  ],
+  "metric": "Spearman",
+  "precision": "Configuration table values rounded to six decimal places from executed reports.",
+  "comparisons": [
+    {
+      "endpoint": "Cas9 six-cohort macro",
+      "reference": 0.453987,
+      "validation_selected": 0.460179,
+      "qualification": "Training coverage changed; conditional public-cohort gain, not pure tuning."
+    },
+    {
+      "endpoint": "BE4 external normalized-logit any-edit",
+      "reference": 0.165766,
+      "validation_selected": 0.163616
+    },
+    {
+      "endpoint": "PRIDICT2 HEK intended",
+      "reference": 0.905629,
+      "validation_selected": 0.896199
+    },
+    {
+      "endpoint": "PRIDICT2 K562 intended",
+      "reference": 0.808119,
+      "validation_selected": 0.801858
+    },
+    {
+      "endpoint": "DeepPrime HEK293T PE2 conventional",
+      "reference": 0.861474,
+      "validation_selected": 0.788188
+    },
+    {
+      "endpoint": "Cas13 source splits",
+      "reference": 0.662826,
+      "validation_selected": 0.659383
+    },
+    {
+      "endpoint": "Cas13 whole-screen transfer",
+      "reference": 0.542419,
+      "validation_selected": 0.545124
+    }
+  ],
+  "CBE_followup": {
+    "targets": 1180,
+    "validation": 295,
+    "evaluation": 885,
+    "selected_legacy_id": "paper_default",
+    "selected_meaning": "generic CLI mixture",
+    "evaluation_spearman": 0.30669089409446126,
+    "guide_cluster_95CI": [
+      0.245565,
+      0.360451
+    ],
+    "BEHive_pool_overlap": 1180,
+    "drop_in_upgrade_established": false,
+    "auxiliary_V0_specific_membership_verified": false
+  },
+  "production_defaults_changed": false,
+  "independent_prospective_validation": false,
+  "experimental_validation": false,
+  "recipient_installation_or_backend_readiness_proven": false,
+  "publication_identifiers": {
+    "RS3": "PMCID PMC9448816",
+    "PRIDICT2": "PMCID PMC7617539",
+    "Cas13": "PMCID PMC7294996",
+    "CBE": "PMCID PMC12595020"
+  }
+}

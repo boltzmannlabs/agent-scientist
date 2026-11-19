@@ -1,0 +1,13 @@
+{
+  "status": "ASSET_CHECK_BLOCKED",
+  "errors": [
+    "rnai_source: missing explicit path/SHA-256",
+    "rnai_checkpoint: missing explicit path/SHA-256",
+    "harness_entry: missing explicit path/SHA-256",
+    "frozen_gates: missing explicit path/SHA-256"
+  ],
+  "verified_assets": [],
+  "scientific_execution": false,
+  "model_readiness_verified": false,
+  "authorization_granted": false
+}

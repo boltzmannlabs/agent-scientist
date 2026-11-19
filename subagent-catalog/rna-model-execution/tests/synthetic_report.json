@@ -1,0 +1,45 @@
+{
+  "report_version": 1,
+  "spec_reference": { "spec_path": "specs/synthetic.json", "model_name": "SYNTHETIC-FIXTURE-MODEL" },
+  "model_identity": {
+    "name": "SYNTHETIC-FIXTURE-MODEL",
+    "repository": "example.invalid/synthetic-model",
+    "commit": "deadbee000000",
+    "registry_id": "synthetic-fixture-model"
+  },
+  "installation_status": {
+    "status": "BLOCKED",
+    "environment_path": "NOT_CREATED",
+    "environment_kind": "venv",
+    "blockers": ["egress authorization for clone+install awaiting parent approval"],
+    "resume_hint": "rerun INSTALL after approval; no partial state exists"
+  },
+  "checkpoint_verification": {
+    "status": "NOT_RUN",
+    "artifacts": []
+  },
+  "inference_status": {
+    "status": "NOT_RUN",
+    "successful_records": 0,
+    "failed_records": 0,
+    "blockers": ["installation blocked upstream"]
+  },
+  "registry_update": {
+    "registry_path": "outputs/registry/registry.json",
+    "entry_id": "synthetic-fixture-model",
+    "state_reached": "UNCHANGED",
+    "transition_evidence": "no state change: nothing executed"
+  },
+  "runtime": { "setup_seconds": 0.4, "inference_seconds": 0.0, "total_seconds": 0.4 },
+  "hardware": { "gpu": null, "cpu": "fixture-cpu", "ram_gb": 0 },
+  "logs": ["outputs/synthetic/preflight.log"],
+  "output_artifacts": ["outputs/synthetic/execution-report.json"],
+  "validation_results": [
+    { "check": "report-schema", "outcome": "PASS", "detail": "synthetic fixture" },
+    { "check": "input-schema", "outcome": "NOT_RUN", "detail": "no inputs supplied" }
+  ],
+  "known_limitations": [
+    "Synthetic fixture report; nothing was installed, downloaded or executed",
+    "BLOCKED stages are the expected honest outcome without parent approvals"
+  ]
+}

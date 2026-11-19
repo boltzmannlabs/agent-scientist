@@ -1,0 +1,40 @@
+{
+  "table_version": 1,
+  "note": "Single source of truth for RNA routing. The packaged router script and the orchestrator instructions both derive from this table. Mechanism first, application second; never route on gene or organism alone.",
+  "routes": [
+    {
+      "leaf": "application-aware-sirna-designer",
+      "mechanism": ["siRNA", "RNAi", "RNA interference", "shRNA", "duplex", "guide/passenger strand", "knockdown by RNA interference", "seed toxicity", "oligoformer", "rn.ai", "rnaispline"],
+      "scope_note": "human noninfectious research scope enforced by the leaf"
+    },
+    {
+      "leaf": "application-aware-grna-designer",
+      "mechanism": ["CRISPR", "gRNA", "guide RNA", "PAM", "spcas9", "cas9", "cas13", "base editing", "prime editing", "crispri", "crispra", "epigenome editing", "crispr diagnostics", "pooled guide library", "knockout by nuclease"],
+      "scope_note": "thirteen route classes; pathogen/plant policies enforced by the leaf"
+    },
+    {
+      "leaf": "rna-model-discovery",
+      "mechanism": ["find a model", "find an open-source", "search for models", "missing capability", "candidate models", "weights available", "pretrained weights", "modelintegration spec", "evaluate candidates", "model discovery"],
+      "scope_note": "produces specs; never installs or executes"
+    },
+    {
+      "leaf": "rna-model-execution",
+      "mechanism": ["install the model", "integrate the model", "run the spec", "execute inference", "checkpoint verification", "execution report", "clone at commit", "isolated environment for the model"],
+      "scope_note": "executes specs; never discovers"
+    }
+  ],
+  "ambiguous": [
+    {
+      "pattern": ["silence", "silencing", "knock down expression without a stated mechanism"],
+      "resolve": "ASK: siRNA/RNAi versus CRISPRi (or nuclease knockout) must be named by the user"
+    }
+  ],
+  "not_covered": [
+    "ASO/antisense oligo design as the deliverable",
+    "mRNA vaccine design as the deliverable",
+    "aptamer design",
+    "lncRNA design",
+    "RNA modification editing as the deliverable"
+  ],
+  "capability_gap_rule": "A missing-capability request routes to rna-model-discovery; a validated ModelIntegrationSpec plus parent approval routes to rna-model-execution; the shared registry is checked first and capabilities at EVIDENCE_REVIEWED or beyond are reused, not rediscovered."
+}

@@ -1,0 +1,1 @@
+# Core setup planner, request preflight and record auditor use Python >=3.12 standard library only.

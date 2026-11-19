@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "package_version": "1.3.0",
+  "scope": "Evidence-informed policy for existing human/non-pathogen research. No execution authorization, model weights or comprehensive safety clearance.",
+  "source_evidence": "references/benchmark-evidence.json",
+  "models": [
+    {
+      "id": "RS3_SEQUENCE",
+      "task_id": "002",
+      "endpoint": "nuclease_activity",
+      "profile": "rs3",
+      "default": "Released RS3 Sequence",
+      "candidate": "RS3_refit_reference",
+      "candidate_policy": "EXPLICIT_RESEARCH_OPT_IN",
+      "interpretation": "Small public-cohort macro gain; full training-pool coverage changed. Not pure hyperparameter superiority or knockout probability.",
+      "required_context": {
+        "nuclease": [
+          "SpCas9"
+        ]
+      }
+    },
+    {
+      "id": "BEHIVE_BE4",
+      "task_id": "005",
+      "endpoint": "BE4_normalized_logit_any_edit",
+      "profile": "behive",
+      "default": "Released BE-Hive HEK293T/BE4 efficiency model",
+      "candidate_policy": "RETAIN_NATIVE_WEAK_TRANSFER",
+      "required_context": {
+        "editor": [
+          "BE4"
+        ],
+        "cell": [
+          "HEK293T"
+        ]
+      },
+      "interpretation": "Configuration and learned replacements did not improve the matched external panel. Not intended-edit purity."
+    },
+    {
+      "id": "PRIDICT2_INTENDED",
+      "task_id": "006",
+      "endpoint": "prime_intended",
+      "profile": "editing",
+      "default": "Equal native model_A/model_B within the matching held-out fold",
+      "candidate_policy": "RETAIN_NATIVE_ENSEMBLE",
+      "required_context": {
+        "cell": [
+          "HEK293T",
+          "K562"
+        ]
+      },
+      "interpretation": "Single-family selection underperformed. Exact editor, features and source fold/head contract remain mandatory; no averaging across held-out folds."
+    },
+    {
+      "id": "DEEPPRIME_PE2",
+      "task_id": "006",
+      "endpoint": "prime_intended",
+      "profile": "editing",
+      "default": "Native five-checkpoint ensemble (model_0 through model_4)",
+      "candidate_policy": "RETAIN_NATIVE_ENSEMBLE",
+      "required_context": {
+        "cell": [
+          "HEK293T"
+        ],
+        "editor": [
+          "PE2"
+        ],
+        "scaffold": [
+          "conventional"
+        ]
+      },
+      "interpretation": "Single checkpoints and numeric-only replacements underperformed. Batch256 was appropriate on the tested CPU, not a universal speed optimum."
+    },
+    {
+      "id": "RFCOMBINED",
+      "task_id": "009",
+      "endpoint": "Cas13_normCS",
+      "profile": "rfcombined",
+      "default": "Published RFcombined reference with source features and transforms",
+      "candidate_policy": "RETAIN_NATIVE_UNCERTAIN_TRANSFER",
+      "required_context": {},
+      "interpretation": "No source-split gain; small inconsistent whole-screen gain. Missing original feature generation or transcript context remains a blocker."
+    },
+    {
+      "id": "CRISPRON_CBE",
+      "task_id": "005",
+      "endpoint": "CBE_author_editingeff",
+      "profile": "cbe",
+      "default": "No production default: separately authorized research evaluation only",
+      "candidate_policy": "RESEARCH_ONLY_NO_DROP_IN_PROMOTION",
+      "required_context": {
+        "editor": [
+          "BE4"
+        ],
+        "cell": [
+          "HEK293T"
+        ]
+      },
+      "interpretation": "Legacy ID paper_default means generic CLI mixture0.5-0.5-0, not Arbab platform recommendation0-0-1. Selection used295validation targets;885evaluation targets. Guide-efficiency Spearman is not paper joint rho2; all1180targets overlap BEHive establishment pool. Exact auxiliaryV0training membership is unresolved."
+    }
+  ]
+}

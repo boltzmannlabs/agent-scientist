@@ -1,0 +1,60 @@
+{
+  "applications": [
+    {
+      "task_id": "001",
+      "name": "general",
+      "requirements": "Resolve an explicit application and objective; no hidden application defaults."
+    },
+    {
+      "task_id": "002",
+      "name": "oncology",
+      "requirements": "Paralog and both-strand specificity; distinguish target knockdown from seed-driven viability."
+    },
+    {
+      "task_id": "003",
+      "name": "genetic-disease-total-lowering",
+      "requirements": "Clarify intended total lowering and wild-type function; do not imply allele selectivity."
+    },
+    {
+      "task_id": "004",
+      "name": "genetic-disease-allele-selective",
+      "requirements": "Block design until exact variant, reference orientation, patient-independent research scope and sparing objective are verified. Reporter mismatch footprints are not patient alleles."
+    },
+    {
+      "task_id": "005",
+      "name": "metabolic-liver-galnac",
+      "requirements": "Chemistry/conjugation and liver expression are context requirements, not sequence-only delivery predictions."
+    },
+    {
+      "task_id": "006",
+      "name": "systemic-lnp",
+      "requirements": "Record formulation/exposure context and unmeasured delivery; unmodified cores are not clinical drugs."
+    },
+    {
+      "task_id": "007",
+      "name": "neuro-cns",
+      "requirements": "Require explicit isoform objective, genuine reference context and CNS expression; do not fabricate flanks or infer brain delivery."
+    },
+    {
+      "task_id": "008",
+      "name": "inflammation-immune",
+      "requirements": "Separate on-target biology from innate immune confounding; use frozen immune vetoes but do not claim a negative screen proves safety."
+    },
+    {
+      "task_id": "009",
+      "name": "functional-genomics",
+      "requirements": "Require a panel with declared seed/site diversity and controls; independent reagents are not independent benchmark cohorts."
+    },
+    {
+      "task_id": "010",
+      "name": "gene-regulation",
+      "requirements": "Separate direct transcript knockdown from downstream expression and phenotype."
+    },
+    {
+      "task_id": "011",
+      "name": "drug-target-validation",
+      "requirements": "Require orthogonal evidence and an endpoint contract; knockdown alone does not validate a drug target."
+    }
+  ],
+  "scope": "Noninfectious human research only; other organisms and pathogen/host-infection enabling uses require review, not design"
+}

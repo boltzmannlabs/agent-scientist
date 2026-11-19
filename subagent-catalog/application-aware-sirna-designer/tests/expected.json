@@ -1,0 +1,21 @@
+{
+  "fixture_kind": "SYNTHETIC_METADATA_ONLY",
+  "scientific_execution": false,
+  "statuses": {
+    "setup": "SETUP_FIRST",
+    "audit": "AUDIT_ONLY",
+    "unknownmode": "INVALID_REQUEST",
+    "badtoken": "INVALID_REQUEST",
+    "missing_scope": "NEEDS_INPUT",
+    "unsafe_scope": "REVIEW_ONLY",
+    "plant": "REVIEW_ONLY",
+    "missingorganism": "NEEDS_INPUT",
+    "design_missing": "NEEDS_INPUT",
+    "allele_missing": "NEEDS_INPUT",
+    "cns_missing": "NEEDS_INPUT",
+    "evaluation_missing": "NEEDS_INPUT",
+    "benchmark_missing": "NEEDS_INPUT",
+    "explore_missing": "NEEDS_INPUT",
+    "unsupportedtask": "INVALID_REQUEST"
+  }
+}

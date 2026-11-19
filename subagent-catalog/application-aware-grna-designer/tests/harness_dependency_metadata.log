@@ -1,0 +1,13 @@
+{
+  "profile": "harness",
+  "status": "PASS_METADATA_ONLY",
+  "observed_python": "3.13.7",
+  "expected_python": "3.13.7",
+  "interpreter_match": true,
+  "missing_distributions": [],
+  "version_mismatches": [],
+  "duplicate_distribution_metadata": {},
+  "version_resolution": "Effective interpreter metadata lookup; duplicate metadata is reported, not a clean-install guarantee.",
+  "scientific_execution": false,
+  "model_readiness_verified": false
+}

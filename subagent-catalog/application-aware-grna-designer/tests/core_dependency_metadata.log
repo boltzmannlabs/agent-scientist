@@ -1,0 +1,8 @@
+{
+  "profile": "core",
+  "status": "PASS_METADATA_ONLY",
+  "observed_python": "3.13.7",
+  "third_party_packages_required": [],
+  "scientific_execution": false,
+  "model_readiness_verified": false
+}

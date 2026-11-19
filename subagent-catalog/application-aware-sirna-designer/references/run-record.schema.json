@@ -1,0 +1,312 @@
+{
+  "type": "object",
+  "required": [
+    "task_id",
+    "mode",
+    "status",
+    "execution_class",
+    "stages",
+    "artifacts",
+    "missing_inputs",
+    "limitations",
+    "best_design",
+    "experimental_validation",
+    "schema_version",
+    "run_id",
+    "config_id",
+    "provenance",
+    "comparison",
+    "benchmark",
+    "publication"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "pattern": "^(00[1-9]|01[01])$"
+    },
+    "mode": {
+      "enum": [
+        "DESIGN",
+        "EVALUATE",
+        "EXPLORATORY",
+        "BENCHMARK",
+        "AUDIT"
+      ]
+    },
+    "status": {
+      "enum": [
+        "NEEDS_INPUT",
+        "REVIEW_ONLY",
+        "INACTIVE",
+        "BLOCKED",
+        "PARTIAL",
+        "COMPLETED"
+      ]
+    },
+    "execution_class": {
+      "enum": [
+        "METADATA_PREFLIGHT_ONLY",
+        "PACKAGE_CHECK_ONLY",
+        "NATIVE_INFERENCE",
+        "METRIC_REEXECUTION",
+        "AUTHOR_SCORE_REPLAY",
+        "NO_EXECUTION",
+        "NATIVE_CONTROL_REPLAY",
+        "SOFTWARE_READINESS_ONLY",
+        "SENSITIVITY_ANALYSIS"
+      ]
+    },
+    "stages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "status",
+          "reason",
+          "execution_kind"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "NOT_RUN"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "execution_kind": {
+            "enum": [
+              "FRESH_NATIVE_INFERENCE",
+              "NATIVE_CONTROL_REPLAY",
+              "HASH_BOUND_CACHE_REUSE",
+              "IDENTICAL_INPUT_SCORE_REUSE",
+              "AUTHOR_SCORE_REPLAY",
+              "METRIC_REEXECUTION",
+              "SOFTWARE_READINESS_CHECK",
+              "NOT_RUN"
+            ]
+          },
+          "native_forward_pass": {
+            "type": "boolean"
+          },
+          "exit_code": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "expected_rows": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "observed_rows": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "score_source_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "score_units": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "inference_mode": {
+            "enum": [
+              "eval",
+              "native_train_mode",
+              "not_applicable",
+              "unknown"
+            ]
+          },
+          "random_seed": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "coordinate_semantics": {
+            "type": "string"
+          },
+          "feature_integrity": {
+            "enum": [
+              "VERIFIED_NATIVE",
+              "UNVERIFIED",
+              "SYNTHETIC_OR_RANDOM",
+              "NOT_APPLICABLE"
+            ]
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "kind"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "data_rows": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "missing_inputs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "best_design": {
+      "type": "null"
+    },
+    "experimental_validation": {
+      "const": false
+    },
+    "schema_version": {
+      "const": 2,
+      "type": "integer"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "config_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "publication": {
+      "enum": [
+        "history",
+        "benchmark",
+        "not_applicable"
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "configuration_sha256",
+        "pretrained_only",
+        "training_performed",
+        "previously_examined_labels",
+        "unique_scientific_cohorts"
+      ],
+      "properties": {
+        "configuration_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "pretrained_only": {
+          "type": "boolean"
+        },
+        "training_performed": {
+          "type": "boolean"
+        },
+        "previously_examined_labels": {
+          "type": "boolean"
+        },
+        "unique_scientific_cohorts": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "comparison": {
+      "type": "object",
+      "required": [
+        "cohort_relation",
+        "endpoint_relation",
+        "protocol_relation",
+        "matched_protocol_delta"
+      ],
+      "properties": {
+        "cohort_relation": {
+          "enum": [
+            "MATCHED",
+            "DIFFERENT",
+            "UNKNOWN",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "endpoint_relation": {
+          "enum": [
+            "MATCHED",
+            "DIFFERENT",
+            "UNKNOWN",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "protocol_relation": {
+          "enum": [
+            "MATCHED",
+            "DIFFERENT",
+            "UNKNOWN",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "matched_protocol_delta": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "benchmark": {
+      "type": "object",
+      "required": [
+        "measured_labels",
+        "native_stage_names"
+      ],
+      "properties": {
+        "measured_labels": {
+          "type": "boolean"
+        },
+        "native_stage_names": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "label_rule": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true,
+  "$comment": "JSON Schema Draft 2020-12; validator dialect selected explicitly by the harness.",
+  "title": "Application-aware human siRNA run-evidence record v2"
+}

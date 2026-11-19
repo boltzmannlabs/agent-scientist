@@ -1,0 +1,44 @@
+{
+  "fixture_kind": "SYNTHETIC_METADATA_ONLY",
+  "schema_version": 2,
+  "run_id": "fixture-record-audit",
+  "config_id": "fixture-software-only",
+  "task_id": "001",
+  "mode": "AUDIT",
+  "status": "COMPLETED",
+  "execution_class": "PACKAGE_CHECK_ONLY",
+  "stages": [
+    {
+      "name": "software_metadata",
+      "status": "PASS",
+      "execution_kind": "SOFTWARE_READINESS_CHECK",
+      "reason": "Inert synthetic record fixture; no model or biological results",
+      "native_forward_pass": false
+    }
+  ],
+  "artifacts": [],
+  "missing_inputs": [],
+  "limitations": [
+    "Synthetic metadata only; never publish as a measured benchmark."
+  ],
+  "best_design": null,
+  "experimental_validation": false,
+  "provenance": {
+    "configuration_sha256": "4bb711efb0e01881b10a7a2a305685db6a58112936ee29ad17c72e9864603fcc",
+    "pretrained_only": true,
+    "training_performed": false,
+    "previously_examined_labels": false,
+    "unique_scientific_cohorts": 0
+  },
+  "comparison": {
+    "cohort_relation": "NOT_APPLICABLE",
+    "endpoint_relation": "NOT_APPLICABLE",
+    "protocol_relation": "NOT_APPLICABLE",
+    "matched_protocol_delta": null
+  },
+  "benchmark": {
+    "measured_labels": false,
+    "native_stage_names": []
+  },
+  "publication": "history"
+}

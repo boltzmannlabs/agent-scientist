@@ -1,0 +1,17 @@
+{
+  "package_id": "rna-model-execution",
+  "package_version": "1.0.0",
+  "checks": [
+    "installed SCI strict schema",
+    "contract_fixtures",
+    "report_cli",
+    "report_cli_negative",
+    "unit_tests(10)",
+    "checksum_entries(22)"
+  ],
+  "failures": [],
+  "scientific_execution": false,
+  "live_agent_tested": false,
+  "clean_install_tested": false,
+  "generated_by": "scripts/validate_package.py"
+}
