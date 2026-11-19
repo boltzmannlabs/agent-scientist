@@ -43,7 +43,7 @@ def _render_file(value, bindings):
     return _render(value, bindings)
 
 
-def _existing(ui, items, name, manifest, digest):
+def _existing(ui, items, name, manifest, digest, *, hierarchy_changed=False):
     from packaging.version import Version
     while name in items:
         current = items[name]
@@ -52,7 +52,12 @@ def _existing(ui, items, name, manifest, digest):
         modified = info.get('definition_digest') != definition_digest(current)
         choices = ['Rename', 'Cancel']
         resumable = same and not modified and info.get('digest') == digest and info.get('state') == 'setup_required'
-        updatable = same and not modified and Version(manifest['version']) > Version(info['version'])
+        updatable = same and not modified and (Version(manifest['version']) > Version(info['version']) or hierarchy_changed)
+        parents = [item.name for item in items.values() if name in item.children]
+        if parents and updatable:
+            updatable = False
+            ui.show('This definition is referenced by: ' + ', '.join(parents) +
+                    '. Update the parent hierarchy or rename this installation; existing child links are preserved.')
         if resumable:
             choices.insert(0, 'Resume setup')
         elif updatable:
@@ -80,27 +85,39 @@ def install(root, owner, cli, ui, *, name=None, source='local package'):
     directory = owner / 'subagents'
     directory.mkdir(parents=True, exist_ok=True)
     with profile_scope(owner), _file_lock(directory / '.packages.lock', threading.local(), 10, 'Another package operation is running.'):
+        manifest, _, _ = validate(root)
+        if manifest.get('children'):
+            from sci_cli.subagent_package_hierarchy import install_hierarchy
+            return install_hierarchy(root, owner, cli, ui, name=name, source=source)
         return _install_locked(root, owner, cli, ui, name=name, source=source)
 
 
-def _install_locked(root, owner, cli, ui, *, name, source):
+def check_compatibility(manifest):
     from packaging.specifiers import SpecifierSet
     from sci_cli.plugins_manifest import running_sci_version
     from sci_cli.subagent_package_programs import platform_key
-    from sci_cli.specialist_private_setup import prepare_home
-    from sci_cli.config import read_user_config_raw
-    manifest, files, digest = validate(root)
     if not SpecifierSet(manifest['sci_requires']).contains(running_sci_version(), prereleases=True):
         raise ValueError('Package SCI compatibility requirement does not match this installation.')
     platform = platform_key()
     if not set(manifest['platforms']) & {'any', platform, platform.split('-')[0]}:
         raise ValueError(f'Package does not support this CLI host: {platform}. No installation started.')
+
+
+def _install_locked(root, owner, cli, ui, *, name, source, selection=None,
+                    child_bindings=None, publish=True, expected_digest=None):
+    from sci_cli.specialist_private_setup import prepare_home
+    from sci_cli.config import read_user_config_raw
+    manifest, files, digest = validate(root)
+    if expected_digest is not None and digest != expected_digest:
+        raise ValueError('Package changed after hierarchy review; no setup started.')
+    check_compatibility(manifest)
     name = name or manifest['name']
     validate_name(name)
-    name, previous, resume = _existing(ui, inventory()[0], name, manifest, digest)
+    name, previous, resume = selection or _existing(ui, inventory()[0], name, manifest, digest)
     ui.show(f'Package: {manifest["id"]} {manifest["version"]}\nAuthors: {", ".join(manifest["authors"])}\n'
             f'License: {manifest["license"]}\nDestination profile: {owner}\n'
             f'Requested tools: {", ".join(manifest["tools"]) or "none"}\n'
+            f'Execution limits: {json.dumps(manifest["limits"])} (timeout 0 means no total deadline)\n'
             f'Dependencies: {json.dumps(manifest["dependencies"], indent=2)}\n'
             'Catalog membership/checksums do not establish scientific correctness. '
             'Executable setup and service authentication need their separate approvals. Current conversation stays unchanged.')
@@ -121,7 +138,8 @@ def _install_locked(root, owner, cli, ui, *, name, source):
         if fingerprint(old) != previous.extension_revision:
             raise ValueError('Installed private setup was modified. Preserve it and install under a new name, or review its changes first.')
     initial = Specialist(name, manifest['description'], automatic=manifest.get('automatic', True),
-                         max_iterations=manifest['limits']['max_iterations'], timeout_seconds=manifest['limits']['timeout_seconds'])
+                         max_iterations=manifest['limits']['max_iterations'], timeout_seconds=manifest['limits']['timeout_seconds'],
+                         children=tuple(dict.fromkeys(c.name for c in (child_bindings or {}).values())))
     if resume:
         initial = replace(initial, extension_id=previous.extension_id)
     item, home = prepare_home(initial)
@@ -141,8 +159,14 @@ def _install_locked(root, owner, cli, ui, *, name, source):
     from sci_cli.subagent_package_io import seal
     seal(package_root)  # Locally reviewed bytes, not a contributor-generated artifact.
     bindings = {'workspace': str(home / 'workspace')}
+    bindings.update({'child.' + role: child.name for role, child in (child_bindings or {}).items()})
     bindings.update({'resource.' + path: str(package_root / path) for path in files})
     missing, resolved, private_tools, private_skills, module_files = [], {}, set(), set(), []
+    if child_bindings:
+        from sci_cli.subagent_package_graph import CHILDREN, bindings as record_bindings
+        resolved[CHILDREN] = record_bindings(manifest, child_bindings)
+        missing.extend('Child role needs setup/review: ' + role for role, child in child_bindings.items()
+                       if not child.enabled or child.needs_review or child.package_info.get('state') != 'ready')
     from sci_cli.subagent_package_programs import prepare as program
     from sci_cli.subagent_package_integrations import mcp, plugin, boltzmann
     handlers = {'mcp': mcp, 'plugin': plugin, 'boltzmann': boltzmann}
@@ -300,7 +324,11 @@ def _install_locked(root, owner, cli, ui, *, name, source):
     ui.show(f'[Package] {state}: {item.name}\nSkills: {", ".join(item.skills)}\nTools: {", ".join(item.tools)}\n'
             + ('Missing: ' + '; '.join(missing) if missing else 'Required local setup/permission checks passed; scientific correctness is not certified.'))
     final = 'Save disabled; setup required' if missing else 'Save and enable for the next conversation'
-    ui.choose('Publish this reviewed local definition?', [final, 'Cancel'])
+    ui.choose('Publish this reviewed local definition?' if publish else
+              'Include this reviewed definition in the hierarchy?', [final, 'Cancel'])
+    if not publish:
+        ui.show(f'Prepared {item.name}. Hierarchy definitions are published only after the complete review.')
+        return item
     saved = save(item, expected_revision=previous.revision if previous else None)
     ui.show(f'Installed {saved.name}: {owner / "subagents" / (saved.name + ".json")}. '
             + ('Disabled. Setup required; retry package installation to finish.' if missing else 'Enabled. Available in your next conversation; use /new.'))

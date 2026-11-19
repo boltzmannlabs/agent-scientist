@@ -40,10 +40,10 @@ def select_children(ui, item):
     return candidate
 
 
-def review_limits(ui, item):
+def review_limits(ui, item, *, items=None):
     if not item.children:
         return None
-    required = hierarchy_depth(item)
+    required = hierarchy_depth(item, items)
     from tools.delegate_tool_config import _get_max_spawn_depth, _get_orchestrator_enabled
     current = _get_max_spawn_depth()
     if current >= required and _get_orchestrator_enabled():

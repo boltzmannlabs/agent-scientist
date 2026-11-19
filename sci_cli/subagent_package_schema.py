@@ -135,7 +135,7 @@ def validate(root, *, allow_draft=False, require_lock=False):
                'instructions', 'output', 'tools', 'skills', 'skill_files', 'dependencies', 'references',
                'limits', 'platforms', 'fixtures', 'children', 'unresolved', 'automatic'}
     obj(manifest, allowed, allowed - {'children', 'unresolved', 'automatic', 'skill_files'})
-    if type(manifest['schema_version']) is not int or manifest['schema_version'] != 1:
+    if type(manifest['schema_version']) is not int or manifest['schema_version'] not in (1, 2):
         raise ValueError('Unsupported package schema version.')
     identifier(manifest['id']); identifier(manifest['name'])
     if not isinstance(manifest['version'], str) or not isinstance(manifest['sci_requires'], str):
@@ -155,8 +155,10 @@ def validate(root, *, allow_draft=False, require_lock=False):
     if manifest.get('unresolved') and not allow_draft:
         raise ValueError('Package is a draft with unresolved requirements: ' + '; '.join(names(manifest['unresolved'])))
     limits = obj(manifest['limits'], {'max_iterations', 'timeout_seconds'}, {'max_iterations', 'timeout_seconds'})
-    if any(type(v) is not int or v < 1 for v in limits.values()):
-        raise ValueError('Execution limits must be positive integers.')
+    minimum_timeout = 0 if manifest['schema_version'] == 2 else 1
+    if (type(limits['max_iterations']) is not int or limits['max_iterations'] < 1 or
+            type(limits['timeout_seconds']) is not int or limits['timeout_seconds'] < minimum_timeout):
+        raise ValueError('Iteration limits must be positive integers; schema v2 permits timeout_seconds: 0 (no total deadline).')
     if not names(manifest['platforms']):
         raise ValueError('At least one supported platform is required.')
     for name in manifest['platforms']:
@@ -219,8 +221,12 @@ def validate(root, *, allow_draft=False, require_lock=False):
         file(fixture['input']); file(fixture['expected'])
         if not isinstance(json.loads(files[fixture['expected']]), dict):
             raise ValueError('Expected fixture results must be a JSON object.')
-    if manifest.get('children'):
+    if manifest['schema_version'] == 1 and manifest.get('children'):
         raise ValueError('Child-specialist packages are not installable in schema v1; do not publish an unsupported pipeline.')
+    from sci_cli.subagent_package_graph import child_requirements
+    children = child_requirements(manifest) if manifest['schema_version'] == 2 else []
+    if children and 'delegate_task' not in manifest['tools']:
+        raise ValueError('A hierarchy parent must declare delegate_task in tools.')
     for reference in names(manifest.get('skill_files', [])):
         skill, separator, path = reference.partition('#')
         if not separator or skill not in skill_ids:
@@ -252,7 +258,8 @@ def validate(root, *, allow_draft=False, require_lock=False):
             valid = (token == 'workspace' or
                      (parts[0] == 'program' and len(parts) in {2, 3} and kinds.get(parts[1]) == 'program' and (len(parts) == 2 or parts[2] == 'dir')) or
                      (parts[0] == 'tool' and len(parts) == 3 and kinds.get(parts[1]) in {'mcp', 'plugin', 'boltzmann'}) or
-                     (token.startswith('resource.') and token[9:] in files))
+                     (token.startswith('resource.') and token[9:] in files) or
+                     (parts[0] == 'child' and len(parts) == 2 and parts[1] in {c['role'] for c in children}))
             if not valid:
                 raise ValueError(f'Unknown resource/dependency token {token} in {name}.')
     return manifest, files, digest(files)

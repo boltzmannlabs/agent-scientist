@@ -1,5 +1,9 @@
 # Contributing company specialists: dev → validation → main
 
+Use this guide for both standalone specialists and specialist hierarchies:
+**create → prepare package(s) → test locally → PR to dev → test merged dev → promote to main**.
+For a team, start with the [small parent-and-children example](../contribution-templates/subagent-hierarchy.md).
+
 Create specialists in **main or any profile**. The SCI main profile and Git main
 branch are different things. A portable package must not depend on the creator's
 profile name, private IDs or machine state.
@@ -37,6 +41,13 @@ data, caches, environments, installed binaries or absolute contributor paths.
 Skills can contain supporting resources, not only SKILL.md; include everything needed
 and licensed. Reference maintained Boltzmann modules instead of copying the connector.
 
+For a hierarchy, prepare a folder per specialist and use schema v2 in each parent.
+Declare children as `{role: reader, package: table-reader, version: '>=1.0,<2'}` and
+refer to their recipient-local names with `{{child.reader}}`. A parent declares
+`delegate_task`; child permissions and private integrations stay with that child.
+The [hierarchy example](../contribution-templates/subagent-hierarchy.md)
+shows how to adapt the same starter. Existing v1 standalone packages remain supported.
+
 ## 1. Prepare and test locally
 
 Use a separate contribution checkout based on **origin/dev**, leaving your working
@@ -63,6 +74,12 @@ private skill/tool availability and separation from other profiles. A service me
 appearing in a catalog is not execution evidence. Record charges/limits and untested
 modes honestly. Testable expected values go in `tests/expected.json`.
 
+For a team, install the parent with its sibling package folders or reviewed catalog
+dependencies. Test the installed hierarchy in a differently named profile, including
+renaming, missing child setup, cancellation, and update/recovery without replacing
+customized definitions. Record the actual child versions exercised; installation
+alone is not evidence that the parent delegated successfully.
+
 Fill the local section of `tests/validation.json` only with checks actually passed;
 leave integrated status **pending** at this point. Update ID/version consistently.
 No special exporter, sealing or validation slash command is needed.
@@ -77,6 +94,9 @@ git push -u origin subagents/my-specialist
 ```
 
 Open the PR with **base: dev**, preferably using `.github/PULL_REQUEST_TEMPLATE/subagent.md`.
+For a hierarchy, stage every new or changed package folder explicitly, including
+the parent and its children, and submit them in the same PR. List the full hierarchy
+and version requirements so reviewers can inspect the complete team.
 Include purpose, output contract, provenance/license, SCI/platform/backend requirements,
 integrations, credential names only, data transfers, permissions, costs and limitations.
 Do not use `git add .`. Do not edit the shared generated catalog snapshot.
@@ -123,6 +143,10 @@ not require a version bump; changing instructions/skills/dependencies/fixtures d
 If anything fails, fix the package in a PR to dev, merge, test the new dev commit and
 replace stale evidence. Do not claim passed based on the contributor's old installation.
 
+A compatible child update still changes a parent's tested workflow. Retest affected
+parents on the merged dev revision and update their integrated evidence, even when
+their own source/version is unchanged. Evidence-only updates need no version bump.
+
 ## 4. Maintainer promotion and release
 
 Review the contributor's exact-dev-commit evidence, perform final scientific/software
@@ -141,6 +165,10 @@ Use the checkout's PM interpreter. Main PR CI requires local and integrated evid
 a tested commit in fetched origin/dev history, identical package contents to that
 commit (excluding evidence/integrity artifacts), and a fresh release snapshot. This
 also supports approved cherry-picks without requiring all dev commits on main.
+
+Acceptance resolves the complete child dependency graph and checks every affected
+parent against its exact tested dev commit, including unchanged parent folders whose
+children changed. Release snapshots carry all child versions and integrity digests.
 
 The final maintainer approval remains mandatory; CI checks evidence consistency, not
 scientific truth. Configure GitHub branch protection/rulesets for **dev and main** to

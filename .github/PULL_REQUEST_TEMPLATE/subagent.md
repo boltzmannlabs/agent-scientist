@@ -1,6 +1,7 @@
 ## Specialist contribution — target `dev`
 
 Package ID and version:
+Hierarchy, child package IDs and version requirements (if applicable):
 Purpose and expected outputs:
 Author, provenance and redistribution license:
 
@@ -15,6 +16,7 @@ Author, provenance and redistribution license:
 ### Contributor evidence
 
 - [ ] Package is under `subagent-catalog/<id>/` and matches the documented format.
+- [ ] Required child packages/version changes are included; affected parents are identified for retesting.
 - [ ] All necessary supporting files and approved synthetic fixtures are included.
 - [ ] No keys, tokens, private SCI state, machine paths or installed environments are included.
 - [ ] Local install/execution, output inspection and missing-input/authorization behavior were tested.
@@ -23,6 +25,11 @@ Author, provenance and redistribution license:
 - [ ] This PR targets `dev`; generated release snapshot/checksums are maintainer work.
 
 ### After merge to dev
+
+For a hierarchy, list its child package IDs/version requirements and the versions
+actually exercised. Include affected parents when a child changes, even if their
+own manifests are unchanged. Verify installation into a differently named profile,
+actual nested delegation, missing child setup and cancellation/update recovery.
 
 Post the exact merged dev commit tested, environment, integrations exercised and
 observed results. Submit fixes through further PRs to dev; retest the corrected

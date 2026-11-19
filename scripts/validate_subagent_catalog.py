@@ -29,13 +29,13 @@ def main(argv=None):
         if not re.fullmatch('[0-9a-f]{40}', args.base):
             raise ValueError('--base must be a full Git commit SHA.')
         subprocess.run(['git', 'cat-file', '-e', args.base + '^{commit}'], cwd=ROOT, check=True, capture_output=True)
-    snapshot = {}
+    packages = {}
     for folder in sorted(CATALOG.iterdir()):
         if not folder.is_dir():
             continue
         manifest, files, digest = validate(folder)
         key = manifest['id']
-        if folder.name != key or key in snapshot:
+        if folder.name != key or key in packages:
             raise ValueError('Catalog directory must match unique package ID: ' + key)
         changed = True
         if args.base:
@@ -53,16 +53,27 @@ def main(argv=None):
                     ':(exclude)' + relative + '/tests/validation.json', ':(exclude)' + relative + '/files.lock.json'], capture_output=True, cwd=ROOT)
                 if runtime_diff.returncode not in (0, 1):
                     raise ValueError('Cannot compare package contents: ' + key)
-                if Version(manifest['version']) < Version(previous['version']) or (runtime_diff.returncode and manifest['version'] == previous['version']):
+                new_version, old_version = Version(manifest['version']), Version(previous['version'])
+                if new_version < old_version or (runtime_diff.returncode and new_version == old_version):
                     raise ValueError('Changed published packages require a higher version: ' + key)
+        packages[key] = {'manifest': manifest, 'files': files, 'digest': digest, 'path': str(folder), 'changed': changed}
+    from sci_cli.subagent_package_graph import resolve_graph
+    resolve_graph(packages)
+    snapshot = {}
+    for key, row in packages.items():
+        manifest, files, digest = row['manifest'], row['files'], row['digest']
+        hierarchy = resolve_graph(packages, [key])
         from sci_cli.subagent_package_review import evidence
-        if changed:
-            evidence(folder, manifest, repo=ROOT if args.promotion else None)
+        if any(packages[member]['changed'] for member in hierarchy):
+            evidence(Path(row['path']), manifest, repo=ROOT if args.promotion else None, packages=packages)
         from sci_cli.subagent_package_io import LOCK, checksums
         files[LOCK] = (json.dumps(checksums(files), sort_keys=True, indent=2) + '\n').encode()
         snapshot[key] = {'manifest': manifest, 'digest': digest,
                          'files': {name: base64.b64encode(data).decode() for name, data in sorted(files.items())}}
         print(f'VALID {key} {manifest["version"]}: {len(files)} files; no code executed')
+        if manifest.get('children'):
+            print('  HIERARCHY: ' + ', '.join(
+                f"{member} {packages[member]['manifest']['version']} {packages[member]['digest']}" for member in hierarchy))
     content = json.dumps(snapshot, sort_keys=True, indent=2) + '\n'
     if args.write_snapshot:
         SNAPSHOT.write_text(content, encoding='utf-8')

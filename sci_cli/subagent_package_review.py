@@ -5,7 +5,7 @@ import re
 import subprocess
 
 
-def evidence(root, manifest, *, repo=None, dev_ref='refs/remotes/origin/dev'):
+def evidence(root, manifest, *, repo=None, dev_ref='refs/remotes/origin/dev', packages=None):
     path = Path(root) / 'tests/validation.json'
     try:
         report = json.loads(path.read_text(encoding='utf-8-sig'))
@@ -27,12 +27,22 @@ def evidence(root, manifest, *, repo=None, dev_ref='refs/remotes/origin/dev'):
         return subprocess.run(['git', *args], cwd=repo, text=True, encoding='utf-8', errors='replace', capture_output=True)
     if git('cat-file', '-e', commit + '^{commit}').returncode or git('merge-base', '--is-ancestor', commit, dev_ref).returncode:
         raise ValueError('Tested commit must exist in the fetched dev branch history.')
-    relative = Path(root).resolve().relative_to(repo.resolve()).as_posix()
-    result = git('diff', '--exit-code', commit, '--', relative,
-                 ':(exclude)' + relative + '/tests/validation.json',
-                 ':(exclude)' + relative + '/files.lock.json')
+    roots = [Path(root)]
+    if manifest.get('children'):
+        if packages is None:
+            from sci_cli.subagent_package_hierarchy import _sources
+            _, packages = _sources(root, 'local validation')
+        from sci_cli.subagent_package_graph import resolve_graph
+        roots = [Path(packages[key]['path']) for key in resolve_graph(packages, [manifest['id']])]
+    paths = []
+    for folder in roots:
+        relative = folder.resolve().relative_to(repo.resolve()).as_posix()
+        paths += [relative, ':(exclude)' + relative + '/tests/validation.json',
+                  ':(exclude)' + relative + '/files.lock.json']
+    result = git('diff', '--exit-code', commit, '--', *paths)
     if result.returncode:
-        raise ValueError('Package changed since the tested dev commit; repeat integrated validation before main promotion.')
+        raise ValueError('Package or its child hierarchy changed since the tested dev commit; '
+                         'repeat integrated validation before main promotion.')
 
 
 def _passed(section, label):

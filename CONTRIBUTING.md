@@ -8,6 +8,8 @@ Thank you for contributing to Sci Agent! This guide covers everything you need: 
 
 For saved subagent packages, follow [the dev → validation → main process](subagent-catalog/README.md) and use [the starter template](contribution-templates/subagent/README.md). Prepare source files and test evidence yourself; contributor preparation slash commands are not provided. Initial and corrective specialist PRs target **dev**. Maintainers own final acceptance, release artifacts and promotion to **main**.
 
+For a parent with child specialists, follow the [hierarchy example](contribution-templates/subagent-hierarchy.md). Package each specialist separately, declare child package IDs and compatible versions in the parent's schema v2 manifest, and submit the required packages together. Test actual delegation in a clean profile. After a child changes, retest the affected parents on the merged dev revision before promotion.
+
 ## Contribution Priorities
 
 We value contributions in this order:
