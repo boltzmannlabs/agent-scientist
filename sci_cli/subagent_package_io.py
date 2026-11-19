@@ -109,3 +109,8 @@ def open_package(source):
 
 def digest(files):
     return sha256(json.dumps(checksums(files), sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+
+def execution_digest(files):
+    """Evidence corrections do not change the reviewed execution content."""
+    return digest({name: data for name, data in files.items() if name not in {LOCK, 'tests/validation.json'}})

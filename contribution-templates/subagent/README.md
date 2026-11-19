@@ -13,3 +13,5 @@ After real local testing fill `tests/validation.json` local evidence and open a 
 **to dev**. Leave integrated status pending until the merged dev revision is tested.
 Do not include generated catalog snapshots/checksums or local SCI state. Do not copy
 API keys, authorization receipts, conversations, private datasets or installed software.
+
+For a lead with child packages, follow the [hierarchy example](../subagent-hierarchy.md).

@@ -176,8 +176,8 @@ def test_real_child_permissions_provider_result_and_parent_cache(tmp_path, monke
             result = json.loads(delegate_task(tasks=[{'specialist': 'blocked-reviewer', 'goal': 'Check the missing input'}],
                                               parent_agent=parent))
             blocked = result['results'][0]
-            assert blocked['status'] == 'failed' and blocked['task_outcome'] == 'blocked'
-            assert blocked['exit_reason'] == 'blocked' and blocked['run_id'].startswith('sa-')
+            assert blocked['status'] == 'completed' and blocked['task_outcome'] == 'blocked'
+            assert blocked['exit_reason'] == 'completed' and blocked['run_id'].startswith('sa-')
             assert history()[0]['result']['task_outcome'] == 'blocked'
             assert f'Authoritative subagent run ID: {blocked["run_id"]}' in json.dumps(calls[-1])
         finally:

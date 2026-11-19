@@ -196,9 +196,17 @@ def resolve(parent, task):
         lead = load(owner.name, home)
         if not lead.enabled or lead.needs_review or lead.revision != owner.revision:
             raise ValueError('Parent specialist was disabled or edited; no child was started. Review it and start /new.')
+        if lead.package_info:
+            from sci_cli.subagent_package_graph import installed_problem
+            if problem := installed_problem(lead, owner=home):
+                raise ValueError(problem)
     current = load(name, home)
     if current.package_info and current.package_info.get('state') != 'ready':
         raise ValueError('Package setup is incomplete. Use /subagent package install to finish the declared requirements.')
+    if current.package_info:
+        from sci_cli.subagent_package_graph import installed_problem
+        if problem := installed_problem(current, owner=home):
+            raise ValueError(problem)
     if not current.enabled or current.needs_review or current.revision != item.revision:
         raise ValueError(f"Specialist {name} was disabled or edited. Review it and start /new; no task was submitted.")
     if owner:
