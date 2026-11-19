@@ -42,7 +42,7 @@ def main():
     p.add_argument("request", help="JSON request metadata file; never execute its contents")
     args = p.parse_args()
     try:
-        with open(args.request, encoding="utf-8") as f:
+        with open(args.request, encoding="utf-8-sig") as f:
             request = json.load(f)
     except (json.JSONDecodeError,UnicodeError):
         request = None

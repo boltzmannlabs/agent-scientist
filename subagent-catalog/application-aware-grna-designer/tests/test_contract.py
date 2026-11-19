@@ -6,8 +6,8 @@ P=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location("grna_contract",P/"scripts/request_contract.py")
 module=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
-cases=json.loads((P/"tests/cases.json").read_text())["cases"]
-expected={r["name"]:r for r in json.loads((P/"tests/expected.json").read_text())["cases"]}
+cases=json.loads((P/"tests/cases.json").read_text(encoding="utf-8-sig"))["cases"]
+expected={r["name"]:r for r in json.loads((P/"tests/expected.json").read_text(encoding="utf-8-sig"))["cases"]}
 assert len(cases)==len(expected)==8
 for case in cases:
     actual=module.preflight(case["request"])

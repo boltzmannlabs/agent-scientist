@@ -26,7 +26,6 @@ Exit codes: 0 ok, 2 invalid usage/state/data.
 import argparse
 import datetime
 import json
-import sys
 from pathlib import Path
 
 STATES = [
@@ -52,7 +51,7 @@ def load(path):
     if not p.is_file():
         fail(f"registry not found: {p} (run init first; the registry is parent-owned)")
     try:
-        doc = json.loads(p.read_text(encoding="utf-8"))
+        doc = json.loads(p.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError) as exc:
         fail(f"unreadable registry: {exc}")
     if not isinstance(doc, dict) or doc.get("registry_version") != 1 or not isinstance(doc.get("entries"), dict):

@@ -1,5 +1,4 @@
 """Synthetic metadata/artifact QA only. No guide design, scientific model or invented efficacy."""
-import copy
 import hashlib
 import importlib.util
 import json
@@ -22,7 +21,7 @@ C=load('request_contract','scripts/request_contract.py')
 D=load('dependency_check','scripts/check_dependencies.py')
 
 def record():
-    return json.loads((P/'tests/synthetic_record.json').read_text())
+    return json.loads((P/'tests/synthetic_record.json').read_text(encoding="utf-8-sig"))
 def native_declaration():
     # Declared fields for code-branch tests; not actual model results.
     r=record();r['execution_class']='NATIVE_INFERENCE'
@@ -31,7 +30,7 @@ def native_declaration():
 
 class RecordTests(unittest.TestCase):
     def test_software_fixture_exact_expected(self):
-        self.assertEqual(H.audit(record()),json.loads((P/'tests/expected_record.json').read_text()))
+        self.assertEqual(H.audit(record()),json.loads((P/'tests/expected_record.json').read_text(encoding="utf-8-sig")))
     def test_legacy_record_is_not_silently_promoted(self):
         r=record();r.pop('schema_version');self.assertTrue(H.audit(r)['errors'])
     def test_exact_task_tokens(self):
@@ -83,8 +82,8 @@ class RecordTests(unittest.TestCase):
     def test_schema_fixture_and_rejection_shapes(self):
         try:from jsonschema import Draft202012Validator
         except ImportError:self.skipTest('Optional harness jsonschema unavailable')
-        schema=json.loads((P/'references/run-record.schema.json').read_text());Draft202012Validator.check_schema(schema);Draft202012Validator(schema).validate(record())
-        reject=json.loads((P/'references/request-result.schema.json').read_text());validator=Draft202012Validator(reject)
+        schema=json.loads((P/'references/run-record.schema.json').read_text(encoding="utf-8-sig"));Draft202012Validator.check_schema(schema);Draft202012Validator(schema).validate(record())
+        reject=json.loads((P/'references/request-result.schema.json').read_text(encoding="utf-8-sig"));validator=Draft202012Validator(reject)
         for value in [None,{'task_id':[],'mode':'AUDIT'},{'task_id':'001','mode':'AUDIT','modality':'siRNA'}]:validator.validate(C.preflight(value))
 
 class ArtifactTests(unittest.TestCase):
@@ -94,18 +93,18 @@ class ArtifactTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:self.assertTrue(H.verify_artifacts(record(),Path(temp))['errors'])
     def test_real_hash_and_csv_row_count(self):
         with tempfile.TemporaryDirectory() as temp:
-            root=Path(temp);f=root/'metadata.csv';f.write_text('id,value\na,metadata\nb,metadata\n');a=self.checkfile(f);a['data_rows']=2
+            root=Path(temp);f=root/'metadata.csv';f.write_text('id,value\na,metadata\nb,metadata\n', encoding="utf-8");a=self.checkfile(f);a['data_rows']=2
             self.assertFalse(H.verify_artifacts({'artifacts':[a]},root)['errors'])
             a['data_rows']=3;self.assertTrue(H.verify_artifacts({'artifacts':[a]},root)['errors'])
     def test_wrong_hash_and_escape_are_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
-            parent=Path(temp);root=parent/'allowed';root.mkdir();f=root/'value.txt';f.write_text('metadata only');a=self.checkfile(f);f.write_text('changed metadata')
+            parent=Path(temp);root=parent/'allowed';root.mkdir();f=root/'value.txt';f.write_text('metadata only', encoding="utf-8");a=self.checkfile(f);f.write_text('changed metadata', encoding="utf-8")
             self.assertTrue(H.verify_artifacts({'artifacts':[a]},root)['errors'])
-            outside=parent/'outside.txt';outside.write_text('not an approved artifact');a=self.checkfile(outside);a['path']='../outside.txt'
+            outside=parent/'outside.txt';outside.write_text('not an approved artifact', encoding="utf-8");a=self.checkfile(outside);a['path']='../outside.txt'
             self.assertTrue(H.verify_artifacts({'artifacts':[a]},root)['errors'])
     def test_symlink_outside_root_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
-            parent=Path(temp);root=parent/'allowed';root.mkdir();outside=parent/'outside.txt';outside.write_text('metadata');(root/'link.txt').symlink_to(outside);a=self.checkfile(outside);a['path']='link.txt'
+            parent=Path(temp);root=parent/'allowed';root.mkdir();outside=parent/'outside.txt';outside.write_text('metadata', encoding="utf-8");(root/'link.txt').symlink_to(outside);a=self.checkfile(outside);a['path']='link.txt'
             self.assertTrue(H.verify_artifacts({'artifacts':[a]},root)['errors'])
     def test_raster_decode_and_nonconstant_pixels(self):
         try:from PIL import Image
@@ -115,10 +114,10 @@ class ArtifactTests(unittest.TestCase):
             self.assertFalse(H.verify_artifacts({'artifacts':[self.checkfile(p)]},root,True)['errors'])
     def test_cli_artifact_reads_need_explicit_root_and_output_is_exclusive(self):
         args=[sys.executable,'-B',str(P/'scripts/harness_audit.py'),str(P/'tests/synthetic_record.json')]
-        p=subprocess.run(args+['--verify-artifacts'],capture_output=True,text=True);self.assertEqual(p.returncode,2)
+        p=subprocess.run(args+['--verify-artifacts'],capture_output=True,text=True, encoding="utf-8", errors="replace");self.assertEqual(p.returncode,2)
         with tempfile.TemporaryDirectory() as temp:
-            output=Path(temp)/'audit.json';p=subprocess.run(args+['--output',str(output)],capture_output=True,text=True);self.assertEqual(p.returncode,0,p.stderr);old=output.read_bytes()
-            p=subprocess.run(args+['--output',str(output)],capture_output=True,text=True);self.assertNotEqual(p.returncode,0);self.assertEqual(output.read_bytes(),old)
+            output=Path(temp)/'audit.json';p=subprocess.run(args+['--output',str(output)],capture_output=True,text=True, encoding="utf-8", errors="replace");self.assertEqual(p.returncode,0,p.stderr);old=output.read_bytes()
+            p=subprocess.run(args+['--output',str(output)],capture_output=True,text=True, encoding="utf-8", errors="replace");self.assertNotEqual(p.returncode,0);self.assertEqual(output.read_bytes(),old)
 
 
 if __name__=="__main__":unittest.main(verbosity=2)

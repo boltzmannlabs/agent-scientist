@@ -1,17 +1,26 @@
 {
   "package_id": "rna-model-discovery",
   "package_version": "1.1.1",
-  "checks": [
-    "installed SCI strict schema",
-    "contract_fixtures",
-    "spec_cli",
-    "spec_cli_negative",
-    "unit_tests(10)",
-    "checksum_entries(26)"
-  ],
-  "failures": [],
+  "local": {
+    "status": "passed",
+    "environment": "Python 3.13.7; Linux; stdlib-only local QA (offline, no LLM)",
+    "checks": [
+      "installed SCI strict schema",
+      "contract_fixtures",
+      "spec_cli",
+      "spec_cli_negative",
+      "unit_tests(10)",
+      "checksum_entries(26)"
+    ],
+    "failures": []
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "Not yet installed/enabled in an owning profile against a dev commit",
+    "checks": []
+  },
   "scientific_execution": false,
   "live_agent_tested": false,
-  "clean_install_tested": false,
-  "generated_by": "scripts/validate_package.py"
+  "clean_install_tested": false
 }

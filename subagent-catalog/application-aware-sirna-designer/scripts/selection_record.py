@@ -9,7 +9,6 @@ establishes experimental validity; best_design stays null; limitations are manda
 """
 import argparse
 import json
-import sys
 from pathlib import Path
 
 REQUIRED_TOP = ["record_version", "basis", "ranked", "best_computational_candidate", "limitations"]
@@ -90,7 +89,7 @@ def main():
         print(json.dumps({"status": "INVALID", "error": "record path required"}))
         return 1
     try:
-        rec = json.loads(a.record.read_text(encoding="utf-8"))
+        rec = json.loads(a.record.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError) as exc:
         print(json.dumps({"status": "INVALID", "error": str(exc)}))
         return 2

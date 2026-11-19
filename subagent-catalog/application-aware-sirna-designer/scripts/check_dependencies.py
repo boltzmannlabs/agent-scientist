@@ -6,7 +6,7 @@ import re
 import subprocess
 
 P=Path(__file__).resolve().parents[1]
-CATALOG=json.loads((P/'dependencies.json').read_text())['profiles']
+CATALOG=json.loads((P/'dependencies.json').read_text(encoding="utf-8-sig"))['profiles']
 def canonical(n):return re.sub(r'[-_.]+','-',n).lower()
 
 def probe(executable,names):
@@ -23,7 +23,7 @@ for d in m.distributions():
  if name and norm(name) in versions:visible.setdefault(norm(name),set()).add(d.version)
 print(json.dumps({'python':sys.version.split()[0],'packages':versions,'missing':missing,'duplicate_metadata':{k:sorted(v) for k,v in visible.items() if len(v)>1},'prefix':sys.prefix,'base_prefix':sys.base_prefix}))
 '''
-    proc=subprocess.run([str(executable),'-I','-B','-c',code,json.dumps(names)],capture_output=True,text=True,timeout=90)
+    proc=subprocess.run([str(executable),'-I','-B','-c',code,json.dumps(names)],capture_output=True,text=True, encoding="utf-8", errors="replace",timeout=90)
     if proc.returncode:raise RuntimeError('Trusted interpreter metadata probe failed; no model was executed')
     return json.loads(proc.stdout)
 

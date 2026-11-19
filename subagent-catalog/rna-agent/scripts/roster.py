@@ -12,12 +12,11 @@ Exit 0 ok; 2 unknown specialist / consistency failure.
 import argparse
 import json
 import re
-import sys
 from pathlib import Path
 
 P = Path(__file__).resolve().parents[1]
-ROSTER = json.loads((P / "references/subagent-roster.json").read_text())
-TABLE = json.loads((P / "references/routing-table.json").read_text())
+ROSTER = json.loads((P / "references/subagent-roster.json").read_text(encoding="utf-8-sig"))
+TABLE = json.loads((P / "references/routing-table.json").read_text(encoding="utf-8-sig"))
 
 
 def specialists():

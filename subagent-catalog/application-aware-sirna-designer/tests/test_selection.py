@@ -24,29 +24,32 @@ def valid_record():
 
 class SelectionRecord(unittest.TestCase):
     def run_v(self, path):
-        return subprocess.run([sys.executable, "-B", str(SR), "validate", str(path)], capture_output=True, text=True)
+        return subprocess.run([sys.executable, "-B", str(SR), "validate", str(path)], capture_output=True, text=True, encoding="utf-8", errors="replace")
 
     def test_valid_passes(self):
-        import tempfile, os
-        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        import tempfile
+        import os
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as f:
             json.dump(valid_record(), f); p = f.name
         r = self.run_v(p); os.unlink(p)
         self.assertEqual(r.returncode, 0, r.stdout)
         self.assertEqual(json.loads(r.stdout)["status"], "PASS")
 
     def test_rank1_mismatch_fails(self):
-        import tempfile, os
+        import tempfile
+        import os
         rec = valid_record(); rec["best_computational_candidate"]["id"] = "b"
-        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as f:
             json.dump(rec, f); p = f.name
         r = self.run_v(p); os.unlink(p)
         self.assertEqual(r.returncode, 2)
         self.assertTrue(any("rank-1" in x for x in json.loads(r.stdout)["problems"]))
 
     def test_missing_not_experimental_limitation_fails(self):
-        import tempfile, os
+        import tempfile
+        import os
         rec = valid_record(); rec["limitations"] = ["some other note"]
-        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as f:
             json.dump(rec, f); p = f.name
         r = self.run_v(p); os.unlink(p)
         self.assertEqual(r.returncode, 2)

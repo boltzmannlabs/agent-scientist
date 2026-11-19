@@ -46,7 +46,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('bindings',type=Path);p.add_argument('--profile',choices=sorted(CATALOG),required=True)
     p.add_argument('--verify-assets',action='store_true');p.add_argument('--read-root',action='append',type=Path,default=[]);a=p.parse_args()
     if bool(a.read_root)!=a.verify_assets:p.error('Asset reads need --verify-assets and explicit --read-root')
-    try:out=check_bindings(json.loads(a.bindings.read_text()),a.profile,a.read_root,a.verify_assets)
+    try:out=check_bindings(json.loads(a.bindings.read_text(encoding="utf-8-sig")),a.profile,a.read_root,a.verify_assets)
     except (OSError,ValueError):out={'status':'ASSET_CHECK_BLOCKED','errors':['Invalid bindings/root input'],'scientific_execution':False,'model_readiness_verified':False}
     print(json.dumps(out,indent=2));return 2 if out.get('errors') else 0
 if __name__=='__main__':raise SystemExit(main())
