@@ -1,0 +1,2 @@
+# Core is standard-library only; no third-party requirements.
+# jsonschema is optional (strict schema checks) and provided by an approved QA interpreter when used.

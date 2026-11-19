@@ -1,0 +1,10 @@
+{
+  "status": "AUDIT_ONLY",
+  "missing_inputs": [],
+  "required_stages": [],
+  "notes": [
+    "Inspect current provider/tools, approved executables, asset permissions and setup plan; no scientific execution"
+  ],
+  "scientific_execution": false,
+  "authorization_granted": false
+}

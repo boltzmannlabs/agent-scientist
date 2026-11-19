@@ -1,0 +1,10 @@
+{
+  "spec_version": 2,
+  "task_definition": { "capability": "", "biological_task": "x", "domain": "protein" },
+  "selected_model": { "name": "X", "repository_url": "not-a-valid-host", "commit": "" },
+  "weights_availability": "MAYBE",
+  "alternatives_considered": "not-a-list",
+  "official_inference_instructions": "",
+  "known_limitations": [],
+  "extra_unknown_field": true
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "package_id": "rna-model-execution",
+  "package_version": "1.0.0",
+  "core": {
+    "python": ">=3.12",
+    "third_party_required": [],
+    "note": "Core scripts (preflight, report validation, registry CLI, package validation) are standard-library only."
+  },
+  "installation_policy": {
+    "installs_anything": false,
+    "network": "none by this package itself; clone/install/download happen only under parent egress approval at run time",
+    "environments": "fresh venv/conda prefix or approved container per integration, at parent-approved destinations"
+  },
+  "external_assets_required": [
+    "ModelIntegrationSpec produced by rna-model-discovery (or parent-supplied equivalent)",
+    "parent-owned registry path (shared with rna-model-discovery)",
+    "parent egress/install authorization naming sources and scope",
+    "git and an approved environment manager available on the host"
+  ],
+  "setup_validation_scope": "Metadata-only probes; no repository, dependency or checkpoint acquisition is performed by validating this package."
+}

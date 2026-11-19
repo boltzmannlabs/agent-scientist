@@ -1,0 +1,3 @@
+# Endpoint rules
+
+E1 identity; E2 independent native efficacy; E3 real thermodynamic/context measurements; E4 explicit both-strand heuristic scope, same-gene isoform treatment, seed/table applicability; E5 immune hazards, allele and delivery context; E6 descriptive physicochemistry. Run only approved/requested stages. Missing 6/8-mer counts are not supplied by a 7-mer adapter. Missing flanks are not native context. Frozen gates tighten only. Seed cancer-cell viability and an insensitive immune motif rule are not clinical toxicity classifiers. RNAhybrid remains quarantined pending a new valid fixture.

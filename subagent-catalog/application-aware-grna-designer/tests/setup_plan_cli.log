@@ -1,0 +1,42 @@
+{
+  "status": "PLAN_ONLY_REQUIRES_PARENT_APPROVAL",
+  "profile": "cbe",
+  "scientific_execution": false,
+  "installation_executed": false,
+  "authorization_granted": false,
+  "commands": [
+    [
+      "conda",
+      "env",
+      "create",
+      "--prefix",
+      "<PACKAGE_ROOT>/tests/planned_cbe_env",
+      "--file",
+      "<PACKAGE_ROOT>/dependencies/environment-cbe.yml"
+    ],
+    [
+      "APPROVED_QA_PYTHON",
+      "-B",
+      "<PACKAGE_ROOT>/scripts/check_dependencies.py",
+      "--profile",
+      "cbe",
+      "--python",
+      "<PACKAGE_ROOT>/tests/planned_cbe_env/bin/python"
+    ]
+  ],
+  "required_assets": [
+    "RTH-tools/crispron-BE source pinned to c5b28d4362b84c7e933e3715346ffbc1181fd6f2",
+    "author CRISPRonBE_models-1.0.tgz archive, approximately5GB; retain author license and measured SHA256",
+    "25CBE models plus five auxiliary CRISPRon_models_V0-1.0/best checkpoints",
+    "original CRISPRoff1.1.2, energy_dics.pkl and RNAfold2.5.1",
+    "genuine matching30nt targets and corresponding23nt guide/PAM inputs with consistent identifiers",
+    "source-matched measured editingeff labels, frozen splits, phenotype definition and training exposure audit"
+  ],
+  "notes": [
+    "Plan output and path checks are not permission or a sandbox.",
+    "Set package caches and temporary storage inside the approved write root.",
+    "Review licenses, downloads, cost, disk and effective compute before execution.",
+    "Python requirements are observed pins, not complete reproducible or clean-solver guarantees.",
+    "Additionally bind RNAfold2.5.1 from this prefix and verify original source/energy dictionary/25CBE+5V0weights; native fixture required before readiness."
+  ]
+}

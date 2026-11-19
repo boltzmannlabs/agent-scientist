@@ -1,0 +1,76 @@
+{
+  "fixture_kind": "SYNTHETIC_METADATA_ONLY",
+  "cases": [
+    {
+      "name": "missing_knockout_parameters",
+      "request": {
+        "mode": "DESIGN",
+        "task_id": "002",
+        "organism_context": "human"
+      }
+    },
+    {
+      "name": "pathogen_review_gate",
+      "request": {
+        "mode": "DESIGN",
+        "task_id": "010",
+        "organism_context": "pathogen"
+      }
+    },
+    {
+      "name": "plant_native_design_inactive",
+      "request": {
+        "mode": "DESIGN",
+        "task_id": "012",
+        "organism_context": "plant"
+      }
+    },
+    {
+      "name": "benchmark_missing_original_model",
+      "request": {
+        "mode": "BENCHMARK",
+        "task_id": "006",
+        "organism_context": "human",
+        "dataset": "SYNTHETIC_METADATA_ONLY",
+        "reference": "SYNTHETIC_REFERENCE_TOKEN",
+        "output_root": "outputs/test",
+        "phenotype_endpoint": "synthetic endpoint metadata, no measured labels"
+      }
+    },
+    {
+      "name": "malformed_task_identifier_preserved",
+      "request": {
+        "mode": "AUDIT",
+        "task_id": "2",
+        "organism_context": "human"
+      }
+    },
+    {
+      "name": "audit_metadata_only",
+      "request": {
+        "mode": "AUDIT",
+        "task_id": "001",
+        "organism_context": "human",
+        "artifact_manifest": "tests/synthetic_manifest.json",
+        "output_root": "outputs/audit"
+      }
+    },
+    {
+      "name": "unknown_mode",
+      "request": {
+        "mode": "predict-anything",
+        "task_id": "002",
+        "organism_context": "human"
+      }
+    },
+    {
+      "name": "missing_organism_context",
+      "request": {
+        "mode": "EXPLORATORY",
+        "task_id": "001",
+        "target": "SYNTHETIC_GENE_TOKEN",
+        "output_root": "outputs/audit"
+      }
+    }
+  ]
+}

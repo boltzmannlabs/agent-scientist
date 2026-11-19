@@ -1,0 +1,67 @@
+{
+  "policy": "Retain RN.Ai as incumbent where applicable; no global best-model or published-superiority claim",
+  "pretrained_only_default": true,
+  "models": [
+    {
+      "id": "RN.Ai-Predict",
+      "role": "retained efficacy incumbent; native units, not measured inhibition",
+      "commit": "a13470021895fda630cdc191cbfbe16fede30319",
+      "license_review": "Apache-2.0 reported; recheck acquired code and checkpoint terms",
+      "profile": "rnai",
+      "status": "HISTORICAL_EXECUTION_NOT_CURRENT_READINESS",
+      "limitations": [
+        "Exact transcript match and genuine flanks required; unchecked find=-1 is invalid",
+        "Core19 alternative is exploratory; not automatically promoted"
+      ]
+    },
+    {
+      "id": "OligoFormer",
+      "role": "candidate generation or separate native paired efficacy endpoint",
+      "profile": "oligoformer",
+      "status": "HISTORICAL_EXECUTION_NOT_CURRENT_READINESS",
+      "license_review": "Research-use restrictions historically reported; obtain current asset-specific authorization; do not redistribute",
+      "limitations": [
+        "Native active dropout/subset/order behavior must be declared",
+        "Output position may be an ordinal, not a transcript coordinate",
+        "Do not require a GPU solely because one historical wrapper did; verify actual backend resource needs"
+      ]
+    },
+    {
+      "id": "RNAiSpline",
+      "role": "optional separate comparison, not default",
+      "commit": "3ff2ded7669adff26b9e0c0fa6ae358677f61193",
+      "profile": "rnaispline",
+      "license_review": "No license file historically found; no permission is conferred by this package",
+      "status": "REQUIRES_EXPLICIT_ASSET_PERMISSION"
+    },
+    {
+      "id": "SiaRNA",
+      "status": "BLOCKED_HISTORICAL_PREPROCESSING",
+      "limitations": [
+        "Unseeded random folding-feature replacement, incompatible full-transcript input limits and incomplete per-row output at inspected commit",
+        "Strict checkpoint load is not a valid efficacy pipeline; obtain a validated corrected path, never random placeholders"
+      ]
+    },
+    {
+      "id": "ENsiRNA",
+      "status": "BLOCKED_INPUT_MATCHED_STRUCTURES",
+      "limitations": [
+        "Authorized input-matched structural assets and licensed components absent in prior assessment; author CSV access is insufficient"
+      ]
+    },
+    {
+      "id": "BERT-siRNA",
+      "status": "BLOCKED_RELEASED_EFFICACY_CHECKPOINT",
+      "limitations": [
+        "No fine-tuned checkpoint located in inspected source/releases; do not train replacements under pretrained-only scope"
+      ]
+    },
+    {
+      "id": "ASO or CRISPR predictors",
+      "status": "OUT_OF_SCOPE",
+      "limitations": [
+        "Do not use ASO efficacy, Cas13 or CRISPR scores as siRNA efficacy"
+      ]
+    }
+  ]
+}

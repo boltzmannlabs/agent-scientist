@@ -1,0 +1,13 @@
+# Observed package versions, not a clean-install lock or a readiness guarantee.
+# Separate interpreter: Python 3.12.14; do not merge profiles.
+numpy==2.5.4
+scipy==1.18.1
+pandas==3.1.1
+scikit-learn==1.9.1
+joblib==1.6.0
+openpyxl==3.1.5
+biopython==1.88
+psutil==7.2.2
+matplotlib==3.11.2
+seaborn==0.13.2
+tqdm==4.70.1

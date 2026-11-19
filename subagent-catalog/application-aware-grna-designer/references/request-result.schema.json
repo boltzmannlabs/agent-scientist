@@ -1,0 +1,32 @@
+{
+  "$comment": "JSON Schema Draft 2020-12; validator dialect selected explicitly by the harness.",
+  "title": "Inert request preflight result; never a scientific run record",
+  "type": "object",
+  "required": [
+    "status",
+    "missing_inputs",
+    "scientific_execution"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "INVALID_REQUEST",
+        "OUT_OF_SCOPE",
+        "REVIEW_ONLY",
+        "INACTIVE",
+        "NEEDS_INPUT",
+        "METADATA_COMPLETE_REQUIRES_PARENT_AND_NATIVE_CHECKS"
+      ]
+    },
+    "missing_inputs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "scientific_execution": {
+      "const": false
+    }
+  },
+  "additionalProperties": false
+}

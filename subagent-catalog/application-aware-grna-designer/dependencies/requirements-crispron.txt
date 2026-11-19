@@ -1,0 +1,8 @@
+# Observed package versions, not a clean-install lock or a readiness guarantee.
+# Separate interpreter: Python 3.9.23; do not merge profiles.
+numpy==1.26.4
+scipy==1.13.1
+tensorflow==2.14.1
+keras==2.14.0
+h5py==3.14.0
+biopython==1.78

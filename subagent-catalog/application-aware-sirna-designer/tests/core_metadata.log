@@ -1,0 +1,11 @@
+{
+  "profile": "core",
+  "status": "PASS_METADATA_ONLY",
+  "python": "3.13.7",
+  "python_matches": true,
+  "version_mismatches": {},
+  "duplicate_metadata": {},
+  "scientific_execution": false,
+  "model_readiness_verified": false,
+  "clean_install_verified": false
+}

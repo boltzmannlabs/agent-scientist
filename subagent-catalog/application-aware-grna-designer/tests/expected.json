@@ -1,0 +1,167 @@
+{
+  "cases": [
+    {
+      "name": "missing_knockout_parameters",
+      "status": "NEEDS_INPUT",
+      "missing_inputs": [
+        "target",
+        "nuclease_or_effector",
+        "reference",
+        "output_root"
+      ],
+      "scientific_execution": false
+    },
+    {
+      "name": "pathogen_review_gate",
+      "status": "REVIEW_ONLY",
+      "missing_inputs": [],
+      "scientific_execution": false
+    },
+    {
+      "name": "plant_native_design_inactive",
+      "status": "INACTIVE",
+      "missing_inputs": [],
+      "scientific_execution": false
+    },
+    {
+      "name": "benchmark_missing_original_model",
+      "status": "NEEDS_INPUT",
+      "missing_inputs": [
+        "native_tool"
+      ],
+      "scientific_execution": false
+    },
+    {
+      "name": "malformed_task_identifier_preserved",
+      "status": "INVALID_REQUEST",
+      "missing_inputs": [],
+      "scientific_execution": false
+    },
+    {
+      "name": "audit_metadata_only",
+      "status": "METADATA_COMPLETE_REQUIRES_PARENT_AND_NATIVE_CHECKS",
+      "missing_inputs": [],
+      "scientific_execution": false
+    },
+    {
+      "name": "unknown_mode",
+      "status": "INVALID_REQUEST",
+      "missing_inputs": [],
+      "scientific_execution": false
+    },
+    {
+      "name": "missing_organism_context",
+      "status": "NEEDS_INPUT",
+      "missing_inputs": [
+        "organism_context"
+      ],
+      "scientific_execution": false
+    }
+  ],
+  "policy_cases": [
+    {
+      "case_id": "rs3_reference",
+      "status": "POLICY_ONLY_REQUIRES_PARENT_AND_NATIVE_CHECKS",
+      "decision": "RETAIN_RELEASED_REFERENCE",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "rs3_optin",
+      "status": "POLICY_ONLY_REQUIRES_PARENT_AND_NATIVE_CHECKS",
+      "decision": "RESEARCH_CANDIDATE_ONLY",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "behive_reference",
+      "status": "POLICY_ONLY_REQUIRES_PARENT_AND_NATIVE_CHECKS",
+      "decision": "RETAIN_NATIVE_WEAK_TRANSFER",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "pridict_hek",
+      "status": "POLICY_ONLY_REQUIRES_PARENT_AND_NATIVE_CHECKS",
+      "decision": "RETAIN_NATIVE_ENSEMBLE",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "pridict_k562",
+      "status": "POLICY_ONLY_REQUIRES_PARENT_AND_NATIVE_CHECKS",
+      "decision": "RETAIN_NATIVE_ENSEMBLE",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "deepprime_reference",
+      "status": "POLICY_ONLY_REQUIRES_PARENT_AND_NATIVE_CHECKS",
+      "decision": "RETAIN_NATIVE_ENSEMBLE",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "deepprime_wrong_cell",
+      "status": "CONTEXT_MISMATCH",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "deepprime_wrong_editor",
+      "status": "CONTEXT_MISMATCH",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "behive_not_be4max",
+      "status": "CONTEXT_MISMATCH",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "cas13_reference",
+      "status": "POLICY_ONLY_REQUIRES_PARENT_AND_NATIVE_CHECKS",
+      "decision": "RETAIN_NATIVE_UNCERTAIN_TRANSFER",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "cbe_no_optin",
+      "status": "RESEARCH_OPT_IN_REQUIRED",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "cbe_research",
+      "status": "POLICY_ONLY_REQUIRES_PARENT_AND_NATIVE_CHECKS",
+      "decision": "RESEARCH_ONLY_NO_DROP_IN_PROMOTION",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "cbe_not_behive_labels",
+      "status": "LABEL_CONCORDANCE_REQUIRED",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "pathogen_review",
+      "status": "REVIEW_ONLY",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "malformed_identifier",
+      "status": "INVALID_REQUEST",
+      "scientific_execution": false,
+      "authorization_granted": false
+    },
+    {
+      "case_id": "unknown_backend",
+      "status": "NO_VERIFIED_MODEL_POLICY",
+      "scientific_execution": false,
+      "authorization_granted": false
+    }
+  ]
+}

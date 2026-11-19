@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "package_version": "1.0.0",
+  "profiles": {
+    "core": {
+      "python_minimum": "3.12",
+      "packages": {},
+      "assets": [],
+      "clean_install_tested": false,
+      "scope": "Observed direct pins only; no transitive lock, model assets or native readiness implied"
+    },
+    "qa": {
+      "python_observed": "3.13.7",
+      "packages": {
+        "jsonschema": "4.19.2",
+        "PyYAML": "6.0.3",
+        "packaging": "26.3",
+        "Pillow": "11.3.0"
+      },
+      "assets": [],
+      "clean_install_tested": false,
+      "scope": "Observed direct pins only; no transitive lock, model assets or native readiness implied"
+    },
+    "rnai": {
+      "python_observed": "3.13.7",
+      "packages": {
+        "numpy": "2.5.4",
+        "pandas": "3.0.6",
+        "scipy": "1.18.1",
+        "scikit-learn": "1.8.0",
+        "biopython": "1.86",
+        "tensorflow": "2.21.0",
+        "keras": "3.14.0"
+      },
+      "assets": [
+        "rnai_source",
+        "rnai_checkpoint",
+        "harness_entry",
+        "frozen_gates"
+      ],
+      "clean_install_tested": false,
+      "scope": "Observed direct pins only; no transitive lock, model assets or native readiness implied"
+    },
+    "rnaispline": {
+      "python_observed": "3.13.7",
+      "packages": {
+        "numpy": "2.5.4",
+        "pandas": "3.0.6",
+        "scipy": "1.18.1",
+        "scikit-learn": "1.8.0",
+        "biopython": "1.86",
+        "torch": "2.10.0"
+      },
+      "assets": [
+        "rnaispline_source",
+        "rnaispline_checkpoint",
+        "harness_entry",
+        "frozen_gates"
+      ],
+      "clean_install_tested": false,
+      "scope": "Observed direct pins only; no transitive lock, model assets or native readiness implied"
+    },
+    "oligoformer": {
+      "python_observed": "3.8.20",
+      "packages": {
+        "numpy": "1.24.4",
+        "pandas": "2.0.3",
+        "scipy": "1.10.1",
+        "scikit-learn": "1.3.1",
+        "biopython": "1.83",
+        "torch": "2.2.1",
+        "matplotlib": "3.7.5",
+        "tqdm": "4.66.1"
+      },
+      "assets": [
+        "oligoformer_source",
+        "oligoformer_checkpoint",
+        "rnafm_source",
+        "rnafm_checkpoint",
+        "generator_entry"
+      ],
+      "clean_install_tested": false,
+      "scope": "Observed direct pins only; no transitive lock, model assets or native readiness implied"
+    },
+    "analysis": {
+      "python_observed": "3.13.7",
+      "packages": {
+        "numpy": "2.5.4",
+        "pandas": "3.0.6",
+        "scipy": "1.18.1",
+        "scikit-learn": "1.8.0",
+        "matplotlib": "3.10.1+dfsg1"
+      },
+      "assets": [],
+      "clean_install_tested": false,
+      "scope": "Observed direct pins only; no transitive lock, model assets or native readiness implied"
+    },
+    "biotools": {
+      "kind": "conda",
+      "versions": {
+        "viennarna": "2.7.2",
+        "bowtie2": "2.5.5"
+      },
+      "assets": [
+        "transcriptome_fasta",
+        "bowtie_index_manifest",
+        "pots_table",
+        "seed_viability_table"
+      ],
+      "clean_install_tested": false
+    }
+  },
+  "no_model_assets_bundled": true,
+  "no_implicit_installation": true,
+  "native_fixture_required": true,
+  "distribution_resolution": "Use interpreter metadata precedence; report duplicate visible versions",
+  "quarantined": [
+    "RNAhybrid E4e: historical broken binary; current scientific fixture required before reactivation"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "package_id": "rna-agent",
+  "package_version": "1.1.2",
+  "checks": [
+    "routing_fixtures",
+    "unit_tests(12)",
+    "checksum_entries(26)"
+  ],
+  "failures": [
+    "installed SCI strict schema"
+  ],
+  "scientific_execution": false,
+  "live_agent_tested": false,
+  "clean_install_tested": false,
+  "generated_by": "scripts/validate_package.py"
+}

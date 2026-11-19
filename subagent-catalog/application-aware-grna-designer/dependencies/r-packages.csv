@@ -1,0 +1,5 @@
+package,observed_version
+crisprDesign,1.15.10
+crisprScore,1.17.2
+randomForest,4.7.1.2
+jsonlite,2.0.0

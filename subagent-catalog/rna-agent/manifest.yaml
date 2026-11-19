@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "id": "rna-agent",
+  "name": "rna-agent",
+  "version": "1.1.2",
+  "authors": [
+    "Agent Scientist"
+  ],
+  "license": "MIT",
+  "description": "RNA design orchestrator package: deterministic routing of RNA requirements to approved leaf specialists, delegation-directive control, and leaf dependency planning and host verification. Children wiring happens at install time (schema v1 packages cannot declare children).",
+  "sci_requires": ">=0",
+  "instructions": "instructions.md",
+  "output": "Routing decision with rationale (backed by the packaged deterministic router), a complete DELEGATION DIRECTIVE, dependency readiness matrix and setup plans for the leaves, registry-first reuse checks, and honest missing-input consolidation. No scientific execution or claims.",
+  "automatic": false,
+  "tools": [
+    "read_file",
+    "search_files",
+    "write_file",
+    "terminal",
+    "execute_code",
+    "skill_view"
+  ],
+  "skills": [
+    {
+      "id": "rna-orchestration",
+      "kind": "package",
+      "path": "skills/rna-orchestration"
+    },
+    {
+      "id": "rna-dependency-setup",
+      "kind": "package",
+      "path": "skills/rna-dependency-setup"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "python_core",
+      "kind": "program",
+      "optional": true,
+      "version": ">=3.12",
+      "version_args": [
+        "--version"
+      ],
+      "version_contains": "Python 3.",
+      "artifacts": []
+    }
+  ],
+  "references": [
+    {
+      "path": "references/routing-table.json",
+      "label": "Machine-readable routing table; single source of truth for router script and instructions",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/leaf-dependency-matrix.json",
+      "label": "Leaf dependency matrix with pins, roles and satisfaction routes",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/delegation-contract.md",
+      "label": "Directive format, chaining and blocked-outcome rules",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/registry.schema.json",
+      "label": "Shared RNA model and tool registry entry contract",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "dependencies.json",
+      "label": "Orchestrator software profile",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "DEPENDENCIES.md",
+      "label": "Reviewed setup and approval boundaries",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    }
+  ],
+  "limits": {
+    "max_iterations": 50,
+    "timeout_seconds": 3600
+  },
+  "platforms": [
+    "linux"
+  ],
+  "fixtures": [
+    {
+      "input": "tests/cases.json",
+      "expected": "tests/expected.json",
+      "description": "Synthetic routing/setup metadata cases; no delegation, probe or installation."
+    }
+  ]
+}

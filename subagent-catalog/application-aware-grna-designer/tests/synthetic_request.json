@@ -1,0 +1,7 @@
+{
+  "mode": "AUDIT",
+  "task_id": "001",
+  "organism_context": "human",
+  "artifact_manifest": "tests/synthetic_manifest.json",
+  "output_root": "outputs/audit"
+}

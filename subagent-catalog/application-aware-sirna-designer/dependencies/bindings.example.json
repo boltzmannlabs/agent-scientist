@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "note": "Fill real absolute paths outside this package after parent review; null values are missing, not defaults. Keep completed bindings private.",
+  "environments": {
+    "core": null,
+    "qa": null,
+    "rnai": null,
+    "rnaispline": null,
+    "oligoformer": null,
+    "analysis": null,
+    "biotools": null
+  },
+  "assets": [
+    {
+      "id": "bowtie_index_manifest",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    },
+    {
+      "id": "frozen_gates",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    },
+    {
+      "id": "generator_entry",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    },
+    {
+      "id": "harness_entry",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    },
+    {
+      "id": "oligoformer_checkpoint",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    },
+    {
+      "id": "oligoformer_source",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    },
+    {
+      "id": "pots_table",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    },
+    {
+      "id": "rnafm_checkpoint",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    },
+    {
+      "id": "rnafm_source",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    },
+    {
+      "id": "rnai_checkpoint",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    },
+    {
+      "id": "rnai_source",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    },
+    {
+      "id": "rnaispline_checkpoint",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    },
+    {
+      "id": "rnaispline_source",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    },
+    {
+      "id": "seed_viability_table",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    },
+    {
+      "id": "transcriptome_fasta",
+      "path": null,
+      "sha256": null,
+      "license_reviewed": false
+    }
+  ],
+  "optional_campaign_repository": null,
+  "optional_source_task_repository": null,
+  "provider_route": null
+}
