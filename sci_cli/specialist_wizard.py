@@ -250,15 +250,8 @@ def edit(cli, ui, *, name=None, existing=None):
             ui.show('Available standard file, terminal, Python and process tools added to this review. '
                     'Save to approve them for the next conversation. No code has run.')
         elif action == 'Additional instructions':
-            value = _text(ui, 'Additional instructions/limitations; type none to clear', item.instructions)
-            from agent.specialist_sources import instruction_path
-            if instruction_path(value):
-                fields = purpose_fields(ui, initial=value)
-                item = replace(item, instructions=fields.get('instructions', fields['purpose']),
-                               instruction_source=fields.get('instruction_source', ''))
-            else:
-                item = replace(item, instructions='' if value.lower() == 'none' else value,
-                               instruction_source='')
+            from sci_cli.specialist_source_setup import edit_instructions
+            item = edit_instructions(ui, item)
         elif action == 'Add capabilities':
             if additional_setup(cli, ui):
                 return

@@ -16,9 +16,22 @@ class SpecialistUI(WizardUI):
                 raise WizardInputTimeout('Input timed out. Your draft is retained in this CLI/profile.')
             if result.get('outcome') != 'submitted':
                 raise Cancelled()
-            value = result.get('answers', {}).get('specialist')
+            answers = result.get('answers', {})
+            value = answers.get('specialist')
+            # The terminal represents an explicitly submitted empty answer as None.
+            # An absent answer, cancellation or timeout must never supply a value.
+            if allow_blank and not choices and 'specialist' in answers and value is None:
+                return ''
             if isinstance(value, str) and (value.strip() or allow_blank):
-                return value.strip()
+                text = value.strip()
+                if '[Pasted text #' in text:
+                    text = self.cli._expand_paste_references(text).strip()
+                    if '[Pasted text #' in text:
+                        self.show('Could not load pasted text. Paste it again or enter an instruction-file path; '
+                                  'your previous answers are retained.')
+                        continue
+                if text or allow_blank:
+                    return text
             self.show('Please enter a value, or cancel to return to the prompt with your draft retained.')
 
 

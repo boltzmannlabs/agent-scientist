@@ -52,6 +52,15 @@ model request. Adding the same file under References or manually selecting `read
 Additional instructions also accepts an instruction-file path. Invalid paths ask again without
 discarding earlier answers. Updating an older bare-path definition imports its contents for review.
 
+When editing, press Enter on a blank purpose or expected-output answer to keep its saved value.
+For existing additional instructions, choose **Keep current instructions**, **Replace instructions**,
+**Append instructions**, or **Clear instructions**. Append preserves the saved text and adds a new
+paragraph; Replace substitutes the complete text. **Back** and **Done** return to the specialist
+review without cancelling the edit; saving still happens in the review. **Cancel** exits the wizard
+and retains the draft. A blank instruction answer keeps the saved text,
+and a blank reference-location answer skips adding a reference. Save the review, then use `/new`
+for the updated specialist to take effect in a new conversation.
+
 Searchable selectors have Select all, Clear selection and Done. When a search is active,
 **Select matching / Clear matching** affect only the matching results. Unfiltered Select all
 covers the entire section. You can deselect individual entries afterward.
