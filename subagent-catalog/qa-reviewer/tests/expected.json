@@ -1,0 +1,53 @@
+{
+  "counting_rules": {
+    "header": true,
+    "empty_cells": "Cells equal to the empty string; no trimming.",
+    "duplicate_rows": "Extra occurrences of identical complete data rows."
+  },
+  "cases": {
+    "input.csv": {
+      "counts": {
+        "data_rows": 3,
+        "columns": [
+          "id",
+          "value"
+        ],
+        "column_count": 2,
+        "empty_cells": 1,
+        "duplicate_rows": 1
+      },
+      "source_sha256": "651d4eb31083e90c0be38258db9397c8c4e855c473edc1d0cd53c036d0a83b6f",
+      "preserve_inputs": true,
+      "artifacts": [
+        "review_result.json"
+      ],
+      "artifact_count": 1,
+      "reader_result": "Use reader_result.json produced for this exact CSV as the second assigned input.",
+      "discrepancies": [],
+      "preserve_reader_result": true
+    },
+    "second.csv": {
+      "counts": {
+        "data_rows": 4,
+        "columns": [
+          "id",
+          "value",
+          "group"
+        ],
+        "column_count": 3,
+        "empty_cells": 2,
+        "duplicate_rows": 1
+      },
+      "source_sha256": "36c39451b4b7c0c58e74a584877461419935048ad92a488c416b4083d3594a43",
+      "preserve_inputs": true,
+      "artifacts": [
+        "review_result.json"
+      ],
+      "artifact_count": 1,
+      "reader_result": "Use reader_result.json produced for this exact CSV as the second assigned input.",
+      "discrepancies": [],
+      "preserve_reader_result": true
+    }
+  },
+  "missing_inputs": "Request the missing assigned input/output directory; do not search for substitutes."
+}

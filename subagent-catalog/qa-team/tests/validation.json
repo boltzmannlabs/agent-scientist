@@ -1,0 +1,94 @@
+{
+  "package_id": "qa-team",
+  "package_version": "1.0.0",
+  "local": {
+    "status": "blocked",
+    "environment": "SCI source d3434cc209e75bc05d3073cecc58710d447a5982 (SCI 1.0.0.0); Linux x86_64; Python 3.14.7; local backend; glm via boltzmann_models; fresh PM dev/test environment and isolated native profiles portable-a3/portable-b3/portable-setup3. No scientific service executed.",
+    "checks": [
+      "Recipient package schema validation passed for all three 1.0.0 packages; both inert CSV fixtures were independently recomputed with Python csv.reader and matched their expected counts and SHA-256 values. This ground-truth check is not SCI specialist execution.",
+      "Installed the complete hierarchy as installed-team and different-team into distinct fresh native profiles. All three packages were ready; child role tokens resolved to recipient-local names with version 1.0.0.",
+      "A-to-B-to-A profile check preserved profile A definition revisions and produced distinct private extension IDs in profile B.",
+      "An unavailable child package ID was rejected before publishing any definition.",
+      "Cancelling hierarchy preparation preserved existing definitions; a subsequent reviewed installation completed.",
+      "Reinstallation of a customized parent offered rename/cancel and preserved its customized revision.",
+      "A compatible child-only update probe (reader 1.0.1 in a disposable copy) produced a new managed child while retaining previous child definitions; the contributed reader remains 1.0.0. This was an installation check only.",
+      "With code_execution disabled in the disposable setup profile, both children and parent were saved as setup_required; /subagent run refused the disabled parent. Restoring the owning toolset and choosing Resume setup made the hierarchy ready.",
+      "Actual installed parent-to-reader runs occurred for both fixtures; no parent-to-reviewer pipeline run occurred because no reader artifact was available.",
+      "SIGINT cancellation of the final second-fixture CLI process left both team and reader receipts interrupted, exited 130, retained their run IDs/transcripts and produced zero output artifacts.",
+      "After testing, installed manifest, instruction, license, fixture and expected-result bytes matched the contributed files. Only README explanations and validation evidence were updated after the observed runs."
+    ],
+    "date": "2026-11-19",
+    "method": "Normal recipient package install/updates through SCI command dispatch with an explicit review UI adapter; real CLI chat --query-file --oneshot --format stream-json for glm inference. No mocked model, fabricated run receipt, core edit, approval override or copied authorization receipt.",
+    "case_results": [
+      {
+        "case": "input.csv hierarchy",
+        "status": "blocked",
+        "parent_run_id": "sa-0-7cc8d352",
+        "reader_run_id": "sa-0-b4b4d67c",
+        "expected": {
+          "data_rows": 3,
+          "column_count": 2,
+          "empty_cells": 1,
+          "duplicate_rows": 1,
+          "artifact_count": 3
+        },
+        "observed": {
+          "artifact_count": 0,
+          "counts": null,
+          "reader_execute_code": "refused by normal single-query approval guard",
+          "reviewer_dispatched": false
+        },
+        "note": "Actual parent-to-reader delegation occurred. Reader stopped after refusal; parent withheld reviewer dispatch because no reader artifact existed. Runtime receipts said completed, which is not a fixture pass."
+      },
+      {
+        "case": "second.csv hierarchy",
+        "status": "interrupted",
+        "parent_run_id": "sa-0-74b1208c",
+        "reader_run_id": "sa-0-ffa1c1c0",
+        "expected": {
+          "data_rows": 4,
+          "column_count": 3,
+          "empty_cells": 2,
+          "duplicate_rows": 1,
+          "artifact_count": 3
+        },
+        "observed": {
+          "artifact_count": 0,
+          "counts": null,
+          "gateway_warnings": "Repeated finish_reason='length' warnings in the team run; it subsequently dispatched a reader.",
+          "reviewer_dispatched": false
+        },
+        "note": "Normal SIGINT cancellation interrupted both parent and newly started reader; CLI exited 130. No successful second-fixture computation or handoff is claimed."
+      }
+    ],
+    "blockers": [
+      "BLOCKED: execute_code runs arbitrary local Python (including subprocess calls that bypass shell-string approval checks). Single-query mode (-q) runs without a user present to approve it."
+    ],
+    "untested": [
+      "Complete reader-to-reviewer artifact handoff and final_report.md generation for either fixture.",
+      "Runtime continuation/recovery after cancellation with real partial artifacts.",
+      "Merged-dev/catalog distribution and every other OS/backend.",
+      "Interactive execution approval and a successful Python calculation through the installed specialist.",
+      "Runtime missing-model-authorization behavior; only supported login/setup was exercised.",
+      "Private skills/services: none are declared, so no such service execution was tested."
+    ],
+    "costs": "Real GLM inference requests were made. SCI child receipts report cost_status=unknown; cost_usd=0 in those receipts is not evidence of free usage. No aggregate model charge was verified and no scientific jobs/services were submitted.",
+    "limits": "30 specialist iterations, timeout_seconds=0. CLI test turn budgets: final fixtures 600 seconds/8 outer iterations; missing-input cases 300 seconds/6 outer iterations. Single-query approval defaults and nested worker approval defaults were preserved.",
+    "child_versions_exercised": {
+      "qa-reader": "1.0.0",
+      "qa-reviewer": "1.0.0 (explicit missing-input test only; not reached through team pipeline)"
+    },
+    "acceptance_check": {
+      "status": "blocked",
+      "command": "python scripts/validate_subagent_catalog.py --base d3434cc209e75bc05d3073cecc58710d447a5982",
+      "observed": "Local validation needs passed status and an environment description.",
+      "reason": "The gate requires passed local evidence. These actual blocked/failed runtime observations must not be relabeled as passed for a dev PR."
+    }
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "",
+    "checks": []
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "package_id": "qa-reader",
+  "package_version": "1.0.0",
+  "local": {
+    "status": "blocked",
+    "environment": "SCI source d3434cc209e75bc05d3073cecc58710d447a5982 (SCI 1.0.0.0); Linux x86_64; Python 3.14.7; local backend; glm via boltzmann_models; fresh PM dev/test environment and isolated native profiles portable-a3/portable-b3/portable-setup3. No scientific service executed.",
+    "checks": [
+      "Recipient package schema validation passed for all three 1.0.0 packages; both inert CSV fixtures were independently recomputed with Python csv.reader and matched their expected counts and SHA-256 values. This ground-truth check is not SCI specialist execution.",
+      "Installed the complete hierarchy as installed-team and different-team into distinct fresh native profiles. All three packages were ready; child role tokens resolved to recipient-local names with version 1.0.0.",
+      "A-to-B-to-A profile check preserved profile A definition revisions and produced distinct private extension IDs in profile B.",
+      "An unavailable child package ID was rejected before publishing any definition.",
+      "Cancelling hierarchy preparation preserved existing definitions; a subsequent reviewed installation completed.",
+      "Reinstallation of a customized parent offered rename/cancel and preserved its customized revision.",
+      "A compatible child-only update probe (reader 1.0.1 in a disposable copy) produced a new managed child while retaining previous child definitions; the contributed reader remains 1.0.0. This was an installation check only.",
+      "With code_execution disabled in the disposable setup profile, both children and parent were saved as setup_required; /subagent run refused the disabled parent. Restoring the owning toolset and choosing Resume setup made the hierarchy ready.",
+      "For input.csv, the installed reader reached execute_code under glm/boltzmann_models; the normal single-query approval guard refused it. The reader returned the blocker and wrote no artifact.",
+      "Missing-input assignment sa-0-3bebc4cf requested the exact CSV, made no tool calls and wrote zero artifacts.",
+      "Cancellation interrupted the second-fixture reader sa-0-ffa1c1c0; its durable receipt and transcript were retained.",
+      "After testing, installed manifest, instruction, license, fixture and expected-result bytes matched the contributed files. Only README explanations and validation evidence were updated after the observed runs."
+    ],
+    "date": "2026-11-19",
+    "method": "Normal recipient package install/updates through SCI command dispatch with an explicit review UI adapter; real CLI chat --query-file --oneshot --format stream-json for glm inference. No mocked model, fabricated run receipt, core edit, approval override or copied authorization receipt.",
+    "case_results": [
+      {
+        "case": "input.csv reader",
+        "status": "blocked",
+        "run_id": "sa-0-b4b4d67c",
+        "observed_artifacts": 0,
+        "observed_counts": null
+      },
+      {
+        "case": "second.csv reader",
+        "status": "interrupted",
+        "run_id": "sa-0-ffa1c1c0",
+        "observed_artifacts": 0,
+        "observed_counts": null
+      },
+      {
+        "case": "missing CSV",
+        "status": "passed",
+        "run_id": "sa-0-3bebc4cf",
+        "observed": "Requested CSV; zero tool calls; zero artifacts."
+      }
+    ],
+    "blockers": [
+      "BLOCKED: execute_code runs arbitrary local Python (including subprocess calls that bypass shell-string approval checks). Single-query mode (-q) runs without a user present to approve it."
+    ],
+    "untested": [
+      "Successful csv.reader calculation and reader_result.json output for either fixture under SCI.",
+      "Merged-dev/catalog distribution and every other OS/backend.",
+      "Interactive execution approval and a successful Python calculation through the installed specialist.",
+      "Runtime missing-model-authorization behavior; only supported login/setup was exercised.",
+      "Private skills/services: none are declared, so no such service execution was tested."
+    ],
+    "costs": "Real GLM inference requests were made. SCI child receipts report cost_status=unknown; cost_usd=0 in those receipts is not evidence of free usage. No aggregate model charge was verified and no scientific jobs/services were submitted.",
+    "limits": "30 specialist iterations, timeout_seconds=0. CLI test turn budgets: final fixtures 600 seconds/8 outer iterations; missing-input cases 300 seconds/6 outer iterations. Single-query approval defaults and nested worker approval defaults were preserved.",
+    "acceptance_check": {
+      "status": "blocked",
+      "command": "python scripts/validate_subagent_catalog.py --base d3434cc209e75bc05d3073cecc58710d447a5982",
+      "observed": "Local validation needs passed status and an environment description.",
+      "reason": "The gate requires passed local evidence. These actual blocked/failed runtime observations must not be relabeled as passed for a dev PR."
+    }
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "",
+    "checks": []
+  }
+}
