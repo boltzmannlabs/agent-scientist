@@ -86,14 +86,14 @@ def main():
     ap.add_argument("--schema", type=Path, default=SCHEMA)
     a = ap.parse_args()
     try:
-        rep = json.loads(a.report.read_text(encoding="utf-8"))
-        json.loads(a.schema.read_text(encoding="utf-8"))
+        rep = json.loads(a.report.read_text(encoding="utf-8-sig"))
+        json.loads(a.schema.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError, UnicodeError) as exc:
         print(json.dumps({"status": "INVALID", "validator": "io", "error": str(exc)}))
         return 2
     try:
         from jsonschema import Draft202012Validator
-        schema = json.loads(a.schema.read_text(encoding="utf-8"))
+        schema = json.loads(a.schema.read_text(encoding="utf-8-sig"))
         Draft202012Validator.check_schema(schema)
         errors = sorted(Draft202012Validator(schema).iter_errors(rep), key=lambda e: list(e.path))
         problems = [f"{'/'.join(map(str, e.path)) or '<root>'}: {e.message}" for e in errors]

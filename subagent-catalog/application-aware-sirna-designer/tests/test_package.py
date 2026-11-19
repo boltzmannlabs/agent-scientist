@@ -22,7 +22,7 @@ def base() -> dict[str,Any]:
 
 class Routing(unittest.TestCase):
     def test_fixed_csv_cases(self):
-        expected=json.loads((P/'tests/expected.json').read_text())
+        expected=json.loads((P/'tests/expected.json').read_text(encoding="utf-8-sig"))
         with (P/'tests/sample.csv').open(newline='') as f:rows=list(csv.DictReader(f))
         self.assertEqual(set(expected['statuses']),{r['case_id'] for r in rows})
         for row in rows:
@@ -56,10 +56,10 @@ class Routing(unittest.TestCase):
         r=base();r['mode']='BENCHMARK';out=C.preflight(r);self.assertIn('measured_label_manifest',out['missing_inputs']);self.assertIn('split_exclusion_manifest',out['missing_inputs'])
     def test_malformed_json_cli_is_structured(self):
         with tempfile.TemporaryDirectory() as temp:
-            p=Path(temp)/'bad.json';p.write_text('{');result=subprocess.run([sys.executable,'-B',str(P/'scripts/request_contract.py'),str(p)],capture_output=True,text=True)
+            p=Path(temp)/'bad.json';p.write_text('{', encoding="utf-8");result=subprocess.run([sys.executable,'-B',str(P/'scripts/request_contract.py'),str(p)],capture_output=True,text=True, encoding="utf-8", errors="replace")
             self.assertEqual(result.returncode,2);self.assertEqual(json.loads(result.stdout)['status'],'INVALID_REQUEST')
     def test_task_application_copy_matches(self):
-        master=json.loads((P/'references/applications.json').read_text())['applications'];copy=json.loads((P/'skills/application-aware-sirna-workflow/references/application-map.json').read_text())['applications'];self.assertEqual(master,copy)
+        master=json.loads((P/'references/applications.json').read_text(encoding="utf-8-sig"))['applications'];copy=json.loads((P/'skills/application-aware-sirna-workflow/references/application-map.json').read_text(encoding="utf-8-sig"))['applications'];self.assertEqual(master,copy)
 
 class Dependencies(unittest.TestCase):
     def test_exact_profiles_not_model_readiness(self):
@@ -73,7 +73,7 @@ class Dependencies(unittest.TestCase):
     def test_requirement_files_match_catalog(self):
         for name,req in D.CATALOG.items():
             if name=='biotools':continue
-            values=[x for x in (P/('dependencies/requirements-'+name+'.txt')).read_text().splitlines() if x and not x.startswith('#')];self.assertEqual(values,[k+'=='+v for k,v in req['packages'].items()])
+            values=[x for x in (P/('dependencies/requirements-'+name+'.txt')).read_text(encoding="utf-8-sig").splitlines() if x and not x.startswith('#')];self.assertEqual(values,[k+'=='+v for k,v in req['packages'].items()])
 
 class Setup(unittest.TestCase):
     def plan(self,root,profile='core',**kwargs):return S.make_plan(profile,sys.executable,root/'fresh-env',root,**kwargs)
@@ -123,10 +123,10 @@ class Setup(unittest.TestCase):
 
 class Assets(unittest.TestCase):
     def make(self,root):
-        f=root/'inert-metadata.txt';f.write_text('Synthetic software asset fixture, not model weights or scientific data')
+        f=root/'inert-metadata.txt';f.write_text('Synthetic software asset fixture, not model weights or scientific data', encoding="utf-8")
         return {'assets':[{'id':k,'path':str(f),'sha256':hashlib.sha256(f.read_bytes()).hexdigest(),'license_reviewed':True} for k in D.CATALOG['rnai']['assets']]}
     def test_empty_template_blocks(self):
-        obj=json.loads((P/'dependencies/bindings.example.json').read_text());self.assertTrue(B.check_bindings(obj,'rnai')['errors'])
+        obj=json.loads((P/'dependencies/bindings.example.json').read_text(encoding="utf-8-sig"));self.assertTrue(B.check_bindings(obj,'rnai')['errors'])
     def test_metadata_check_does_not_open_declared_asset(self):
         with tempfile.TemporaryDirectory() as temp:
             obj=self.make(Path(temp))
@@ -137,7 +137,7 @@ class Assets(unittest.TestCase):
             root=Path(temp);out=B.check_bindings(self.make(root),'rnai',[root],True);self.assertEqual(out['status'],'PASS_ASSET_INTEGRITY_ONLY');self.assertFalse(out['model_readiness_verified'])
     def test_checksum_mismatch_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
-            root=Path(temp);obj=self.make(root);(root/'inert-metadata.txt').write_text('changed');self.assertTrue(B.check_bindings(obj,'rnai',[root],True)['errors'])
+            root=Path(temp);obj=self.make(root);(root/'inert-metadata.txt').write_text('changed', encoding="utf-8");self.assertTrue(B.check_bindings(obj,'rnai',[root],True)['errors'])
     def test_outside_root_and_symlink_escape_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp);allowed=root/'allowed';allowed.mkdir();obj=self.make(root);self.assertTrue(B.check_bindings(obj,'rnai',[allowed],True)['errors'])

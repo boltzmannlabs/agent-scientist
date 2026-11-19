@@ -51,7 +51,7 @@ def main():
     p.add_argument("request", type=Path)
     a = p.parse_args()
     try:
-        r = json.loads(a.request.read_text())
+        r = json.loads(a.request.read_text(encoding="utf-8-sig"))
         out = preflight(r)
     except (OSError, ValueError, UnicodeError):
         out = {"status": "INVALID_REQUEST", "missing_inputs": [], "notes": ["Unreadable or malformed JSON"],

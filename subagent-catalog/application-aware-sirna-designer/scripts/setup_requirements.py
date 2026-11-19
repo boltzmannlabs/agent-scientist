@@ -49,7 +49,7 @@ def apply(plan,approved=False):
         raise ValueError('Requirements changed since planning; approval must be renewed')
     prefix=Path(plan['prefix'])
     if prefix.exists():raise ValueError('Prefix appeared since planning; refusing reuse')
-    root=Path(plan['approved_write_root']);env=os.environ.copy()
+    Path(plan['approved_write_root']);env=os.environ.copy()
     prefix.parent.mkdir(parents=True,exist_ok=True)
     prefix.mkdir(mode=0o700)  # Exclusive ownership before venv can reuse an existing directory.
     for key in list(env):
@@ -62,7 +62,7 @@ def apply(plan,approved=False):
     steps=[]
     for command in plan['commands']:
         try:
-            proc=subprocess.run(command,capture_output=True,text=True,env=env,timeout=1800)
+            proc=subprocess.run(command,capture_output=True,text=True, encoding="utf-8", errors="replace",env=env,timeout=1800)
             steps.append({'command':command,'returncode':proc.returncode,'stdout':proc.stdout,'stderr':proc.stderr})
             if proc.returncode:break
         except (OSError,subprocess.TimeoutExpired) as exc:

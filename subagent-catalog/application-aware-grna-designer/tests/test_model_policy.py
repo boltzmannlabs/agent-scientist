@@ -14,8 +14,8 @@ setup=module('setup_plan',P/'scripts/setup_plan.py')
 BASE={'task_id':'006','model_id':'DEEPPRIME_PE2','endpoint':'prime_intended','organism_context':'human_research','cell':'HEK293T','editor':'PE2','scaffold':'conventional','research_opt_in':False}
 class Tests(unittest.TestCase):
     def test_all_sixteen_csv_cases(self):
-        expected={x['case_id']:x for x in json.loads((P/'tests/expected.json').read_text())['policy_cases']}
-        with open(P/'tests/sample.csv',newline='') as f:rows=list(csv.DictReader(f))
+        expected={x['case_id']:x for x in json.loads((P/'tests/expected.json').read_text(encoding="utf-8-sig"))['policy_cases']}
+        with open(P/'tests/sample.csv',encoding='utf-8-sig', newline='') as f:rows=list(csv.DictReader(f))
         self.assertEqual(len(rows),16);self.assertEqual(set(expected),{r['case_id'] for r in rows})
         for row in rows:
             with self.subTest(case=row['case_id']):

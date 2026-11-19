@@ -5,8 +5,6 @@ import hashlib
 import json
 import subprocess
 import sys
-import tempfile
-import os
 import unittest
 from pathlib import Path
 
@@ -14,7 +12,7 @@ P = Path(__file__).resolve().parents[1]
 
 
 def run(label, cmd):
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     print(("PASS " if r.returncode == 0 else "FAIL ") + label)
     if r.returncode != 0:
         print(r.stdout[-800:], r.stderr[-800:])
@@ -27,15 +25,14 @@ def main():
     ap.add_argument("--sci-python", type=Path)
     a = ap.parse_args()
     checks, failures = [], []
-    py = sys.executable
 
     if a.sci_source and a.sci_python:
         r = run("installed SCI strict schema", [str(a.sci_python), "-B", str(P / "scripts/sci_schema_probe.py"),
                                                 "--source", str(a.sci_source), "--package", str(P)])
         (checks if r.returncode == 0 else failures).append("installed SCI strict schema")
 
-    cases = json.loads((P / "tests/cases.json").read_text())
-    expected = json.loads((P / "tests/expected.json").read_text())
+    cases = json.loads((P / "tests/cases.json").read_text(encoding="utf-8-sig"))
+    expected = json.loads((P / "tests/expected.json").read_text(encoding="utf-8-sig"))
     import route_request as rr
     sys.path.insert(0, str(P / "scripts"))
     import importlib
@@ -71,11 +68,16 @@ def main():
     print(f"PASS checksum_entries {len(files)}")
     checks.append(f"checksum_entries({len(files)})")
 
-    manifest = json.loads((P / "manifest.yaml").read_text())
-    json.dump({"package_id": manifest["id"], "package_version": manifest["version"],
-               "checks": checks, "failures": failures, "scientific_execution": False,
-               "live_agent_tested": False, "clean_install_tested": False,
-               "generated_by": "scripts/validate_package.py"}, (P / "tests/validation.json").open("w"), indent=2)
+    manifest = json.loads((P / "manifest.yaml").read_text(encoding="utf-8-sig"))
+    report = {"package_id": manifest["id"], "package_version": manifest["version"],
+              "local": {"status": "failed" if failures else "passed",
+                        "environment": f"Python {sys.version.split()[0]}; {__import__('platform').system()}; stdlib-only local QA (offline, no LLM)",
+                        "checks": checks, "failures": failures},
+              "integrated": {"status": "pending", "tested_commit": None,
+                             "environment": "Not yet installed/enabled in an owning profile against a dev commit",
+                             "checks": []},
+              "scientific_execution": False, "live_agent_tested": False, "clean_install_tested": False}
+    (P / "tests/validation.json").write_text(json.dumps(report, indent=2) + chr(10), encoding="utf-8")
     if failures:
         print("FAILURES: " + "; ".join(failures))
         return 1

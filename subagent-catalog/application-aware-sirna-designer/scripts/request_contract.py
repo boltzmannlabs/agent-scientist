@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 P=Path(__file__).resolve().parents[1]
-APPS={x['task_id']:x for x in json.loads((P/'references/applications.json').read_text())['applications']}
+APPS={x['task_id']:x for x in json.loads((P/'references/applications.json').read_text(encoding="utf-8-sig"))['applications']}
 MODES={'SETUP','AUDIT','DESIGN','EVALUATE','EXPLORATORY','BENCHMARK'}
 
 def present(x):return isinstance(x,str) and bool(x.strip())
@@ -46,7 +46,7 @@ def preflight(r):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('request',type=Path);a=p.parse_args()
-    try:r=json.loads(a.request.read_text());out=preflight(r)
+    try:r=json.loads(a.request.read_text(encoding="utf-8-sig"));out=preflight(r)
     except (OSError,ValueError,UnicodeError):out={'status':'INVALID_REQUEST','missing_inputs':[],'required_stages':[],'notes':['Unreadable or malformed JSON'],'scientific_execution':False,'authorization_granted':False}
     print(json.dumps(out,indent=2));return 2 if out['status'] in {'INVALID_REQUEST','OUT_OF_SCOPE'} else 0
 if __name__=='__main__':raise SystemExit(main())

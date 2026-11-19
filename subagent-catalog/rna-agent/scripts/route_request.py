@@ -12,7 +12,7 @@ import re
 from pathlib import Path
 
 P = Path(__file__).resolve().parents[1]
-TABLE = json.loads((P / "references/routing-table.json").read_text())
+TABLE = json.loads((P / "references/routing-table.json").read_text(encoding="utf-8-sig"))
 
 
 def _hits(text, terms):
@@ -105,7 +105,7 @@ def main():
     a = ap.parse_args()
     if a.file:
         try:
-            req = json.loads(a.file.read_text())
+            req = json.loads(a.file.read_text(encoding="utf-8-sig"))
         except (OSError, ValueError, UnicodeError):
             print(json.dumps({"status": "INVALID_REQUEST", "notes": ["unreadable or malformed JSON"]}))
             return 2

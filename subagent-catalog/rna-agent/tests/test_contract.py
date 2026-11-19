@@ -10,8 +10,8 @@ sys.path.insert(0, str(P / "scripts"))
 import route_request as rr  # noqa: E402
 import dependency_plan as dp  # noqa: E402
 
-CASES = json.loads((P / "tests/cases.json").read_text())
-EXPECTED = json.loads((P / "tests/expected.json").read_text())
+CASES = json.loads((P / "tests/cases.json").read_text(encoding="utf-8-sig"))
+EXPECTED = json.loads((P / "tests/expected.json").read_text(encoding="utf-8-sig"))
 
 
 class Router(unittest.TestCase):
@@ -58,7 +58,7 @@ class DependencyPlan(unittest.TestCase):
     def test_verify_verdicts_are_valid(self):
         out = json.loads(subprocess.run(
             [sys.executable, "-B", str(P / "scripts/dependency_plan.py"), "--verify", "--json"],
-            capture_output=True, text=True, timeout=300).stdout)
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300).stdout)
         for leaf in out["leaves"]:
             self.assertIn(leaf["verdict"], {"READY", "PARTIAL", "MISSING"})
             for row in leaf["programs"]:
@@ -68,31 +68,31 @@ class DependencyPlan(unittest.TestCase):
 class RegistryCLI(unittest.TestCase):
     def test_shared_cli_present_and_consistent(self):
         r = subprocess.run([sys.executable, "-B", str(P / "scripts/registry.py")],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
         self.assertEqual(r.returncode, 2)  # no args -> usage error, not crash
-        src_disc = (P.parent / "rna-model-discovery/scripts/registry.py").read_text() if (P.parent / "rna-model-discovery/scripts/registry.py").exists() else None
+        src_disc = (P.parent / "rna-model-discovery/scripts/registry.py").read_text(encoding="utf-8-sig") if (P.parent / "rna-model-discovery/scripts/registry.py").exists() else None
         if src_disc:
-            self.assertEqual((P / "scripts/registry.py").read_text(), src_disc,
+            self.assertEqual((P / "scripts/registry.py").read_text(encoding="utf-8-sig"), src_disc,
                              "shared registry CLI copies must stay byte-identical")
 
 
 class Roster(unittest.TestCase):
     def test_roster_matches_routing_table(self):
         r = subprocess.run([sys.executable, "-B", str(P / "scripts/roster.py"), "check"],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
         self.assertEqual(r.returncode, 0)
         self.assertEqual(json.loads(r.stdout)["status"], "PASS")
 
     def test_capabilities_ranks_discovery_for_gap_queries(self):
         r = subprocess.run([sys.executable, "-B", str(P / "scripts/roster.py"), "capabilities",
                             "find a model with pretrained weights for translation efficiency"],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
         ranked = [x["specialist"] for x in json.loads(r.stdout)["ranked"]]
         self.assertIn("rna-model-discovery", ranked[:2])
 
     def test_describe_unknown_fails(self):
         r = subprocess.run([sys.executable, "-B", str(P / "scripts/roster.py"), "describe", "nope"],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
         self.assertEqual(r.returncode, 2)
 
 

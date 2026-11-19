@@ -39,15 +39,15 @@ class Routing(unittest.TestCase):
 
 class SpecValidation(unittest.TestCase):
     def test_synthetic_passes(self):
-        spec = json.loads((P / "tests/synthetic_spec.json").read_text())
+        spec = json.loads((P / "tests/synthetic_spec.json").read_text(encoding="utf-8-sig"))
         self.assertEqual(vs.structural(spec), [])
 
     def test_invalid_fails(self):
-        spec = json.loads((P / "tests/invalid_spec.json").read_text())
+        spec = json.loads((P / "tests/invalid_spec.json").read_text(encoding="utf-8-sig"))
         self.assertNotEqual(vs.structural(spec), [])
 
     def test_no_weights_cannot_carry_checkpoints(self):
-        spec = json.loads((P / "tests/synthetic_spec.json").read_text())
+        spec = json.loads((P / "tests/synthetic_spec.json").read_text(encoding="utf-8-sig"))
         spec["weights_availability"] = "NO_WEIGHTS"
         self.assertTrue(any("NO_WEIGHTS" in p for p in vs.structural(spec)))
 
@@ -57,10 +57,9 @@ class Registry(unittest.TestCase):
 
     def run_reg(self, *args):
         return subprocess.run([sys.executable, "-B", str(P / "scripts/registry.py"), *args],
-                              capture_output=True, text=True)
+                              capture_output=True, text=True, encoding="utf-8", errors="replace")
 
     def setUp(self):
-        import tempfile
         self.tmp = tempfile.TemporaryDirectory()
         self.reg = str(Path(self.tmp.name) / "reg.json")
         r = self.run_reg("init", self.reg)

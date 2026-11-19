@@ -4,26 +4,26 @@ import importlib.util
 import json
 from pathlib import Path
 P=Path(__file__).resolve().parents[1]
-d=json.loads((P/'dependencies.json').read_text())
+d=json.loads((P/'dependencies.json').read_text(encoding="utf-8-sig"))
 assert d['package_id']=='application-aware-grna-designer' and d['package_version']=='1.3.0'
 assert d['core']['third_party_pip_dependencies']==[]
 assert d['installation_policy']['implicit_install'] is False
 for name,profile in d['profiles'].items():
     if 'R_observed' in profile:
-        with open(P/profile['package_file']) as f:
+        with open(P/profile['package_file'], encoding='utf-8-sig') as f:
             actual={r['package']:r['observed_version'] for r in csv.DictReader(f)}
         assert actual==profile['observed_distribution_versions']
         continue
     actual={}
     for rel in profile['requirements_files']:
-        for line in (P/rel).read_text().splitlines():
+        for line in (P/rel).read_text(encoding="utf-8-sig").splitlines():
             if line and not line.startswith('#'):
                 package,version=line.split('==',1)
                 assert package not in actual
                 actual[package]=version
     assert actual==profile['observed_distribution_versions'],name
     if 'environment_file' in profile:
-        text=(P/profile['environment_file']).read_text()
+        text=(P/profile['environment_file']).read_text(encoding="utf-8-sig")
         assert 'python='+profile['python_observed'] in text
         assert 'requirements-'+name+'.txt' in text
     assert profile['clean_install_tested'] is False

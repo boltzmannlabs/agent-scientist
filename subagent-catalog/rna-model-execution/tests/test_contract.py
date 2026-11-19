@@ -40,15 +40,15 @@ class Routing(unittest.TestCase):
 
 class ReportValidation(unittest.TestCase):
     def test_synthetic_passes(self):
-        rep = json.loads((P / "tests/synthetic_report.json").read_text())
+        rep = json.loads((P / "tests/synthetic_report.json").read_text(encoding="utf-8-sig"))
         self.assertEqual(vr.structural(rep), [])
 
     def test_invalid_fails(self):
-        rep = json.loads((P / "tests/invalid_report.json").read_text())
+        rep = json.loads((P / "tests/invalid_report.json").read_text(encoding="utf-8-sig"))
         self.assertNotEqual(vr.structural(rep), [])
 
     def test_completed_requires_records(self):
-        rep = json.loads((P / "tests/synthetic_report.json").read_text())
+        rep = json.loads((P / "tests/synthetic_report.json").read_text(encoding="utf-8-sig"))
         rep["inference_status"]["status"] = "COMPLETED"
         self.assertTrue(any("successful record" in p for p in vr.structural(rep)))
 
@@ -56,7 +56,7 @@ class ReportValidation(unittest.TestCase):
 class RegistryExecutionSide(unittest.TestCase):
     def run_reg(self, *args):
         return subprocess.run([sys.executable, "-B", str(P / "scripts/registry.py"), *args],
-                              capture_output=True, text=True)
+                              capture_output=True, text=True, encoding="utf-8", errors="replace")
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -90,7 +90,7 @@ class RegistryExecutionSide(unittest.TestCase):
         r = self.run_reg("transition", self.reg, "m1", "PRODUCTION_APPROVED",
                          "--evidence", "e4", "--note", "parent directive 2026-11-17: approved for production use")
         self.assertEqual(r.returncode, 0, r.stdout)
-        doc = json.loads(Path(self.reg).read_text())
+        doc = json.loads(Path(self.reg).read_text(encoding="utf-8-sig"))
         self.assertEqual(doc["entries"]["m1"]["state"], "PRODUCTION_APPROVED")
 
     def test_validate(self):

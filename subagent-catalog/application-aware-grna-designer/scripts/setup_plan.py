@@ -3,7 +3,7 @@ import argparse
 import json
 from pathlib import Path
 P=Path(__file__).resolve().parents[1]
-CATALOG=json.loads((P/'dependencies.json').read_text())
+CATALOG=json.loads((P/'dependencies.json').read_text(encoding="utf-8-sig"))
 
 def plan(profile,prefix,write_root):
     prefix=Path(prefix).resolve();root=Path(write_root).resolve()

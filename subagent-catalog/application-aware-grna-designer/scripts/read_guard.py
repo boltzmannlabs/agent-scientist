@@ -34,7 +34,7 @@ def now():
 
 
 def load(p):
-    return json.loads(Path(p).expanduser().read_text(encoding="utf-8"))
+    return json.loads(Path(p).expanduser().read_text(encoding="utf-8-sig"))
 
 
 def save(p, doc):
@@ -85,7 +85,7 @@ def main():
     a = ap.parse_args()
 
     if a.cmd == "init":
-        atext = Path(a.assignment).expanduser().read_text(encoding="utf-8")
+        atext = Path(a.assignment).expanduser().read_text(encoding="utf-8-sig")
         extracted = authorized_roots_from_text(atext)
         roots = sorted(set(str(Path(x).expanduser().resolve()) for x in (list(a.auto) + extracted)))
         save(a.log, {"created": now(), "allowed_roots": roots,
@@ -126,7 +126,7 @@ def main():
             if v["verdict"] != expect:
                 problems.append(f"{v['path']}: logged {v['verdict']} but roots say {expect}")
         if getattr(a, "assignment", None):
-            atext = Path(a.assignment).expanduser().read_text(encoding="utf-8")
+            atext = Path(a.assignment).expanduser().read_text(encoding="utf-8-sig")
             h = hashlib.sha256(atext.encode()).hexdigest()
             if h != log.get("assignment_sha256"):
                 problems.append("assignment file changed since init (tamper suspect); re-derive authorization")

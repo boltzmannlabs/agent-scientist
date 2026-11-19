@@ -2,7 +2,7 @@
 import argparse
 import json
 from pathlib import Path
-POLICY=json.loads((Path(__file__).resolve().parents[1]/'references/model-policy.json').read_text())
+POLICY=json.loads((Path(__file__).resolve().parents[1]/'references/model-policy.json').read_text(encoding="utf-8-sig"))
 
 def resolve(request):
     result={'scientific_execution':False,'model_readiness_verified':False,'authorization_granted':False,'production_default_changed':False}
@@ -38,7 +38,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('request',type=Path,help='Approved request metadata JSON file')
     args=parser.parse_args()
-    try:request=json.loads(args.request.read_text())
+    try:request=json.loads(args.request.read_text(encoding="utf-8-sig"))
     except (ValueError,UnicodeError):request=None
     result=resolve(request);print(json.dumps(result,indent=2))
     return 2 if result['status']=='INVALID_REQUEST' else 0

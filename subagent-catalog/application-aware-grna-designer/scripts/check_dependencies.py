@@ -8,7 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 P=Path(__file__).resolve().parents[1]
-CATALOG=json.loads((P/'dependencies.json').read_text())
+CATALOG=json.loads((P/'dependencies.json').read_text(encoding="utf-8-sig"))
 
 def probe_python(executable, package_names=None):
     # Resolve effective versions using the interpreter's own lookup precedence.
@@ -39,7 +39,7 @@ except ImportError:
  conflicts={}
 print(json.dumps({'python':sys.version.split()[0],'packages':d,'duplicate_distribution_metadata':conflicts}))
 '''
-    r=subprocess.run([executable,'-B','-c',code,json.dumps(package_names)],capture_output=True,text=True,timeout=45)
+    r=subprocess.run([executable,'-B','-c',code,json.dumps(package_names)],capture_output=True,text=True, encoding="utf-8", errors="replace",timeout=45)
     if r.returncode:
         raise RuntimeError('Selected executable metadata probe failed; no scientific execution occurred')
     return json.loads(r.stdout)
@@ -77,7 +77,7 @@ def main():
             a.error('R profiles require --rscript and do not accept --python')
         r=CATALOG['profiles'][args.profile];names=list(r['observed_distribution_versions'])
         code='cat("R_VERSION\\t",as.character(getRversion()),"\\n",sep="");for(p in c('+','.join(json.dumps(n) for n in names)+')){v<-tryCatch(as.character(packageVersion(p)),error=function(e)"MISSING");cat(p,"\\t",v,"\\n",sep="")}'
-        proc=subprocess.run([args.rscript,'-e',code],capture_output=True,text=True,timeout=45)
+        proc=subprocess.run([args.rscript,'-e',code],capture_output=True,text=True, encoding="utf-8", errors="replace",timeout=45)
         if proc.returncode:raise RuntimeError('Selected Rscript metadata probe failed')
         observed=dict(line.split('\t',1) for line in proc.stdout.splitlines() if '\t' in line)
         diff={n:{'expected':v,'observed':observed.get(n)} for n,v in r['observed_distribution_versions'].items() if observed.get(n)!=v}

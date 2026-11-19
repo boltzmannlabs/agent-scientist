@@ -14,11 +14,10 @@ import argparse
 import json
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 P = Path(__file__).resolve().parents[1]
-MATRIX = json.loads((P / "references/leaf-dependency-matrix.json").read_text())
+MATRIX = json.loads((P / "references/leaf-dependency-matrix.json").read_text(encoding="utf-8-sig"))
 
 PROBE_HINTS = {
     "python_core": ["python3"], "python3": ["python3"], "python_harness": ["python3"],
@@ -35,7 +34,7 @@ def probe(binary):
     path = shutil.which(binary)
     if not path:
         return {"found": False}
-    r = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=20)
+    r = subprocess.run([path, "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20)
     text = (r.stdout + r.stderr).strip().splitlines()
     return {"found": True, "path": path, "version_line": text[0] if text else ""}
 
@@ -58,7 +57,7 @@ def probe_python_families():
             continue
         seen.add(c)
         try:
-            r = subprocess.run([c, "--version"], capture_output=True, text=True, timeout=15)
+            r = subprocess.run([c, "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15)
             v = (r.stdout + r.stderr).strip()
             minor = v.replace("Python ", "").split(".")[:2]
             if len(minor) == 2 and minor[0].isdigit():
@@ -97,7 +96,7 @@ def bound_programs(leaf_name):
     if env_home:
         candidates.append(env_home)
     try:
-        active = (Path.home() / ".sci" / "active_profile").read_text().strip()
+        active = (Path.home() / ".sci" / "active_profile").read_text(encoding="utf-8-sig").strip()
         if active:
             candidates.append(str(Path.home() / ".sci" / "profiles" / active))
     except OSError:
@@ -106,7 +105,7 @@ def bound_programs(leaf_name):
     path = next((Path(h) / "subagents" / f"{leaf_name}.json" for h in candidates
                  if (Path(h) / "subagents" / f"{leaf_name}.json").is_file()), None)
     try:
-        d = _json.loads(path.read_text(encoding="utf-8"))
+        d = _json.loads(path.read_text(encoding="utf-8-sig"))
         resolved = (d.get("package_info") or {}).get("resolved") or {}
         out = {}
         for pid, info in resolved.items():
