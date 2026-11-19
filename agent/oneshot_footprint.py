@@ -10,9 +10,9 @@ delegation dispatcher already read (``SCI_SINGLE_QUERY_SESSION``), so interactiv
 * ``skill_manage`` is not offered (``skills_list``/``skill_view`` stay: reading a domain skill can still win);
 * the ## Skills prompt drops the "record it / patch it / offer to save" coaching and the "load process skills
   even for tasks you already know" push, keeping only "load a skill when it adds knowledge you lack";
-* delegation is capped per session (``delegation.oneshot_max_children``): subagents each re-pay a cold
-  system prompt and re-explore the repo, and the observed spawns were mostly "independent review of my own
-  work" rather than parallel work.
+* temporary delegation is capped by default (``delegation.oneshot_max_children: null``): incidental
+  helpers each re-pay a cold prompt. Reviewed saved specialists use their existing hierarchy and iteration
+  limits. An explicit numeric cap still governs both kinds of child.
 """
 from __future__ import annotations
 

@@ -58,6 +58,8 @@ def test_unknown_option_stops_before_setup():
 @pytest.mark.parametrize('mode', ['existing', 'configure', 'cancel', 'status-error'])
 def test_interactive_completion_launches_only_with_configuration(tmp_path, mode):
     import pty
+    import select
+    import time
 
     source = tmp_path / 'source'
     (source / 'pm').mkdir(parents=True)
@@ -66,11 +68,11 @@ def test_interactive_completion_launches_only_with_configuration(tmp_path, mode)
     shutil.copy2(ROOT / 'scripts/source-install-preflight.sh', source / 'scripts/source-install-preflight.sh')
     for name in ('pyproject.toml', 'uv.lock', 'pm/lock.json'):
         (source / name).touch()
-    (source / 'setup-sci.sh').write_text('#!/bin/bash\nexit 0\n')
+    (source / 'setup-sci.sh').write_text('#!/usr/bin/env bash\nexit 0\n')
     local = source / '.sci/bin'
     local.mkdir(parents=True)
     (local / 'sci').write_text(
-        '#!/bin/bash\nprintf "%s\\n" "$*" >> "$CALL_LOG"\n'
+        '#!/usr/bin/env bash\nprintf "%s\\n" "$*" >> "$CALL_LOG"\n'
         'case "$1" in\n'
         '  --help) exit 0 ;;\n'
         '  --run-module) if [ "$MODE" = status-error ]; then exit 19; fi; '
@@ -85,26 +87,35 @@ def test_interactive_completion_launches_only_with_configuration(tmp_path, mode)
     env = {**os.environ, 'HOME': str(tmp_path), 'MODE': mode, 'READY': str(ready),
            'CALL_LOG': str(log), 'LAUNCHED': str(launched)}
     master, slave = pty.openpty()
+    child = None
     try:
         child = subprocess.Popen(['/bin/bash', str(source / 'install-sci.sh')],
                                  env=env, stdin=slave, stdout=slave, stderr=slave)
-        code = child.wait(timeout=15)
-        os.close(slave)
-        slave = None
         chunks = []
+        deadline = time.monotonic() + 15
+        # Keep the slave open while draining. Darwin can discard unread PTY
+        # output on the last slave close; waiting then closing before reading
+        # loses even a successful install's completion message.
         while True:
-            try:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(child.args, 15, output=b''.join(chunks))
+            readable, _, _ = select.select([master], [], [], min(0.1, remaining))
+            if readable:
                 block = os.read(master, 65536)
-            except OSError:
+                if not block:
+                    break
+                chunks.append(block)
+            elif child.poll() is not None:
                 break
-            if not block:
-                break
-            chunks.append(block)
+        code = child.wait(timeout=1)
         output = b''.join(chunks).decode()
     finally:
+        if child is not None and child.poll() is None:
+            child.kill()
+            child.wait(timeout=5)
         os.close(master)
-        if slave is not None:
-            os.close(slave)
+        os.close(slave)
     calls = log.read_text().splitlines()
     assert ('setup' in calls) == (mode in {'configure', 'cancel'})
     assert launched.exists() == (mode in {'existing', 'configure'})

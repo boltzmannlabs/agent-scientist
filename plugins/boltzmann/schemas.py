@@ -24,8 +24,8 @@ SCHEMAS = [
                     "description": "Optional platform label. Omit it for an automatically generated readable name, or pass the exact name requested by the user.",
                 },
                 "allow_partial_validation": {
-                    "type": "boolean", "default": False,
-                    "description": "Set true only after the user explicitly approves the reported unchecked aspects and possible service charges. Never overrides invalid inputs or authorization.",
+                    "type": "boolean",
+                    "description": "Omit to follow session policy: YOLO permits partial checks; normal mode asks. Explicit false requires approval even in YOLO (use when the user requires a validation approval gate). True records an explicit approval. Never overrides invalid inputs or authorization.",
                 },
             },
             "required": ["job_name", "experiment_data"],
@@ -88,8 +88,8 @@ SCHEMAS = [
                 "job_name": {"type": "string", "description": "Exact scientific job name from tool-contracts.v1.json."},
                 "input_field": {"type": "string", "description": "Exact payload field this file will populate."},
                 "experiment_data": {"type": "object", "description": "Reviewed values needed for mode-dependent file validation; never include credentials."},
-                "allow_partial_validation": {"type": "boolean", "default": False,
-                    "description": "True only after explicit user approval of the returned partial-validation warnings."}
+                "allow_partial_validation": {"type": "boolean",
+                    "description": "Omit to follow session policy: YOLO permits partial checks; normal mode asks. Explicit false preserves a user-requested approval gate even in YOLO. True records explicit approval."}
             },
             "required": ["local_path", "job_name", "input_field"],
             "additionalProperties": False,

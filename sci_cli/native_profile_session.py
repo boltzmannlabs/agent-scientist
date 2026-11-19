@@ -78,14 +78,19 @@ def relaunch_profile(cli):
     import sys
     from tools.environments.local import served_profile_child_env
     from sci_cli._launchers import runtime_command
+    from sci_constants import get_sci_home
     home = Path(cli._pending_profile_home)
+    args = list(cli._pending_relaunch)
+    # Decide at the viewer boundary, including navigation sent by older workers.
+    if home.resolve() != get_sci_home().resolve():
+        args.insert(0, "--profile-switch")
     env = served_profile_child_env(target_home=home, inherit_credentials=True)
     # These are launch identity, not target configuration. -p establishes them.
     for key in ("SCI_PROFILE", "SCI_PROFILE_NAME", "TERMINAL_CWD"):
         env.pop(key, None)
     # A viewer may have entered via python -m or PM's isolated bootstrap.
     # Resolving another `sci` on PATH can lose this install's dependencies.
-    argv = runtime_command(Path(__file__).resolve().parents[1], cli._pending_relaunch, home=home)
+    argv = runtime_command(Path(__file__).resolve().parents[1], args, home=home)
     from sci_cli.config import read_user_config_raw
     config = read_user_config_raw(home / "config.yaml")
     workspace = home / "workspace"

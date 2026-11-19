@@ -739,9 +739,11 @@ def test_entrypoint_in_a_fresh_process(case, tmp_path):
     assert not shim_log.exists() or not shim_log.read_text(encoding="utf-8").strip(), (
         f"{case} called a service manager: {shim_log.read_text(encoding='utf-8')}")
     if entry.prints_version:
-        from sci_cli.version_info import get_version_info
-        commit = get_version_info().commit
-        assert commit and commit[:7] in cp.stdout, describe(cp)
+        from sci_cli.version_info import get_release_version, get_version_info
+
+        expected = (get_version_info().derived_version if entry.via == "sci-acp"
+                    else f"Agent Scientist {get_release_version()}")
+        assert cp.stdout.strip() == expected, describe(cp)
     db = sci_home / "state.db"
     if db.exists():
         assert _db_rows(db, "PRAGMA integrity_check") == [("ok",)], f"{case} left a corrupt state.db"

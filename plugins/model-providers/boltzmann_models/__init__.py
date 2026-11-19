@@ -1,10 +1,18 @@
-"""One platform account, four model routes, with profile-local authorization."""
+"""Gateway-discovered platform models with profile-local authorization."""
 
 from providers import register_provider
 from providers.base import ProviderProfile
 
 
 class BoltzmannModels(ProviderProfile):
+    def fetch_models(self, *, api_key=None, base_url=None, timeout=8.0):
+        from plugins.boltzmann.model_gateway import catalog_models, endpoint, owner_scope
+
+        with owner_scope():
+            if base_url and str(base_url).rstrip("/") != endpoint():
+                return []
+            return catalog_models(timeout=timeout)
+
     def get_model_context_length(self, model):
         from plugins.boltzmann.model_context import model_limits
 
@@ -39,7 +47,14 @@ class BoltzmannModels(ProviderProfile):
         return True
 
     def supported_reasoning_efforts(self, model=None):
-        return ()  # Gateway model IDs do not declare a reasoning-control contract.
+        from plugins.boltzmann.model_gateway import reasoning_efforts
+        return reasoning_efforts(model)
+
+    def build_api_kwargs_extras(self, *, reasoning_config=None, model=None, **kwargs):
+        from agent.reasoning_effort import clamp_effort, requested_effort
+        supported = self.supported_reasoning_efforts(model)
+        effort = clamp_effort(requested_effort(reasoning_config), supported) if supported else None
+        return {}, {"reasoning_effort": effort} if effort else {}
 
     def create_client(self, **kwargs):
         from plugins.boltzmann.model_client import BoltzmannClient
@@ -80,16 +95,16 @@ register_provider(
         description="Boltzmann platform models — requires /boltzmann_login in this profile",
         signup_url="https://app.boltzmann.co/home",
         env_vars=("BOLTZMANN_API_KEY",),
-        base_url="http://100.87.197.84:8010/v1",
+        base_url="https://sciagent.boltzmann.co.in/v1",
         api_mode="chat_completions",
-        fallback_models=("qwen", "discoveryrsi", "glm", "codex"),
+        fallback_models=(),
         credential_scope="profile",
         picker_visible_when_locked=True,
         requires_custom_client=True,
         allow_fallback=False,
         show_account_usage_after_turn=True,
         supports_health_check=False,
-        supports_model_listing=False,
+        supports_model_listing=True,
         classify_api_error=classify,
     )
 )

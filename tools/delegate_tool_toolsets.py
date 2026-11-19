@@ -77,20 +77,24 @@ def _blocked_toolsets_for_role(role: str) -> List[str]:
 def _resolve_child_toolsets(
     parent_agent, toolsets: Optional[List[str]], effective_role: str
 ) -> tuple[List[str], List[str]]:
-    """``(enabled_toolsets, disabled_toolsets)`` for a child. Children never gain tools the parent lacks: explicit
+    """``(enabled_toolsets, disabled_toolsets)`` for a child. Temporary children narrow the parent's tools; named
+    children use their owning profile's snapshot plus their separately reviewed private grants, filtered by policy. Explicit
     ``toolsets`` are intersected with the parent's (composite-expanded) set, else the parent's enabled set is
     inherited. Blocked tools are stripped twice — whole blocked toolsets here, and exact one-tool deny toolsets via
     ``disabled_toolsets`` so blocked names inside mixed bundles (sci-cli) are subtracted AFTER composite
     expansion and survive registry refreshes. Orchestrators get ``delegation`` re-added unconditionally
     (role-granted, not inherited)."""
     # enabled_toolsets=None means "all tools", so derive from loaded tool names.
-    parent_enabled = getattr(parent_agent, "enabled_toolsets", None)
+    from agent.specialist_policy import current_policy
+    policy = current_policy()
+    parent_enabled = policy.owner_toolsets if policy is not None else getattr(parent_agent, "enabled_toolsets", None)
     if parent_enabled is not None:
         parent_toolsets = set(parent_enabled)
-    elif parent_agent and hasattr(parent_agent, "valid_tool_names"):
+    elif policy is not None or (parent_agent and hasattr(parent_agent, "valid_tool_names")):
         import model_tools
         parent_toolsets = {
-            ts for name in parent_agent.valid_tool_names if (ts := model_tools.get_toolset_for_tool(name)) is not None
+            ts for name in (policy.owner_tools if policy is not None else parent_agent.valid_tool_names)
+            if (ts := model_tools.get_toolset_for_tool(name)) is not None
         }
     else:
         parent_toolsets = set(DEFAULT_TOOLSETS)
@@ -108,13 +112,11 @@ def _resolve_child_toolsets(
     else:
         child_toolsets = sorted(parent_toolsets) or DEFAULT_TOOLSETS
     child_toolsets = _strip_blocked_tools(child_toolsets)
-    from agent.specialist_policy import current_policy
-    policy = current_policy()
     if policy is not None and policy.execution_home:
         # These are separately reviewed private grants, not inherited profile tools.
         child_toolsets = list(dict.fromkeys([*child_toolsets, *policy.private_toolsets]))
 
-    raw_parent_disabled = getattr(parent_agent, "disabled_toolsets", None)
+    raw_parent_disabled = policy.owner_disabled_toolsets if policy is not None else getattr(parent_agent, "disabled_toolsets", None)
     inherited_disabled = (
         [str(name) for name in raw_parent_disabled] if isinstance(raw_parent_disabled, (list, tuple, set)) else []
     )

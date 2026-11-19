@@ -9,10 +9,54 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
     />
     <meta name="theme-color" content="#000000" />
-    <style>html, body, #root { background: #000; }</style>
+    <style>
+      html, body, #root { background: #000; }
+      #dashboard-startup { position: fixed; inset: 0; z-index: 2147483647; background: #080408; color: #ffe3ed; font: 16px/1.6 system-ui, sans-serif; padding: 10vh 8vw; }
+      #dashboard-startup[hidden], #dashboard-recovery[hidden] { display: none; }
+      #dashboard-startup button { padding: .6em 1em; cursor: pointer; }
+    </style>
     <title>Agent Scientist - Dashboard</title>
   </head>
   <body>
+    <section id="dashboard-startup" role="status" aria-live="polite">
+      <h1>Agent Scientist</h1>
+      <p id="dashboard-loading-message">Loading your dashboard…</p>
+      <div id="dashboard-recovery" hidden>
+        <p>The browser could not start the dashboard. Reload to fetch the current app files.</p>
+        <p>If this continues, check the forwarded port in VS Code and the browser Console for a blocked request or JavaScript error.</p>
+        <button id="dashboard-reload" type="button">Reload dashboard</button>
+      </div>
+      <noscript>JavaScript is required to open this dashboard. Enable it for this site and reload.</noscript>
+    </section>
+    <!-- Independent of the module bundle: failures must not leave an empty page. -->
+    <script>
+      (function () {
+        var panel = document.getElementById('dashboard-startup');
+        var message = document.getElementById('dashboard-loading-message');
+        var recovery = document.getElementById('dashboard-recovery');
+        var ready = false;
+        function failed() {
+          clearTimeout(timer);
+          panel.hidden = false;
+          panel.setAttribute('role', 'alert');
+          message.textContent = 'Dashboard could not finish loading.';
+          recovery.hidden = false;
+        }
+        var timer = setTimeout(failed, 20000);
+        window.addEventListener('sci:dashboard-ready', function () {
+          ready = true;
+          clearTimeout(timer);
+          panel.hidden = true;
+        }, { once: true });
+        window.addEventListener('sci:dashboard-error', failed);
+        window.addEventListener('error', function (event) {
+          if (ready) return;
+          var target = event.target;
+          if (target === window || (target && target.tagName === 'SCRIPT' && target.type === 'module')) failed();
+        }, true);
+        document.getElementById('dashboard-reload').onclick = function () { window.location.reload(); };
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

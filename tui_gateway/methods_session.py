@@ -656,7 +656,8 @@ class _Resume:
 
     def messages(self, display: list) -> list:
         return [] if self.omit_messages else _history_to_messages(
-            display, profile_home=self.profile_home, image_urls=self.inline_images)
+            display, profile_home=self.profile_home, image_urls=self.inline_images,
+            tool_output=getattr(self, "params", {}).get("source") == "web")
 
     def read_history(self) -> tuple:
         """One lineage SELECT, two projections: model-fed copy alternation-repaired (healed once
@@ -1963,7 +1964,7 @@ def _(rid, params: dict, session: dict) -> dict:
                     # use. See #87059.
                     history = db.get_messages_as_conversation(
                         row_session, include_ancestors=True, include_row_ids=True)
-    return _ok(rid, {"count": len(history), "messages": _history_to_messages(history, profile_home=session.get("profile_home"))})
+    return _ok(rid, {"count": len(history), "messages": _history_to_messages(history, profile_home=session.get("profile_home"), tool_output=session.get("source") == "web")})
 
 
 @_session_method("session.undo", live=True)
@@ -2040,7 +2041,7 @@ def _compress_via_compute_host(rid, params: dict, session: dict) -> dict:
         "status": "compressed", "turn_isolation": True,
         # `messages` goes top-level for the transcript replacement; don't duplicate it in the ack.
         "host_ack": {key: value for key, value in ack.items() if key != "messages"}, "info": host_info,
-        "messages": _history_to_messages(ack.get("messages"), profile_home=session.get("profile_home")) if isinstance(ack.get("messages"), list) else [],
+        "messages": _history_to_messages(ack.get("messages"), profile_home=session.get("profile_home"), tool_output=session.get("source") == "web") if isinstance(ack.get("messages"), list) else [],
         "usage": host_info.get("usage") if isinstance(host_info.get("usage"), dict) else {}})
 
 
@@ -2085,7 +2086,7 @@ def _compress_live(rid, sid: str, session: dict, focus_topic: str) -> dict:
             "status": "aborted" if summary["aborted"] else "compressed", "removed": removed,
             "before_messages": before_count, "after_messages": len(messages),
             "before_tokens": before_tokens, "after_tokens": after_tokens, "summary": summary,
-            "usage": usage, "info": info, "messages": _history_to_messages(messages, profile_home=session.get("profile_home"))})
+            "usage": usage, "info": info, "messages": _history_to_messages(messages, profile_home=session.get("profile_home"), tool_output=session.get("source") == "web")})
     finally:
         # Always clear the pinned compressing status (success, no-op, or raise).
         _status_update(sid, "ready")
@@ -2248,7 +2249,7 @@ def _branch_live(rid, params: dict, session: dict, *, omit_messages: bool = Fals
     if omit_messages:
         response["messages_omitted"] = True
     else:
-        response["messages"] = _history_to_messages(history, profile_home=session.get("profile_home"))
+        response["messages"] = _history_to_messages(history, profile_home=session.get("profile_home"), tool_output=session.get("source") == "web")
     return _ok(rid, response)
 
 

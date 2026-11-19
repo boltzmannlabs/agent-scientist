@@ -319,8 +319,12 @@ def test_saved_side_fork_resumes_with_captured_live_context_and_no_parent_change
     assert not any(m.get('tool_calls') for m in requests[-1]['messages'])
     saved_id = side.id
     assert SessionDB.session_gateway_runtime(db.get_session(saved_id))['base_url'] == parent.base_url
-    assert saved_id in [row['id'] for row in SessionPicker(SimpleNamespace(
+    # Side branches stay separate from the primary conversation picker, but
+    # remain explicitly discoverable and resumable from durable storage.
+    assert saved_id not in [row['id'] for row in SessionPicker(SimpleNamespace(
         _session_db=db, session_id=parent.session_id)).rows]
+    assert saved_id in [row['id'] for row in db.search_sessions(
+        source="cli", include_side_conversations=True)]
     from sci_cli.active_sessions import active_session_registry_snapshot
     assert any(row['session_id'] == saved_id for row in active_session_registry_snapshot(home))
     prompt = parent._cached_system_prompt

@@ -49,6 +49,7 @@ def _json(data, rule, report):
         validate_template(value, rule["json_schema"], report)
     if not report.errors and rule.get("inventory_kind"):
         _retain_inventory(report, rule["inventory_kind"], value)
+    return value
 
 
 def _finite(text):

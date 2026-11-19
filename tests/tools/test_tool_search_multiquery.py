@@ -536,3 +536,12 @@ class TestConfigAndSchema:
         describe_params = schemas["tool_describe"]["parameters"]
         assert describe_params["required"] == ["names"]
         assert describe_params["properties"]["names"]["type"] == "array"
+        import jsonschema
+        calls = schemas['tool_call']['parameters']
+        one = {'name': 'mcp__fixture__echo', 'arguments': {}}
+        jsonschema.validate({'calls': [one]}, calls)
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate({'calls': [one, one]}, calls)
+        connected = {s['function']['name']: s['function'] for s in bridge_tool_schemas(3, connections_granted=True)}
+        jsonschema.validate({'calls': [{'name': 'connectors__fixture__echo', 'arguments': {}}] * 2},
+                            connected['tool_call']['parameters'])

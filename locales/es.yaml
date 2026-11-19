@@ -2226,6 +2226,15 @@ cli:
     footer_roster_compact: "↑↓ · Enter seguir · Ctrl+T cerrar"
     footer_detail: "Esc lista · PgUp/PgDn seguir{steer} · x detener"
     footer_roster: "↑/↓ seleccionar · Enter seguir{steer} · x detener · q/Ctrl+T cerrar"
+  jobs:
+    heading: "Tareas en segundo plano · {count} · Ctrl+R contraer"
+    count: "{count} tareas"
+    id: "Tarea: …{id}"
+    last_check: "Última comprobación: hace {age}"
+    next_check: "Próxima comprobación: {delay}"
+    check_due: "Comprobación pendiente"
+    more: "+{count} tareas más en segundo plano"
+
   dock:
     process_goal_label: "proceso en segundo plano"
     last_output: "último: {detail}"

@@ -723,7 +723,7 @@ _RPC_CASES = [
     ("display.in_app_tips", ["false", "true"], ("display", "in_app_tips"), {"false": False, "true": True}),
     ("skin", ["mono", "ares", "slate"], ("display", "skin"), None),
     ("approvals.mode", ["off", "smart", "manual"], ("approvals", "mode"), None),
-    ("theme", ["dark", "light", "auto"], ("display", "tui_theme"), None),
+    ("indicator", ["ascii", "emoji", "unicode"], ("display", "tui_status_indicator"), None),
     ("busy", ["steer", "queue", "interrupt"], ("display", "busy_input_mode"), None),
     ("voice.voice_chat_mode", ["gpt-live", "chained"], ("voice", "voice_chat_mode"), None),
     ("density", ["on", "off"], ("display", "tui_compact"), {"on": True, "off": False}),
@@ -754,6 +754,18 @@ def test_p2_real_tui_gateway_config_set_changes_exactly_one_key(key, values, pat
     assert _get(got, path) == want and type(_get(got, path)) is type(want), f"[{key}] stored {_get(got, path)!r}"
     tl = {i for i, ln in enumerate(text.splitlines()) if path in case.leaf_lines and i == case.leaf_lines[path]}
     _assert_one_key_write(f"rpc {key} seed={seed}", text, after, {path}, tl, allow_insert=not tl)
+
+
+@pytest.mark.parametrize("value", ["dark", "light", "auto"])
+def test_p2_removed_theme_rpc_rejects_without_changing_config(value, rpc):
+    # Theme overrides were removed with the paired skin design. A stale
+    # dispatch entry must not turn an unsupported key into a handler crash.
+    cfg = rpc.home / "config.yaml"
+    before = _read(cfg)
+    response = rpc.call("config.set", {"key": "theme", "value": value})
+    assert response["error"]["code"] == 4002
+    assert "unknown config key: theme" in response["error"]["message"]
+    assert _read(cfg) == before
 
 
 # ── dashboard / Desktop PUT /api/config ──────────────────────────────────────

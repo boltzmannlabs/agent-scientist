@@ -15,6 +15,8 @@ from sci_cli.config import atomic_config_replace
 from agent.specialist_extensions import extension_home, capability_scope
 from agent.specialist_store import load
 
+pytestmark = pytest.mark.usefixtures("released_sci_version")
+
 
 class UI:
     def __init__(self, answers):

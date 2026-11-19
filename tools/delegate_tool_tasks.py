@@ -6,11 +6,8 @@ import json
 import re
 from typing import Any, Dict, List, Optional
 
-# Placeholder shapes for batch goal validation: bare 'TODO' / 'task N' labels, or unexpanded template markers. The
-# marker regex is deliberately NARROW — only snake_case / space-separated placeholder identifiers (`<feature_name>`,
-# `{file path}`, `<FEATURE-NAME>`), the shape LLM templates leave behind. Bare single-word brackets must never be
-# rejected: legitimate goals are full of generics (`Vec<T>`), HTML tags (`<div>`), dict snippets (`{"key": 1}`), glob
-# braces (`{a,b}`) and f-string style (`{i}`).
+# Bare labels and template identifiers supply no task. Embedded brackets are
+# ordinary prose/code, including references to values produced by earlier steps.
 # See #81141.
 _PLACEHOLDER_GOAL_RE = re.compile(r"^(todo|task\s*\d+)$", re.IGNORECASE)
 _TEMPLATE_MARKER_RE = re.compile(
@@ -49,7 +46,10 @@ def _validate_batch_tasks(task_list: List[Dict[str, Any]]) -> Optional[str]:
                 f"Task {i} has a placeholder goal ({goal!r}). Replace it "
                 "with a specific, self-contained description of what the subagent should accomplish."
             )
-        marker = _TEMPLATE_MARKER_RE.search(goal)
+        # Descriptive prose may legitimately name a value produced by a later
+        # step, contain generic types or quote a template. Only a bare marker
+        # supplies no executable task at all.
+        marker = _TEMPLATE_MARKER_RE.fullmatch(goal)
         if marker:
             return (
                 f"Task {i} goal contains an unexpanded template marker "

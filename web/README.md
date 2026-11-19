@@ -1,55 +1,73 @@
-# Sci Agent — Web UI
+# Agent Scientist Web UI
 
-Browser-based dashboard for managing Sci Agent configuration, API keys, and monitoring active sessions.
+Browser chat and administration for Agent Scientist, launched with `sci dashboard`.
+
+Read the [complete web app reference](../website/docs/developer-guide/web-dashboard-reference.md)
+for every built-in page, functionality, settings, architecture, file ownership,
+scientific viewers, authentication, storage, and troubleshooting.
 
 ## Stack
 
-- **Vite** + **React 19** + **TypeScript**
-- **Tailwind CSS v4** with custom dark theme
-- **shadcn/ui**-style components (hand-rolled, no CLI dependency)
+- React 19 + TypeScript + React Router
+- Vite + Tailwind CSS v4 + `@sci/ui` components
+- Shared JSON-RPC/WebSocket client from `apps/shared`
+- Python FastAPI/Uvicorn backend in `sci_cli/web_server.py`
+- Mol* for browser molecular structures; xterm for the separate SCI Console
+
+The current Chat page is a native React conversation UI over `/api/ws`.
+It does not render the terminal TUI. The landing route is `/sessions`.
 
 ## Development
 
-```bash
-# Start the backend API server
-cd ../
-python -m sci_cli.main web --no-open
-
-# In another terminal, start the Vite dev server (with HMR + API proxy)
-cd web/
-npm install
-npm run dev
-```
-
-Open the **Vite URL** printed in the terminal (usually `http://localhost:5173`). That is the live-reload UI.
-
-`sci dashboard` on port 9119 serves the **built** bundle from `sci_cli/web_dist/`, not the Vite dev server — changes in `web/src/` will not appear there until you run `npm run build` and restart the dashboard (or use `web --no-open` + Vite as above).
-
-The Vite dev server proxies `/api` requests to `http://127.0.0.1:9119` (the FastAPI backend).
-
-## Build
+Run these from the repository root with development dependencies prepared:
 
 ```bash
-npm run build
+# Terminal 1: backend
+sci dashboard --no-open
+
+# Terminal 2: frontend with live reload
+npm run dev --workspace web
 ```
 
-This outputs to `../sci_cli/web_dist/`, which the FastAPI server serves as a static SPA. The built assets are included in the Python package via `pyproject.toml` package-data.
+Open the Vite URL printed in the terminal, usually `http://localhost:5173`.
+Vite proxies `/api` (including WebSockets) and `/dashboard-plugins` to
+`http://127.0.0.1:9119`. If the dashboard chose another port, set the existing
+`SCI_DASHBOARD_URL` development override when starting Vite.
 
-## Structure
+The URL printed by `sci dashboard` serves the **built** bundle. Source edits
+appear there only after rebuilding; restart the backend for Python changes.
 
+## Build and check
+
+```bash
+# From the repository root
+npm run build --workspace web
+npm run check --workspace web
 ```
-src/
-├── components/ui/   # Reusable UI primitives (Card, Badge, Button, Input, etc.)
-├── lib/
-│   ├── api.ts       # API client — typed fetch wrappers for all backend endpoints
-│   └── utils.ts     # cn() helper for Tailwind class merging
-├── pages/
-│   ├── StatusPage   # Agent status, active/recent sessions
-│   ├── ConfigPage   # Dynamic config editor (reads schema from backend)
-│   └── EnvPage      # API key management with save/clear
-├── App.tsx          # Main layout and navigation
-├── main.tsx         # React entry point
-└── index.css        # Tailwind imports and theme variables
+
+The build script is `scripts/build/web.mjs`; the normal output is
+`sci_cli/web_dist/`, served by FastAPI. `check` runs TypeScript, Vitest, and ESLint.
+
+## Source structure
+
+```text
+web/
+├── index.html                 # Document and favicon links
+├── public/                    # Static icons, fonts, viewer license
+├── vite.config.ts             # Build, code splitting, development proxy
+└── src/
+    ├── main.tsx               # Providers and React entry
+    ├── App.tsx                # Routes, sidebar, shared shell
+    ├── index.css              # Global styles
+    ├── pages/                 # Chat, Sessions, Files, Models, Config, etc.
+    ├── components/chat/       # Native chat composer/transcript/approvals
+    ├── components/structure/  # Mol* and server-desktop PyMOL controls
+    ├── components/            # Shared controls, logo, SCI Console
+    ├── contexts/              # Profile, page header, system actions
+    ├── lib/                   # API, WebSocket, state and utility helpers
+    ├── themes/                # Theme definitions and font selection
+    ├── i18n/                  # Translations and locale selection
+    └── plugins/               # Dashboard plugin SDK and slots
 ```
 
 ## Typography & contrast rules

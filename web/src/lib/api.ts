@@ -85,6 +85,7 @@ export function getManagementProfile(): string {
 // has its own per-job profile params), profiles themselves — is machine-global or
 // self-scoped and must NOT be rewritten.
 const PROFILE_SCOPED_PREFIXES = [
+  "/api/boltzmann",
   "/api/status",
   "/api/gateway",
   "/api/analytics",
@@ -490,6 +491,19 @@ export const api = {
         method: "DELETE",
       },
     ),
+  updateSession: (
+    id: string,
+    updates: { title?: string; archived?: boolean; pinned?: boolean },
+    profile = getManagementProfile(),
+  ) =>
+    fetchJSON<{ ok: boolean; title: string; archived?: boolean; pinned?: boolean }>(
+      `/api/sessions/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...updates, profile: profile || undefined }),
+      },
+    ),
   getEmptySessionsCount: (profile = getManagementProfile()) =>
     fetchJSON<{ count: number }>(
       appendProfileParam("/api/sessions/empty/count", profile),
@@ -520,6 +534,10 @@ export const api = {
     fetchJSON<SessionStoreStats>(appendProfileParam("/api/sessions/stats", profile)),
   exportSessionUrl: (id: string, profile = getManagementProfile()) =>
     appendProfileParam(`/api/sessions/${encodeURIComponent(id)}/export`, profile),
+  getSessionExport: (id: string, profile = getManagementProfile()) =>
+    fetchJSON<SessionExport>(
+      appendProfileParam(`/api/sessions/${encodeURIComponent(id)}/export`, profile),
+    ),
   importSessions: (
     sessions: Array<Record<string, unknown>>,
     profile = getManagementProfile(),
@@ -546,15 +564,18 @@ export const api = {
         }),
       },
     ),
-  listFiles: (path?: string) => {
-    const query = path ? `?path=${encodeURIComponent(path)}` : "";
-    return fetchJSON<ManagedFilesResponse>(`/api/files${query}`);
+  listFiles: (path?: string, scope?: { profile: string; sessionId?: string }) => {
+    const query = new URLSearchParams({ profile: scope?.profile || getManagementProfile() || 'default' });
+    if (path) query.set('path', path);
+    if (scope?.sessionId) query.set('session_id', scope.sessionId);
+    return fetchJSON<ManagedFilesResponse>(`/api/files?${query}`);
   },
-  readFile: (path: string, signal?: AbortSignal) =>
-    fetchJSON<ManagedFileReadResponse>(
-      `/api/files/read?path=${encodeURIComponent(path)}`,
-      { signal },
-    ),
+  readFile: (path: string, signal?: AbortSignal, scope?: { profile: string; sessionId?: string }, maxBytes?: number) => {
+    const query = new URLSearchParams({ path, profile: scope?.profile || getManagementProfile() || 'default' });
+    if (scope?.sessionId) query.set('session_id', scope.sessionId);
+    if (maxBytes) query.set('max_bytes', String(maxBytes));
+    return fetchJSON<ManagedFileReadResponse>(`/api/files/read?${query}`, { signal });
+  },
   uploadFile: (path: string, file: File, overwrite = true) => {
     // Stream the raw bytes as multipart/form-data. Do NOT set Content-Type —
     // the browser adds the multipart boundary automatically. Sending the file
@@ -770,6 +791,49 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }),
+  getNativeScienceProfileOptions: () =>
+    fetchJSON<NativeScienceProfileOptions>("/api/profiles/science/options"),
+  discoverNativeScienceMcp: (body: {
+    name: string;
+    approve_network: boolean;
+    approve_local_execution: boolean;
+  }) => fetchJSON<{
+    token: string;
+    tools: Array<{ name: string; description: string }>;
+    message: string;
+  }>("/api/profiles/science/discover", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }),
+  createNativeScienceProfile: (body: {
+    name: string;
+    config_fingerprint: string;
+    skills: string[];
+    services: Array<{
+      name: string;
+      kind: "mcp" | "plugin";
+      tools: string[];
+      discovery_token?: string;
+      approve_scope: boolean;
+    }>;
+    sources: Array<{ location: string; access: "reference" | "read-local" | "model" }>;
+    approve_image_download: boolean;
+    approve_boltzmann_validation: boolean;
+    boltzmann_api_key?: string;
+  }) => fetchJSON<{
+    ok: boolean;
+    name: string;
+    path: string;
+    skills: string[];
+    services: Array<{ name: string; kind: string; tools: string[] }>;
+    sources: Array<{ location: string; access: string }>;
+    environment: string;
+  }>("/api/profiles/science", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }),
   updateProfileDescription: (name: string, description: string) =>
     fetchJSON<{ ok: boolean; description: string; description_auto: boolean }>(
       `/api/profiles/${encodeURIComponent(name)}/description`,
@@ -1051,9 +1115,10 @@ export const api = {
     fetchJSON<UpdateCheckResponse>(
       `/api/sci/update/check${force ? "?force=true" : ""}`,
     ),
-  getActionStatus: (name: string, lines = 200) =>
+  getActionStatus: (name: string, lines = 200, options?: { signal?: AbortSignal }) =>
     fetchJSON<ActionStatusResponse>(
       `/api/actions/${encodeURIComponent(name)}/status?lines=${lines}`,
+      { signal: options?.signal },
     ),
 
   // Dashboard plugins
@@ -1467,6 +1532,7 @@ export interface GatewayMigratePlan {
 }
 
 export interface ActionResponse {
+  action_id?: string;
   archive?: string;
   name: string;
   ok: boolean;
@@ -1964,6 +2030,8 @@ interface FetchJSONOptions {
 }
 
 export interface ActionStatusResponse {
+  action_id?: string;
+  receipt?: { outcome?: string; action_id?: string | null };
   exit_code: number | null;
   lines: string[];
   name: string;
@@ -2105,6 +2173,9 @@ export interface SessionInfo {
   output_tokens: number;
   preview: string | null;
   parent_session_id?: string | null;
+  cwd?: string | null;
+  pinned?: boolean;
+  archived?: boolean;
   /** Owning profile stamped by the list/detail endpoints (the store the row
    * was read from). Absent on search-endpoint rows, which carry no stamp. */
   profile?: string;
@@ -2222,6 +2293,10 @@ export interface SessionMessagesResponse {
   };
 }
 
+export interface SessionExport extends SessionInfo {
+  messages: SessionMessage[];
+}
+
 export interface LogsResponse {
   file: string;
   lines: string[];
@@ -2237,6 +2312,7 @@ export interface ManagedFileEntry {
 }
 
 export interface ManagedFilesResponse {
+  read_only?: boolean;
   root: string | null;
   path: string;
   parent: string | null;
@@ -2349,6 +2425,37 @@ export interface ProfileInfo {
   distribution_version: string | null;
   distribution_source: string | null;
   has_alias: boolean;
+}
+
+export interface NativeScienceSkillOption {
+  name: string;
+  description: string;
+  origin: string;
+}
+
+export interface NativeScienceServiceOption {
+  key: string;
+  name: string;
+  kind: "mcp" | "plugin";
+  description: string;
+  tools: Array<{ name: string; description: string }>;
+  capabilities?: string[];
+  transport?: "local" | "remote";
+  destination?: string;
+  auth?: string;
+  credential_ready?: boolean;
+  ready: boolean;
+  reason: string;
+}
+
+export interface NativeScienceProfileOptions {
+  skills: NativeScienceSkillOption[];
+  services: NativeScienceServiceOption[];
+  environment: { backend: string; docker_image: string };
+  source_home: string;
+  config_fingerprint: string;
+  shared_llm_login: boolean;
+  persona: string;
 }
 
 export interface ModelsAnalyticsModelEntry {
@@ -2574,6 +2681,7 @@ export interface ModelInfoResponse {
 export type { ModelOptionProvider, ModelOptionsResult };
 
 export interface AuxiliaryTaskAssignment {
+  reasoning_effort?: string | null;
   task: string;
   provider: string;
   model: string;
@@ -2582,7 +2690,7 @@ export interface AuxiliaryTaskAssignment {
 
 export interface AuxiliaryModelsResponse {
   tasks: AuxiliaryTaskAssignment[];
-  main: { provider: string; model: string };
+  main: { provider: string; model: string; reasoning_effort?: string };
 }
 
 export interface MoaModelSlot {
@@ -2619,6 +2727,7 @@ export interface MoaConfigResponse {
 }
 
 export interface ModelAssignmentRequest {
+  reasoning_effort?: string | null;
   confirm_expensive_model?: boolean;
   scope: "main" | "auxiliary";
   provider: string;

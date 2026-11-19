@@ -1013,11 +1013,17 @@ def _deferred_build_agent_kwargs(current: dict, session_db) -> dict:
     if isinstance(resume_overrides, dict) and resume_overrides and _overrides_have_routable_provider(resume_overrides):
         kw.update(resume_overrides)
     else:
-        if override := current.get("model_override"):
-            kw["model_override"] = override
         kw.update({k: v for k, v in (("reasoning_config_override", current.get("create_reasoning_override")),
                                      ("service_tier_override", current.get("create_service_tier_override")))
                    if v is not None})
+    # A picker selection after resume supersedes the stored model, including
+    # before the first prompt has constructed the agent.
+    if override := current.get("model_override"):
+        kw["model_override"] = override
+        if isinstance(override, dict) and override.get("provider"):
+            kw["provider_override"] = override["provider"]
+        else:
+            kw.pop("provider_override", None)
     return kw
 
 
@@ -3123,7 +3129,8 @@ def _live_session_payload(
     # message_count follows _resume_response: the stored size when messages are omitted, else the wire count
     # (a hidden seed row is in ``history`` but never on the wire).
     messages = ([] if omit_messages else
-                _history_to_messages(history, profile_home=session.get("profile_home"), image_urls=inline_images))
+                _history_to_messages(history, profile_home=session.get("profile_home"), image_urls=inline_images,
+                                     tool_output=session.get("source") == "web"))
     payload = {
         "info": _fallback_session_info(session), "message_count": len(history) if omit_messages else len(messages),
         "messages": messages,

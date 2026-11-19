@@ -66,7 +66,7 @@ def main(argv=None):
     content = json.dumps(snapshot, sort_keys=True, indent=2) + '\n'
     if args.write_snapshot:
         SNAPSHOT.write_text(content, encoding='utf-8')
-    elif args.check_snapshot and (not SNAPSHOT.exists() or SNAPSHOT.read_text(encoding='utf-8') != content):
+    elif args.check_snapshot and (not SNAPSHOT.exists() or SNAPSHOT.read_text(encoding='utf-8-sig') != content):
         raise ValueError('Packaged catalog snapshot is stale. Run with --write-snapshot after review.')
     print('Source packages validated. ' + ('Release snapshot checked/generated. ' if args.check_snapshot or args.write_snapshot else 'Snapshot generation belongs to maintainer promotion. ') + 'Fixtures require separate reviewed execution tests.')
 

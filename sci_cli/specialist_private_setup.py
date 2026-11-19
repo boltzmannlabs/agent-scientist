@@ -36,6 +36,9 @@ def import_skill(cli, ui, home):
     from sci_cli.skill_add_sources import load_source
     from sci_cli.skill_add import review
     source = ui.ask('Skill URL, identifier, or local SKILL.md/folder/ZIP path:').strip().strip('"\'')
+    if source.startswith('[Pasted text #') or '\n' in source:
+        raise ValueError('This field needs a path, URL or skill identifier, not pasted Markdown or its display label. '
+                         'Save the instructions as SKILL.md, then enter the actual file/folder path. No download started.')
     if source.startswith(('http://', 'https://')) or not Path(source).expanduser().exists():
         ui.show(f'Source: {source}. The existing guarded downloader will inspect it; no imported code runs.')
         ui.choose('Approve download for inspection?', ['Approve download', 'Cancel'])

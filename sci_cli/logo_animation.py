@@ -40,7 +40,7 @@ def rotation_frame(lines, angle):
 
 @lru_cache(maxsize=1)
 def logo_frames():
-    return json.loads(files('sci_cli').joinpath('data/boltzmann-spin.json').read_text(encoding='utf-8'))
+    return json.loads(files('sci_cli').joinpath('data/boltzmann-spin.json').read_text(encoding='utf-8-sig'))
 
 
 if __name__ == '__main__':

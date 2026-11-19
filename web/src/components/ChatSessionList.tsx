@@ -4,11 +4,11 @@
 import { Button } from "@sci/ui/ui/components/button";
 import { ListItem } from "@sci/ui/ui/components/list-item";
 import { Spinner } from "@sci/ui/ui/components/spinner";
-import { AlertCircle, MessageSquarePlus, RefreshCw } from "lucide-react";
+import { AlertCircle, MessageSquarePlus, Pin, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 
-import { ChatWorkspacePicker } from "@/components/ChatWorkspacePicker";
+import { ChatSessionActions } from "@/components/ChatSessionActions";
 import { useI18n } from "@/i18n";
 import { api, type SessionInfo } from "@/lib/api";
 import { cn, timeAgo } from "@/lib/utils";
@@ -30,14 +30,6 @@ interface ChatSessionListProps {
    * omitted, we fall back to clearing the resume param ourselves.
    */
   onNewChat?: () => void;
-  /**
-   * Workspace a FRESH chat starts in (absolute host path, "" = server
-   * default). Owned by ChatPage, which sends it as `session.create {cwd}`; the
-   * picker renders here beside "New chat" so the choice sits next to the
-   * action it affects. Omit both to hide the picker.
-   */
-  workspaceCwd?: string;
-  onWorkspaceChange?: (cwd: string) => void;
 }
 
 function rowLabel(session: SessionInfo, untitled: string): string {
@@ -55,8 +47,6 @@ export function ChatSessionList({
   refreshKey,
   onPicked,
   onNewChat,
-  workspaceCwd,
-  onWorkspaceChange,
 }: ChatSessionListProps) {
   const { t } = useI18n();
   const [, setSearchParams] = useSearchParams();
@@ -173,42 +163,52 @@ export function ChatSessionList({
         </div>
       );
     }
+    const visibleSessions = [...sessions].sort((left, right) =>
+      Number(Boolean(right.pinned)) - Number(Boolean(left.pinned))
+      || right.last_active - left.last_active,
+    );
     return (
       <div className="flex flex-col gap-0.5">
-        {sessions.map((s) => {
+        {visibleSessions.map((s) => {
           const isActive = s.id === activeSessionId;
           return (
-            <ListItem
-              key={s.id}
-              onClick={() => pick(s.id)}
-              aria-current={isActive ? "true" : undefined}
-              className={cn(
-                "flex-col items-start gap-0.5 rounded px-2 py-1.5",
-                "normal-case tracking-normal",
-                isActive
-                  ? "bg-primary/10 text-foreground border-l-2 border-primary"
-                  : "text-text-secondary hover:bg-midground/5 hover:text-foreground",
-              )}
-            >
-              <span className="w-full truncate text-sm font-medium">
-                {rowLabel(s, t.sessions.untitledSession)}
-              </span>
-              <span className="flex w-full items-center gap-1.5 text-[0.6875rem] text-text-tertiary">
-                <span>{timeAgo(s.last_active)}</span>
-                {s.message_count > 0 && (
-                  <>
-                    <span aria-hidden>·</span>
-                    <span>{s.message_count} msgs</span>
-                  </>
+            <div className="chat-session-row" key={s.id}>
+              <ListItem
+                onClick={() => pick(s.id)}
+                aria-current={isActive ? "true" : undefined}
+                className={cn(
+                  "flex-col items-start gap-0.5 rounded px-2 py-1.5 pr-10",
+                  "normal-case tracking-normal",
+                  isActive
+                    ? "bg-primary/10 text-foreground border-l-2 border-primary"
+                    : "text-text-secondary hover:bg-midground/5 hover:text-foreground",
                 )}
-                {s.source && s.source !== "cli" && (
-                  <>
-                    <span aria-hidden>·</span>
-                    <span className="truncate">{s.source}</span>
-                  </>
-                )}
-              </span>
-            </ListItem>
+              >
+                <span className="w-full truncate text-sm font-medium">
+                  {rowLabel(s, t.sessions.untitledSession)}
+                </span>
+                {s.pinned && <Pin className="chat-session-pinned-icon" aria-label="Pinned conversation" />}
+                <span className="flex w-full items-center gap-1.5 text-[0.6875rem] text-text-tertiary">
+                  <span>{timeAgo(s.last_active)}</span>
+                  {s.message_count > 0 && <><span aria-hidden>·</span><span>{s.message_count} msgs</span></>}
+                  {s.source && s.source !== "cli" && <><span aria-hidden>·</span><span className="truncate">{s.source}</span></>}
+                </span>
+              </ListItem>
+              <ChatSessionActions
+                session={s}
+                profile={profile}
+                onUpdated={(updates) => setSessions((previous) => previous?.map((row) => row.id === s.id ? { ...row, ...updates } : row) ?? previous)}
+                onRemoved={() => setSessions((previous) => previous?.filter((row) => row.id !== s.id) ?? previous)}
+                onForked={(id) => {
+                  onPicked?.();
+                  setSearchParams((previous) => {
+                    const next = new URLSearchParams(previous);
+                    next.set("resume", id);
+                    return next;
+                  }, { replace: false });
+                }}
+              />
+            </div>
           );
         })}
       </div>
@@ -237,14 +237,6 @@ export function ChatSessionList({
           <RefreshCw className={cn(loading && "animate-spin")} />
         </Button>
       </div>
-
-      {onWorkspaceChange && (
-        <ChatWorkspacePicker
-          profile={profile}
-          value={workspaceCwd ?? ""}
-          onChange={onWorkspaceChange}
-        />
-      )}
 
       <Button
         outlined

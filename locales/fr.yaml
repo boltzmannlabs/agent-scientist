@@ -2499,6 +2499,15 @@ cli:
     footer_roster_compact: "↑↓ · Entrée suivre · Ctrl+T fermer"
     footer_detail: "Esc liste · PgUp/PgDn suivre{steer} · x arrêter"
     footer_roster: "↑/↓ sélectionner · Entrée suivre{steer} · x arrêter · q/Ctrl+T fermer"
+  jobs:
+    heading: "Tâches en arrière-plan · {count} · Ctrl+R réduire"
+    count: "{count} tâches"
+    id: "Tâche : …{id}"
+    last_check: "Dernière vérification : il y a {age}"
+    next_check: "Prochaine vérification : {delay}"
+    check_due: "Vérification à effectuer"
+    more: "+{count} autres tâches en arrière-plan"
+
   dock:
     process_goal_label: "processus en arrière-plan"
     last_output: "dernier : {detail}"

@@ -1,4 +1,5 @@
 import type { TranscriptMessage } from '@sci/shared';
+import { toolActivity, type ToolActivity } from './tool-activity';
 
 export interface ChatMessage {
   id: string;
@@ -6,6 +7,9 @@ export interface ChatMessage {
   text: string;
   name?: string;
   running?: boolean;
+  context?: string;
+  summary?: string;
+  outputAvailable?: boolean;
 }
 export interface WebChatState {
   messages: ChatMessage[];
@@ -18,10 +22,11 @@ export const emptyChat: WebChatState = { messages: [], stream: '', busy: false, 
 export type ChatAction =
   | { type: 'hydrate'; messages: TranscriptMessage[]; stream?: string; busy?: boolean; error?: string }
   | { type: 'user'; text: string }
+  | { type: 'queued'; text: string }
   | { type: 'delta'; text: string }
   | { type: 'interim'; text: string }
   | { type: 'complete'; text?: string; error?: string; status?: string }
-  | { type: 'tool'; id: string; name: string; text: string; running: boolean }
+  | ({ type: 'tool' } & ToolActivity)
   | { type: 'status'; text: string }
   | { type: 'error'; text: string }
   | { type: 'notice'; text: string };
@@ -32,9 +37,13 @@ export function chatReducer(state: WebChatState, action: ChatAction): WebChatSta
     case 'hydrate':
       return { ...emptyChat, busy: Boolean(action.busy), stream: action.stream || '', error: action.error || '',
         messages: action.messages.filter(m => m.display_kind !== 'hidden' && ['user', 'assistant', 'tool'].includes(m.role))
-          .map(m => ({ ...row(m.role as ChatMessage['role'], m.text || (typeof m.content === 'string' ? m.content : '')), name: m.name || undefined }))
+          .map(m => m.role === 'tool'
+            ? { role: 'tool' as const, ...toolActivity({ ...m, tool_id: m.tool_call_id || crypto.randomUUID(),
+              ...(m.text != null ? { result_text: m.text } : m.content !== undefined ? { result: m.content } : {}) }, false) }
+            : row(m.role as ChatMessage['role'], m.text || (typeof m.content === 'string' ? m.content : '')))
           .filter(m => m.text || m.name) };
     case 'user': return { ...state, messages: [...state.messages, row('user', action.text)], stream: '', busy: true, status: 'Working…', error: '' };
+    case 'queued': return { ...state, messages: [...state.messages, row('user', action.text)] };
     case 'delta': return { ...state, stream: state.stream + action.text, busy: true, status: 'Writing…' };
     case 'interim': return { ...state, messages: [...state.messages, row('assistant', action.text || state.stream)], stream: '' };
     case 'complete': {
@@ -45,7 +54,9 @@ export function chatReducer(state: WebChatState, action: ChatAction): WebChatSta
         stream: '', busy: false, status: action.status === 'interrupted' ? 'Stopped' : '', error: action.error || '' };
     }
     case 'tool': {
-      const message: ChatMessage = { id: action.id, role: 'tool', name: action.name, text: action.text, running: action.running };
+      const previous = state.messages.find(m => m.id === action.id);
+      const message: ChatMessage = { id: action.id, role: 'tool', name: action.name, text: action.text, running: action.running,
+        context: action.context || previous?.context, summary: action.summary, outputAvailable: action.outputAvailable };
       const exists = state.messages.some(m => m.id === action.id);
       return { ...state, messages: exists ? state.messages.map(m => m.id === action.id ? message : m) : [...state.messages, message],
         status: action.running ? `Using ${action.name}…` : 'Working…' };

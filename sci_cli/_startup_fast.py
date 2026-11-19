@@ -184,61 +184,17 @@ def read_install_method() -> str | None:
 
 
 def print_fast_version_info(*, check_updates: bool = True) -> None:
-    """THE canonical ``sci --version`` output (also used by /version).
+    """Print only the SCI release. Keep the legacy keyword accepted by /version callers."""
+    from sci_cli.version_info import get_release_version
 
-    Every lazy block degrades gracefully — a broken/heavy import can never take the basic version
-    output down.
-    """
-    try:
-        from sci_cli.banner import format_banner_version_label
-
-        print(format_banner_version_label())
-    except Exception:
-        from sci_cli import __release_date__
-        from sci_cli.version_info import get_version_info
-
-        print(f"Sci Agent v{get_version_info().derived_version} ({__release_date__})")
-    print(f"Install directory: {project_root_str()}")
-    # Authoritative resolver first (code-scoped stamp → managed → nix → git → pip; also self-heals
-    # poisoned shared-home 'docker' stamps); cheap stdlib stamp probe only if it fails.
-    try:
-        from pathlib import Path
-
-        from sci_cli.config import detect_install_method
-
-        install_method = detect_install_method(Path(project_root_str()))
-    except Exception:
-        install_method = read_install_method()
-    if install_method:
-        print(f"Install method: {install_method}")
-    print(f"Python: {sys.version.split()[0]}")
-    openai_version = read_openai_version()
-    print(f"OpenAI SDK: {openai_version}" if openai_version else "OpenAI SDK: Not installed")
-    if not check_updates:
-        return
-    # Synchronous update status — bounded by check_for_updates' own subprocess/network timeouts
-    # and its 6-hour cache; any failure prints nothing.
-    try:
-        from sci_cli.source_check import UPDATE_AVAILABLE_NO_COUNT, check_for_updates
-        from sci_cli.config import recommended_update_command
-
-        behind = check_for_updates(passive=True).get("behind")
-        if behind == UPDATE_AVAILABLE_NO_COUNT:
-            print(f"Update available — run '{recommended_update_command()}'")
-        elif behind and behind > 0:
-            commits_word = "commit" if behind == 1 else "commits"
-            print(f"Update available: {behind} {commits_word} behind — run '{recommended_update_command()}'")
-        elif behind == 0:
-            print("Up to date")
-    except Exception:
-        pass
+    print(f"Agent Scientist {get_release_version()}")
 
 
 def try_fast_version(argv: list[str] | None = None) -> bool:
     """Handle ``sci --version`` before the heavy import wall.
 
     Only ``--version``/``-V`` (the ``version`` subcommand was removed —
-    ``--version`` now carries the full output incl. update status), and
+    ``--version`` prints only the product release), and
     never when container mode may need to route the command into the
     container.
     """

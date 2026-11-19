@@ -727,7 +727,9 @@ Report actual service errors and incomplete outputs. Refresh status for expired 
 
 ## Pep_Patch
 
-Pep_Patch
+Compute separate electrostatic and hydrophobic surface-patch descriptors on one joint protein or protein-ligand structure; return both CSVs in one result ZIP. These are not binding-affinity or catalytic-activity predictions.
+
+[Product description and result interpretation](../peppatch-complex-inputs.md#peppatch-preparation-and-results)
 
 Exact job name: `Pep_Patch`.
 
@@ -737,7 +739,7 @@ Fields below belong in `experiment_data`. The connector generates `experiment_na
 
 | Field | Type | Required | Input kind | Description |
 |---|---|---|---|---|
-| `input_path` | string | yes | file | S3 path to PDB (upload first) |
+| `input_path` | string | yes | file | Uploaded prepared protein PDB or sole-PDB ZIP; a protein-ligand complex ZIP additionally requires root peppatch_manifest.json with verified reference chemistry. Upload first; submit only the returned platform path. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
 `file_or_value` supports either documented mode; `artifact` is an authorized upstream result reference.
@@ -750,7 +752,7 @@ Only local files require a new upload. Never infer input mode from a field name.
   "type": "object",
   "properties": {
     "input_path": {
-      "description": "S3 path to PDB (upload first)",
+      "description": "Uploaded prepared protein PDB or sole-PDB ZIP; a protein-ligand complex ZIP additionally requires root peppatch_manifest.json with verified reference chemistry. Upload first; submit only the returned platform path.",
       "type": "string",
       "x-input-kind": "file"
     }
@@ -758,7 +760,7 @@ Only local files require a new upload. Never infer input mode from a field name.
   "required": [
     "input_path"
   ],
-  "additionalProperties": true
+  "additionalProperties": false
 }
 ```
 
@@ -783,14 +785,29 @@ For mode-dependent fields, include the fields required by the selected schema br
 {
   "input_path": {
     "formats": [
-      "pdb"
+      "pdb",
+      "zip"
+    ],
+    "member_formats": [
+      "pdb",
+      "json"
     ],
     "header_case_sensitive": true,
-    "notes": "S3 path to PDB (upload first)",
-    "structure_profile": "protein_structure"
+    "notes": "One single-model PDB, never a batch. Protein-only raw PDB and sole-PDB ZIP need no manifest. A complex ZIP needs root peppatch_manifest.json binding every nonstandard non-HOH residue by exact selector and complete heavy-atom names/zero-based reference indices. Only the sole PDB, optional manifest and directories are accepted. Client checks syntax/identity, not SMILES chemistry or pose-state agreement; see peppatch-complex-inputs.md.",
+    "max_bytes": 52428800,
+    "structure_profile": "protein_structure",
+    "zip_manifest_name": "peppatch_manifest.json",
+    "zip_limits": {
+      "members": 64,
+      "expanded_bytes": 52428800,
+      "manifest_bytes": 1048576
+    }
   }
 }
 ```
+
+The optional ZIP-root ligand manifest shape is canonical in
+`file-input-contracts.v1.json`; see the linked ligand-bundle guide.
 
 ### Results
 
@@ -1864,7 +1881,7 @@ For mode-dependent fields, include the fields required by the selected schema br
       "zip"
     ],
     "content_format": "protein_structure_or_bundle",
-    "notes": "One structure or ZIP of structures. Optional root ligand_manifest.json (molprobity-ligand-bundle.v1) binds reviewed restraint CIFs to exact custom ligand residues; dictionary CIFs are auxiliary files, not candidate structures. See molprobity-ligand-bundles.md. Local shape/path/hash/selector checks do not replace worker chemistry validation; backend ZIP billing/deployment support still needs live confirmation.",
+    "notes": "One structure or ZIP. Optional root ligand_manifest.json: v1 supplies reviewed restraint CIFs; v2 also supports generate_dictionary:true with verified reference SMILES and exact atom mapping. AceDRG and compatibility validation run inside the worker; users install no generator. See molprobity-ligand-bundles.md. Generation does not guess chemistry or change structure coordinates. Local checks are not worker chemistry validation; backend ZIP forwarding/billing/deployed-image support needs confirmation.",
     "structure_profile": "Mol_Probity"
   },
   "quality_thresholds": {
@@ -1899,7 +1916,14 @@ The optional ZIP-root ligand manifest shape is canonical in
     "maximum_archive_members": 1000,
     "maximum_structure_bytes": 52428800,
     "maximum_expanded_bytes": 2147483648,
-    "maximum_compression_ratio": 200
+    "maximum_compression_ratio": 200,
+    "schemas": [
+      "molprobity-ligand-bundle.v1",
+      "molprobity-ligand-bundle.v2"
+    ],
+    "maximum_generation_heavy_atoms": 128,
+    "maximum_generated_dictionaries": 16,
+    "generator_timeout_seconds": 300
   },
   "fields": {},
   "files": {
@@ -1976,6 +2000,7 @@ The optional ZIP-root ligand manifest shape is canonical in
 ### Execution notices
 
 - In measurement_only mode the connector ignores supplied quality_thresholds before validation/submission, matching the worker. In validation, a nonempty supported object or uploaded JSON path is required.
+- For nonstandard noncovalent ligands, use molprobity-ligand-bundle.v2 with generate_dictionary:true and verified SMILES plus exact atom mapping to generate inside the worker; do not install AceDRG on the user machine. Existing supplied-dictionary v1/v2 and ordinary structures remain supported. See molprobity-ligand-bundles.md. Never infer molecular identity/protonation from coordinates or remove stereo labels; generation is conditional on supported chemistry and deployed worker capability.
 - For a confirmed terminal failure specifically caused by missing ligand restraints or unknown ligand atom types, follow molprobity-ligand-bundles.md#recovery-after-a-missing-ligand-dictionary-failure. With explicit user pre-authorization covering recovery credits, prepare and validate a reviewed custom-ligand ZIP and submit one separately named replacement without asking for cost approval again. Do not retry pending/unknown outcomes, invent ligand chemistry, or bypass authorization and input-validation requirements.
 - The latest recorded reference submission was accepted but remained pending without artifacts. This is not completed validation; do not duplicate a pending job.
 

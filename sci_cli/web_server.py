@@ -981,6 +981,7 @@ def _get_dashboard_plugins(force_rescan: bool = False) -> list:
 # Router mounting. ORDER IS ROUTE-MATCHING ORDER: literal paths must land before
 # templated siblings (e.g. /api/sessions/bulk-delete before /api/sessions/{id}).
 from sci_cli.web_routers import (  # noqa: E402
+    boltzmann as _boltzmann_routes,
     files as _files_routes,
     structures as _structures_routes,
     git as _git_routes,
@@ -1007,6 +1008,7 @@ from sci_cli.web_routers import (  # noqa: E402
     dashboard_ui as _dashboard_ui_routes,
 )
 
+app.include_router(_boltzmann_routes.router)
 app.include_router(_files_routes.router)
 app.include_router(_structures_routes.router)
 app.include_router(_git_routes.router)

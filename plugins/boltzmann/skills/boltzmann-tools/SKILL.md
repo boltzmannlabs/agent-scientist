@@ -15,6 +15,45 @@ fallback, or credential capture in chat. Authorization and profile restrictions
 are enforced independently of catalog visibility. Missing authorization requires
 `/add_boltzmann` in the active profile; deferred activation may require a new session.
 
+## Saved-specialist execution
+
+When a saved specialist hierarchy will execute scientific work, the parent prepares the
+exact input files and freezes `delegate_task.assignment` before execution. Include:
+
+- `inputs`: prepared local input paths (not reference manuals).
+- `tool_arguments.boltzmann_submit`: required `job_name`, requested `experiment_data`
+  parameters and any required `experiment_name`. For multiple job types, use a list of
+  argument objects. Omit a not-yet-known uploaded storage reference, or bind that
+  field as `{"$input": "/absolute/path/to/frozen/input.csv"}`. Never freeze a
+  descriptive placeholder as a literal reference. The validated receipt resolves
+  the marker without changing the scientific parameters.
+- `max_submissions`: the authorized total per job name across the whole assignment.
+
+If contracts or inputs first need discovery/preparation, use an informational specialist
+pass, then let the parent freeze the execution contract. This is internal task preparation,
+not an additional user approval. Descendants cannot replace the contract. A missing contract
+blocks scientific writes and returns the prepared requirements to the parent.
+Complete each budgeted job's submission parameters before dispatch; an incomplete execution
+contract is returned to the parent before children or uploads start. Correct the metadata and
+retry the dispatch, rather than repeatedly launching workers with the same missing contract.
+
+Dispatch the requested root once. Execution finishes before its dependent audit starts;
+pass the exact recorded output paths in `tasks[].artifacts`. Initial uploads must match
+frozen input bytes. Subsequent uploads may use recorded output/derived files after a prior
+step reaches a confirmed terminal state. Preserve original outputs; use new paths for
+derived files. Native `write_file`/`patch` and scientific downloads record artifact hashes.
+Files created through arbitrary scripts are not automatically certified as task outputs.
+
+Accepted and uncertain submission attempts consume the assignment's budget. Re-uploading
+the same bytes, changing a label, provider failures or worker timeouts do not authorize
+another submission. Reconcile existing IDs and receipts. On restart, use the saved
+`assignment_id` from run history as `assignment: {"resume": "<id>"}`; do not create a new
+assignment to bypass an unresolved attempt. Do not infer zero charges from a missing summary.
+Descendants inherit the contract; omit `assignment` on nested dispatches or reference
+the same resume ID. For an older unbound upload placeholder, call the normal upload
+tool with the unchanged frozen file: it revalidates and reuses a matching receipt
+without another remote upload. Do not edit internal assignment or receipt files.
+
 ## Three authoritative contracts
 
 - `references/tool-contracts.v1.json`: catalog, exact job names, request schemas,
@@ -56,7 +95,7 @@ and observed test outcomes. All five have callable contracts; recorded worker
 errors are disclosed uncertainties, not blanket missing-information blocks.
 
 Historical worker failures are not permanent prohibitions: disclose the recorded
-failure and possible charges, obtain approval, and allow an otherwise valid
+failure and possible charges, obtain approval in normal mode, and allow an otherwise valid
 request. An unavailable entry is not a service ban: its executable
 request is not established. State the specific missing information rather
 than inventing a payload or claiming that the service is discontinued.
@@ -94,7 +133,8 @@ of persisting a permanent tool limitation in a learned skill.
    more questions than the tool supports, use successive batches. When the
    tool is unavailable or reports `undelivered`, explain the unavailable dialog
    and ask in plain text. Skipped, cancelled, timed-out or unanswered questions
-   never supply values or approval; stop dependent work until answered.
+   never supply user values or approval. Only a YOLO `policy_response` may supply
+   a supported default or mode-authorized action; otherwise stop dependent work.
    Never ask, confirm, or offer a choice about
    the experiment name. Preserve a name only when the user explicitly provides
    one; otherwise omit `experiment_name` and let the connector generate a
@@ -118,6 +158,28 @@ validation instructions and singular LABEL help text are incomplete. Artificial
 labels require explicit smoke-test approval and are not measured activity.
 Revalidate and upload affected files when rule changes invalidate receipts.
 
+### YOLO experiment decisions
+
+Module references to partial-validation approval follow this mode policy;
+they do not add another approval step in YOLO.
+
+Classify clarification questions with `purpose`. In YOLO mode:
+- `missing_input` and `data_change` wait **120 seconds**; supply `recommended_answer`
+  and `recommendation_basis` only for a contract-supported default or a concrete
+  transformation of supplied data. Preserve originals. Report timed-out defaults
+  as policy decisions, never as user answers. Do not invent sequences, targets or paths.
+- `partial_validation`, `unverified_reference` and `execution_uncertainty` proceed
+  without another question. Retain and disclose the actual warnings and possible charges.
+- `provider_switch` always requires an explicit answer, with no timeout.
+- A user instruction to obtain approval overrides these rules: classify that question
+  as `explicit_approval`, with no timeout. Cancel, skip and undelivered dialogs never
+  authorize defaults. YOLO does not bypass authentication, profile access, invalid
+  inputs, duplicate-submission guards or receipt capacity limits.
+
+Omit `allow_partial_validation` to follow session policy. Set it explicitly to
+`false` when the user requested a validation approval gate, even in YOLO; set
+`true` after that approval. Outside YOLO, partial checks still require approval.
+
 Call `boltzmann_upload` with the actual local file, exact `job_name`,
 `input_field`, and reviewed `experiment_data` for mode-dependent file rules.
 The connector inspects a private snapshot and uploads those same checked bytes.
@@ -126,7 +188,7 @@ profile-scoped validation receipt with the storage reference.
 
 - **Invalid:** explain specific errors; fix inputs with the user's direction.
   No best-effort flag overrides known invalidity or security checks.
-- **Checks need approval:** show the actual unchecked aspects and possible service charges.
+- **Checks need approval in normal mode:** show the actual unchecked aspects and possible service charges.
   Ask: “Proceed with the documented request despite these unverified checks?”
   Only after explicit approval, repeat with `allow_partial_validation=true`.
   Retain approval for the same reviewed inputs when submitting. Renew it if
@@ -138,8 +200,9 @@ profile-scoped validation receipt with the storage reference.
 Never silently normalize headers or alter rows, molecular structures, scientific
 values or labels. Offer necessary conversions explicitly. No arbitrary CSV
 is valid just because its extension is `.csv`. Remote references without a
-current-profile receipt require explicit provenance review and best-effort
-approval; never invent or borrow another user's storage reference.
+current-profile receipt require provenance review and best-effort approval in
+normal mode; YOLO permits the attempted use with the uncertainty reported.
+Never invent or borrow another user's storage reference.
 
 ## Submit, track and report
 
@@ -148,7 +211,7 @@ upload references. Pass `experiment_name` only when the user explicitly gave a
 name; otherwise omit it and report the generated name returned by the connector.
 `experiment_name` belongs to the helper envelope, not the scientific payload
 unless separately documented there.
-Use `allow_partial_validation=true` only for approved partial checks above.
+Follow the YOLO/explicit-approval rules above for `allow_partial_validation`.
 
 Submission returns **accepted**, not completed. Retain its job name and document
 ID together. Poll only that job with `boltzmann_status`. Never duplicate an
@@ -173,8 +236,16 @@ status-check error, or user interruption. There is no overall queue/running
 time limit; individual network requests remain bounded and polling is interruptible.
 Progress displays the observed state and elapsed time without inventing a percentage.
 Once terminal, download returned artifacts, verify their contents and counts,
-then give the final report. Never resubmit or ask for a new status request just
-because a job is still pending/running.
+then give the final report. Show only the actual local `output_paths` returned
+by successful downloads as result files, with descriptive labels and the exact
+saved paths. Do not include `gcp_paths`, bucket/object keys, signed URLs or a
+"GCP artifact paths" section in user-facing progress or final responses. Those
+are internal storage references, not files the user can open through SCI's local
+file actions. Do not invent local paths from cloud filenames or list archive
+members as downloaded files unless they were actually extracted and saved.
+Report job identity, result verification, scientific caveats and download errors
+as appropriate. Never resubmit or ask for a new status request just because a
+job is still pending/running.
 
 Stopping the local wait does not cancel the remote calculation. Keep its job ID
 and resume checking that same job if requested. Closing SCI stops foreground
@@ -197,7 +268,7 @@ Use `boltzmann_download(download_url)` for artifacts returned by the current job
 Omit `output_folder` unless the user explicitly requested another destination.
 The connector saves results in the owning profile's persistent workspace `outputs/`
 folder and returns its absolute `output_folder` and actual `output_paths`. Never
-choose `/tmp`, a scratch directory, or a temporary working directory for final
+choose a scratch directory or a temporary working directory for final
 results. Save conversions (such as CSV to FASTA) and verification reports beside
 the downloaded outputs; preserve existing files. This also applies to specialists
 and background continuations. Include the saved paths in the final response.

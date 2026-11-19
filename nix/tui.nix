@@ -4,6 +4,8 @@ sciNpmLib.buildNpmPackage {
   dirs = [
     "ui-tui"
     "apps/shared"
+    "sci_cli/data/science-terminal-art.json"
+    "sci_cli/data/boltzmann-spin.json"
     "scripts/build/tui.mjs"
     "scripts/build/freshness.mjs"
     "scripts/build/frontend-common.mjs"

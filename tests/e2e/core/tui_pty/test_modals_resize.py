@@ -98,14 +98,14 @@ def _scenario(root, victim) -> object:
         cells.phase = "clarify"
         # 1. clarify card open across a shrink and a grow, answered afterwards.
         tui.submit("pick a colour mq1")
-        tui.wait_for("1. red")
+        tui.wait_for("● red")
         for cols in (90, 130):
             tui.resize(cols)
             tui.wait_quiet(1.0)
         cells.add("clarify_card_survives_resize",
-                  _visible_once(tui, ["ask 1 question", f"▸ {QUESTION}", "1. red", "2. blue"]), tui.dump())
+                  _visible_once(tui, ["ask 1 question", f"▸ {QUESTION}", "● red", "○ blue"]), tui.dump())
         tui.key("Down")
-        tui.wait_for(lambda t: "▸ 2. blue" in t, history=False)
+        tui.wait_for(lambda t: "● blue" in t, history=False)
         tui.key("Enter")
         tui.wait_replies(1)
         results = _tool_results(llm)
@@ -131,7 +131,7 @@ def _scenario(root, victim) -> object:
         for cols in (140, 85):
             tui.resize(cols)
             tui.wait_quiet(1.0)
-        problem = _visible_once(tui, ["approval required", "1. Allow once", "4. Deny"])
+        problem = _visible_once(tui, ["approval required", "Allow once", "Deny"])
         if not victim.exists():
             problem += " / the dangerous command ran before anyone answered"
         cells.add("approval_card_survives_resize", problem, tui.dump())

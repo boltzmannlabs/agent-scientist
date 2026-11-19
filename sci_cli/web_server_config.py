@@ -823,6 +823,9 @@ def _apply_model_assignment_sync(
     from sci_cli.config import load_config
     cfg = load_config()
     if scope == "main":
+        if reasoning_effort is not _UNSET:
+            effort = _normalize_aux_reasoning_effort(reasoning_effort)
+            cfg.setdefault("agent", {})["reasoning_effort"] = effort
         return _apply_main_assignment_sync(cfg, provider, model, base_url, api_key, prepared)
     return _apply_aux_assignment_sync(cfg, provider, model, task, base_url, api_key, reasoning_effort)
 

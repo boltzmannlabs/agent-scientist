@@ -58,6 +58,43 @@ def _start_batch(cli, questions):
     return thread, result
 
 
+def test_yolo_deadline_reaches_real_cli_dialog_and_clears_after_timeout(monkeypatch):
+    from sci_cli.cli_modal_mixin import _TIMED_OUT
+    from tools.clarify_tool import clarify_tool
+    from tools.approval import enable_session_yolo, disable_session_yolo
+    from tools.approval_context import set_current_session_key, reset_current_session_key
+
+    cli = _make_cli_stub()
+    cli._ring_bell = MagicMock()
+    deadlines = []
+
+    def poll(*args, **kwargs):
+        remaining = None if cli._clarify_deadline is None else cli._clarify_deadline - time.monotonic()
+        deadlines.append(remaining)
+        if remaining is not None:
+            assert 118 < remaining <= 120
+            return _TIMED_OUT
+        cli._clarify_state["answers"] = {"q0": "Keep current provider"}
+        return {}
+
+    cli._poll_modal_queue = poll
+    enable_session_yolo("cli-yolo-dialog-test")
+    token = set_current_session_key("cli-yolo-dialog-test")
+    try:
+        response = json.loads(clarify_tool([{"question": "Count?", "purpose": "missing_input",
+                                            "recommended_answer": "20", "recommendation_basis": "Contract default"}],
+                                          cli._clarify_callback))
+        assert response["responses"][0]["status"] == "defaulted"
+        assert cli._clarify_state is None
+        response = json.loads(clarify_tool([{"question": "Change provider?", "purpose": "provider_switch"}],
+                                          cli._clarify_callback))
+        assert response["responses"][0]["user_response"] == "Keep current provider"
+        assert deadlines[-1] is None
+    finally:
+        reset_current_session_key(token)
+        disable_session_yolo("cli-yolo-dialog-test")
+
+
 class TestClarifyBatchPanel:
     def test_closed_choices_hide_other_and_reject_its_keyboard_paths(self):
         cli = _make_cli_stub()

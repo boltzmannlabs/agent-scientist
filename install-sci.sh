@@ -49,7 +49,7 @@ fi
 printf 'Agent Scientist installation\nSource: %s\n' "$source_dir"
 stage="installing runtime and dependencies"
 if [ "$setup" = false ]; then engine_options+=(--non-interactive); fi
-bash "$source_dir/setup-sci.sh" --user-install "${engine_options[@]}"
+bash "$source_dir/setup-sci.sh" --user-install ${engine_options[@]+"${engine_options[@]}"}
 
 stage="checking the installed CLI"
 installed_cli="$source_dir/.sci/bin/sci"

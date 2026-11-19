@@ -91,7 +91,7 @@ def review_text(item):
     _, selected = tool_menu({}, item.tools)
     use = ('explicitly by name and automatically for matching tasks' if item.automatic else
            'explicit requests only (legacy setting; review and save to enable both)')
-    children = ('\nExisting child-specialist grants: ' + ', '.join(item.children)) if item.children else ''
+    children = ('\nApproved child specialists: ' + ', '.join(item.children)) if item.children else ''
     return (f'Specialist: {item.name} — profile: {profile_label()}\nPurpose: {item.purpose}\nOutput: {item.output}\n'
             f'Subagent-only skills: {", ".join(item.private_skills) or "none"}\n'
             f'Subagent-only tools: {", ".join(item.private_tools) or "none"}\n'
@@ -180,9 +180,11 @@ def edit(cli, ui, *, name=None, existing=None):
         action = ui.choose('Review specialist', ['Save and enable for the next conversation', 'Edit purpose/output',
                           'Edit skills/tools', 'Use standard tools', 'Additional instructions', 'References', 'Add capabilities',
                           'Add for this subagent only', 'Review installed private additions', 'Remove private capability',
-                          'Rename', 'Discard draft', 'Cancel'])
+                          'Approved children', 'Rename', 'Discard draft', 'Cancel'])
         if action == 'Save and enable for the next conversation':
             try:
+                from sci_cli.specialist_children import review_limits, apply_limits
+                depth = review_limits(ui, item)
                 item = prepare_references(item, ui)
                 if item.extension_id:
                     from agent.specialist_extensions import extension_home, fingerprint
@@ -192,6 +194,13 @@ def edit(cli, ui, *, name=None, existing=None):
                 ui.show(f'Could not save: {exc}. Draft retained. Review, rename, or cancel; nothing was overwritten.')
                 continue
             pending.pop(item.name, None)
+            if depth is not None:
+                try:
+                    apply_limits(depth)
+                except (ValueError, OSError) as exc:
+                    ui.show(f'Saved {saved.name}, but nested delegation settings could not be saved: {exc}. '
+                            'Runtime still enforces the saved profile limits. Reopen /Update_subagent to finish setup; no job was submitted.')
+                    return saved
             ui.show(f'Saved {saved.name}. Explicit and automatic use enabled for the next conversation. '
                     f'Use /new, then /subagent run {saved.name} <task>, or ask a matching question. '
                     'Current prompt/tools unchanged. No job was submitted.')
@@ -200,6 +209,13 @@ def edit(cli, ui, *, name=None, existing=None):
             pending.pop(item.name, None)
             ui.show('Draft discarded. Previously saved specialists are unchanged.')
             return
+        if action == 'Approved children':
+            from sci_cli.specialist_children import select_children
+            try:
+                item = select_children(ui, item)
+            except (ValueError, OSError) as exc:
+                ui.show(f'Child selection not saved: {exc}. Your previous grants and draft are unchanged.')
+            continue
         if action == 'References':
             item = _sources(cli, ui, item, existing)
         elif action == 'Review installed private additions':

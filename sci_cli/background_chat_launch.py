@@ -51,20 +51,30 @@ def launch_interactive(args, *, use_tui=False):
     try:
         session_id = getattr(args, "resume", None)
         worker = find_view_worker(session_id) if session_id else None
+        profile_switch = getattr(args, "profile_switch", False)
         ui = StartupRecoveryUI()
         takeover = bool(worker and worker["attached"])
-        if takeover:
+        if takeover and not profile_switch:
             ui.choose("Move the viewer here? The same task continues; the other terminal disconnects.",
                       ("Cancel", "Move viewer"))
         if not worker:
-            if session_id and not prepare_resume(session_id, ui):
+            if session_id and profile_switch:
+                from sci_cli.active_sessions import active_session_registry_snapshot
+                if any(owner.get("session_id") == session_id
+                       for owner in active_session_registry_snapshot(strict=True)):
+                    # Foreground owners cannot hand off a viewer. Keep their work
+                    # alive and open a separate chat instead of asking to kill them.
+                    ui.show("Opening a new chat in this profile; its previous conversation is still open in another runtime.")
+                    session_id = None
+            elif session_id and not prepare_resume(session_id, ui):
                 return True
             ensure_server()
             size = os.get_terminal_size()
             worker = request("start", session_id=session_id, cwd=os.getcwd(),
                              cols=size.columns, rows=size.lines, launch_args=worker_arguments(args),
                              terminal_env=terminal_environment())
-        attach(worker["id"], takeover=takeover, view_session=worker.get("view_session"))
+        attach(worker["id"], takeover=takeover, view_session=worker.get("view_session"),
+               refresh=not profile_switch)
     except (Cancelled, KeyboardInterrupt, EOFError):
         print("Connection cancelled. No task was restarted.")
     except (OSError, ValueError, RuntimeError) as exc:

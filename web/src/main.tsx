@@ -3,6 +3,7 @@ import { BrowserRouter } from "react-router";
 import "./index.css";
 import App from "./App";
 import { BrandEntrance } from "./components/BrandEntrance";
+import { DashboardReady } from "./components/DashboardReady";
 import { SystemActionsProvider } from "./contexts/SystemActions";
 import { I18nProvider } from "./i18n";
 import { exposePluginSDK } from "./plugins";
@@ -13,12 +14,17 @@ import { SCI_BASE_PATH } from "./lib/api";
 // can access React, components, etc. immediately.
 exposePluginSDK();
 
-createRoot(document.getElementById("root")!).render(
+createRoot(document.getElementById("root")!, {
+  onUncaughtError(error) {
+    console.error("Dashboard rendering failed", error);
+    window.dispatchEvent(new Event("sci:dashboard-error"));
+  },
+}).render(
   <BrowserRouter basename={SCI_BASE_PATH || undefined}>
     <I18nProvider>
       <ThemeProvider>
         <SystemActionsProvider>
-          <BrandEntrance><App /></BrandEntrance>
+          <BrandEntrance><App /><DashboardReady /></BrandEntrance>
         </SystemActionsProvider>
       </ThemeProvider>
     </I18nProvider>

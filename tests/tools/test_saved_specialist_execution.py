@@ -1,4 +1,8 @@
 """Real child construction + HTTP provider adapter + transcript/receipt, with a loopback model fixture."""
+
+import pytest
+
+
 from contextlib import contextmanager
 from dataclasses import replace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -9,6 +13,8 @@ import threading
 
 from agent.specialist_store import Specialist, save
 from sci_constants import get_sci_home
+
+pytestmark = pytest.mark.usefixtures("released_sci_version")
 
 REPORT = 'Protocol: FIXTURE-V1\n\n1. Calculation\n\n| Check | Result |\n|---|---|\n| 2 + 2 = 4 | Correct |\n\n2. Verdict\nComplete.'
 

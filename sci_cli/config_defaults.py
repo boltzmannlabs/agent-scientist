@@ -1379,10 +1379,9 @@ DEFAULT_CONFIG = {
         # Orchestrator role controls. Depth floored at 1, no ceiling; each level multiplies cost.
         "max_spawn_depth": 1,  # 1 = flat, 2 = orchestrator→leaf, 3+ = deeper
         "orchestrator_enabled": True,  # kill switch for role="orchestrator"
-        # Total subagents a finite one-shot run (sci chat -q / --oneshot) may spawn; 0 = unlimited.
-        # Each child re-pays a cold system prompt and re-explores the repo, and one-shot spawns are mostly
-        # "review my own work" rather than parallel work (agent/oneshot_footprint.py).
-        "oneshot_max_children": 2,
+        # null: cap incidental temporary helpers at 2, while reviewed saved specialists use
+        # their existing hierarchy/iteration limits. An explicit integer caps all children; 0 = unlimited.
+        "oneshot_max_children": None,
         # Subagent threads ALWAYS resolve approvals non-interactively (the parent TUI owns stdin;
         # input() from a worker would deadlock). false = auto-deny, true = auto-approve "once"; both
         # log a warning audit line. true only for trusted batch work.
@@ -2709,7 +2708,7 @@ DEFAULT_CONFIG = {
         # Extra ports detection probes for an external llama-server (besides 8080).
         "detect_ports": [],
     },
-    "_config_version": 51,  # Config schema version - bump this when adding new required fields
+    "_config_version": 52,  # Config schema version - bump this when adding new required fields
 }
 
 

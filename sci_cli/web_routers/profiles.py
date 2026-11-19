@@ -45,7 +45,7 @@ from starlette.concurrency import run_in_threadpool
 from sci_cli.web_models import (
     ProfileCreate, ProfileActiveUpdate, ProfileExport, ProfileImport, ProfileRename,
     ProfileSoulUpdate, ProfileDescriptionUpdate, ProfileModelUpdate, ProfileDescribeAuto,
-    SessionPrScanBody)
+    SessionPrScanBody, NativeScienceProfileCreate, NativeScienceMcpDiscover)
 from sci_cli.web_server_profiles import _config_profile_scope, _sci_home_scope
 
 # Same logger the handlers used before extraction (identical logger object).
@@ -798,6 +798,31 @@ def _read_profiles():
 @router.get("/api/profiles")
 async def list_profiles_endpoint():
     return await _read_profiles()
+
+
+@router.get("/api/profiles/science/options")
+async def native_science_profile_options():
+    """Read-only mirror of the CLI native science-profile capability review."""
+    from sci_cli.native_profile_web import options
+    with _profile_errors("GET /api/profiles/science/options failed", bad_request=(ValueError,)):
+        return await run_in_threadpool(options)
+
+
+@router.post("/api/profiles/science/discover")
+async def native_science_profile_discover(body: NativeScienceMcpDiscover):
+    """Run an approved MCP handshake/list-tools check; no business tools are called."""
+    from sci_cli.native_profile_web import discover
+    with _profile_errors("POST /api/profiles/science/discover failed", bad_request=(ValueError,)):
+        return await run_in_threadpool(discover, body.name, body.approve_network, body.approve_local_execution)
+
+
+@router.post("/api/profiles/science")
+async def create_native_science_profile(body: NativeScienceProfileCreate):
+    """Create the same isolated native science profile as /Create_profile."""
+    from sci_cli.native_profile_web import create_profile
+    with _profile_errors("POST /api/profiles/science failed", not_found=(),
+                         bad_request=(ValueError, FileExistsError, FileNotFoundError)):
+        return await run_in_threadpool(create_profile, body)
 
 
 @router.post("/api/profiles")

@@ -63,3 +63,20 @@ def test_oneshot_delegation_budget_charges_total_children_then_refuses(oneshot, 
     # Interactive sessions are never charged, whatever the count.
     monkeypatch.delenv("SCI_SINGLE_QUERY_SESSION")
     assert delegate_tool._oneshot_spawn_budget(parent, 50) is None
+
+
+def test_reviewed_specialists_are_not_limited_by_the_default_temporary_agent_budget(oneshot, monkeypatch):
+    from types import SimpleNamespace
+    from tools import delegate_tool
+    monkeypatch.setattr(delegate_tool, '_get_oneshot_max_children', lambda: None)
+    parent = SimpleNamespace()
+    for name in ('reference', 'runner', 'auditor'):
+        assert delegate_tool._oneshot_spawn_budget(parent, 1, tasks=[{'specialist': name}]) is None
+    assert delegate_tool._oneshot_spawn_budget(parent, 2, tasks=[{}, {}]) is None
+    assert delegate_tool._oneshot_spawn_budget(parent, 1, tasks=[{}])
+    # An explicitly configured cap still governs saved specialists.
+    monkeypatch.setattr(delegate_tool, '_get_oneshot_max_children', lambda: 2)
+    parent = SimpleNamespace()
+    assert delegate_tool._oneshot_spawn_budget(parent, 2, tasks=[{'specialist': 'a'}, {'specialist': 'b'}]) is None
+    error = delegate_tool._oneshot_spawn_budget(parent, 1, tasks=[{'specialist': 'auditor'}])
+    assert error and 'oneshot_max_children' in error

@@ -66,3 +66,28 @@ def test_store_rejects_conflicts_malformed_paths_and_copies_without_grants(tmp_p
         delete('reviewer', tmp_path, expected_revision='stale')
     delete('reviewer', tmp_path, expected_revision=item.revision)
     assert 'reviewer' not in inventory(tmp_path)[0]
+
+
+def test_deadlines_migrate_only_the_old_implicit_default(tmp_path):
+    from dataclasses import asdict
+    defaults = Specialist('worker', 'Do useful work')
+    assert save(defaults, tmp_path).timeout_seconds == 0
+    legacy = {**asdict(defaults), 'version': 1, 'timeout_seconds': 900}
+    assert Specialist.parse(legacy).timeout_seconds == 0
+    assert Specialist.parse({**legacy, 'timeout_seconds': 120}).timeout_seconds == 120
+    chosen = Specialist.parse({**legacy, 'version': 2})
+    assert chosen.timeout_seconds == 900
+    assert Specialist.parse(asdict(chosen)) == chosen
+    from sci_cli.subagent_package_install import definition_digest
+    package = replace(defaults, version=1, timeout_seconds=900,
+                      package_info={'state': 'ready', 'missing': []})
+    packaged = {**asdict(package), 'package_info': {**package.package_info, 'definition_digest': definition_digest(package)}}
+    migrated = Specialist.parse(packaged)
+    assert migrated.package_info['definition_digest'] == definition_digest(migrated)
+    edited = Specialist.parse({**packaged, 'purpose': 'A local edit'})
+    assert edited.package_info['definition_digest'] != definition_digest(edited)
+    with pytest.raises(ValueError, match='version'):
+        Specialist.parse({**asdict(defaults), 'version': True})
+    for invalid in (-1, True, '0'):
+        with pytest.raises(ValueError, match='timeout_seconds'):
+            Specialist.parse({**asdict(defaults), 'timeout_seconds': invalid})

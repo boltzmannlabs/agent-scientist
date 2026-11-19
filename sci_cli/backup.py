@@ -2014,6 +2014,9 @@ def restore_config_model_settings_if_rewritten(
         live_val = _get_config_path_value(live, dotted)
         if live_val == snap_val:
             continue
+        from sci_cli.config_migration_boltzmann import is_expected_endpoint_upgrade
+        if is_expected_endpoint_upgrade(snap, live, dotted):
+            continue
         _set_config_path_value(live, dotted, snap_val)
         restored_keys.append(".".join(dotted))
 

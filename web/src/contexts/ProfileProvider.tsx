@@ -130,6 +130,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     (name: string) => {
       setManagementProfile(name);
       setProfileState(name);
+      setProfiles((previous) => previous.includes(name) || !name
+        ? previous
+        : [...previous, name]);
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
