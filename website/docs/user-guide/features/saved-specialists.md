@@ -413,6 +413,36 @@ handoff supplies the child's responsibility; it cannot replace that original spe
 Dispatch rejects launching a specialist alongside its descendants. Independent parallel
 specialists remain supported, including legitimate comparison/review assignments.
 
+Give a selected lead the complete workflow once. The lead sequences its children and
+collects the final report; Main should not split that workflow into new assignments.
+Explicit file paths supplied in the original request are registered before the first
+ordinary delegation. Descendants can hand the unchanged files onward through
+`tasks[].artifacts` without declaring a scientific submission contract.
+
+On the local execution backend, code-generated files use the same handoff records as
+native file writes. Print one JSON object with `files_modified` containing absolute
+output paths, alongside the calculated results, for example:
+
+```python
+output_path.write_text(json.dumps(findings), encoding="utf-8")
+print(json.dumps({"findings": findings, "files_modified": [str(output_path.resolve())]}))
+```
+
+SCI verifies the files and computes their hashes before recording them. Paths mentioned
+only in prose are not registered, and changed, missing or unrelated files remain refused
+at handoff. This declaration does not grant new file or execution permissions. If recording
+fails, the tool returns a warning; retain the output and reconcile it instead of rerunning
+the calculation. A file explicitly returned before a later Python exception is retained
+with the failed execution status; its availability does not establish successful analysis.
+Display truncation and stderr do not discard file declarations. Resume with the existing
+assignment ID and exact recorded paths. Remote
+code outputs are not registered by reading a same-named file on the host filesystem.
+For recovery, prefer `assignment={"resume": "<saved-id>"}` alone. Redundant input
+paths may confirm unchanged files already belonging to that assignment; they do not
+become new frozen inputs. Empty or identical parameter assertions retain the saved
+parameters and limits. Changed files, foreign artifacts and changed execution settings
+remain rejected before delegation.
+
 For an explicit saved-specialist command or its equivalent named-root request, an omitted
 `tasks[].specialist` is filled with that requested name before dispatch. The ordinary saved
 definition, permissions and run-receipt path then apply. An explicitly different specialist
