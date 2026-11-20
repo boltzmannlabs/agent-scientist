@@ -95,23 +95,21 @@ packages. `tests/validation.json` records only checks actually performed on this
 contribution. Integrated evidence stays pending until the merged dev revision is
 actually tested. See that file for runtime blockers and untested cases.
 
-## Current local test result
+## Local testing and integration status
 
-This is a draft contribution. Fresh renamed installations, profile isolation,
-missing-child/setup handling, cancellation/retry and protected managed updates
-were exercised. Actual GLM team-to-reader delegation occurred for both fixtures,
-but neither produced the required three artifacts. The single-query Python
-approval guard refused the first fixture's calculation. The final second run
-reported repeated gateway output truncation, then was cancelled through SIGINT;
-both team and reader receipts became interrupted. No runtime count pass or
-team-to-reviewer handoff is claimed.
+This is a draft contribution. The original headless tests on the earlier dev
+revision encountered Python approval refusal and provider output truncation;
+they did not complete either fixture. Those historical observations remain in
+`tests/validation.json` and are not successful runtime evidence. Unattended
+Python execution still requires the normal authorization path.
 
-The reader's missing-input test requested a CSV with no tool calls or artifacts.
-The reviewer's missing-report test requested the report and produced no artifact,
-but it continued inspecting files after Python was refused: that stop/no-search
-check failed despite the package instructions. Review before acceptance.
+The current local checks use the updated dev runtime, the normal reviewed
+recipient installation and interactive SCI with glm through boltzmann_models.
+The latest evidence records the actual reader, reviewer and lead results for
+each fixture, including artifact checks and limitations. No approval defaults
+are disabled. Missing inputs must still be requested and a refused execution
+must be reported rather than bypassed.
 
-The contributor did not change approval defaults, reconstruct results manually
-or modify SCI core. Exact per-role observations, run IDs and untested cases are
-in `tests/validation.json`; local status is blocked and integrated status pending.
-No merged-dev revision has been tested.
+See `tests/validation.json` for observed results and source revisions. Integrated
+evidence stays pending until this package PR is merged into dev and that exact
+merged revision is installed and tested. No release or promotion is claimed.
