@@ -12,6 +12,6 @@ test_unknown_context_not_clearance (__main__.Tests.test_unknown_context_not_clea
 test_unseen_cell_not_invented (__main__.Tests.test_unseen_cell_not_invented) ... ok
 
 ----------------------------------------------------------------------
-Ran 12 tests in 0.003s
+Ran 12 tests in 0.004s
 
 OK

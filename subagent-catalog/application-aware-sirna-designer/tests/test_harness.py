@@ -1,4 +1,7 @@
 """Synthetic metadata/artifact QA only. No guide design, scientific model or invented efficacy."""
+import sys
+
+sys.dont_write_bytecode = True  # imported by CI runners; never leave bytecode in the package tree
 import hashlib
 import importlib.util
 import json

@@ -1,4 +1,7 @@
 """Unit tests: read-scope guard v2 (authorization derives only from assignment text)."""
+import sys
+
+sys.dont_write_bytecode = True  # imported by CI runners; never leave bytecode in the package tree
 import json
 import subprocess
 import sys

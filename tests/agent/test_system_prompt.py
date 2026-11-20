@@ -525,6 +525,7 @@ def test_coding_prompt_orders_shared_context_before_workspace(monkeypatch):
     monkeypatch.setattr(system_prompt, "SCI_AGENT_HELP_GUIDANCE", "HELP")
     monkeypatch.setattr(system_prompt, "SCI_AGENT_HELP_GUIDANCE_NO_SKILLS", "HELP")
     monkeypatch.setattr(system_prompt, "STEER_CHANNEL_NOTE", "STEER")
+    monkeypatch.setattr("agent.reporting.RESULT_REPORTING_GUIDANCE", "REPORTING")
     monkeypatch.setattr(system_prompt, "get_sci_home", lambda: Path("/sci"))
 
     # Production renders this as str(get_sci_home()) + "/profiles/<name>/",
@@ -542,6 +543,7 @@ def test_coding_prompt_orders_shared_context_before_workspace(monkeypatch):
         "IDENTITY",
         "HELP",
         "STEER",
+        "REPORTING",
         "CODING_STABLE",
         "SYSTEM_MESSAGE",
         "CONTEXT_FILES",
@@ -569,7 +571,9 @@ def test_coding_prompt_orders_shared_context_before_workspace(monkeypatch):
         prompt = build_system_prompt(agent, system_message="SYSTEM_MESSAGE")
 
     assert prompt == expected
-    assert agent._cached_system_prompt_static == "\n\n".join(expected.split("\n\n")[:4])
+    # The stable tier grew by one part when RESULT_REPORTING_GUIDANCE joined it
+    # (IDENTITY, HELP, STEER, REPORTING, CODING_STABLE) ahead of the workspace tier.
+    assert agent._cached_system_prompt_static == "\n\n".join(expected.split("\n\n")[:5])
 
 
 class TestTelegramRichMessagesHint:

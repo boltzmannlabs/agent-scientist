@@ -35,6 +35,6 @@ test_sirna_is_not_cas13_and_safety_still_takes_precedence (__main__.RequestAndDe
 test_unhashable_task_and_mode_are_rejected (__main__.RequestAndDependencyTests.test_unhashable_task_and_mode_are_rejected) ... ok
 
 ----------------------------------------------------------------------
-Ran 35 tests in 0.326s
+Ran 35 tests in 0.371s
 
 OK

@@ -225,6 +225,7 @@ def test_unreadable_schema_without_cli_names_the_sqlite3_requirement(
     import sci_cli.session_lost_and_found as laf
 
     monkeypatch.setattr(laf, "find_sqlite3_cli", lambda: None)
+    monkeypatch.setattr(laf, "_last_cli_refusal", {})  # stale cache from earlier tests changes the message
     with pytest.raises(SessionRecoverySourceError) as excinfo:
         recover_session_database(
             source,

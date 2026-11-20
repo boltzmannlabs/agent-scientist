@@ -104,7 +104,7 @@ def _prepare(parent, tasks, contract):
         if not isinstance(identity, str) or not re.fullmatch(r'[a-f0-9]{32}', identity):
             raise ValueError('resume must name an existing assignment ID from this profile\'s run history.')
         restored = Assignment(identity, str(get_sci_home().resolve()), '', '')
-        row = json.loads(_path(restored).read_text())
+        row = json.loads(_path(restored).read_text(encoding="utf-8-sig"))
         if row['assignment_id'] != identity:
             raise ValueError('Assignment evidence identity does not match.')
         parent._specialist_assignment = Assignment(identity, restored.home, row['request'], row['contract'])
@@ -149,7 +149,7 @@ def _prepare(parent, tasks, contract):
         if frozen == existing.contract:
             return
         path = _path(existing)
-        recorded = json.loads(path.read_text()).get('effects') if path.exists() else {}
+        recorded = json.loads(path.read_text(encoding="utf-8-sig")).get('effects') if path.exists() else {}
         if any(json.loads(existing.contract).values()) or any(row.get('kind') != 'artifact' for row in recorded.values()):
             raise ValueError('This assignment already has a frozen contract. Reuse it; do not change inputs mid-run.')
     assignment = Assignment(uuid4().hex, str(get_sci_home().resolve()), request, frozen)
@@ -184,7 +184,7 @@ def check_arguments(name, arguments):
                 or isinstance(expected, dict) and set(expected) == {'$input'}):
             if rows is None:
                 location = _path(assignment)
-                rows = list(json.loads(location.read_text())['effects'].values()) if location.exists() else []
+                rows = list(json.loads(location.read_text(encoding="utf-8-sig"))['effects'].values()) if location.exists() else []
             return bound_argument(expected, actual, tool=name, path=path, arguments=arguments,
                                   contract=contract, effects=rows)
         if isinstance(expected, dict):
@@ -231,7 +231,7 @@ def verified_artifacts(assignment, paths):
     if not isinstance(paths, list) or not all(isinstance(p, str) for p in paths):
         raise ValueError('artifacts must be a list of exact input or output file paths.')
     path = _path(assignment)
-    rows = json.loads(path.read_text())['effects'].values() if path.exists() else []
+    rows = json.loads(path.read_text(encoding="utf-8-sig"))['effects'].values() if path.exists() else []
     outputs = {row['path']: row['sha256'] for row in rows if row.get('kind') == 'artifact'}
     # An input recorded again as an artifact cannot replace its original frozen digest.
     outputs.update(json.loads(assignment.contract).get('inputs', {}))
@@ -274,7 +274,7 @@ def record_effect(identity, *, replace_artifact=False, **facts):
     from sci_cli.plugins_state import _locked_plugin_state
     path = _path(assignment)
     with _locked_plugin_state(path):
-        row = json.loads(path.read_text()) if path.exists() else {'assignment_id': assignment.id,
+        row = json.loads(path.read_text(encoding="utf-8-sig")) if path.exists() else {'assignment_id': assignment.id,
             'request': assignment.request, 'contract': assignment.contract, 'effects': {}}
         previous = row['effects'].get(identity, {})
         if previous.get('kind') == 'artifact' and previous.get('sha256') != facts.get('sha256'):
@@ -313,7 +313,7 @@ def evidence(child):
         return {}
     try:
         path = _path(assignment)
-        row = json.loads(path.read_text()) if path.exists() else {'effects': {}}
+        row = json.loads(path.read_text(encoding="utf-8-sig")) if path.exists() else {'effects': {}}
         return {'assignment_id': assignment.id, 'recorded_effects': list(row['effects'].values()),
                 'recovery_note': 'Assignment-wide evidence, including sibling/descendant work. A timeout or empty '
                                  'record does not prove no remote side effects. Reconcile pending/unknown attempts; '
