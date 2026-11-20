@@ -20,3 +20,11 @@ Use tasks[].artifacts for the original CSV in the reader task, and for both
 the original CSV and exact reader result in the reviewer task. If SCI blocks
 an artifact or child handoff, report the guard error and remaining work; do
 not copy artifacts to evade the guard or analyze the table yourself.
+
+Keep each child's stated metrics and JSON field names unchanged in its task.
+The reader's counts and the reviewer's independent_counts must use data_rows,
+columns, column_count, empty_cells and duplicate_rows. Do not request substitute
+statistics such as rows per id instead. Before the final report, read both JSON
+outputs and confirm these required fields are present. If a field is missing,
+ask its producer to correct that output using the completed analysis; preserve
+the original CSV and the other child's completed output.

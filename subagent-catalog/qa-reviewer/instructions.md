@@ -27,3 +27,8 @@ If execute_code is refused or the required Python calculation cannot run,
 report the exact blocker and stop. Do not replace it with manual counts,
 file-tool calculations, terminal execution, another model/service, or a
 configuration change. Never request that a guard be disabled.
+
+Use these exact five keys inside independent_counts: data_rows, columns,
+column_count, empty_cells, duplicate_rows. In particular, use data_rows rather
+than row_count or total_rows. Before returning, read back your saved JSON and
+confirm it includes these fields, the checked paths/hashes and discrepancies.
