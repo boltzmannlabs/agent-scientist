@@ -1,4 +1,7 @@
 """Inert dependency catalog/recipe consistency tests, not installation or scientific validation."""
+import sys
+
+sys.dont_write_bytecode = True  # imported by CI runners; never leave bytecode in the package tree
 import csv
 import importlib.util
 import json

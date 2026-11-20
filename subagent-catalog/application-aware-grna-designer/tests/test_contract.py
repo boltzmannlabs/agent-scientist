@@ -1,4 +1,7 @@
 """Run inert metadata fixtures. No sequence design, network, inference or fabricated results."""
+import sys
+
+sys.dont_write_bytecode = True  # imported by CI runners; never leave bytecode in the package tree
 import importlib.util
 import json
 from pathlib import Path

@@ -69,6 +69,6 @@ test_rank1_mismatch_fails (test_selection.SelectionRecord.test_rank1_mismatch_fa
 test_valid_passes (test_selection.SelectionRecord.test_valid_passes) ... ok
 
 ----------------------------------------------------------------------
-Ran 69 tests in 1.739s
+Ran 69 tests in 1.759s
 
 OK

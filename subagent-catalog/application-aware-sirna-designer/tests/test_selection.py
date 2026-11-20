@@ -1,4 +1,7 @@
 """Unit tests: selection record validator."""
+import sys
+
+sys.dont_write_bytecode = True  # imported by CI runners; never leave bytecode in the package tree
 import json
 import subprocess
 import sys

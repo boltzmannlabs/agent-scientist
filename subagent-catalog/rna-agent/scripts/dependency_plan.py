@@ -104,6 +104,8 @@ def bound_programs(leaf_name):
     candidates.append(str(Path.home() / ".sci"))
     path = next((Path(h) / "subagents" / f"{leaf_name}.json" for h in candidates
                  if (Path(h) / "subagents" / f"{leaf_name}.json").is_file()), None)
+    if path is None:
+        return {}  # no profile here has this leaf installed; fall back to host probing
     try:
         d = _json.loads(path.read_text(encoding="utf-8-sig"))
         resolved = (d.get("package_info") or {}).get("resolved") or {}
