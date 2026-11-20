@@ -52,10 +52,26 @@ def prepare(parent, tasks, contract=None):
         return _prepare(parent, tasks, contract)
 
 
+def _check_resume(assignment, contract):
+    """Redundant handoff assertions may confirm saved evidence, never replace it."""
+    if set(contract) - {'resume', 'inputs', 'tool_arguments', 'max_submissions'}:
+        raise ValueError('Resume accepts the saved assignment ID and optional unchanged input/parameter assertions only.')
+    original = json.loads(assignment.contract)
+    for key in ('tool_arguments', 'max_submissions'):
+        if contract.get(key, {}) not in ({}, original[key]):
+            raise ValueError('Resume cannot change saved execution parameters or limits. Pass assignment.resume only.')
+    if 'inputs' in contract:
+        verified_artifacts(assignment, contract['inputs'])
+
+
 def _prepare(parent, tasks, contract):
     policy = getattr(parent, '_specialist_policy', None)
     inherited = getattr(policy, 'assignment', None)
     if isinstance(inherited, Assignment):
+        if isinstance(contract, dict) and contract.get('resume') == inherited.id:
+            _check_resume(inherited, contract)
+            parent._specialist_assignment = inherited
+            return
         if contract is not None and contract != {'resume': inherited.id} and json.dumps(contract, sort_keys=True) != inherited.contract:
             raise ValueError('Children cannot replace the frozen assignment contract. Return the mismatch to the parent.')
         parent._specialist_assignment = inherited
@@ -94,11 +110,15 @@ def _prepare(parent, tasks, contract):
     if isinstance(existing, Assignment):
         if contract is None:
             return
-    contract = {} if contract is None else contract
-    if isinstance(contract, dict) and set(contract) == {'resume'}:
+    if contract is None:
+        from agent.specialist_inputs import approved_paths
+        supplied = approved_paths(SimpleNamespace(sources=(), source_manifest=''), request)
+        contract = {'inputs': [path for path in supplied if Path(path).is_file()]}
+    if isinstance(contract, dict) and 'resume' in contract:
         identity = contract['resume']
         if isinstance(existing, Assignment):
             if identity == existing.id:
+                _check_resume(existing, contract)
                 return
             raise ValueError('This turn already owns an assignment. Do not replace it with another assignment ID.')
         if not isinstance(identity, str) or not re.fullmatch(r'[a-f0-9]{32}', identity):
@@ -107,7 +127,9 @@ def _prepare(parent, tasks, contract):
         row = json.loads(_path(restored).read_text(encoding="utf-8-sig"))
         if row['assignment_id'] != identity:
             raise ValueError('Assignment evidence identity does not match.')
-        parent._specialist_assignment = Assignment(identity, restored.home, row['request'], row['contract'])
+        restored = Assignment(identity, restored.home, row['request'], row['contract'])
+        _check_resume(restored, contract)
+        parent._specialist_assignment = restored
         return
     if not isinstance(contract, dict) or set(contract) - {'inputs', 'tool_arguments', 'max_submissions'}:
         raise ValueError('assignment accepts inputs, tool_arguments and max_submissions only.')
@@ -149,9 +171,26 @@ def _prepare(parent, tasks, contract):
         if frozen == existing.contract:
             return
         path = _path(existing)
-        recorded = json.loads(path.read_text(encoding="utf-8-sig")).get('effects') if path.exists() else {}
-        if any(json.loads(existing.contract).values()) or any(row.get('kind') != 'artifact' for row in recorded.values()):
-            raise ValueError('This assignment already has a frozen contract. Reuse it; do not change inputs mid-run.')
+        from sci_cli.plugins_state import _locked_plugin_state
+        with _locked_plugin_state(path):
+            row = json.loads(path.read_text(encoding="utf-8-sig")) if path.exists() else {'effects': {}}
+            original = json.loads(existing.contract)
+            if original['tool_arguments'] or original['max_submissions'] or any(
+                    effect.get('kind') != 'artifact' for effect in row['effects'].values()):
+                raise ValueError('This assignment already has a frozen contract. Reuse it; do not change inputs mid-run.')
+            if any(pinned.get(p, digest) != digest for p, digest in original['inputs'].items()):
+                raise ValueError('A registered input changed. Preserve the original input bytes before continuing.')
+            pinned = {**original['inputs'], **pinned}
+            frozen = json.dumps({'inputs': pinned, 'tool_arguments': arguments, 'max_submissions': limits},
+                                sort_keys=True, allow_nan=False)
+            if len(frozen) > 64000:
+                raise ValueError('Assignment contract is too large; keep data in input files.')
+            assignment = Assignment(existing.id, existing.home, existing.request, frozen)
+            if path.exists():
+                row['contract'] = frozen
+                atomic_json_write(path, row, mode=0o600)
+        parent._specialist_assignment = assignment
+        return
     assignment = Assignment(uuid4().hex, str(get_sci_home().resolve()), request, frozen)
     parent._specialist_assignment = assignment
 
@@ -277,6 +316,9 @@ def record_effect(identity, *, replace_artifact=False, **facts):
         row = json.loads(path.read_text(encoding="utf-8-sig")) if path.exists() else {'assignment_id': assignment.id,
             'request': assignment.request, 'contract': assignment.contract, 'effects': {}}
         previous = row['effects'].get(identity, {})
+        if previous.get('kind') == 'artifact' and not previous.get('native_write'):
+            # Reporting a downloaded result again must not make its original bytes replaceable.
+            facts['native_write'] = False
         if previous.get('kind') == 'artifact' and previous.get('sha256') != facts.get('sha256'):
             if not replace_artifact or not previous.get('native_write'):
                 raise ValueError('A recorded artifact changed. Preserve the original output; write derived data to a new path.')
@@ -288,22 +330,38 @@ def record_effect(identity, *, replace_artifact=False, **facts):
 
 
 def track_file_result(name, result):
-    """Native file writes can prepare derived inputs without losing their provenance."""
-    if name not in {'write_file', 'patch'} or current_assignment() is None:
+    """Record explicit file results, never paths guessed from prose or workspace scans."""
+    if name not in {'write_file', 'patch', 'execute_code'} or current_assignment() is None:
         return result
     try:
         data = json.loads(result) if isinstance(result, str) else result
     except ValueError:
         return result
-    if not isinstance(data, dict) or data.get('error') or not data.get('files_modified'):
+    if not isinstance(data, dict):
+        return result
+    files = data.get('files_modified')
+    if name == 'execute_code':
+        if data.get('status') not in {'success', 'error'}:
+            return result
+    elif data.get('error'):
+        return result
+    if not files:
         return result
     try:
-        record_artifacts(data['files_modified'], replace_existing=True, native_write=True)
+        if not isinstance(files, list) or not all(isinstance(p, str) and Path(p).is_absolute() for p in files):
+            raise ValueError('Return files_modified as a list of absolute output paths.')
+        if name == 'execute_code':
+            from tools.terminal_tool import _get_env_config
+            if _get_env_config()['env_type'] != 'local':
+                raise ValueError('Code output provenance requires files on the owning local filesystem.')
+        record_artifacts(files, replace_existing=True, native_write=True,
+                         producer_tool=name, producer_status=data.get('status', 'success'))
+        data['files_modified'] = files
     except (OSError, ValueError, RuntimeError) as exc:
-        data['assignment_evidence_warning'] = ('File write completed, but artifact evidence failed (' +
-            type(exc).__name__ + '). Preserve the file and reconcile before using it downstream.')
-        return json.dumps(data) if isinstance(result, str) else data
-    return result
+        data['assignment_evidence_warning'] = ('Tool completed, but artifact evidence failed (' +
+            type(exc).__name__ + '). Preserve the file and reconcile before using it downstream. '
+            'Return files_modified as absolute paths on the owning local filesystem; do not repeat completed analysis.')
+    return json.dumps(data) if isinstance(result, str) else data
 
 
 def evidence(child):

@@ -14,7 +14,9 @@ license: MIT
    reported blocker, map the exact program id from the leaf's message to the matrix row before proposing anything.
 3. **Verify the host**: `--verify` probes interpreters (PATH + conda env roots by minor version), bio-tools
    (RNAfold/RNAplfold/RNAduplex/bowtie2), Rscript and git/env-manager availability, and returns READY / PARTIAL /
-   MISSING per leaf with absent programs listed.
+   MISSING per leaf with absent programs listed. Include the `--binding PACKAGE=LOCAL_NAME` arguments from
+   the coordinator's rendered child table. Only the owning SCI_HOME's saved definitions are inspected;
+   bindings are never borrowed from main or another profile.
 4. **Escalate precisely**: MISSING blocks core modes; PARTIAL blocks the named endpoints. Propose the matrix's
    satisfaction routes as commands the parent approves: leaf package install review (binds executables,
    version-checked), pinned conda recipes into fresh prefixes, or the bio-tools recipe. Never install yourself, never

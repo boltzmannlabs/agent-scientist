@@ -8,8 +8,6 @@
 /venv.old/
 /venv.stale.runtime-*/
 /bin/
-__pycache__/
-*.py[cod]
 /.sci-runtime/
 /_pycache/
 *.pyc*

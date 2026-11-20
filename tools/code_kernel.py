@@ -65,12 +65,20 @@ def run_cell(request, execution_count):
         status, trace = "error", traceback.format_exc()
     stdout_text, stdout_clipped = _clip(out.getvalue())
     stderr_text, stderr_clipped = _clip(err.getvalue())
-    return {
+    result = {
         "id": request.get("id", ""), "status": status,
         "stdout": stdout_text, "stderr": stderr_text,
         "stdout_clipped": stdout_clipped, "stderr_clipped": stderr_clipped,
         "traceback": trace, "execution_count": execution_count,
-    }, out.getvalue()
+    }
+    try:
+        returned = json.loads(out.getvalue())
+    except (ValueError, TypeError):
+        returned = None
+    files = returned.get("files_modified") if isinstance(returned, dict) else None
+    if isinstance(files, list) and all(isinstance(p, str) for p in files):
+        result["files_modified"] = files
+    return result, out.getvalue()
 '''
 
 KERNEL_RUNNER_SOURCE = '''\
@@ -803,6 +811,9 @@ def _cell_result(kernel: SessionKernel, key: Tuple, status: str, payload: Dict[s
                    "execution_count": kernel.execution_count, "state_reset": state_reset},
     }
     result.update(stdout_metadata)
+    # Preserve explicit file declarations before display truncation or stderr decoration.
+    if payload.get('files_modified'):
+        result['files_modified'] = [clean(p) for p in payload['files_modified']]
     from tools.code_execution_rpc import tool_errors_since
     tool_errors = tool_errors_since(kernel.tool_call_log, kernel.cell_log_start)
     if tool_errors:

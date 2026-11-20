@@ -14,10 +14,10 @@ system python3.
 
 ## Children wiring
 
-SCI package schema v1 rejects manifests declaring `children`, so this package deliberately omits them. After
-installing this package, run the parent-side installer (`rna-agent/install_rna_agent.py` in the repository) to wire
-`children` into the saved definition (a legitimate definition-level edit, revision-guarded) and to verify that every
-routed leaf is installed and enabled.
+The schema-v2 manifest declares four child packages and compatible versions. SCI's normal package installer
+reviews and binds each child in the selected owning profile; no private installer or manual definition edit is
+needed. Child capabilities stay scoped to their own reviewed packages. Missing scientific dependencies remain
+explicit blockers for the affected mode even when optional program setup is deferred during installation.
 
 ## Verification commands (from the package directory)
 

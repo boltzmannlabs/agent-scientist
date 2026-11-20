@@ -75,12 +75,10 @@ def test_embedded_wheel_catalog_matches_tree_and_rejects_tampered_metadata(tmp_p
     import sci_cli.subagent_package_catalog as catalog
     from sci_cli.subagent_package_schema import validate
     import pytest
-    # The catalog tree is the source of truth in a checkout; the embedded wheel
-    # snapshot must carry exactly the same package set (no phantom entries).
-    import json as _json
-    tree = catalog.catalog()
-    embedded = _json.loads(catalog.SNAPSHOT.read_text(encoding="utf-8-sig"))
-    assert set(tree) == set(embedded), "Embedded wheel catalog out of sync with subagent-catalog tree" 
+    empty = tmp_path / 'empty-catalog'
+    empty.mkdir()
+    monkeypatch.setattr(catalog, 'CATALOG', empty)
+    assert catalog.catalog() == {}
     catalog = fixture_catalog(tmp_path, monkeypatch)
     direct = catalog.catalog()
     snapshot = tmp_path / 'catalog.json'

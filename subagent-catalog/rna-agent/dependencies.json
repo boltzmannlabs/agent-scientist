@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_id": "rna-agent",
-  "package_version": "1.0.0",
+  "package_version": "1.2.0",
   "core": {
     "python": ">=3.12",
     "third_party_required": [],
@@ -13,7 +13,7 @@
     "environments": "no interpreter profiles of its own; stewards the leaves' profiles via the dependency matrix"
   },
   "external_assets_required": [
-    "leaf packages installed and enabled in the owning profile (children wired by the parent-side installer)",
+    "four child packages reviewed and bound by the native schema-v2 hierarchy installer",
     "parent-owned shared registry path",
     "parent-supplied output roots and authorizations per directive"
   ],

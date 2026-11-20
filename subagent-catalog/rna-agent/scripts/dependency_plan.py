@@ -84,30 +84,25 @@ def leaf_plan(name):
 
 
 
-def bound_programs(leaf_name):
+def bound_programs(leaf_name, bindings=None):
     """Program bindings resolved through the leaf's package install review (authoritative)."""
     import json as _json
     import os
-    # Candidate homes in priority order: env SCI_HOME (may point at a specialist's scoped
-    # extension home, which has no definitions), the active profile, then the default root.
-    # The first candidate whose subagents/<leaf>.json exists wins.
-    candidates = []
     env_home = os.environ.get("SCI_HOME")
-    if env_home:
-        candidates.append(env_home)
-    try:
-        active = (Path.home() / ".sci" / "active_profile").read_text(encoding="utf-8-sig").strip()
-        if active:
-            candidates.append(str(Path.home() / ".sci" / "profiles" / active))
-    except OSError:
-        pass
-    candidates.append(str(Path.home() / ".sci"))
-    path = next((Path(h) / "subagents" / f"{leaf_name}.json" for h in candidates
-                 if (Path(h) / "subagents" / f"{leaf_name}.json").is_file()), None)
-    if path is None:
-        return {}  # no profile here has this leaf installed; fall back to host probing
+    if not env_home:
+        return {}  # No owning scope: never borrow another profile's definitions.
+    home = Path(env_home).expanduser().resolve()
+    if home.parent.name == "subagent-data":
+        home = home.parent.parent  # Native private extension -> its owning profile.
+    name = (bindings or {}).get(leaf_name, leaf_name)
+    import re
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", name):
+        return {}
+    path = home / "subagents" / f"{name}.json"
     try:
         d = _json.loads(path.read_text(encoding="utf-8-sig"))
+        if (d.get("package_info") or {}).get("id") != leaf_name:
+            return {}
         resolved = (d.get("package_info") or {}).get("resolved") or {}
         out = {}
         for pid, info in resolved.items():
@@ -118,11 +113,11 @@ def bound_programs(leaf_name):
         return {}
 
 
-def verify_leaf(name, py_fam, probes):
+def verify_leaf(name, py_fam, probes, bindings=None):
     leaf = next((l for l in MATRIX["leaves"] if l["name"] == name), None)
     if not leaf:
         return None
-    bound = bound_programs(name)
+    bound = bound_programs(name, bindings)
     rows, missing, partial = [], [], []
     for p in leaf["programs"]:
         pid = p["id"]
@@ -168,7 +163,17 @@ def main():
     ap.add_argument("--leaf")
     ap.add_argument("--verify", action="store_true")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--binding", action="append", default=[], metavar="PACKAGE=LOCAL_NAME",
+                    help="Reviewed installed child binding, from the coordinator's rendered role table")
     a = ap.parse_args()
+    bindings = {}
+    import re
+    for value in a.binding:
+        package, separator, name = value.partition("=")
+        if (not separator or not leaf_plan(package) or package in bindings or
+                not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", name)):
+            ap.error("--binding requires a unique known package and valid local specialist name")
+        bindings[package] = name
     if a.list:
         names = [l["name"] for l in MATRIX["leaves"]]
         print(json.dumps({"leaves": names, "matrix_version": MATRIX["matrix_version"]}, indent=2))
@@ -182,7 +187,7 @@ def main():
         out = {"probe": "host verification (read-only)", "interpreter_families": sorted(py_fam),
                "leaves": []}
         for name in leaves:
-            v = verify_leaf(name, py_fam, probes)
+            v = verify_leaf(name, py_fam, probes, bindings)
             if v is None:
                 print(json.dumps({"status": "INVALID", "error": f"unknown leaf: {name}"}))
                 return 2

@@ -124,7 +124,9 @@ def decorate_tools(agent, tools):
                            'tool_arguments': {'type': 'object', 'additionalProperties': {'anyOf': [
                                {'type': 'object'}, {'type': 'array', 'items': {'type': 'object'}}]}},
                            'max_submissions': {'type': 'object', 'additionalProperties': {'type': 'integer', 'minimum': 1}},
-                           'resume': {'type': 'string'}}}
+                           'resume': {'type': 'string', 'description':
+                               'Existing assignment ID from this profile. Prefer assignment={"resume":"ID"} alone; '
+                               'redundant inputs must be unchanged recorded files and parameters cannot change.'}}}
         automatic = [f"{s.name}: {s.purpose[:180]}" for s in snapshot.values() if s.automatic]
         fn["description"] = fn["description"].split("\nSaved specialists are available.", 1)[0] + (
             "\nSaved specialists are available. Use action=catalog to find names and purposes, then tasks[].specialist "
@@ -133,6 +135,9 @@ def decorate_tools(agent, tools):
             + ("You may assign work only to approved named children from your catalog, including manual children. "
                "Your tools remain separate from their reviewed grants. A child's completion is an intermediate result; "
                "finish your own assignment after reading it. " if nested else "Manual specialists require explicit user request. ") +
+            "Give the selected lead the complete requested workflow once; let it coordinate its children, "
+            "dependent reviews and final report. Preserve requested calculations and output definitions. "
+            "Do not split its workflow into separate root assignments or take over its remaining steps. "
             "Dispatch the requested root once, never alongside its descendants. Freeze external execution inputs, "
             "parameters and submission limits in assignment before dispatch. For scientific execution, pin "
             "upload input files, required submit job_name/experiment_data, and per-job limits. "
@@ -372,6 +377,10 @@ def context_for(item, task_context):
                     'Discover only missing tool schemas, then reuse them. Independent reads or service lookups '
                     'may use separate tool calls in the same turn; a one-call tool bridge does not require '
                     'one model turn per lookup. Pass dependent outputs using exact artifact paths. '
+                    'When code execution writes output files, print one JSON object containing '
+                    'files_modified: [absolute output paths] alongside the calculated findings. SCI verifies '
+                    'and records those files for subsequent artifact handoffs. Do not claim existing reference '
+                    'files as newly produced outputs or repeat completed analysis to register its artifacts. '
                     'When code execution is available, combine related local checks in one concise script; '
                     'report findings and paths without rereading or reproducing every artifact in the conversation.')
     return "\n\n".join(sections)
