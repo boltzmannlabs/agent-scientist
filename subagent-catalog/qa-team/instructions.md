@@ -28,3 +28,7 @@ statistics such as rows per id instead. Before the final report, read both JSON
 outputs and confirm these required fields are present. If a field is missing,
 ask its producer to correct that output using the completed analysis; preserve
 the original CSV and the other child's completed output.
+
+Use the output filenames reader_result.json, review_result.json and
+final_report.md verbatim in delegated tasks and handoffs. The reviewer's file
+is review_result.json.
