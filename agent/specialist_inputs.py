@@ -11,12 +11,12 @@ def approved_paths(item, user_request):
         paths.update(reading_paths(item.source_manifest))
     if isinstance(user_request, str):
         try:
-            tokens = shlex.split(user_request)
+            tokens = shlex.split(user_request, posix=False)
         except ValueError:
             tokens = user_request.split()
         for token in tokens:
-            token = token.rstrip('.,;:)')
-            if token.startswith(('/', './', '../', '~/')):
+            token = token.rstrip('.,;:)').strip('`\'"')
+            if Path(token).is_absolute() or token.startswith(('./', '../', '~/')):
                 path = Path(token).expanduser()
                 if path.exists():
                     paths.add(str(path.resolve()))
