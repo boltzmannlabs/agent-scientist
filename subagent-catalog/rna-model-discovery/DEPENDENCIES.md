@@ -15,5 +15,5 @@ Verification commands (from the package directory):
 
     python3 -B scripts/request_contract.py tests/cases-request.json   # any single request fixture
     python3 -B scripts/validate_spec.py tests/synthetic_spec.json
-    python3 -B scripts/registry.py init /tmp/reg.json && python3 -B scripts/registry.py validate /tmp/reg.json
+    python3 -B scripts/registry.py init scratch/reg.json && python3 -B scripts/registry.py validate scratch/reg.json
     python3 -B scripts/validate_package.py --sci-source <sci-checkout> --sci-python <sci-python>

@@ -47,5 +47,5 @@ the report with COMPLETED/PARTIAL inference; BENCHMARK_VALIDATED requires parent
 protocol; PRODUCTION_APPROVED only with an explicit parent directive quoted in the note. Adjacent transitions only;
 failures leave the entry at its last true state.
 
-Read [execution discipline](../../../references/execution-discipline.md) and
+Read the execution discipline contract at {{resource.references/execution-discipline.md}} and
 [interface adapters](references/interface-adapters.md).
