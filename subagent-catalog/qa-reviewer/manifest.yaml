@@ -1,0 +1,42 @@
+{
+  "schema_version": 2,
+  "id": "qa-reviewer",
+  "name": "qa-reviewer",
+  "version": "1.0.0",
+  "authors": [
+    "Asritha"
+  ],
+  "license": "MIT",
+  "description": "Independently check the exact CSV and reader_result.json supplied by your parent.",
+  "sci_requires": ">=0",
+  "instructions": "instructions.md",
+  "output": "review_result.json containing independent counts and any concrete discrepancies.",
+  "automatic": false,
+  "tools": [
+    "execute_code",
+    "read_file",
+    "write_file"
+  ],
+  "skills": [],
+  "dependencies": [],
+  "references": [],
+  "limits": {
+    "max_iterations": 30,
+    "timeout_seconds": 0
+  },
+  "platforms": [
+    "linux-amd64"
+  ],
+  "fixtures": [
+    {
+      "input": "tests/input.csv",
+      "expected": "tests/expected.json",
+      "description": "Expected values keyed by fixture filename."
+    },
+    {
+      "input": "tests/second.csv",
+      "expected": "tests/expected.json",
+      "description": "Expected values keyed by fixture filename."
+    }
+  ]
+}
