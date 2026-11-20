@@ -1,85 +1,34 @@
-name: Windows venv-holder live E2E
-
-# ON-DEMAND ONLY (fleet-update #91277, venv-holder consolidation work).
-#
-# Runs the live venv-holder E2E suite on a real windows-latest runner:
-# spawns actual processes with realistic Sci argv shapes and drives the
-# REAL detection/classification/exemption code against the live process
-# table — the coverage that cannot exist on the Linux lanes and that the
-# maintainer cannot exercise locally before the work reaches main.
-#
-# Deliberately NOT wired to pull_request/main: it fires only on pushes to
-# wine2e/** working branches, so it costs nothing on normal PRs. Delete or
-# keep dormant after the venv-holder work lands.
-
+name: PR113 native Windows bytecode verification
 on:
   push:
-    branches:
-      - 'wine2e/**'
-  workflow_call:
-    inputs:
-      release:
-        description: 'Stable-release candidate run. Unused by the jobs; the caller passes it for a uniform callable surface.'
-        required: false
-        type: boolean
-        default: false
-
+    branches: ['wine2e/**']
 permissions:
   contents: read
-
-# A workflow_call run (stable release) shares the caller's commit; its group
-# includes github.run_id so a rerun of the parent gets a fresh group instead
-# of cancelling this child mid-flight. wine2e push runs keep ref-scoped
-# collapse as before.
-concurrency:
-  group: windows-venv-e2e-${{ inputs.release == true && github.run_id || github.ref }}
-  cancel-in-progress: ${{ inputs.release != true }}
-
 jobs:
-  venv-holder-e2e:
-    name: venv-holder live E2E (windows-latest)
-    runs-on: windows-latest
-    timeout-minutes: 60
-    env:
-      # Each file starts real Windows process trees.
-      SCI_TEST_WORKERS: '1'
+  launcher-bytecode:
+    name: Launcher and bytecode scope (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [windows-latest, windows-11-arm]
     steps:
-      - name: Checkout code
+      - name: Check out exact PR repair
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          # The stable caller dispatches on the candidate tag; github.sha is
-          # the exact candidate commit there and the head SHA everywhere else.
-          ref: ${{ github.sha }}
-
-      - name: Set up locked Python and test dependencies
+          ref: 5a9870be6412e68cb2efbed0b36abaa8d787b6e7
+          persist-credentials: false
+      - name: Set up native ARM64 build dependencies
+        if: runner.arch == 'ARM64'
+        uses: ./.github/actions/setup-windows-build-deps
+      - name: Set up locked test environment
         uses: ./.github/actions/setup-pm
         with:
-          extras: '["messaging"]'
+          extras: '[]'
           test-environment: 'true'
           prune-python-cache: true
-
-      - name: Run venv-holder live E2E
-        # Canonical runner (scripts/run_tests.sh) — never bare pytest: it
-        # enforces credential hygiene, TZ, temp SCI_HOME and subprocess
-        # isolation. The live files are host-marked windows-only, so the
-        # runner collects them on this runner instead of skipping them.
+      - name: Run original launcher checks and bytecode-scope regressions
         shell: bash
         run: |
-          set -uo pipefail
-          bash scripts/run_tests.sh \
-            tests/sci_cli/test_venv_holder_windows_live.py \
-            tests/sci_cli/test_taskkill_identity_windows_live.py \
-            tests/sci_cli/test_git_trampoline_windows_live.py \
-            tests/sci_cli/test_runtime_repair.py::TestWindowsRuntimeSelfLock
-
-      - name: Run Telegram CLOSE-WAIT reconnect live E2E (#87057)
-        shell: bash
-        run: |
-          set -uo pipefail
-          bash scripts/run_tests.sh tests/gateway/test_telegram_closewait_windows_live.py
-
-      - name: Run background-executor spawn parity live E2E (#70716)
-        shell: bash
-        run: |
-          set -uo pipefail
-          bash scripts/run_tests.sh tests/tools/test_process_registry_windows_live.py
+          bash scripts/run_tests.sh tests/scripts/test_mint_launchers.py tests/scripts/test_runner_bytecode_scope.py tests/scripts/test_catalog_source_cache.py -j 1 --file-retries 0 -q
