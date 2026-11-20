@@ -689,5 +689,23 @@
     "symbol": "windows_curl",
     "kind": "bare_which",
     "reason": "Standalone PM bootstrap has no sci_platform package; resolve native curl.exe before app installation. Full installs use sci_platform."
+  },
+  {
+    "path": "subagent-catalog/rna-agent/scripts/dependency_plan.py",
+    "symbol": "probe",
+    "kind": "bare_which",
+    "reason": "Read-only host metadata probe inside a portable specialist package (stdlib-only, runs standalone outside SCI); PATH lookup never resolves a Sci-managed runtime for execution."
+  },
+  {
+    "path": "subagent-catalog/rna-agent/scripts/dependency_plan.py",
+    "symbol": "probe_python_families",
+    "kind": "bare_which",
+    "reason": "Read-only host metadata probe inside a portable specialist package (stdlib-only, runs standalone outside SCI); PATH lookup never resolves a Sci-managed runtime for execution."
+  },
+  {
+    "path": "subagent-catalog/rna-agent/scripts/dependency_plan.py",
+    "symbol": "verify_leaf",
+    "kind": "bare_which",
+    "reason": "Read-only host metadata probe inside a portable specialist package (stdlib-only, runs standalone outside SCI); PATH lookup never resolves a Sci-managed runtime for execution."
   }
 ]

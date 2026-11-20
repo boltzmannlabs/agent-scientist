@@ -17,8 +17,8 @@ license: MIT
 3. **Assemble the brief** per the target leaf's contract: shared inputs (organism, versioned reference, objective,
    output root, safety context, authorizations) plus leaf-specific ones (requirement brief/frozen gates for sirna;
    nuclease/priorities for grna; search authorization for discovery; spec/destination/egress for execution).
-4. **Emit the directive** exactly per [the delegation contract](../../../references/delegation-contract.md).
+4. **Emit the directive** exactly per the delegation contract at {{resource.references/delegation-contract.md}}.
 5. **Relay outcomes** unchanged: run ID, outcome, blockers, artifact paths, registry state. Chain when the parent
    approves the next hop. Never perform leaf science, never merge claims, never re-ask to dodge refusals.
 
-Read [the delegation contract](../../../references/delegation-contract.md) before your first directive.
+Read the delegation contract at {{resource.references/delegation-contract.md}} before your first directive.

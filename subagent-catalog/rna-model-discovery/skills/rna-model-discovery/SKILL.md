@@ -54,4 +54,4 @@ Create/advance registry entries only within DISCOVERED → EVIDENCE_REVIEWED →
 evidence notes only. Hand the spec path and registry directives to the parent.
 
 Read [discovery sources](references/discovery-sources.md) and the package
-[evidence rules](../../../references/evidence-rules.md).
+the package evidence rules at {{resource.references/evidence-rules.md}}.
