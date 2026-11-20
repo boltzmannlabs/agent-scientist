@@ -529,6 +529,10 @@ def _run_one_file_once(
     # One root for each subprocess removes the shared directory that the race
     # needs. The parent deletes the root after the attempt.
     env = os.environ.copy()
+    # Contributed package tests must not add runtime files to distributable source.
+    # Other tests (notably relocated launchers) exercise real bytecode-cache behavior.
+    if file.resolve().is_relative_to((repo_root / "subagent-catalog").resolve()):
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
     temproot = tempfile.mkdtemp(prefix="r-", dir=_runner_scratch_root())
     env["PYTEST_DEBUG_TEMPROOT"] = temproot
     # Every tempfile.* call inside the test process lands in the same per-run root, so the

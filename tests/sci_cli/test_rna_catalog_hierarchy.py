@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import importlib.util
 import json
 import shutil
+import sys
 
 import pytest
 
@@ -75,7 +76,10 @@ def test_dependency_bindings_use_only_owning_profile_and_installed_child_names(t
     path = Path(__file__).resolve().parents[2] / 'subagent-catalog/rna-agent/scripts/dependency_plan.py'
     spec = importlib.util.spec_from_file_location('rna_dependency_scope_fixture', path)
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    # Import this contributed source for inspection without mutating its package tree.
+    with monkeypatch.context() as importing:
+        importing.setattr(sys, 'dont_write_bytecode', True)
+        spec.loader.exec_module(module)
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
     package = 'rna-model-discovery'
     bindings = {package: 'my-rna-discovery'}
