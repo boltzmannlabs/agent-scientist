@@ -1,7 +1,7 @@
 ---
 name: rna-orchestration
-description: Use when routing an RNA requirement to a leaf specialist, emitting a delegation directive, chaining discovery to execution, or relaying leaf outcomes.
-version: 1.0.0
+description: Use when routing an RNA requirement through reviewed child-specialist bindings, chaining approved assignments, or relaying actual child outcomes.
+version: 1.1.0
 author: Agent Scientist
 license: MIT
 ---
@@ -17,7 +17,8 @@ license: MIT
 3. **Assemble the brief** per the target leaf's contract: shared inputs (organism, versioned reference, objective,
    output root, safety context, authorizations) plus leaf-specific ones (requirement brief/frozen gates for sirna;
    nuclease/priorities for grna; search authorization for discovery; spec/destination/egress for execution).
-4. **Emit the directive** exactly per the delegation contract at {{resource.references/delegation-contract.md}}.
+4. **Delegate** per {{resource.references/delegation-contract.md}} using the installed child name in the
+   coordinator's rendered binding table. Resolve required inputs and approvals before calling `delegate_task`.
 5. **Relay outcomes** unchanged: run ID, outcome, blockers, artifact paths, registry state. Chain when the parent
    approves the next hop. Never perform leaf science, never merge claims, never re-ask to dodge refusals.
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 — native portable hierarchy
+
+Use schema v2 to declare the four child packages with compatible versions. The normal SCI package installer
+reviews their capabilities, binds renamed local children and preserves profile isolation. The coordinator uses
+its reviewed child grants directly; the previous external-installer requirement is superseded. Local packaging
+checks do not establish scientific readiness or replace merged-dev validation.
+
 ## 1.0.0 — orchestrator package
 
 First package release of the rna-agent orchestrator, replacing the bare local definition: deterministic table-backed

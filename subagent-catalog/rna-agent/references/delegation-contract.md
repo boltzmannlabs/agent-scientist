@@ -3,7 +3,7 @@
 ## Directive format
 
 DELEGATION DIRECTIVE
-specialist: <exact leaf name>
+specialist: <exact installed child name from the coordinator's rendered binding table>
 goal: <the user's assignment, faithfully restated as a self-contained task>
 context: <the assembled brief — every collected input, path, authorization and constraint the leaf needs>
 missing_inputs: <list, possibly empty, of consolidated requirements for the parent>
@@ -20,7 +20,7 @@ do not strip required inputs, and do not soften or reinterpret safety language.
 2. **Registry-first**: before any discovery directive, show the shared registry; reuse capabilities at
    EVIDENCE_REVIEWED or beyond; route USE (not rediscovery) for registered-and-installed capabilities.
 3. **Chaining**: capability gap → discovery directive; validated ModelIntegrationSpec + parent approval → execution
-   directive. The parent executes each directive; you never spawn leaves.
+   assignment. The coordinator delegates only to its reviewed native child bindings.
 4. **Faithful pass-through**: leaf BLOCKED/INCOMPLETE outcomes and blocker lists are returned unchanged. No re-asking
    with different wording to work around a scope gate; no substituting a different leaf to dodge a refusal.
 5. **Brief completeness**: each directive's context must satisfy the target leaf's preflight (run the leaf's contract
@@ -31,20 +31,18 @@ do not strip required inputs, and do not soften or reinterpret safety language.
 7. **Dependency stewardship**: readiness verdicts come from the packaged verifier; PLAN_ONLY proposals for anything
    absent; installs happen only through parent-approved reviews.
 
-## After a leaf run (when the parent reports back)
+## After a leaf run
 
 Summarize: routing decision and why, the leaf run ID, outcome verbatim in structure (BLOCKED/INCOMPLETE/completed),
 artifact paths, remaining missing inputs, and the registry state after the run.
 
-## Managed-assignment loop (v1.1)
+## Managed-assignment loop (v1.2)
 
-The directive is no longer the end of the orchestrator's job. Each EXECUTE-NOW directive ends with:
+After confirming required inputs and approvals, call `delegate_task` using the bound child name and the complete
+goal/context above. Do not substitute a package ID for a renamed local child. Return actual child run IDs and
+outcomes; do not claim a textual directive ran. Missing or changed child grants require native hierarchy review.
 
-    PARENT: execute this directive now via delegate_task(tasks=[{goal, context, specialist}]) in this
-    same turn; when the leaf finishes, send me its run ID, status and reported artifact paths for
-    consolidation.
-
-And the orchestrator's consolidation turn VERIFIES before reporting: artifacts read under authorized roots,
+The coordinator VERIFIES before reporting: artifacts read under authorized roots,
 registry transitions shown via the packaged CLI, leaf status semantics honored. Verification failures are
 reported as failures. Capability gaps pre-authorized by the original assignment run the discovery→execution
 chain without a second user turn; otherwise they consolidate a missing-input request.

@@ -179,9 +179,10 @@ cd "$REPO_ROOT"
 # Each test file runs in its own subprocess via run_tests_parallel.py.
 # Pre-building the bytecode cache once here (instead of each subprocess
 # compiling on first import) avoids redundant work across ~2000 processes.
-# Uses git to list tracked .py files (skips venv, node_modules, etc).
+# Contributed packages must remain inert source trees: runtime caches make them
+# fail strict package validation, and never belong in release artifacts.
 echo "▶ pre-compiling bytecode cache"
-"$PYTHON" -m compileall -q -j 0 -- $(git ls-files '*.py') >/dev/null 2>&1 || true
+"$PYTHON" -m compileall -q -j 0 -- $(git ls-files '*.py' ':(exclude)subagent-catalog/**') >/dev/null 2>&1 || true
 
 echo "▶ launching test runner"
 exec env -i \
@@ -194,6 +195,7 @@ exec env -i \
   LC_ALL=C.UTF-8 \
   PYTHONHASHSEED=0 \
   PYTHONUTF8=1 \
+  PYTHONDONTWRITEBYTECODE=1 \
   ${SCI_RUN_SLOW_PET_TESTS:+SCI_RUN_SLOW_PET_TESTS="$SCI_RUN_SLOW_PET_TESTS"} \
   ${SCI_E2E_BROWSER:+SCI_E2E_BROWSER="$SCI_E2E_BROWSER"} \
   ${SCI_RUN_E2E:+SCI_RUN_E2E="$SCI_RUN_E2E"} \

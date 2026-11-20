@@ -9,18 +9,30 @@ structure and discipline as the leaf packages (manifest/instructions/skills/refe
 - **Routing**: scripts/route_request.py + references/routing-table.json are the single source of truth (mechanism
   first; ambiguity → one structured ASK; not-covered classes reported; gap verbs dominate design mentions). The
   orchestrator's LLM routing is backed by this deterministic classifier and records any disagreement.
-- **Delegation**: emits ready-to-execute DELEGATION DIRECTIVEs (references/delegation-contract.md) — package-installed
-  leaves require direct parent assignment, so the parent executes the directive. Registry-first reuse checks; chained
-  discovery→execution flows; blocked outcomes passed through unchanged.
+- **Delegation**: uses SCI's reviewed hierarchy bindings and `delegate_task` to assign the approved children.
+  Registry-first reuse checks, discovery→execution chains within the original approvals, and unchanged blocked
+  outcomes remain part of the contract. A written directive alone is not reported as an executed run.
 - **Leaf dependencies**: references/leaf-dependency-matrix.json (per-leaf programs, pins, roles, satisfaction routes,
   parent assets) + scripts/dependency_plan.py (--leaf plan / --verify host probe → READY/PARTIAL/MISSING matrix).
   PLAN_ONLY proposals; bindings happen through the leaf package install review; never installs anything itself.
 
-## Children wiring (schema v1 constraint)
+## Install the reviewed hierarchy
 
-SCI package manifests cannot declare `children`; after installing this package, run the repository's parent-side
-installer `rna-agent/install_rna_agent.py` (SCI runtime python, SCI_HOME at the profile) to wire the routed leaves
-into the saved definition (revision-guarded edit) and verify every routed leaf is installed and enabled.
+This parent uses SCI package schema v2 and declares all four children with compatible version ranges. Keep their
+package folders beside `rna-agent`, then run the normal command in SCI:
+
+```text
+/subagent package install "/full/path/to/subagent-catalog/rna-agent"
+```
+
+Choose the owning profile and review each package's tools, references and optional dependencies. SCI installs
+children first, binds their actual local names, and publishes the reviewed hierarchy. No separate installer or
+manual definition edits are required. Renaming the parent is supported. Use `/new` after saving.
+
+For an installation smoke check, ask the coordinator to describe its child roster and missing requirements,
+without scientific jobs or downloads. Deferred optional dependencies do not establish readiness for model
+inference; the affected mode must report its missing inputs/software and existing authorization requirements.
+Validate the merged dev version separately before promotion to main.
 
 ## Leaves routed
 
