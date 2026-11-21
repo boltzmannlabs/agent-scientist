@@ -75,3 +75,27 @@ def test_zip_extraction_checks_integrity_and_never_executes_resources(tmp_path, 
             with open_package(archive):
                 pytest.fail('Unsafe archive was extracted')
     assert not (tmp_path / 'escape.txt').exists()
+
+
+def test_public_plugin_source_and_documentation_urls_are_portable(tmp_path):
+    import sci_yaml as yaml
+    package = source(tmp_path)
+    manifest_path = package / 'manifest.yaml'
+    manifest = yaml.safe_load(manifest_path.read_text())
+    manifest['dependencies'] = [{'id': 'support', 'kind': 'plugin',
+        'source': 'https://github.com/example/support-plugin',
+        'revision': 'a' * 40, 'tools': [], 'skills': []}]
+    manifest_path.write_text(yaml.safe_dump(manifest))
+    (package / 'README.md').write_text('Documentation: https://example.com/docs\n')
+    actual, _, _ = validate(package)
+    assert actual['dependencies'][0]['source'] == manifest['dependencies'][0]['source']
+
+
+@pytest.mark.parametrize('path', ['C:/Users/contributor/private.csv',
+                                  r'C:\Users\contributor\private.csv',
+                                  'c:/data/private.csv', r'z:\data\private.csv'])
+def test_windows_drive_paths_remain_nonportable(tmp_path, path):
+    package = source(tmp_path)
+    (package / 'instructions.md').write_text('Read "' + path + '" for the assignment.')
+    with pytest.raises(ValueError, match='Contributor-machine path'):
+        validate(package)
