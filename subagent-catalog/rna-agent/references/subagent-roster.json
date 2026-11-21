@@ -1,0 +1,98 @@
+{
+  "roster_version": 1,
+  "note": "The orchestrator's self-knowledge: which specialists it routes to, what each can actually do, and what inputs each requires. Keep in sync with the leaf packages (validated by tests/test_contract.py: roster keys must equal routing-table leaf keys).",
+  "specialists": [
+    {
+      "name": "application-aware-sirna-designer",
+      "package": ">= 1.3.0",
+      "domains": ["sirna", "rnai"],
+      "modes": ["SETUP", "AUDIT", "DESIGN", "EVALUATE", "EXPLORATORY", "BENCHMARK"],
+      "capabilities": [
+        "11 siRNA application task frames (oncology, allele-selective, CNS, metabolic/GalNAc, systemic LNP...)",
+        "candidate generation via approved backends (OligoFormer) + RN.Ai/RNAiSpline efficacy endpoints",
+        "specificity (bowtie2 + seed/POTS/6merDB), structure (ViennaRNA 2.7.2), immune-hazard gates",
+        "frozen-gate ranking + computational selection records with property attribution",
+        "source-grounded parameter experimentation (context window, top-k, weights, thresholds)",
+        "boltzmann RNA workflow tools when authorized (BiomambaRna, rna-generation module)"
+      ],
+      "required_inputs": {
+        "shared": ["organism (human)", "versioned transcript or intake-resolution authorization", "objective/application class", "safety context (noninfectious human research)", "output root"],
+        "DESIGN": ["requirement brief", "frozen gate manifest", "generation backend binding"],
+        "EVALUATE": ["candidate manifest", "requested properties"],
+        "BENCHMARK": ["measured label manifest", "label rule", "split exclusion manifest"]
+      },
+      "scope_limits": ["human noninfectious research only", "pathogen/plant/pest → REVIEW_ONLY", "no clinical claims"],
+      "read_scope": "guard v2: only paths under explicit PARENT READ AUTHORIZATION markers in the assignment text"
+    },
+    {
+      "name": "application-aware-grna-designer",
+      "package": ">= 1.6.0",
+      "domains": ["grna", "crispr"],
+      "modes": ["SETUP", "AUDIT", "DESIGN", "EVALUATE", "EXPLORATORY", "BENCHMARK"],
+      "capabilities": [
+        "13 CRISPR route classes (knockout, therapeutic, variant correction, base/prime editing, CRISPRi/a, epigenome, Cas13, diagnostics, libraries, plant, microbial)",
+        "native endpoint bindings (RS3, CRISPRon, PRIDICT2/DeepPrime ensemble, BEHive, RFcombined, CBE)",
+        "request-priority ranking (weights/vetoes/min-standards) + computational selection records",
+        "published-run audits against artifacts; parameter experimentation over runner settings",
+        "scope-routing verdicts without producing sequences (pathogen → review-only, microbial → conditional)"
+      ],
+      "required_inputs": {
+        "shared": ["organism", "target gene/locus", "nuclease or editor", "versioned reference or intake authorization", "safety context", "output root"],
+        "DESIGN": ["priorities (weights/hard vetoes/min standards)", "guide count"],
+        "BENCHMARK": ["benchmark cohort", "measured labels", "frozen protocol"]
+      },
+      "scope_limits": ["pathogen design review-only (parent approval cannot override)", "no clinical/safety claims"],
+      "read_scope": "guard v2 (same as sirna leaf)"
+    },
+    {
+      "name": "rna-model-discovery",
+      "package": ">= 1.1.1",
+      "domains": ["model-discovery", "capability-gaps"],
+      "modes": ["SETUP", "AUDIT", "DISCOVER", "EVALUATE", "SPEC"],
+      "capabilities": [
+        "registry-first reuse check (no rediscovery of EVIDENCE_REVIEWED+ capabilities)",
+        "candidate search under parent search/egress authorization (GitHub, HF, PubMed, EPMC, bioRxiv, Zenodo...)",
+        "per-candidate weights verdicts (WEIGHTS_PUBLIC / RESTRICTED / NO_WEIGHTS / VERIFIED_LOCAL)",
+        "evidence-attached multi-criteria ranking (never accuracy alone)",
+        "schema-validated ModelIntegrationSpec v1.1 emission; registry writes capped at DISCOVERED→EVIDENCE_REVIEWED→WEIGHTS_AVAILABLE"
+      ],
+      "required_inputs": {
+        "DISCOVER": ["task description", "capability gap statement", "search authorization (sources+scope)", "output root", "registry path"],
+        "EVALUATE": ["candidate manifest (offline evidence bundle accepted)"],
+        "SPEC": ["selected candidate", "evidence manifest"]
+      },
+      "scope_limits": ["never installs or executes models", "no network without authorization"],
+      "read_scope": "package + workspace + authorized evidence bundles"
+    },
+    {
+      "name": "rna-model-execution",
+      "package": ">= 1.0.0",
+      "domains": ["model-execution", "inference"],
+      "modes": ["SETUP", "AUDIT", "INSTALL", "RUN", "VALIDATE", "REGISTER"],
+      "capabilities": [
+        "isolated env + pristine clone at the spec commit; checkpoint checksum verification",
+        "REAL inference through official paths (7 interface classes; thin file-based adapters)",
+        "per-record outcomes preserving input→output mapping; output schema validation",
+        "ExecutionReport v1; registry INSTALLED→EXECUTION_TESTED→BENCHMARK_VALIDATED (PRODUCTION_APPROVED only with quoted parent directive)",
+        "resumable failure states with exact pending commands"
+      ],
+      "required_inputs": {
+        "INSTALL": ["ModelIntegrationSpec", "fresh approved destination", "egress authorization", "output root"],
+        "RUN": ["environment receipt", "input manifest"],
+        "REGISTER": ["registry path", "entry id", "target state", "execution report"]
+      },
+      "scope_limits": ["never claims biological validity from mechanical success", "no unverified checkpoint substitutions"],
+      "read_scope": "package + workspace + spec-declared artifacts"
+    }
+  ],
+  "capability_chain": {
+    "description": "How discovery and execution are used together when a required capability is missing",
+    "steps": [
+      "1. Registry check: capability at EVIDENCE_REVIEWED+ → reuse, route USE of the registered model",
+      "2. Gap + acquisition NOT pre-authorized → consolidate a missing-input request (sources, scope, destinations, budget) and stop",
+      "3. Gap + acquisition pre-authorized by the user's original assignment → DISCOVER directive with the full capability brief",
+      "4. Validated spec returned → (egress + destination still required from parent unless also pre-granted) → INSTALL+RUN directive",
+      "5. ExecutionReport + registry transitions verified by the orchestrator before the final consolidated report"
+    ]
+  }
+}

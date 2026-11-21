@@ -1,0 +1,108 @@
+{
+  "package_id": "application-aware-grna-designer",
+  "package_version": "1.4.0",
+  "local": {
+    "status": "passed",
+    "environment": "Python3.13.7; Linux; approved existing harness interpreter; local software/metadata QA only",
+    "checks": [
+      "Installed SCI strict schema, exact leaf tool grants and disabled automatic matching passed",
+      "contract_fixtures passed",
+      "dependency_catalog passed",
+      "model_policy_tests passed",
+      "model_policy_cli passed",
+      "setup_plan_cli passed",
+      "harness_tests passed",
+      "request_cli passed",
+      "harness_cli passed",
+      "core_dependency_metadata passed",
+      "harness_dependency_metadata passed",
+      "Both JSON Schemas validated as Draft 2020-12",
+      "8 environment recipes parsed; no solver or installation performed"
+    ],
+    "strict_installed_schema": "PASSED",
+    "qa_dependency_profile": "harness",
+    "unit_tests_executed": 35,
+    "original_request_fixtures": 8,
+    "model_policy_csv_fixtures": 16,
+    "model_policy_unit_tests_executed": 12,
+    "model_policy_test_log": "tests/model_policy_tests.log",
+    "environment_recipes_parsed": 8,
+    "details": {
+      "contract_fixtures": {
+        "returncode": 0,
+        "scope": "Local metadata/software QA, not native scientific execution"
+      },
+      "dependency_catalog": {
+        "returncode": 0,
+        "scope": "Local metadata/software QA, not native scientific execution"
+      },
+      "model_policy_tests": {
+        "returncode": 0,
+        "scope": "Local metadata/software QA, not native scientific execution"
+      },
+      "model_policy_cli": {
+        "returncode": 0,
+        "scope": "Local metadata/software QA, not native scientific execution"
+      },
+      "setup_plan_cli": {
+        "returncode": 0,
+        "scope": "Local metadata/software QA, not native scientific execution"
+      },
+      "harness_tests": {
+        "returncode": 0,
+        "scope": "Local metadata/software QA, not native scientific execution"
+      },
+      "request_cli": {
+        "returncode": 0,
+        "scope": "Local metadata/software QA, not native scientific execution"
+      },
+      "harness_cli": {
+        "returncode": 0,
+        "scope": "Local metadata/software QA, not native scientific execution"
+      },
+      "core_dependency_metadata": {
+        "returncode": 0,
+        "scope": "Local metadata/software QA, not native scientific execution"
+      },
+      "harness_dependency_metadata": {
+        "returncode": 0,
+        "scope": "Local metadata/software QA, not native scientific execution",
+        "metadata": {
+          "profile": "harness",
+          "status": "PASS_METADATA_ONLY",
+          "observed_python": "3.13.7",
+          "expected_python": "3.13.7",
+          "interpreter_match": true,
+          "missing_distributions": [],
+          "version_mismatches": [],
+          "duplicate_distribution_metadata": {},
+          "version_resolution": "Effective interpreter metadata lookup; duplicate metadata is reported, not a clean-install guarantee.",
+          "scientific_execution": false,
+          "model_readiness_verified": false
+        }
+      }
+    },
+    "failed_checks": []
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "Revised package not installed/enabled in an owning profile; installer grants and exact-dev-commit integration not tested",
+    "checks": []
+  },
+  "live_behavioral": {
+    "status": "not_run_for_this_revision",
+    "scope": "No delegated/installed-agent or native scientific execution performed for version 1.4.0",
+    "historical_evidence": [
+      "tests/history/validation-v1.1.0.json",
+      "tests/history/validation-v1.2.0.json"
+    ],
+    "scientific_execution": false
+  },
+  "not_tested": [
+    "Clean environment reconstruction or public-wheel availability",
+    "Native CRISPR model features/checkpoints/genomes and scientific outputs",
+    "Revised live LLM behavior and owning-profile installation",
+    "External provider authorization or remote jobs"
+  ]
+}

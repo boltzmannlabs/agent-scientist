@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "id": "application-aware-sirna-designer",
+  "name": "application-aware-sirna-designer",
+  "version": "1.3.0",
+  "authors": [
+    "Agent Scientist"
+  ],
+  "license": "MIT",
+  "description": "Setup-first application-aware human siRNA research specialist over approved native/platform harnesses, with frozen gates, typed evidence and publication-calibrated claims.",
+  "sci_requires": ">=0",
+  "instructions": "instructions.md",
+  "output": "Setup/provider and prerequisite decisions, actual run/config/native-endpoint provenance, real artifact paths, NOT_RUN/BLOCKED stages and uncertainty; best_design null and experimental_validation false.",
+  "automatic": false,
+  "tools": [
+    "read_file",
+    "search_files",
+    "write_file",
+    "patch",
+    "terminal",
+    "execute_code",
+    "skill_view"
+  ],
+  "skills": [
+    {
+      "id": "sirna-setup-first",
+      "kind": "package",
+      "path": "skills/sirna-setup-first"
+    },
+    {
+      "id": "application-aware-sirna-workflow",
+      "kind": "package",
+      "path": "skills/application-aware-sirna-workflow"
+    },
+    {
+      "id": "sirna-evidence-audit",
+      "kind": "package",
+      "path": "skills/sirna-evidence-audit"
+    },
+    {
+      "id": "parameter-experimentation",
+      "kind": "package",
+      "path": "skills/parameter-experimentation"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "python_core",
+      "kind": "program",
+      "optional": true,
+      "version": ">=3.12",
+      "version_args": [
+        "--version"
+      ],
+      "version_contains": "Python 3.",
+      "artifacts": []
+    },
+    {
+      "id": "python_qa",
+      "kind": "program",
+      "optional": true,
+      "version": "3.13.7",
+      "version_args": [
+        "--version"
+      ],
+      "version_contains": "Python 3.13.",
+      "artifacts": []
+    },
+    {
+      "id": "python_rnai",
+      "kind": "program",
+      "optional": true,
+      "version": "3.13.7",
+      "version_args": [
+        "--version"
+      ],
+      "version_contains": "Python 3.13.",
+      "artifacts": []
+    },
+    {
+      "id": "python_rnaispline",
+      "kind": "program",
+      "optional": true,
+      "version": "3.13.7",
+      "version_args": [
+        "--version"
+      ],
+      "version_contains": "Python 3.13.",
+      "artifacts": []
+    },
+    {
+      "id": "python_oligoformer",
+      "kind": "program",
+      "optional": true,
+      "version": "3.8.20",
+      "version_args": [
+        "--version"
+      ],
+      "version_contains": "Python 3.8.",
+      "artifacts": []
+    },
+    {
+      "id": "python_analysis",
+      "kind": "program",
+      "optional": true,
+      "version": "3.13.7",
+      "version_args": [
+        "--version"
+      ],
+      "version_contains": "Python 3.13.",
+      "artifacts": []
+    },
+    {
+      "id": "rnafold",
+      "kind": "program",
+      "optional": true,
+      "version": "2.7.2",
+      "version_args": [
+        "--version"
+      ],
+      "version_contains": "2.7.2",
+      "artifacts": []
+    },
+    {
+      "id": "rnaplfold",
+      "kind": "program",
+      "optional": true,
+      "version": "2.7.2",
+      "version_args": [
+        "--version"
+      ],
+      "version_contains": "2.7.2",
+      "artifacts": []
+    },
+    {
+      "id": "rnaduplex",
+      "kind": "program",
+      "optional": true,
+      "version": "2.7.2",
+      "version_args": [
+        "--version"
+      ],
+      "version_contains": "2.7.2",
+      "artifacts": []
+    },
+    {
+      "id": "bowtie2",
+      "kind": "program",
+      "optional": true,
+      "version": "2.5.5",
+      "version_args": [
+        "--version"
+      ],
+      "version_contains": "2.5.5",
+      "artifacts": []
+    },
+    {
+      "id": "boltzmann",
+      "kind": "boltzmann",
+      "optional": true,
+      "modules": [
+        "references/modules/rna-generation.md",
+        "references/modules/rna-property-prediction.md"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "path": "dependencies.json",
+      "label": "Observed software profiles, not native readiness",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "DEPENDENCIES.md",
+      "label": "Reviewed setup sequence and install boundaries",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "TOOLS_AND_SERVICES.md",
+      "label": "Parent-owned services and permission boundaries",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/applications.json",
+      "label": "Eleven exact siRNA application task frames",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/model-policy.json",
+      "label": "Model applicability and historical upgrade blockers",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/historical-evidence.json",
+      "label": "Factual retained campaign summaries, not package-generated predictions",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/workflow-contract.md",
+      "label": "Frozen run and evidence acceptance contract",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/run-record.schema.json",
+      "label": "Scientific evidence schema version 2",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/source-provenance.md",
+      "label": "Authorship and redistribution boundaries",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/parameter-catalog.md",
+      "label": "Retained native tool and model parameter surfaces for source-grounded verification",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    }
+  ],
+  "limits": {
+    "max_iterations": 65,
+    "timeout_seconds": 7200
+  },
+  "platforms": [
+    "linux"
+  ],
+  "fixtures": [
+    {
+      "input": "tests/sample.csv",
+      "expected": "tests/expected.json",
+      "description": "Inert request metadata, no sequences or efficacy results"
+    },
+    {
+      "input": "tests/synthetic_record.json",
+      "expected": "tests/expected_record.json",
+      "description": "Synthetic software-only record, never a measured benchmark"
+    }
+  ]
+}

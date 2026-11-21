@@ -1,0 +1,7 @@
+name: application-aware-grna-rfcombined
+channels:
+  - conda-forge
+dependencies:
+  - r-base=4.3.3
+  - r-randomforest=4.7_1.2
+  - r-jsonlite=2.0.0

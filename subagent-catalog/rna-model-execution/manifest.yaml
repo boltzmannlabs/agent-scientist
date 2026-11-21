@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "id": "rna-model-execution",
+  "name": "rna-model-execution",
+  "version": "1.0.0",
+  "authors": [
+    "Agent Scientist"
+  ],
+  "license": "MIT",
+  "description": "RNA model execution and inference specialist: installs a ModelIntegrationSpec's model into an isolated approved environment, verifies checkpoint integrity, executes real inference, validates outputs, writes ExecutionReports and advances the shared registry. Never claims inference that was not executed.",
+  "sci_requires": ">=0",
+  "instructions": "instructions.md",
+  "output": "Isolated-environment setup evidence, verified checkpoint provenance, actual inference results with per-record outcomes, schema-validated ExecutionReport, registry transitions through INSTALLED/EXECUTION_TESTED/BENCHMARK_VALIDATED, and explicit BLOCKED/INCOMPLETE stages with recovery state. No scientific validity claim.",
+  "automatic": false,
+  "tools": [
+    "read_file",
+    "search_files",
+    "write_file",
+    "patch",
+    "terminal",
+    "execute_code",
+    "skill_view"
+  ],
+  "skills": [
+    {
+      "id": "rna-model-execution",
+      "kind": "package",
+      "path": "skills/rna-model-execution"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "python_core",
+      "kind": "program",
+      "optional": true,
+      "version": ">=3.12",
+      "version_args": [
+        "--version"
+      ],
+      "version_contains": "Python 3.",
+      "artifacts": []
+    }
+  ],
+  "references": [
+    {
+      "path": "dependencies.json",
+      "label": "Observed software profile, not installation readiness",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "DEPENDENCIES.md",
+      "label": "Reviewed isolation and approval boundaries",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/execution-report.schema.json",
+      "label": "ExecutionReport contract version 1",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/registry.schema.json",
+      "label": "Shared RNA model and tool registry entry contract",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/execution-discipline.md",
+      "label": "Isolation, checkpoint and inference honesty rules",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    }
+  ],
+  "limits": {
+    "max_iterations": 65,
+    "timeout_seconds": 7200
+  },
+  "platforms": [
+    "linux"
+  ],
+  "fixtures": [
+    {
+      "input": "tests/cases.json",
+      "expected": "tests/expected.json",
+      "description": "Six synthetic request-metadata cases; no installation, download or inference."
+    },
+    {
+      "input": "tests/synthetic_report.json",
+      "expected": "tests/expected_report.json",
+      "description": "Synthetic ExecutionReport; validates structurally, never a real run."
+    }
+  ]
+}

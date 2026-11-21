@@ -1,0 +1,10 @@
+{
+  "task_id": "006",
+  "model_id": "DEEPPRIME_PE2",
+  "endpoint": "prime_intended",
+  "organism_context": "human_research",
+  "cell": "HEK293T",
+  "editor": "PE2",
+  "scaffold": "conventional",
+  "research_opt_in": false
+}

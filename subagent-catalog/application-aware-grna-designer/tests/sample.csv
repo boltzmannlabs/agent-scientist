@@ -1,0 +1,17 @@
+case_id,task_id,model_id,endpoint,organism_context,cell,editor,nuclease,scaffold,research_opt_in
+rs3_reference,002,RS3_SEQUENCE,nuclease_activity,human_research,,,SpCas9,,false
+rs3_optin,002,RS3_SEQUENCE,nuclease_activity,human_research,,,SpCas9,,true
+behive_reference,005,BEHIVE_BE4,BE4_normalized_logit_any_edit,human_research,HEK293T,BE4,,,false
+pridict_hek,006,PRIDICT2_INTENDED,prime_intended,human_research,HEK293T,,,,false
+pridict_k562,006,PRIDICT2_INTENDED,prime_intended,human_research,K562,,,,false
+deepprime_reference,006,DEEPPRIME_PE2,prime_intended,human_research,HEK293T,PE2,,conventional,false
+deepprime_wrong_cell,006,DEEPPRIME_PE2,prime_intended,human_research,K562,PE2,,conventional,false
+deepprime_wrong_editor,006,DEEPPRIME_PE2,prime_intended,human_research,HEK293T,PE3,,conventional,false
+behive_not_be4max,005,BEHIVE_BE4,BE4_normalized_logit_any_edit,human_research,HEK293T,BE4max,,,false
+cas13_reference,009,RFCOMBINED,Cas13_normCS,human_research,,,,,false
+cbe_no_optin,005,CRISPRON_CBE,CBE_author_editingeff,human_research,HEK293T,BE4,,,false
+cbe_research,005,CRISPRON_CBE,CBE_author_editingeff,human_research,HEK293T,BE4,,,true
+cbe_not_behive_labels,005,CRISPRON_CBE,BE4_normalized_logit_any_edit,human_research,HEK293T,BE4,,,true
+pathogen_review,002,RS3_SEQUENCE,nuclease_activity,pathogen,,,SpCas9,,true
+malformed_identifier,2,RS3_SEQUENCE,nuclease_activity,human_research,,,SpCas9,,false
+unknown_backend,007,UNVERIFIED_REGULATORY,regulation,human_research,,,,,false

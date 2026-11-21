@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "package_id": "rna-model-discovery",
+  "package_version": "1.0.0",
+  "core": {
+    "python": ">=3.12",
+    "third_party_required": [],
+    "note": "Core scripts (preflight, spec validation, registry CLI, package validation) are standard-library only."
+  },
+  "installation_policy": {
+    "installs_anything": false,
+    "network": "none by this package; all search/clone/fetch is parent-authorized egress at run time",
+    "environments": "no separate interpreter profiles are required for this specialist's own tooling"
+  },
+  "external_assets_required": [
+    "parent-owned registry path (shared with rna-model-execution)",
+    "parent-owned connectors (pubmed, tooluniverse) when used, through their own contracts",
+    "parent search/egress authorization naming sources and scope"
+  ],
+  "setup_validation_scope": "Metadata-only probes; no model acquisition, installation or inference is performed or implied."
+}

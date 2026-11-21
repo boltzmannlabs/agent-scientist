@@ -1,0 +1,14 @@
+{
+  "fixture_kind": "SYNTHETIC_METADATA_ONLY",
+  "cases": [
+    { "name": "setup_mode", "status": "SETUP_FIRST", "missing_inputs": [] },
+    { "name": "audit_mode", "status": "AUDIT_ONLY", "missing_inputs": [] },
+    { "name": "unknown_mode", "status": "INVALID_REQUEST", "missing_inputs": [] },
+    { "name": "discover_missing_all", "status": "NEEDS_INPUT", "missing_inputs": ["task_description", "output_root", "capability_gap", "search_authorization"] },
+    { "name": "discover_no_authorization", "status": "NEEDS_INPUT", "missing_inputs": ["search_authorization"] },
+    { "name": "discover_complete", "status": "METADATA_COMPLETE_REQUIRES_PARENT_AND_CONNECTOR_CHECKS", "missing_inputs": [] },
+    { "name": "evaluate_missing_manifest", "status": "NEEDS_INPUT", "missing_inputs": ["candidate_manifest"] },
+    { "name": "spec_missing_evidence", "status": "NEEDS_INPUT", "missing_inputs": ["evidence_manifest"] },
+    { "name": "malformed_task", "status": "INVALID_REQUEST", "missing_inputs": [] }
+  ]
+}

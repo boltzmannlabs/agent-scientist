@@ -1,0 +1,8 @@
+name: grna-analysis
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12.14
+  - pip
+  - pip:
+    - -r requirements-analysis.txt

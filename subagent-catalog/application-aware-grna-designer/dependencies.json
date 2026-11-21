@@ -1,0 +1,287 @@
+{
+  "schema_version": 1,
+  "package_id": "application-aware-grna-designer",
+  "package_version": "1.3.0",
+  "core": {
+    "python_minimum": [
+      3,
+      12
+    ],
+    "third_party_pip_dependencies": [],
+    "requirements_file": "requirements.txt",
+    "scope": "inert package fixtures/preflight only"
+  },
+  "installation_policy": {
+    "implicit_install": false,
+    "install_into_sci_runtime": false,
+    "separate_environments_required": true,
+    "source_and_execution_approval_required": true,
+    "large_models_and_reference_data_bundled": false,
+    "clean_reconstruction_claimed": false
+  },
+  "profiles": {
+    "analysis": {
+      "purpose": "Measured-label metrics/reporting, not a model scorer",
+      "python_observed": "3.12.14",
+      "interpreter_manifest_id": "python3",
+      "observed_distribution_versions": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pandas": "3.1.1",
+        "scikit-learn": "1.9.1",
+        "joblib": "1.6.0",
+        "openpyxl": "3.1.5",
+        "biopython": "1.88",
+        "psutil": "7.2.2",
+        "matplotlib": "3.11.2",
+        "seaborn": "0.13.2",
+        "tqdm": "4.70.1"
+      },
+      "requirements_files": [
+        "dependencies/requirements-analysis.txt"
+      ],
+      "clean_install_tested": false,
+      "native_models_bundled": false,
+      "status": "Observed previously used environment; dependency-file parse and matching checks only in this package",
+      "environment_file": "dependencies/environment-analysis.yml"
+    },
+    "rs3": {
+      "purpose": "Native RS3 sequence activity features and released weights",
+      "python_observed": "3.8.20",
+      "interpreter_manifest_id": "python_rs3",
+      "observed_distribution_versions": {
+        "numpy": "1.24.4",
+        "scipy": "1.10.1",
+        "pandas": "1.3.5",
+        "scikit-learn": "1.0.2",
+        "joblib": "1.4.2",
+        "sglearn": "1.2.5",
+        "rs3": "0.0.18",
+        "lightgbm": "3.2.1",
+        "biopython": "1.78"
+      },
+      "requirements_files": [
+        "dependencies/requirements-rs3.txt"
+      ],
+      "clean_install_tested": false,
+      "native_models_bundled": false,
+      "status": "Observed previously used environment; dependency-file parse and matching checks only in this package",
+      "environment_file": "dependencies/environment-rs3.yml"
+    },
+    "crispron": {
+      "purpose": "CRISPRon v1 TensorFlow2/Keras2 and native thermodynamic pipeline",
+      "python_observed": "3.9.23",
+      "interpreter_manifest_id": "python_crispron",
+      "observed_distribution_versions": {
+        "numpy": "1.26.4",
+        "scipy": "1.13.1",
+        "tensorflow": "2.14.1",
+        "keras": "2.14.0",
+        "h5py": "3.14.0",
+        "biopython": "1.78"
+      },
+      "requirements_files": [
+        "dependencies/requirements-crispron.txt"
+      ],
+      "clean_install_tested": false,
+      "native_models_bundled": false,
+      "status": "Observed previously used environment; dependency-file parse and matching checks only in this package",
+      "environment_file": "dependencies/environment-crispron.yml"
+    },
+    "editing": {
+      "purpose": "PRIDICT2.0 and DeepPrime native source/checkpoints",
+      "python_observed": "3.10.21",
+      "interpreter_manifest_id": "python_editing",
+      "observed_distribution_versions": {
+        "numpy": "1.24.4",
+        "scipy": "1.11.1",
+        "pandas": "2.0.3",
+        "scikit-learn": "1.3.0",
+        "joblib": "1.3.1",
+        "biopython": "1.81",
+        "matplotlib": "3.7.2",
+        "seaborn": "0.12.2",
+        "prettytable": "3.8.0",
+        "tqdm": "4.65.0",
+        "torch": "2.0.1+cpu"
+      },
+      "requirements_files": [
+        "dependencies/requirements-editing.txt",
+        "dependencies/requirements-torch-cpu.txt"
+      ],
+      "clean_install_tested": false,
+      "native_models_bundled": false,
+      "status": "Observed previously used environment; dependency-file parse and matching checks only in this package",
+      "environment_file": "dependencies/environment-editing.yml"
+    },
+    "behive": {
+      "purpose": "Released BE-Hive BE4 efficiency regressor compatibility",
+      "python_observed": "3.7.12",
+      "interpreter_manifest_id": "python_behive",
+      "observed_distribution_versions": {
+        "numpy": "1.16.6",
+        "scipy": "1.3.3",
+        "pandas": "0.25.3",
+        "scikit-learn": "0.20.3",
+        "biopython": "1.73"
+      },
+      "requirements_files": [
+        "dependencies/requirements-behive.txt"
+      ],
+      "clean_install_tested": false,
+      "native_models_bundled": false,
+      "status": "Observed previously used environment; dependency-file parse and matching checks only in this package",
+      "environment_file": "dependencies/environment-behive.yml"
+    },
+    "crispria": {
+      "purpose": "Optional legacy CRISPRi/a source import environment; not an executed native activity benchmark",
+      "python_observed": "2.7.15",
+      "interpreter_manifest_id": "python_crispria",
+      "observed_distribution_versions": {
+        "numpy": "1.16.5",
+        "scipy": "1.2.1",
+        "pandas": "0.24.2",
+        "scikit-learn": "0.19.2",
+        "biopython": "1.76",
+        "bx-python": "0.8.9",
+        "pysam": "0.20.0",
+        "configparser": "4.0.2"
+      },
+      "requirements_files": [
+        "dependencies/requirements-crispria.txt"
+      ],
+      "clean_install_tested": false,
+      "native_models_bundled": false,
+      "status": "Observed previously used environment; dependency-file parse and matching checks only in this package"
+    },
+    "r_native": {
+      "purpose": "Native crisprDesign/crisprScore/CFD and RFcombined source workflows",
+      "interpreter_manifest_id": "rscript",
+      "R_observed": "4.5.3",
+      "observed_distribution_versions": {
+        "crisprDesign": "1.15.10",
+        "crisprScore": "1.17.2",
+        "randomForest": "4.7.1.2",
+        "jsonlite": "2.0.0"
+      },
+      "package_file": "dependencies/r-packages.csv",
+      "clean_install_tested": false,
+      "note": "Exact CRAN/Bioconductor development source versions and original model-data packages must be selected separately; this CSV is not a complete renv/Bioconductor lock."
+    },
+    "harness": {
+      "purpose": "Optional offline JSON Schema, portable manifest and raster-artifact QA; not a scientific model scorer",
+      "python_observed": "3.13.7",
+      "interpreter_manifest_id": "python_harness",
+      "observed_distribution_versions": {
+        "jsonschema": "4.19.2",
+        "PyYAML": "6.0.3",
+        "packaging": "26.3",
+        "Pillow": "11.3.0"
+      },
+      "requirements_files": [
+        "dependencies/requirements-harness.txt"
+      ],
+      "environment_file": "dependencies/environment-harness.yml",
+      "clean_install_tested": false,
+      "native_models_bundled": false,
+      "status": "Observed metadata in an approved existing scientific interpreter; no fresh solver/install or native inference claimed"
+    },
+    "cbe": {
+      "purpose": "Research-only native CRISPRon-CBE, original25model ensemble and auxiliary CRISPRonV0",
+      "python_observed": "3.10.14",
+      "interpreter_manifest_id": "python_cbe",
+      "observed_distribution_versions": {
+        "tensorflow-cpu": "2.10.0",
+        "keras": "2.10.0",
+        "numpy": "1.23.5",
+        "scipy": "1.10.1",
+        "pandas": "2.2.2",
+        "biopython": "1.79",
+        "h5py": "3.16.0"
+      },
+      "requirements_files": [
+        "dependencies/requirements-cbe.txt"
+      ],
+      "environment_file": "dependencies/environment-cbe.yml",
+      "clean_install_tested": false,
+      "native_models_bundled": false,
+      "status": "Observed existing historical native inference runtime; no clean recipient rebuild claimed."
+    },
+    "rfcombined": {
+      "purpose": "Isolated RFcombined configuration/reference evaluation with original supplied features",
+      "interpreter_manifest_id": "rscript_rfcombined",
+      "R_observed": "4.3.3",
+      "observed_distribution_versions": {
+        "randomForest": "4.7.1.2",
+        "jsonlite": "2.0.0"
+      },
+      "package_file": "dependencies/rfcombined-packages.csv",
+      "environment_file": "dependencies/environment-rfcombined.yml",
+      "clean_install_tested": false,
+      "note": "Not the broader R4.5.3 crisprDesign environment; original tools/data required for raw features."
+    },
+    "sdk_qa": {
+      "purpose": "Read-only package QA using an existing installed SCI Python and its sci_yaml source; not a scientific backend",
+      "python_observed": "3.14.7",
+      "interpreter_manifest_id": "python_harness",
+      "observed_distribution_versions": {
+        "jsonschema": "4.26.0",
+        "packaging": "26.0",
+        "Pillow": "12.3.0"
+      },
+      "requirements_files": [
+        "dependencies/requirements-sdk_qa.txt"
+      ],
+      "clean_install_tested": false,
+      "native_models_bundled": false,
+      "status": "Observed existing selected SCI dependency interpreter. No SCI changes or installs; YAML parsing requires approved existing SCI source or independently installed PyYAML."
+    }
+  },
+  "external_assets_required": {
+    "rs3": [
+      "original model weights and model hash",
+      "real30nt contexts and matching tracr identity"
+    ],
+    "crispron": [
+      "original CRISPRon v1 source/models",
+      "native thermodynamic/CRISPRoff feature executables and their source-verified dependencies",
+      "RNAfold and runtime dependencies declared by that native source"
+    ],
+    "editing": [
+      "original PRIDICT2.0/DeepPrime code and checkpoints",
+      "source normalization and held-out-fold assignments",
+      "exact system,scaffold,cell and feature inputs"
+    ],
+    "behive": [
+      "original editor/cell-matched released regression model",
+      "native feature implementation and measured-label endpoint"
+    ],
+    "crispria": [
+      "original CRISPRiaDesign and ScreenProcessing sources",
+      "hg19 genome and original K562 DNase/FAIRE/MNase tracks",
+      "original fold/feature transformations; no window-rule replacement"
+    ],
+    "r_native": [
+      "original R source dependencies and model-data weights",
+      "Bowtie and assembly-specific indices when DNA specificity is requested",
+      "RNAfold,RNAplfold,RNAhybrid when CasRx native feature generation is requested"
+    ],
+    "harness": [],
+    "cbe": [
+      "RTH-tools/crispron-BE source pinned to c5b28d4362b84c7e933e3715346ffbc1181fd6f2",
+      "author CRISPRonBE_models-1.0.tgz archive, approximately5GB; retain author license and measured SHA256",
+      "25CBE models plus five auxiliary CRISPRon_models_V0-1.0/best checkpoints",
+      "original CRISPRoff1.1.2, energy_dics.pkl and RNAfold2.5.1",
+      "genuine matching30nt targets and corresponding23nt guide/PAM inputs with consistent identifiers",
+      "source-matched measured editingeff labels, frozen splits, phenotype definition and training exposure audit"
+    ],
+    "rfcombined": [
+      "Original Cas13 measured feature table and transforms, screen/guide IDs and source split rules",
+      "Original R workflow and randomForest settings; originalRNAfold/RNAhybrid if regenerating raw features"
+    ],
+    "sdk_qa": [
+      "Approved installed SCI source for read-only sci_yaml parser fallback when PyYAML is absent; never fetched upstream or installed automatically"
+    ]
+  },
+  "setup_validation_scope": "Current package tests and selected runtime metadata probes are distinct from historical native executions, fresh native inference, recipient installation and clean reconstruction."
+}

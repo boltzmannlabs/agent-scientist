@@ -1,0 +1,8 @@
+# Observed selected direct distributions; not a complete solver lock.
+tensorflow-cpu==2.10.0
+keras==2.10.0
+numpy==1.23.5
+scipy==1.10.1
+pandas==2.2.2
+biopython==1.79
+h5py==3.16.0

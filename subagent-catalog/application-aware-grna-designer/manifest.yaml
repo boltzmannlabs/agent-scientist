@@ -1,0 +1,191 @@
+schema_version: 1
+id: application-aware-grna-designer
+name: application-aware-grna-designer
+version: '1.6.0'
+authors:
+  - Agent Scientist
+license: MIT
+description: Application-aware CRISPR guide RNA specialist for governed design, evaluation, benchmark and audit assignments, with modality-matched evidence and no heuristic substitute scores.
+sci_requires: '>=0'
+instructions: instructions.md
+output: A structured run record and concise evidence report with routing, required inputs, native endpoint provenance, actual artifact paths, unexecuted stages, scientific limitations and best_design null unless independently established.
+automatic: false
+tools:
+  - read_file
+  - search_files
+  - write_file
+  - patch
+  - terminal
+  - execute_code
+  - skill_view
+skills:
+  - id: application-aware-grna-workflow
+    kind: package
+    path: skills/application-aware-grna-workflow
+  - id: reproducible-scientific-harness
+    kind: package
+    path: skills/reproducible-scientific-harness
+  - id: publication-calibrated-crispr
+    kind: package
+    path: skills/publication-calibrated-crispr
+  - id: parameter-experimentation
+    kind: package
+    path: skills/parameter-experimentation
+dependencies:
+  - id: python_harness
+    kind: program
+    optional: true
+    version: '>=3.12'
+    version_args: [--version]
+    version_contains: 'Python 3.'
+    artifacts: []
+  - id: python3
+    kind: program
+    optional: true
+    version: '>=3.12'
+    version_args: [--version]
+    version_contains: 'Python 3.'
+    artifacts: []
+  - id: python_rs3
+    kind: program
+    optional: true
+    version: '3.8.20'
+    version_args: [--version]
+    version_contains: 'Python 3.8.'
+    artifacts: []
+  - id: python_crispron
+    kind: program
+    optional: true
+    version: '3.9.23'
+    version_args: [--version]
+    version_contains: 'Python 3.9.'
+    artifacts: []
+  - id: python_editing
+    kind: program
+    optional: true
+    version: '3.10.21'
+    version_args: [--version]
+    version_contains: 'Python 3.10.'
+    artifacts: []
+  - id: python_behive
+    kind: program
+    optional: true
+    version: '3.7.12'
+    version_args: [--version]
+    version_contains: 'Python 3.7.'
+    artifacts: []
+  - id: python_crispria
+    kind: program
+    optional: true
+    version: '2.7.15'
+    version_args: [--version]
+    version_contains: 'Python 2.7.'
+    artifacts: []
+  - id: rscript
+    kind: program
+    optional: true
+    version: '4.5.3'
+    version_args: [--version]
+    version_contains: '4.5.3'
+    artifacts: []
+  - id: python_cbe
+    kind: program
+    optional: true
+    version: '3.10.14'
+    version_args: [--version]
+    version_contains: 'Python 3.10.'
+    artifacts: []
+  - id: rnafold_cbe
+    kind: program
+    optional: true
+    version: '2.5.1'
+    version_args: [--version]
+    version_contains: '2.5.1'
+    artifacts: []
+  - id: rscript_rfcombined
+    kind: program
+    optional: true
+    version: '4.3.3'
+    version_args: [--version]
+    version_contains: '4.3.3'
+    artifacts: []
+references:
+  - path: dependencies.json
+    label: Observed core/native dependency catalog and external assets
+    license: MIT
+    mode: snapshot
+    required: true
+  - path: DEPENDENCIES.md
+    label: Reviewed setup and separate-environment installation guide
+    license: MIT
+    mode: snapshot
+    required: true
+  - path: references/modality-map.md
+    label: Application routing and endpoint boundaries
+    license: MIT
+    mode: snapshot
+    required: true
+  - path: references/evidence-rules.md
+    label: Native model evidence and completed-only benchmark publication rules
+    license: MIT
+    mode: snapshot
+    required: true
+  - path: references/parent-handoff.md
+    label: Parent assignment and authorization boundaries
+    license: MIT
+    mode: snapshot
+    required: true
+  - path: references/harness-integration.md
+    label: Reproducible execution, record migration and cross-modality boundaries
+    license: MIT
+    mode: snapshot
+    required: true
+  - path: references/run-record.schema.json
+    label: Version 2 scientific run evidence contract
+    license: MIT
+    mode: snapshot
+    required: true
+  - path: references/request-result.schema.json
+    label: Separate metadata preflight and rejection output contract
+    license: MIT
+    mode: snapshot
+    required: true
+  - path: APPLICATIONS.md
+    label: Applications and verified endpoint scope
+    license: MIT
+    mode: snapshot
+    required: true
+  - path: TOOLS_AND_SERVICES.md
+    label: Built-in tools and parent-owned MCP/plugin setup
+    license: MIT
+    mode: snapshot
+    required: true
+  - path: skills/publication-calibrated-crispr/references/model-policy.json
+    label: Benchmark-informed model choice
+    license: MIT
+    mode: snapshot
+    required: true
+  - path: skills/publication-calibrated-crispr/references/benchmark-evidence.json
+    label: Historical measured summaries, not current agent readiness
+    license: MIT
+    mode: snapshot
+    required: true
+  - path: references/parameter-catalog.md
+    label: Retained CRISPR tool and model parameter surfaces for source-grounded verification
+    license: MIT
+    mode: snapshot
+    required: true
+limits:
+  max_iterations: 60
+  timeout_seconds: 3600
+platforms: [linux]
+fixtures:
+  - input: tests/cases.json
+    expected: tests/expected.json
+    description: Eight synthetic request-metadata cases; no guide sequences, inference or invented scientific results.
+  - input: tests/synthetic_harness_record.json
+    expected: tests/expected_harness.json
+    description: Synthetic software-only v2 evidence record; never a measured native benchmark.
+  - input: tests/sample.csv
+    expected: tests/expected.json
+    description: Sixteen inert policy/context/label/opt-in cases, not guide design or inference.

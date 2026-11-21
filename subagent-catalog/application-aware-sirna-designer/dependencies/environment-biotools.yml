@@ -1,0 +1,7 @@
+name: application-aware-sirna-biotools
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - viennarna=2.7.2
+  - bowtie2=2.5.5

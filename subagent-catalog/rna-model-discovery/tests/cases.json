@@ -1,0 +1,53 @@
+{
+  "fixture_kind": "SYNTHETIC_METADATA_ONLY",
+  "cases": [
+    {
+      "name": "setup_mode",
+      "request": { "mode": "SETUP" }
+    },
+    {
+      "name": "audit_mode",
+      "request": { "mode": "AUDIT" }
+    },
+    {
+      "name": "unknown_mode",
+      "request": { "mode": "discover" }
+    },
+    {
+      "name": "discover_missing_all",
+      "request": { "mode": "DISCOVER" }
+    },
+    {
+      "name": "discover_no_authorization",
+      "request": {
+        "mode": "DISCOVER",
+        "task_description": "predict translation efficiency from CDS and UTR sequence",
+        "capability_gap": "translation-efficiency prediction",
+        "output_root": "outputs/discovery"
+      }
+    },
+    {
+      "name": "discover_complete",
+      "request": {
+        "mode": "DISCOVER",
+        "task_description": "predict translation efficiency from CDS and UTR sequence",
+        "capability_gap": "translation-efficiency prediction",
+        "output_root": "outputs/discovery",
+        "search_authorization": "PARENT_AUTH_TOKEN_2026",
+        "registry_path": "outputs/registry/registry.json"
+      }
+    },
+    {
+      "name": "evaluate_missing_manifest",
+      "request": { "mode": "EVALUATE", "task_description": "rank candidates", "output_root": "outputs/eval" }
+    },
+    {
+      "name": "spec_missing_evidence",
+      "request": { "mode": "SPEC", "task_description": "emit spec", "output_root": "outputs/spec", "selected_candidate": "MODEL_A" }
+    },
+    {
+      "name": "malformed_task",
+      "request": ["not", "an", "object"]
+    }
+  ]
+}

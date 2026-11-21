@@ -1,0 +1,8 @@
+name: grna-editing
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10.21
+  - pip
+  - pip:
+    - -r requirements-editing.txt

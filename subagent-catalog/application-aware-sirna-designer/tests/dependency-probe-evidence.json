@@ -1,0 +1,117 @@
+{
+  "scope": "Actual isolated metadata probes on explicitly selected existing interpreters; no imports/model/scientific inference",
+  "results": {
+    "qa": {
+      "profile": "qa",
+      "status": "PASS_METADATA_ONLY",
+      "python": "3.13.7",
+      "python_matches": true,
+      "version_mismatches": {},
+      "duplicate_metadata": {
+        "pyyaml": [
+          "6.0.2",
+          "6.0.3"
+        ],
+        "packaging": [
+          "25.0",
+          "26.3"
+        ]
+      },
+      "scientific_execution": false,
+      "model_readiness_verified": false,
+      "clean_install_verified": false
+    },
+    "rnai": {
+      "profile": "rnai",
+      "status": "DEPENDENCY_MISMATCH",
+      "python": "3.13.7",
+      "python_matches": true,
+      "version_mismatches": {
+        "scikit-learn": {
+          "expected": "1.8.0",
+          "observed": null
+        },
+        "biopython": {
+          "expected": "1.86",
+          "observed": null
+        },
+        "tensorflow": {
+          "expected": "2.21.0",
+          "observed": null
+        },
+        "keras": {
+          "expected": "3.14.0",
+          "observed": null
+        }
+      },
+      "duplicate_metadata": {
+        "numpy": [
+          "2.2.4",
+          "2.5.4"
+        ],
+        "scipy": [
+          "1.15.3",
+          "1.18.1"
+        ],
+        "pandas": [
+          "2.2.3+dfsg",
+          "3.0.6"
+        ]
+      },
+      "scientific_execution": false,
+      "model_readiness_verified": false,
+      "clean_install_verified": false
+    },
+    "rnaispline": {
+      "profile": "rnaispline",
+      "status": "DEPENDENCY_MISMATCH",
+      "python": "3.13.7",
+      "python_matches": true,
+      "version_mismatches": {
+        "scikit-learn": {
+          "expected": "1.8.0",
+          "observed": null
+        },
+        "biopython": {
+          "expected": "1.86",
+          "observed": null
+        },
+        "torch": {
+          "expected": "2.10.0",
+          "observed": null
+        }
+      },
+      "duplicate_metadata": {
+        "numpy": [
+          "2.2.4",
+          "2.5.4"
+        ],
+        "scipy": [
+          "1.15.3",
+          "1.18.1"
+        ],
+        "pandas": [
+          "2.2.3+dfsg",
+          "3.0.6"
+        ]
+      },
+      "scientific_execution": false,
+      "model_readiness_verified": false,
+      "clean_install_verified": false
+    },
+    "oligoformer": {
+      "profile": "oligoformer",
+      "status": "PASS_METADATA_ONLY",
+      "python": "3.8.20",
+      "python_matches": true,
+      "version_mismatches": {},
+      "duplicate_metadata": {},
+      "scientific_execution": false,
+      "model_readiness_verified": false,
+      "clean_install_verified": false
+    }
+  },
+  "absolute_interpreter_paths": "Omitted from redistributable package; recipient must select its own trusted bindings",
+  "scientific_execution": false,
+  "model_readiness_verified": false
+}

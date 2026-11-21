@@ -1,0 +1,3 @@
+# Model and evidence notes
+
+Fresh RN.Ai control replay reproduced prior scores exactly. Core19 improved the observed full-cohort AUC slightly but not other-target selection; target-specific paired exploratory intervals included zero. Fresh OligoFormer retained native active dropout and scored a different cohort/protocol from its published Mixset average. SiaRNA had a random-feature preprocessing blocker; ENsiRNA lacked verified input-matched structures; BERT-siRNA lacked an available fine-tuned checkpoint in the inspected sources. These are historical observations, not current asset entitlements or evaluations of blocked models. Keep best_design null and experimental_validation false; return scope/uncertainty honestly.

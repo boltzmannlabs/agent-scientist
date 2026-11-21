@@ -1,0 +1,3 @@
+# Source and redistribution boundaries
+
+New code and procedural guidance are MIT-authored for this package. Generic record auditing and SCI schema-probe code reuse the previously MIT-authored harness utilities; only the siRNA task-ID range/schema title is adapted. Historical measured summaries are factual summaries of retained Runs 4-6, not newly run results or redistributed original datasets. The older siRNA specialist and campaign repository are not copied or changed. No third-party model source, checkpoint, transcript, clinical sequence, paper full text, frozen protocol code or restricted dataset is included. Metadata version probes do not grant asset or execution rights. Bibliographic pointers are not permission to retrieve or upload their contents.

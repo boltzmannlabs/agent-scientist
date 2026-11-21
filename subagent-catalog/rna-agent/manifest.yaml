@@ -1,0 +1,129 @@
+{
+  "schema_version": 2,
+  "id": "rna-agent",
+  "name": "rna-agent",
+  "version": "1.2.0",
+  "authors": [
+    "Agent Scientist"
+  ],
+  "license": "MIT",
+  "description": "RNA coordinator with deterministic routing, native reviewed child-specialist bindings, dependency planning and result verification.",
+  "sci_requires": ">=0",
+  "instructions": "instructions.md",
+  "output": "Routing rationale, actual child run IDs, verified outcomes and output artifacts, dependency readiness, and consolidated missing inputs. No independent scientific claims.",
+  "automatic": false,
+  "tools": [
+    "read_file",
+    "search_files",
+    "write_file",
+    "terminal",
+    "execute_code",
+    "skill_view",
+    "delegate_task"
+  ],
+  "skills": [
+    {
+      "id": "rna-orchestration",
+      "kind": "package",
+      "path": "skills/rna-orchestration"
+    },
+    {
+      "id": "rna-dependency-setup",
+      "kind": "package",
+      "path": "skills/rna-dependency-setup"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "python_core",
+      "kind": "program",
+      "optional": true,
+      "version": ">=3.12",
+      "version_args": [
+        "--version"
+      ],
+      "version_contains": "Python 3.",
+      "artifacts": []
+    }
+  ],
+  "references": [
+    {
+      "path": "references/routing-table.json",
+      "label": "Machine-readable routing table; single source of truth for router script and instructions",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/leaf-dependency-matrix.json",
+      "label": "Leaf dependency matrix with pins, roles and satisfaction routes",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/delegation-contract.md",
+      "label": "Directive format, chaining and blocked-outcome rules",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/registry.schema.json",
+      "label": "Shared RNA model and tool registry entry contract",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "dependencies.json",
+      "label": "Orchestrator software profile",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "DEPENDENCIES.md",
+      "label": "Reviewed setup and approval boundaries",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    }
+  ],
+  "limits": {
+    "max_iterations": 50,
+    "timeout_seconds": 3600
+  },
+  "platforms": [
+    "linux"
+  ],
+  "fixtures": [
+    {
+      "input": "tests/cases.json",
+      "expected": "tests/expected.json",
+      "description": "Synthetic routing/setup metadata cases; no delegation, probe or installation."
+    }
+  ],
+  "children": [
+    {
+      "role": "sirna",
+      "package": "application-aware-sirna-designer",
+      "version": ">=1.3.0,<2.0.0"
+    },
+    {
+      "role": "grna",
+      "package": "application-aware-grna-designer",
+      "version": ">=1.6.0,<2.0.0"
+    },
+    {
+      "role": "discovery",
+      "package": "rna-model-discovery",
+      "version": ">=1.1.1,<2.0.0"
+    },
+    {
+      "role": "execution",
+      "package": "rna-model-execution",
+      "version": ">=1.0.0,<2.0.0"
+    }
+  ]
+}
