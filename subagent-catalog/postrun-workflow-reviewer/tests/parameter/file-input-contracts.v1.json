@@ -1,0 +1,22 @@
+{
+  "tools": {
+    "synthetic_text_filter": {
+      "files": {
+        "source_file": {
+          "formats": [
+            "txt"
+          ]
+        }
+      }
+    },
+    "synthetic_text_repair": {
+      "files": {
+        "input_text": {
+          "formats": [
+            "txt"
+          ]
+        }
+      }
+    }
+  }
+}

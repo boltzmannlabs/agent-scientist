@@ -1,0 +1,18 @@
+{
+  "stage": "transform",
+  "old_tool": "synthetic_text_filter",
+  "new_tool": "synthetic_text_repair",
+  "inputs": {
+    "input_text": "source.txt"
+  },
+  "outputs": {
+    "filtered_rows": "rows.txt"
+  },
+  "sources": [
+    "output-guide"
+  ],
+  "assumptions": "The fixture audit accepts the alternate parser output without an adapter.",
+  "output_checks": {
+    "rows.txt": "UTF-8, one original row identity per line, same normalization."
+  }
+}

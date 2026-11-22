@@ -1,0 +1,23 @@
+{
+  "package_id": "postrun-workflow-reviewer",
+  "package_version": "0.2.0",
+  "local": {
+    "status": "passed",
+    "environment": "SCI 0.1.1 from dev c12803e028097565c6ec69df5c3da74178210c07. Linux x86_64, native CLI runtime, reviewed managed installer, disposable owner profiles, OpenAI Codex gpt-6.2-sol. Only fabricated workflow data was sent to the configured model.",
+    "checks": [
+      "Managed installation under workflow-reviewer-managed-test completed with ready status in fresh profiles. Saved grants were manual read_file only, with no children, skills or scientific tools.",
+      "The native file dispatcher read the assigned token and explicitly denied the existing sibling file and directory search. No networking was available to the dispatcher probe.",
+      "Capacity case sa-0-6bfeb091 selected the exact integer 8 to 16 edit and left the independent stage outside the rerun plan.",
+      "Competing-options case sa-0-9d34757c selected the compatible parser replacement over an admitted capacity increase, preserved bindings and screened to transform then audit.",
+      "Missing-receipt case sa-0-30bccc27 returned blocked, requested reconciliation and produced no rerun plan. The admitted option set was empty.",
+      "All three actual model outputs passed first-response SCI and independent strict JSON validation. Every assigned file was read and all citations matched the scoped evidence. No real workflow evidence or scientific jobs were sent.",
+      "Eleven package operator tests and the 57 tests in SCI's portable specialist CI regression suite passed. The ongoing scientific comparison and non-Linux platforms were outside this test."
+    ]
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "",
+    "checks": []
+  }
+}
