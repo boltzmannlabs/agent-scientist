@@ -1,0 +1,54 @@
+{
+  "task_evidence": "task",
+  "evaluation_evidence": "evaluation",
+  "resource_evidence": "resources",
+  "external_inputs": [
+    "source.txt"
+  ],
+  "stages": [
+    {
+      "id": "transform",
+      "engine": "boltzmann",
+      "tool": "synthetic_text_filter",
+      "status": "succeeded",
+      "result_evidence": "transform-result",
+      "parameters": {
+        "capacity": 8
+      },
+      "inputs": {
+        "source_file": "source.txt"
+      },
+      "outputs": {
+        "accepted_rows": "rows.txt"
+      }
+    },
+    {
+      "id": "independent",
+      "engine": "local",
+      "tool": "synthetic_count",
+      "status": "succeeded",
+      "result_evidence": "independent-result",
+      "parameters": {},
+      "inputs": {
+        "source": "source.txt"
+      },
+      "outputs": {
+        "summary": "summary.txt"
+      }
+    },
+    {
+      "id": "audit",
+      "engine": "local",
+      "tool": "synthetic_audit",
+      "status": "succeeded",
+      "result_evidence": "audit-result",
+      "parameters": {},
+      "inputs": {
+        "rows": "rows.txt"
+      },
+      "outputs": {
+        "audit": "audit.txt"
+      }
+    }
+  ]
+}

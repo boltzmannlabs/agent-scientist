@@ -1,0 +1,38 @@
+{
+  "decision": "propose",
+  "case_id": "synthetic-workflow-replacement",
+  "baseline_sha256": "93226b9d791a3528c73c0f93e1eadf05d55769a551e35bf282f2221cb717292a",
+  "evidence": [
+    "transform-result",
+    "evaluation",
+    "tool-contracts.v1",
+    "file-input-contracts.v1",
+    "input-limits.v1",
+    "compatibility",
+    "output-guide"
+  ],
+  "diagnosis": "The transform failed on a syntax variant the documented replacement accepts.",
+  "success_criterion": "Recover more verified rows under the same audit and original input.",
+  "change": {
+    "kind": "tool_replacement",
+    "stage": "transform",
+    "new_tool": "synthetic_text_repair",
+    "inputs": {
+      "input_text": "source.txt"
+    },
+    "parameters": {
+      "capacity": 8
+    },
+    "outputs": {
+      "filtered_rows": "rows.txt"
+    },
+    "compatibility": "compatibility",
+    "old_tool": "synthetic_text_filter",
+    "catalog": "tool-contracts.v1"
+  },
+  "fixed_conditions": "Keep source bytes and audit rules fixed.",
+  "expected_benefit": "Recover verified rows lost by the baseline.",
+  "cost_and_risk": "Potential processing overhead and row-normalization differences.",
+  "validation_plan": "Rerun the transform and audit the exact row identities.",
+  "reversal_criterion": "Revert if identity changes or the audit does not improve."
+}

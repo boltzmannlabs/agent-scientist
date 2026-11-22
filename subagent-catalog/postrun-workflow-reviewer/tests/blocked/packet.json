@@ -1,0 +1,50 @@
+{
+  "case_id": "synthetic-workflow-blocked",
+  "baseline_sha256": "03b78fc4b8430824e3e3309f77b430fc91c3bd54ad1f4ac5c91d9452633784c3",
+  "evidence": {
+    "audit-result": {
+      "path": "audit-result.md",
+      "sha256": "fdfd4d620e99ac6c962db054cd1e0b7eaed0d331dd9f4485c9cb15ade5438af9"
+    },
+    "evaluation": {
+      "path": "evaluation.md",
+      "sha256": "f505e8d21ea58a95a31a92e239e88b5a582a7898d60f7d6e299398ca09d740d2"
+    },
+    "file-input-contracts.v1": {
+      "path": "file-input-contracts.v1.json",
+      "sha256": "2e3b2f5cbc09412e6b6e524695ac4fbd8f45de7315f114231157044479f5ab64"
+    },
+    "independent-result": {
+      "path": "independent-result.md",
+      "sha256": "7e4d73241a2e06b7279351c9b031de95ac0615cf78bc3c6c723f6df4d3dd688d"
+    },
+    "input-limits.v1": {
+      "path": "input-limits.v1.json",
+      "sha256": "11b0838fbc47c5693c39f5d89ed2442f8c38ab65f0f34fc3468f89d23d2e1681"
+    },
+    "resources": {
+      "path": "resources.md",
+      "sha256": "ce2bb8fb53d9859b1126c42c917a754d8b16c58de021035ba553864bfae3ee30"
+    },
+    "scope": {
+      "path": "scope.json",
+      "sha256": "ccf8a4e0552cd2a6b9cdd18c98d646b5e104628324052fd27888f5ea8da4ed94"
+    },
+    "task": {
+      "path": "task.md",
+      "sha256": "1356d834708eadf9bfc524916edd4742902608da049eaf5c60668471bf8b10a2"
+    },
+    "tool-contracts.v1": {
+      "path": "tool-contracts.v1.json",
+      "sha256": "487c3d84cfd23c0a77b606b696d9aa63de291d013801c8042546550c3850defd"
+    },
+    "transform-result": {
+      "path": "transform-result.md",
+      "sha256": "30722b392ba303b8f81048b1bc6541e6d21723f26643245e0724e2c383fcbbca"
+    },
+    "workflow": {
+      "path": "workflow.json",
+      "sha256": "03b78fc4b8430824e3e3309f77b430fc91c3bd54ad1f4ac5c91d9452633784c3"
+    }
+  }
+}

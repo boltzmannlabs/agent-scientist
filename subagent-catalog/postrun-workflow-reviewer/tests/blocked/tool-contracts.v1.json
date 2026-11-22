@@ -1,0 +1,50 @@
+{
+  "tools": {
+    "synthetic_text_filter": {
+      "job_name": "synthetic_text_filter",
+      "status": "active",
+      "execution_blocked": false,
+      "request_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_file",
+          "capacity"
+        ],
+        "properties": {
+          "source_file": {
+            "type": "string",
+            "x-input-kind": "file"
+          },
+          "capacity": {
+            "type": "integer",
+            "x-input-kind": "value"
+          }
+        }
+      }
+    },
+    "synthetic_text_repair": {
+      "job_name": "synthetic_text_repair",
+      "status": "active",
+      "execution_blocked": false,
+      "request_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "input_text",
+          "capacity"
+        ],
+        "properties": {
+          "input_text": {
+            "type": "string",
+            "x-input-kind": "file"
+          },
+          "capacity": {
+            "type": "integer",
+            "x-input-kind": "value"
+          }
+        }
+      }
+    }
+  }
+}

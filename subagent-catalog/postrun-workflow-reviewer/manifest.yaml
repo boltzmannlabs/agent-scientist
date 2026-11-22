@@ -1,0 +1,32 @@
+schema_version: 1
+id: postrun-workflow-reviewer
+name: postrun-workflow-reviewer
+version: 0.2.0
+authors:
+  - Internal Ankith benchmark project
+license: MIT
+description: Review a frozen workflow and recommend one stage parameter change, a compatible Boltzmann tool replacement, retain, or blocked.
+sci_requires: '>=0.1.1'
+instructions: instructions.md
+output: One advisory JSON object bound to the frozen workflow and authorized options.
+automatic: false
+tools:
+  - read_file
+skills: []
+dependencies: []
+references: []
+limits:
+  max_iterations: 16
+  timeout_seconds: 300
+platforms:
+  - any
+fixtures:
+  - input: tests/parameter/packet.json
+    expected: tests/parameter/expected.json
+    description: Fabricated cache workflow with a supported capacity change.
+  - input: tests/replacement/packet.json
+    expected: tests/replacement/expected.json
+    description: Fabricated parser failure with a capacity edit and compatible replacement both admitted.
+  - input: tests/blocked/packet.json
+    expected: tests/blocked/expected.json
+    description: Fabricated workflow with an unresolved transformation receipt and no admissible edits.
