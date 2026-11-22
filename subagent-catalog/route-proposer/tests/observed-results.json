@@ -1,0 +1,241 @@
+{
+  "kind": "Observed test outputs; not runtime examples or executable fixtures",
+  "revision": "8f22ee2da3bd0fb7ac548cc34372f7a724ffa377",
+  "standalone_cases": [
+    {
+      "case": "achiral",
+      "model": "glm-5.3",
+      "provider": "boltzmann_models",
+      "duration_seconds": 121.78131571295671,
+      "source_result_sha256": "90bc2f30f7cce31217cc7accfe54263944aa6de984b0ef08a2fbc826139862b8",
+      "owner_acceptance": "verified_hypotheses",
+      "proposal": {
+        "routes": [
+          {
+            "route_id": "pha-lah-1",
+            "name": "LiAlH4 reduction of phenylacetic acid to 2-phenylethanol",
+            "reactions": [
+              {
+                "product": "OCCc1ccccc1",
+                "reactants": [
+                  "O=C(O)Cc1ccccc1",
+                  "[Al+3].[H-].[H-].[H-].[H-].[Li+]"
+                ]
+              }
+            ],
+            "rationale": "Direct single-disconnection route: reduce phenylacetic acid (2-phenylethanoic acid, O=C(O)Cc1ccccc1) with lithium aluminum hydride to the corresponding primary alcohol 2-phenylethanol (OCCc1ccccc1). Carboxylic acids are quantitatively reduced to primary alcohols by LiAlH4 via the aluminate carboxylate, aldehyde-level intermediate and aluminum alkoxide, released on aqueous workup. This is a standard, high-yielding transformation for arylacetic acids in general synthetic practice; no retrieved record documents this exact substrate conversion, so the route is proposed on general reaction knowledge with that limitation disclosed. Phenylacetic acid is a simple, widely used commodity leaf; its stock membership is unverified. One reaction, depth 1, within max_depth 3 and max_total_reactions 3.",
+            "feasibility_risks": [
+              "No retrieved literature record supports this exact substrate reduction; support is generic aluminohydride carboxylic-acid reduction chemistry, not an exact recorded precedent for phenylacetic acid to 2-phenylethanol.",
+              "Carboxylic-acid reduction consumes one hydride equivalent on the acidic proton, so excess LiAlH4 is required; stoichiometry is not optimized here.",
+              "Aqueous acidic workup is required to liberate the alcohol from aluminum alkoxide salts and is not represented as a separate reaction.",
+              "LiAlH4 moisture sensitivity limits reagent handling; no conditions, yields, or scale are claimed.",
+              "Phenylacetic acid availability is unknown (inventory status: unknown).",
+              "The substrate contains no reducible aryl or benzylic C-H bonds at risk under these conditions, but over-reduction is not a concern here; the main risk is procedural, not chemoselectivity."
+            ],
+            "evidence_ids": [],
+            "self_assessment": "proposed",
+            "stereo_plan": {
+              "controls": [],
+              "limitations": [
+                "Target OCCc1ccccc1 has no specified or potential stereochemical elements (backend target_stereo mode none, specified_elements empty); strategy not_applicable with no controls.",
+                "No stereocentre is created in the reduction; the benzylic methylene of the product is achiral."
+              ],
+              "strategy": "not_applicable"
+            }
+          }
+        ],
+        "limitations": [
+          "No retrieved record evidences the exact transformation (phenylacetic acid + LiAlH4 to 2-phenylethanol); evidence_ids are empty and the route rests on generic textbook aluminohydride carboxylic-acid reduction chemistry, which remains unverified here.",
+          "Inventory status is unknown: phenylacetic acid and LiAlH4 commercial availability was not verified by the backend.",
+          "Retrieved records (epmc:MED:36185366, epmc:MED:27461578, epmc:MED:32034275, epmc:MED:29997838) are adjacent-topic abstracts (epoxide hydroboration to Markovnikov alcohols, olefin radical hydrofunctionalization, pheromone stereochemistry, amide hydrogenation) and do not establish precedent for this substrate.",
+          "Graph validation and source binding do not establish chemical feasibility, yield, or selectivity."
+        ]
+      }
+    },
+    {
+      "case": "stereo",
+      "model": "glm-5.3",
+      "provider": "boltzmann_models",
+      "duration_seconds": 127.41769183496945,
+      "source_result_sha256": "657e341f2782e38aafca0c11c182a72a0a6b1e53ab7f2838a0ad5b84847655be",
+      "owner_acceptance": "verified_hypotheses",
+      "proposal": {
+        "routes": [
+          {
+            "route_id": "ath-acetophenone-r1",
+            "name": "Asymmetric transfer hydrogenation of acetophenone to (R)-1-phenylethanol",
+            "reactions": [
+              {
+                "product": "C[C@@H](O)c1ccccc1",
+                "reactants": [
+                  "CC(=O)c1ccccc1",
+                  "CC(C)O"
+                ]
+              }
+            ],
+            "rationale": "The only stereogenic element of the target is the benzylic secondary alcohol carbon. The most direct disconnection is reduction of the corresponding prochiral ketone, acetophenone (CC(=O)c1ccccc1), in a single enantioselective step. Asymmetric transfer hydrogenation of ketones with Noyori-type chiral (arene)Ru-TsDPEN complexes is an established method class (retrieved records epmc:MED:32463162, epmc:MED:25853228, and transfer hydrogenation with >90% ee in epmc:MED:31314486), using a hydrogen donor such as 2-propanol; the aryl methyl ketone pattern of acetophenone is the archetypal substrate class for this method, and one C=O reduction forms the C-O stereocentre with no additional functional-group manipulation required.",
+            "feasibility_risks": [
+              "No exact-substrate precedent for acetophenone in the retrieved records; selectivity transfer from other ketone substrates is not assured.",
+              "Catalyst enantiomer that affords the R configuration on acetophenone is not established by the retrieved sources; wrong enantiomer selection would give the S alcohol.",
+              "Hydrogen donor identity and conditions (solvent, temperature, base) are not specified in retrieved sources.",
+              "Starting-material and catalyst availability unverified (inventory unknown).",
+              "Chemical feasibility of this specific reduction is not established by validation or by the cited abstracts."
+            ],
+            "evidence_ids": [
+              "epmc:MED:32463162",
+              "epmc:MED:25853228",
+              "epmc:MED:31314486"
+            ],
+            "self_assessment": "proposed",
+            "stereo_plan": {
+              "controls": [
+                {
+                  "action": "asymmetric_creation",
+                  "configuration": "R",
+                  "control": "The R benzylic stereocentre is created de novo by enantioselective transfer hydrogenation of prochiral acetophenone with a chiral Noyori-type [(arene)Ru(TsDPEN)Cl] precatalyst and 2-propanol as hydrogen donor: one enantiomer of the TsDPEN ligand delivers hydride to one face of the ketone, giving the R alcohol. The retrieved records establish this catalyst class reduces aryl/sulfone ketones enantioselectively but do not state which catalyst enantiomer gives R for acetophenone; the ligand-enantiomer-to-product-configuration mapping is therefore unresolved and must be confirmed (opposite ligand enantiomer gives the S alcohol). No chiral-pool input is required; the stereocentre is entirely catalyst-controlled.",
+                  "established_at": "C[C@@H](O)c1ccccc1",
+                  "evidence_ids": [
+                    "epmc:MED:32463162",
+                    "epmc:MED:25853228",
+                    "epmc:MED:31314486"
+                  ],
+                  "evidence_scope": "analogue",
+                  "origin_configuration": "R",
+                  "origin_element": "atom:2",
+                  "reported_selectivity": null,
+                  "risks": [
+                    "Analogue evidence only: enantioselectivities reported for other ketone substrates must not be transferred to acetophenone.",
+                    "Catalyst enantiomer required for R configuration on acetophenone is not documented in retrieved sources.",
+                    "CIP label correspondence between catalyst handedness and product configuration is not predictable from retrieved text.",
+                    "Background non-enantioselective reduction (e.g. by donor solvent) could erode ee."
+                  ],
+                  "target_element": "atom:2"
+                }
+              ],
+              "limitations": [
+                "No exact-substrate stereochemical outcome (ee or absolute configuration) for acetophenone ATH was retrieved; reported ee values for other substrates are not transferable.",
+                "The enantiomer of the TsDPEN ligand that gives the R alcohol on acetophenone is unresolved in the retrieved record set.",
+                "Hydrogen-donor and reaction conditions are conventional assumptions, not source-supported for this substrate."
+              ],
+              "strategy": "asymmetric_synthesis"
+            }
+          }
+        ],
+        "limitations": [
+          "No retrieved record reports the asymmetric reduction of acetophenone itself or an ee/absolute-configuration outcome for this exact substrate; ATH evidence is analogue-level (other ketone classes: sulfone-substituted ketones, general ATH ketone screens, peptide-nanoassembly transfer hydrogenation).",
+          "Which enantiomer of the Ru-TsDPEN catalyst delivers the R alcohol on acetophenone is not stated in any retrieved record; the catalyst-enantiomer choice for R is unresolved and must be confirmed experimentally.",
+          "The hydrogen donor identity (2-propanol vs formic acid/triethylamine azeotrope) is not specified in retrieved records; 2-propanol is assumed as a conventional transfer-hydrogenation donor.",
+          "Inventory status is unknown; commercial availability of acetophenone, 2-propanol and the chiral precatalyst is unverified.",
+          "Graph validation and source-text binding do not establish chemical feasibility or reaction selectivity."
+        ]
+      }
+    }
+  ],
+  "combined_case": {
+    "status": "passed_functional_concurrent_merge",
+    "revision": "8f22ee2da3bd0fb7ac548cc34372f7a724ffa377",
+    "target": "OCCc1ccccc1",
+    "model": "glm-5.3",
+    "provider": "boltzmann_models",
+    "native_duration_seconds": 115.96718070295174,
+    "native_usage": {
+      "input": 63555,
+      "output": 5016
+    },
+    "cost": null,
+    "timing": {
+      "total_seconds": 682.3667945499765,
+      "search_proposer_overlap_seconds": 115.98827921401244,
+      "postcollection_optimization_seconds": 0.05588272993918508,
+      "additional_delay_after_model_seconds": 0.0806701818946749,
+      "first_model_result_seconds": 682.2861243680818
+    },
+    "baseline_routes": 2,
+    "additional_unique_graphs": 1,
+    "combined_eligible_selected": 3,
+    "accepted_improvements": 0,
+    "original_model_routes_preserved": true,
+    "public_model_output_unchanged": true,
+    "counts": {
+      "proposed": 1,
+      "schema_valid": 1,
+      "structurally_valid": 1,
+      "unique": 1,
+      "stock_connected": 0,
+      "chemically_assessed": 0,
+      "retained": 1,
+      "rejected": 0
+    },
+    "chemical_feasibility_established": false,
+    "chemical_superiority_established": false,
+    "cost_reduction_established": false,
+    "source_sha256": "11aeef50b18495e675bf9c6b296454ff296417946db27e64e77569e2d620c7bc",
+    "limitations": [
+      "One added graph is an unassessed acid-reduction hypothesis without exact retrieved evidence.",
+      "Timing shows overlap and finalization tail, not controlled model-only speed improvement.",
+      "Cold/warm model loading and pure inference time were not measured."
+    ],
+    "proposal": {
+      "routes": [
+        {
+          "route_id": "r1-paa-lialh4-reduction",
+          "name": "LiAlH4 reduction of phenylacetic acid to 2-phenylethanol",
+          "reactions": [
+            {
+              "product": "OCCc1ccccc1",
+              "reactants": [
+                "O=C(O)Cc1ccccc1",
+                "[AlH4-].[Li+]"
+              ]
+            }
+          ],
+          "rationale": "Single-step disconnection: reduce the carboxylic acid of phenylacetic acid (PhCH2CO2H) to the primary alcohol, giving the intact PhCH2CH2OH skeleton of the exact target OCCc1ccccc1 with no change to the aromatic ring or chain connectivity. LiAlH4 is the standard textbook reductant for converting benzylic carboxylic acids to primary alcohols. The route is one reaction (depth 1, total 1), within max_depth 3 and max_total_reactions 3. Literature searches in this assignment retrieved no exact-substrate precedent, so the proposal is chemical reasoning without cited support; the reductant is included as a consumed coreactant with that caveat disclosed.",
+          "feasibility_risks": [
+            "No retrieved record in this assignment documents LiAlH4 reduction of phenylacetic acid to 2-phenylethanol; the reductant identity and transformation outcome are proposed from general carboxylic-acid reduction chemistry, not from cited literature.",
+            "Carboxylic acid first consumes one hydride equivalent acid-base (H2 evolution) before reduction; excess hydride and careful aqueous workup are required; stoichiometry and conditions are not literature-verified here.",
+            "Phenylacetic acid starting-material availability is unknown (inventory status unknown).",
+            "LiAlH4 is pyrophoric and moisture-sensitive; operational safety constraints are not assessed by this proposal."
+          ],
+          "evidence_ids": [],
+          "self_assessment": "proposed",
+          "stereo_plan": {
+            "controls": [],
+            "limitations": [
+              "Target OCCc1ccccc1 contains no stereogenic atoms or stereodefined double bonds (backend target_stereo mode none, specified_elements empty); no stereochemical control is required.",
+              "No stereocentres are created or consumed in the proposed reduction; stereo_plan is not_applicable."
+            ],
+            "strategy": "not_applicable"
+          }
+        }
+      ],
+      "limitations": [
+        "Execution budget of two literature searches returned no record documenting the exact reduction of phenylacetic acid (or phenylacetaldehyde) to 2-phenylethanol; retrieved records (epmc:MED:29997838 amide hydrogenation, epmc:MED:41037636 BTEX chemobiological synthesis, epmc:MED:32938014 phosphonate analogues, epmc:MED:30509260 ketoreductases) do not establish reaction precedent for the proposed transformation.",
+        "Reductant identity (LiAlH4) is proposed from general chemical knowledge and is not supported by any retrieved source in this assignment; exact reaction precedent is not claimed.",
+        "Inventory was not supplied; commercial availability of phenylacetic acid is unknown.",
+        "Graph validation and source-text binding checks do not establish chemical feasibility; selectivity, yield and safety of the proposed step are unverified."
+      ]
+    }
+  },
+  "missing_target": {
+    "status": "passed_missing_input_behavior",
+    "runtime_status": "failed",
+    "exit_reason": "blocked",
+    "model": "glm-5.3",
+    "duration_seconds": 15.14,
+    "api_calls": 1,
+    "usage": {
+      "input": 9187,
+      "output": 716
+    },
+    "tool_trace": [],
+    "actual_reply": "Outcome: BLOCKED BEFORE EXECUTION\n\n- No exact target molecule was supplied (no SMILES, no name, no task_id). Route hypotheses must connect every reaction to one exact target identity, including encoded stereochemistry, isotopes, charges and all components; none exists to inspect, propose against, or validate.\n- Without a target I cannot run `inspect_target_stereochemistry` (requires a target string) or `read_retrosynthesis_task` (no 32-hex task_id was assigned), so no backend-numbered stereo requirements and no stored baseline exist for this run.\n- Per the assignment contract I will not invent a target, pad an empty routes array, or fabricate citations/verification receipts. The correct deliverable here is an empty proposal set with an explicit blocker, which is what this report is.\n\nNeeded from the parent to proceed:\n- The exact target structure (SMILES preferred, with stereo/isotope/charge/salt details), plus any task_id if the route was host-created, and any requested_count/max_depth/max_total_reactions overrides.\n\nSubagent run ID: sa-0-ced611d9. No files were created or modified; no literature search, validation or verification was performed since none can be bound to a target.",
+    "interpretation": "Expected blocked execution asks for exact SMILES; no invented target or tool calls. Not successful route generation."
+  },
+  "review_notes": [
+    "Achiral standalone rationale uses quantitatively/high-yielding language unsupported by retrieved exact evidence; preserve it as observed model text, not verified yield.",
+    "Stereo evidence is analogue-only; catalyst-enantiomer-to-R-product mapping remains unresolved.",
+    "Graph acceptance does not mean every content assertion passed review or chemistry is correct.",
+    "Unknown cost remains unknown."
+  ],
+  "integrated_merged_dev_status": "pending"
+}

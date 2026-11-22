@@ -7,7 +7,7 @@ from pathlib import PurePosixPath
 from sci_cli.subagent_package_io import tree, relative, verify, digest, LOCK
 
 TOKEN = re.compile(r'\{\{([^{}]+)\}\}')
-_PRIVATE_PATH = re.compile(r'(?:/home/|/Users/|/root/|[A-Za-z]:[\\/]|\.sci/(?:profiles|subagent-data)/)')
+_PRIVATE_PATH = re.compile(r'(?:/home/|/Users/|/root/|(?<![A-Za-z0-9_])[A-Za-z]:[\\/]|\.sci/(?:profiles|subagent-data)/)')
 _SECRET = re.compile(r'(?i)(?:-----BEGIN .*PRIVATE KEY-----|\b(?:sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{20,})|'
                      r'(?:api[_-]?key|password|access[_-]?token|client[_-]?secret)\s*[:=]\s*["\']?(?!\$\{|\{\{|unknown\b|example\b|none\b)[A-Za-z0-9_+/=-]{16,})')
 

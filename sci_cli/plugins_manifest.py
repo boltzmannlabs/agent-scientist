@@ -435,9 +435,12 @@ _VERSION_COMPARATOR_RE = re.compile(r"^\s*(>=|<=|==|!=|>|<)\s*(.+?)\s*$")
 
 def running_sci_version() -> str:
     """Base release version of the Sci code that is running."""
-    from sci_cli.version_info import get_version_info
+    from sci_cli.version_info import get_release_version, get_version_info
 
-    return get_version_info().base_version
+    base = get_version_info().base_version
+    # Some SCI releases use unprefixed tags (0.1.1). The provenance resolver
+    # may have no v-prefixed base even though the real release tag is known.
+    return get_release_version() if base == "unknown" else base
 
 
 _VERSION_SEGMENT_RE = re.compile(r"^\d+")
