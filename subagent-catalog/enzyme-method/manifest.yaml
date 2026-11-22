@@ -1,0 +1,46 @@
+{
+  "schema_version": 2,
+  "id": "enzyme-method",
+  "name": "enzyme-method",
+  "version": "1.1.0",
+  "authors": [
+    "Boltzmann Labs"
+  ],
+  "license": "MIT",
+  "description": "Select a method and interpret a comparable batch",
+  "sci_requires": ">=0",
+  "instructions": "instructions.md",
+  "output": "Method, reason, exact request or prerequisite, input references, expected observation and next decision.",
+  "automatic": false,
+  "tools": [
+    "read_file"
+  ],
+  "skills": [
+    {
+      "id": "enzyme-method",
+      "kind": "package",
+      "path": "skills/enzyme-method"
+    }
+  ],
+  "dependencies": [],
+  "references": [],
+  "limits": {
+    "max_iterations": 30,
+    "timeout_seconds": 0
+  },
+  "platforms": [
+    "any"
+  ],
+  "fixtures": [
+    {
+      "input": "tests/required-endpoint.txt",
+      "expected": "tests/required-endpoint.expected.json",
+      "description": "Compare two frozen enzyme sequences on the task's mandatory named stability scoring method. Tool A implements the named method and accepts both inputs. Tool B is cheaper and reports docking affinity."
+    },
+    {
+      "input": "tests/construct-mismatch.txt",
+      "expected": "tests/construct-mismatch.expected.json",
+      "description": "The supplied sequence differs from the frozen 70-residue parent at ordinal 24. A compatible stability scoring tool is available. Decide whether to prepare an executable request."
+    }
+  ]
+}
