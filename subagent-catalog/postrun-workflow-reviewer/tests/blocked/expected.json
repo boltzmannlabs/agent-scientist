@@ -1,0 +1,12 @@
+{
+  "decision": "blocked",
+  "case_id": "synthetic-workflow-blocked",
+  "baseline_sha256": "03b78fc4b8430824e3e3309f77b430fc91c3bd54ad1f4ac5c91d9452633784c3",
+  "evidence": [
+    "transform-result",
+    "audit-result"
+  ],
+  "diagnosis": "Transform acceptance and terminal receipt are unresolved.",
+  "success_criterion": "Verify the terminal receipt and then audit any returned rows.",
+  "missing_requirement": "A matching, durable terminal receipt and corresponding verified output."
+}
