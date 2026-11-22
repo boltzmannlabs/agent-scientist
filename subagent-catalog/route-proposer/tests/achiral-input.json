@@ -1,0 +1,7 @@
+{
+  "target": "OCCc1ccccc1",
+  "requested_count": 1,
+  "max_depth": 3,
+  "max_total_reactions": 3,
+  "assignment": "Propose up to one complete route. Retrieve primary sources; validate and verify. Return fewer or empty if no defensible proposal is available."
+}

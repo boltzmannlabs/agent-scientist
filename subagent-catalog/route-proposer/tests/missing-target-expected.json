@@ -1,0 +1,7 @@
+{
+  "required_checks": [
+    "Requests exact target molecule before generating a route",
+    "No scientific search job submitted",
+    "No target invented"
+  ]
+}

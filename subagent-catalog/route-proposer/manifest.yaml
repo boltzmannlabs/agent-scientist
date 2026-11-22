@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "id": "route-proposer",
+  "name": "route-proposer",
+  "version": "0.6.0",
+  "authors": [
+    "Gopi Krishna"
+  ],
+  "license": "MIT",
+  "description": "Generate independent complete route hypotheses and explicit stereochemical control plans using retrieved literature.",
+  "sci_requires": ">=0.1.1",
+  "instructions": "instructions.md",
+  "output": "Prefer the unchanged compact verification output with exactly status=completed, receipt_id and response_sha256, requested through compact_handoff=true. Full verified routes remain in the persisted receipt and are revalidated by Main. Legacy full envelopes with status, result and receipt_id remain supported; failed verification retains diagnostics. Main uses its explicitly installed owner plugin accept_specialist_retrosynthesis_result, passing the actual installed specialist name (including renames), final_envelope unchanged, and original target, requested_count, max_depth and max_total_reactions. The pinned dependency contains this owner bridge; recipient owner-plugin setup is required. Main must preserve original task constraints and accept only an authentic verification receipt. Graph acceptance is not chemical validation.",
+  "automatic": true,
+  "tools": [
+    "read_retrosynthesis_task",
+    "inspect_target_stereochemistry",
+    "search_route_literature",
+    "validate_route_hypotheses",
+    "verify_retrosynthesis_result"
+  ],
+  "skills": [],
+  "dependencies": [
+    {
+      "id": "retrosynthesis-support",
+      "kind": "plugin",
+      "source": "https://github.com/krish-200212/retrosynthesis-specialists",
+      "revision": "8f22ee2da3bd0fb7ac548cc34372f7a724ffa377",
+      "tools": [
+        "read_retrosynthesis_task",
+        "inspect_target_stereochemistry",
+        "search_route_literature",
+        "validate_route_hypotheses",
+        "verify_retrosynthesis_result"
+      ],
+      "skills": []
+    }
+  ],
+  "references": [],
+  "limits": {
+    "max_iterations": 10,
+    "timeout_seconds": 300
+  },
+  "platforms": [
+    "linux-amd64"
+  ],
+  "fixtures": [
+    {
+      "input": "tests/achiral-input.json",
+      "expected": "tests/achiral-expected.json",
+      "description": "achiral observable-contract fixture; expected checks are assertions to inspect, not claimed test results."
+    },
+    {
+      "input": "tests/stereo-input.json",
+      "expected": "tests/stereo-expected.json",
+      "description": "stereo observable-contract fixture; expected checks are assertions to inspect, not claimed test results."
+    },
+    {
+      "input": "tests/missing-target-input.json",
+      "expected": "tests/missing-target-expected.json",
+      "description": "missing-target observable-contract fixture; expected checks are assertions to inspect, not claimed test results."
+    }
+  ],
+  "unresolved": []
+}

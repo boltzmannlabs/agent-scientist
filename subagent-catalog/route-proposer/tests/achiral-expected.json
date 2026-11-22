@@ -1,0 +1,21 @@
+{
+  "target_identity": "OCCc1ccccc1",
+  "maximum_routes": 1,
+  "max_depth": 3,
+  "max_total_reactions": 3,
+  "required_checks": [
+    "Successful host acceptance of the unchanged verified envelope",
+    "Every retained reaction connects to exact target; no self-reactions or cycles",
+    "stereo_plan.strategy is not_applicable with empty controls",
+    "References bind to actual retrieved evidence IDs",
+    "No invented yield, stock availability, cost, or experimental success"
+  ],
+  "completion_criteria": {
+    "accepted_handoff": "Native child completes and Main accepts the unchanged verified envelope using original constraints",
+    "schema_and_graph_checks": "Every retained route passes the required backend checks",
+    "empty_result": "Valid contract completion, recorded separately; does not satisfy nonempty-route generation evidence",
+    "setup_or_provider_failure": "Expected failure behavior may be checked separately but never counts as a successful route-generation fixture",
+    "portable_owner_handoff": "Main accepts the unchanged child verification receipt through the explicitly configured owner bridge using the installed specialist name and original task bounds; bridge is published and tested. Graph acceptance does not establish chemistry.",
+    "strict_output": "Prose-wrapped JSON, Markdown fences, malformed envelopes and failed model calls are rejected, never counted as successful generation"
+  }
+}
