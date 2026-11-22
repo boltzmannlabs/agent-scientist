@@ -1,0 +1,37 @@
+schema_version: 2
+id: monoclonal-benchmark-analyst
+name: monoclonal-benchmark-analyst
+version: 1.0.0
+authors:
+  - Naga Jyothi
+license: MIT
+description: Define benchmark protocols and interpret actual MAIN-produced comparison outputs.
+sci_requires: '>=0'
+instructions: instructions.md
+output: Concise evidence-backed phase return with actual run IDs, sources/artifact paths and hashes, uncertainties, stage blockers and next MAIN action; follow the selected handoff schema when requested.
+automatic: false
+tools:
+    - read_file
+    - search_files
+    - terminal
+    - web_extract
+    - web_search
+    - write_file
+skills:
+  - id: monoclonal-benchmark-analysis
+    kind: package
+    path: skills/monoclonal-benchmark-analysis
+  - id: monoclonal-research-handoffs
+    kind: package
+    path: skills/monoclonal-research-handoffs
+dependencies: []
+references: []
+limits:
+  max_iterations: 160
+  timeout_seconds: 0
+platforms:
+  - any
+fixtures:
+  - input: tests/fixture.json
+    expected: tests/expected.json
+    description: Synthetic monoclonal research fixture with observable counts.

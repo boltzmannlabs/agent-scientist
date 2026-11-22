@@ -1,0 +1,22 @@
+{
+  "package_id": "monoclonal-workflow-scientist",
+  "case": "fixture.json",
+  "common": {
+    "preserve_inputs": true,
+    "artifact_contract": "phase record written under the assigned output directory, findings schema_version 2.0, stable finding_id/claim/evidence/sources/uncertainty/affected_stages/owner",
+    "missing_inputs": "request missing required inputs from parent; do not substitute unrelated files",
+    "no_execution": "no scientific models run, no jobs submitted"
+  },
+  "role_checks": {
+    "observable_counts": {
+      "workflows_proposed_min": 2,
+      "each_workflow_has": [
+        "stages",
+        "dependencies",
+        "controls",
+        "fallback conditions"
+      ],
+      "uses_only_scout_verified_tools": true
+    }
+  }
+}

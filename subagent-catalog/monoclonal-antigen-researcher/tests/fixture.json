@@ -1,0 +1,68 @@
+{
+  "task_id": "fixture-mab-001",
+  "objective": "Reference-conditioned heavy-chain CDR redesign of a synthetic antibody, light chain protected.",
+  "antigen": {
+    "name": "SyntheticAntigen-Alpha",
+    "organism": "synthetic",
+    "sequence": "MKTLLILAVL",
+    "known_binders": [
+      "SynFab-1 (reference antibody)"
+    ]
+  },
+  "reference_antibody": {
+    "name": "SynFab-1",
+    "vh": "EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAKGYGIFDYWGQGTLVTVSS",
+    "vl": "SYELTQPPSVSVSPGQTASITCSGDNIGDQYAHWYQQKPGQSPVLVIYQDKNRPSGIPERFSGSNSGNTATLTISGTQAMDEADYYCATYTGFGSLAVFGGGTKLTVLG",
+    "native_cdrs": {
+      "HCDR1": "GYSFSTYW",
+      "HCDR2": "IYPGDSYT",
+      "HCDR3": "ARGYGIFDY"
+    }
+  },
+  "design_scope": {
+    "editable": "heavy-chain CDRs only (HCDR3 or HCDR1/2/3 per assignment)",
+    "protected": "complete light chain; heavy framework residues"
+  },
+  "candidate_count_requested": 5,
+  "budget_note": "computational benchmark fixture only; no wet-lab claims",
+  "supplied_tool_metadata": {
+    "tools": [
+      {
+        "name": "Tool-A (structure-conditioned design)",
+        "kind": "design",
+        "input": "paired Fv structure",
+        "output": "designed VH/VL",
+        "constraints": "requires reference structure"
+      },
+      {
+        "name": "Tool-B (sequence CDR redesign)",
+        "kind": "design",
+        "input": "VH/VL sequences + CDR mask",
+        "output": "designed VH",
+        "constraints": "no structure required"
+      },
+      {
+        "name": "Tool-C (structure prediction)",
+        "kind": "prediction",
+        "input": "paired VH/VL",
+        "output": "Fv structure",
+        "constraints": "GPU recommended"
+      }
+    ]
+  },
+  "benchmark_reference": {
+    "file": "synthetic_reference.csv (inline)",
+    "rows": [
+      {
+        "candidate": "SynFab-1-native",
+        "metric_scrmsd_hcdr123": 0.35,
+        "metric_aar_hcdr3": 1.0
+      },
+      {
+        "candidate": "SynFab-1-variant-1",
+        "metric_scrmsd_hcdr123": 0.41,
+        "metric_aar_hcdr3": 0.89
+      }
+    ]
+  }
+}
