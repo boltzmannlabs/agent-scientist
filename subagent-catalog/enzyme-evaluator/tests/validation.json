@@ -12,9 +12,14 @@
     ]
   },
   "integrated": {
-    "status": "pending",
-    "tested_commit": null,
-    "environment": "",
-    "checks": []
+    "status": "passed",
+    "tested_commit": "8cc5b08b380022d64d3041195524bc59dedfd6d0",
+    "environment": "Agent Scientist dev, Linux x86_64, Python 3.14.7, fresh PM-built development/test environment and isolated SCI home. Native CLI used OpenAI Codex gpt-6.1-sol. Reviewed catalog installation used renamed definitions.",
+    "checks": [
+      "Confirmed the package installed from the merged dev catalog at version 1.1.0 with its private skill and only read_file as its declared tool. Native intermediate delivery returned completed receipts. Each specialist read only its own fixture. The coordinator wrote the result report and fixture bytes were unchanged.",
+      "zero-qualifiers.txt (sa-0-58ab1403). Reported a complete assessment and zero qualified candidates when all mandatory checks had run.",
+      "missing-assessment.txt (sa-1-bfc213f7). Reported an incomplete assessment and unresolved qualification when a mandatory check was absent.",
+      "Synthetic fixture content was sent to the configured model provider. Model calls were used. No scientific jobs were submitted or billed. Full enzyme campaigns, live scientific services and other OSes were outside this test."
+    ]
   }
 }
