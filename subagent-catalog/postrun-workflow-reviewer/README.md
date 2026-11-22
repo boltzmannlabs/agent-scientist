@@ -1,6 +1,12 @@
 # Post-run workflow reviewer
 
-`postrun-workflow-reviewer` is a manual, read-only SCI specialist. It reviews the whole frozen baseline, locates the limiting stage and chooses one supported change or returns `retain` or `blocked`. The package uses original benchmark-project instructions and fabricated test data, distributed under the [MIT License](LICENSE).
+`postrun-workflow-reviewer` is an automatically selectable, read-only SCI specialist. It reviews the whole frozen baseline, locates the limiting stage and chooses one supported change or returns `retain` or `blocked`. The package uses original benchmark-project instructions and fabricated test data, distributed under the [MIT License](LICENSE).
+
+## Automatic selection
+
+SCI can select this specialist without the user naming it in a workflow request. Prepare and freeze the review packet after the baseline attempt has reached a terminal state. Obtain approval for the exact evidence files and model destination before dispatch. Dispatch once under the exact file scope and generated decision schema. For a running workflow or an unapproved packet, report the status to the operator and defer the review.
+
+SCI's automatic selection is model-driven. The package does not install a workflow-completion hook or change approval for evidence sharing or scientific execution.
 
 ## Run the baseline, then prepare the review
 

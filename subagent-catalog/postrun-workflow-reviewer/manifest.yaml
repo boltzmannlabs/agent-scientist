@@ -1,15 +1,15 @@
 schema_version: 1
 id: postrun-workflow-reviewer
 name: postrun-workflow-reviewer
-version: 0.2.0
+version: 0.3.0
 authors:
   - Internal Ankith benchmark project
 license: MIT
-description: Review a frozen workflow and recommend one stage parameter change, a compatible Boltzmann tool replacement, retain, or blocked.
+description: Automatically review a finished workflow when its frozen evidence and model destination are approved. Recommend one supported change, retain, or blocked.
 sci_requires: '>=0.1.1'
 instructions: instructions.md
 output: One advisory JSON object bound to the frozen workflow and authorized options.
-automatic: false
+automatic: true
 tools:
   - read_file
 skills: []
