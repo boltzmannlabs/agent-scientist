@@ -396,6 +396,20 @@ class TestCtxHasPlugin:
 
 
 class TestRequiresSci:
+    def test_unknown_base_uses_real_release_tag(self, monkeypatch):
+        from sci_cli import plugins_manifest
+        monkeypatch.setattr('sci_cli.version_info.get_version_info',
+                            lambda: SimpleNamespace(base_version='unknown'))
+        monkeypatch.setattr('sci_cli.version_info.get_release_version', lambda: '0.1.1')
+        assert plugins_manifest.running_sci_version() == '0.1.1'
+
+    def test_unknown_without_release_stays_unknown(self, monkeypatch):
+        from sci_cli import plugins_manifest
+        monkeypatch.setattr('sci_cli.version_info.get_version_info',
+                            lambda: SimpleNamespace(base_version='unknown'))
+        monkeypatch.setattr('sci_cli.version_info.get_release_version', lambda: 'unknown')
+        assert plugins_manifest.running_sci_version() == 'unknown'
+
     def test_gate_reads_the_running_code_version_not_dist_metadata(self, monkeypatch):
         """Compatibility gates use the running code's base release version."""
         from sci_cli import plugins_manifest
