@@ -1,0 +1,1 @@
+The supplied sequence differs from the frozen 70-residue parent at ordinal 24. A compatible stability scoring tool is available. Decide whether to prepare an executable request.

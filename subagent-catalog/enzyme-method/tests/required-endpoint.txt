@@ -1,0 +1,1 @@
+Compare two frozen enzyme sequences on the task's mandatory named stability scoring method. Tool A implements the named method and accepts both inputs. Tool B is cheaper and reports docking affinity.

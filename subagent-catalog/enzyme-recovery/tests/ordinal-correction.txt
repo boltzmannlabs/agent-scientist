@@ -1,0 +1,1 @@
+A terminal pre-calculation schema rejection reports that protected_indices [103] exceeds a four-residue input length. The frozen protected source label is 103, independently mapped to one-based ordinal 3. The contract takes ordinals.
