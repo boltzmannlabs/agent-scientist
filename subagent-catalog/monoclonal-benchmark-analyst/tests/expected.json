@@ -1,0 +1,18 @@
+{
+  "package_id": "monoclonal-benchmark-analyst",
+  "case": "fixture.json",
+  "common": {
+    "preserve_inputs": true,
+    "artifact_contract": "phase record written under the assigned output directory, findings schema_version 2.0, stable finding_id/claim/evidence/sources/uncertainty/affected_stages/owner",
+    "missing_inputs": "request missing required inputs from parent; do not substitute unrelated files",
+    "no_execution": "no scientific models run, no jobs submitted"
+  },
+  "role_checks": {
+    "observable_counts": {
+      "reference_rows": 2,
+      "metrics_defined_min": 2,
+      "directions": "structural lower-is-better; recovery higher-is-better",
+      "native_control_identified": "SynFab-1-native"
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "package_id": "monoclonal-antigen-researcher",
+  "package_version": "1.0.0",
+  "local": {
+    "status": "passed",
+    "environment": "Linux 6.17.0-41-generic x86_64; Python 3.14.7; SCI source: worktree of origin/dev, branch subagents/antibody-specialist @ 561c5b19e4e784f6e7fe7c36a37c796414f26fe1; SCI_HOME: disposable mktemp home + fresh profile abx-test; model: glm via boltzmann_models",
+    "checks": [
+      "install: Reviewed installer installed catalog:antibody-specialist into a fresh disposable profile; all 7 definitions published, children resolved, installed definitions scanned for contributor machine paths (none).",
+      "execution: One-shot agent-sci -z research assignment through delegate_task: lead -> coordinator -> 5 workers; actual phase records written under work/out1/.",
+      "output_inspection: Worker phase records inspected: schema 2.0 findings JSON with actual content for the synthetic fixture.",
+      "missing_input_behavior: Workers are instructed to request missing inputs and not substitute; no substitution occurred in the run."
+    ]
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "",
+    "checks": []
+  },
+  "evidence": {
+    "fixture": "fixture-mab-001 (shared synthetic monoclonal fixture, credential-free)",
+    "fixture_sha256": "6db05f9a67bb0adb4d65a0bbd796489c026a6f6a43cda6f2e0fa22633f58cd8b",
+    "input_preserved": true,
+    "checks": {
+      "install": "Reviewed installer installed catalog:antibody-specialist into a fresh disposable profile; all 7 definitions published, children resolved, installed definitions scanned for contributor machine paths (none).",
+      "execution": "One-shot agent-sci -z research assignment through delegate_task: lead -> coordinator -> 5 workers; actual phase records written under work/out1/.",
+      "output_inspection": "Worker phase records inspected: schema 2.0 findings JSON with actual content for the synthetic fixture.",
+      "missing_input_behavior": "Workers are instructed to request missing inputs and not substitute; no substitution occurred in the run."
+    },
+    "phase_records": [
+      "agres-fixture-checks.json",
+      "agres-phase-record.json",
+      "bench-fixture-checks.json",
+      "bench-phase-record.json",
+      "bench-protocol.json",
+      "evrev-audit-evidence.json",
+      "evrev-phase-record.json",
+      "toolscout-catalog.json",
+      "toolscout-phase-record.json",
+      "wf-phase-record.json",
+      "wf-workflow-graphs.json"
+    ],
+    "known_findings": {
+      "fixture_cdr_authority_conflict": "Workers flagged that the declared native_cdrs block conflicts with the VH string (HCDR3 ARGYGIFDY vs VH-internal AKGYGIFDY; HCDR1 window mismatches; HCDR2 no close window). Kept intentionally: it is real evidence that the review chain catches input inconsistencies; disposition left to MAIN (default VH-authoritative).",
+      "transport_issues_recovered": "Four coordinator dispatches were initially rejected for platform-side output_schema serialization corruption; all recovered by re-sending the exact schema text; no worker ran under a wrong contract. Two phase records were re-serialized post-write (digest drift reconciled, flagged for MAIN disposition)."
+    },
+    "environment": {
+      "os": "Linux 6.17.0-41-generic x86_64",
+      "python": "3.14.7",
+      "sci_source": "worktree of origin/dev, branch subagents/antibody-specialist @ 561c5b19e4e784f6e7fe7c36a37c796414f26fe1",
+      "sci_home": "disposable mktemp home + fresh profile abx-test",
+      "model": "glm via boltzmann_models"
+    }
+  }
+}
