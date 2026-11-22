@@ -8,7 +8,28 @@ import { downloadOutputFile, outputFilesLink, type OutputFileReference, type Out
 import { structureFormat } from '@/lib/structure-source';
 
 const StructureViewport = lazy(() => import('@/components/structure/StructureViewport'));
+const D3tree = lazy(() => import('@/components/Custom_boltz_components/synthectic_routes/D3tree'));
+const PorteineViewer = lazy(() => import('@/components/Custom_boltz_components/protein_viewers/MolstarComp'));
 const MAX_PREVIEW_BYTES = 20 * 1024 * 1024;
+
+function getPreviewKind(mime: string, file: OutputFileReference): string {
+  if (/^(?:image\/(?:png|jpeg|gif|webp|bmp|avif)|audio\/|video\/)/.test(mime)) {
+    return mime.split('/')[0];
+  }
+  if (mime === 'application/pdf') {
+    return 'pdf';
+  }
+  if (/scoring/i.test(file.path) && /json/i.test(file.path)) {
+    return 'retrosynthesis';
+  }
+  if(/pdb/i.test(file.path)){
+    return 'pdb';
+  }
+  if(/sdf/i.test(file.path)){
+    return 'sdf';
+  }
+  return 'text';
+}
 
 function FilePreview({ file, scope }: { file: OutputFileReference; scope: OutputFileScope }) {
   const { profile, sessionId } = scope;
@@ -22,15 +43,20 @@ function FilePreview({ file, scope }: { file: OutputFileReference; scope: Output
       const data = value.data_url.slice(value.data_url.indexOf(',') + 1);
       const bytes = Uint8Array.from(atob(data), char => char.charCodeAt(0));
       const mime = value.mime_type;
-      const kind = /^(?:image\/(?:png|jpeg|gif|webp|bmp|avif)|audio\/|video\/)/.test(mime) ? mime.split('/')[0]
-        : mime === 'application/pdf' ? 'pdf' : 'text';
-      if (kind !== 'text') {
+      const kind = getPreviewKind(mime, file);
+      if (kind !== 'text' && kind !== 'retrosynthesis') {
         url = URL.createObjectURL(new Blob([bytes], { type: mime }));
         setPreview({ url, kind });
-      } else {
+      }
+      if (kind !== 'text' && kind !== 'retrosynthesis') {
+        url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+        setPreview({ url, kind });
+      }
+
+      else {
         const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
         if (text.includes('\0')) throw new Error('This format has no browser preview. Use Download to open it with a suitable application.');
-        setPreview({ text: text.slice(0, 64000) + (text.length > 64000 ? '\n… Preview truncated. Download for the complete file.' : '') });
+        setPreview({ text: kind === 'retrosynthesis' ? text : text.slice(0, 64000) + (text.length > 64000 ? '\n… Preview truncated. Download for the complete file.' : ''), kind });
       }
     }).catch(error => { if (!abort.signal.aborted) setPreview({ error: errorMessage(error) }); });
     return () => { abort.abort(); if (url) URL.revokeObjectURL(url); };
@@ -44,6 +70,12 @@ function FilePreview({ file, scope }: { file: OutputFileReference; scope: Output
   if (preview.kind === 'audio') return <audio src={preview.url} controls />;
   if (preview.kind === 'video') return <video src={preview.url} controls className="max-h-[65vh] max-w-full" />;
   if (preview.kind === 'pdf') return <iframe src={preview.url} title={file.name} sandbox="" className="h-[65vh] w-full" />;
+  if (preview.kind === 'retrosynthesis') return <Suspense fallback={<p>Loading retrosynthesis tree…</p>}>
+    <D3tree Data={preview.text} Preview />
+  </Suspense>;
+  if(preview.kind === 'pdb' || preview.kind === 'sdf') return <Suspense fallback={<p>Loading protein viewer…</p>}>
+    <PorteineViewer storagelink={preview.url} ext={preview.kind} /> 
+  </Suspense>;
   return <pre className="max-h-[65vh] overflow-auto whitespace-pre-wrap break-words text-xs">{preview.text}</pre>;
 }
 
@@ -67,7 +99,7 @@ function FileActions({ file, scope }: { file: OutputFileReference; scope: Output
     <button type="button" className="inline-flex items-center gap-1 text-xs underline" aria-label={`Download ${file.name}`} onClick={() => void download()} disabled={busy}><Download size={12} />{busy ? 'Checking…' : 'Download'}</button>
     <Link className="inline-flex items-center gap-1 text-xs underline" to={outputFilesLink(file, scope)}><FolderOpen size={12} />Show in Files</Link>
     {error && <span role="alert" className="text-destructive">{error}</span>}
-    {open && <Dialog open onOpenChange={setOpen}><DialogContent className="max-w-5xl">
+    {open && <Dialog open onOpenChange={setOpen} ><DialogContent className="max-w-5xl">
       <DialogHeader><DialogTitle>{file.name}</DialogTitle><DialogDescription>{file.path}</DialogDescription></DialogHeader>
       <FilePreview file={file} scope={scope} />
       <button type="button" onClick={() => void download()} disabled={busy}>Download complete file</button>

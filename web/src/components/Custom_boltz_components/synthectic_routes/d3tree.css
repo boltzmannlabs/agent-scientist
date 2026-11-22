@@ -1,0 +1,37 @@
+
+.REflist::-webkit-scrollbar {
+    width: 5px; 
+}
+
+.REflist::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+    border-radius: 5px;
+}
+.REflist::-webkit-scrollbar:horizontal {
+    height: 5px;
+}
+.REflist::-webkit-scrollbar-thumb {
+    background: #323259; 
+    border-radius: 5px;
+}
+
+.REflist::-webkit-scrollbar-thumb:hover {
+    background: #323259;
+}
+.retro_Allpath_main::-webkit-scrollbar {
+    width: 5px; 
+}
+
+.retro_Allpath_main::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+    border-radius: 5px;
+}
+
+.retro_Allpath_main::-webkit-scrollbar-thumb {
+    background: #323259; 
+    border-radius: 5px;
+}
+
+.retro_Allpath_main::-webkit-scrollbar-thumb:hover {
+    background: #323259;
+}
