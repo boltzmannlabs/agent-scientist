@@ -1,0 +1,20 @@
+{
+  "package_id": "enzyme-method",
+  "package_version": "1.1.0",
+  "local": {
+    "status": "passed",
+    "environment": "SCI dev c12803e028097565c6ec69df5c3da74178210c07, Linux x86_64, native CLI, OpenAI Codex gpt-6.1-sol. Reviewed local installation under a renamed specialist in a fresh SCI profile. Only synthetic inputs were sent to the model.",
+    "checks": [
+      "Native intermediate delivery succeeded. Specialist traces recorded one successful read of each assigned fixture and no other tool calls. The coordinator wrote a Markdown report with actual receipt IDs. Fixture bytes were unchanged.",
+      "required-endpoint.txt (sa-0-547d63cd). Selected the tool matching the mandatory endpoint and both frozen inputs with common settings.",
+      "construct-mismatch.txt (sa-1-07bc4e4e). Held executable request preparation when the supplied sequence differed from the frozen construct.",
+      "Model calls were used. No scientific jobs were submitted or billed by this check. Full enzyme campaigns, live scientific-service recovery and other operating systems were outside these tests."
+    ]
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "",
+    "checks": []
+  }
+}

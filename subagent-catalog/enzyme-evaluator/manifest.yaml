@@ -1,0 +1,46 @@
+{
+  "schema_version": 2,
+  "id": "enzyme-evaluator",
+  "name": "enzyme-evaluator",
+  "version": "1.1.0",
+  "authors": [
+    "Boltzmann Labs"
+  ],
+  "license": "MIT",
+  "description": "Independently review frozen results",
+  "sci_requires": ">=0",
+  "instructions": "instructions.md",
+  "output": "Requirement, verdict and evidence for each item, final qualification and completeness.",
+  "automatic": false,
+  "tools": [
+    "read_file"
+  ],
+  "skills": [
+    {
+      "id": "enzyme-evaluator",
+      "kind": "package",
+      "path": "skills/enzyme-evaluator"
+    }
+  ],
+  "dependencies": [],
+  "references": [],
+  "limits": {
+    "max_iterations": 30,
+    "timeout_seconds": 0
+  },
+  "platforms": [
+    "any"
+  ],
+  "fixtures": [
+    {
+      "input": "tests/zero-qualifiers.txt",
+      "expected": "tests/zero-qualifiers.expected.json",
+      "description": "All mandatory assessments ran and every candidate failed a required threshold. Assess workflow completion and qualification."
+    },
+    {
+      "input": "tests/missing-assessment.txt",
+      "expected": "tests/missing-assessment.expected.json",
+      "description": "A mandatory whole-assembly assessment is missing. Every completed check passed. Evaluate evidence without estimating the missing result."
+    }
+  ]
+}

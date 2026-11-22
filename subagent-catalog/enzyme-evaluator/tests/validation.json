@@ -1,0 +1,20 @@
+{
+  "package_id": "enzyme-evaluator",
+  "package_version": "1.1.0",
+  "local": {
+    "status": "passed",
+    "environment": "SCI dev c12803e028097565c6ec69df5c3da74178210c07, Linux x86_64, native CLI, OpenAI Codex gpt-6.1-sol. Reviewed local installation under a renamed specialist in a fresh SCI profile. Only synthetic inputs were sent to the model.",
+    "checks": [
+      "Native intermediate delivery succeeded. Specialist traces recorded one successful read of each assigned fixture and no other tool calls. The coordinator wrote a Markdown report with actual receipt IDs. Fixture bytes were unchanged.",
+      "zero-qualifiers.txt (sa-0-ffdaf9f1). Recorded a complete assessment with zero qualifying candidates when all required checks ran.",
+      "missing-assessment.txt (sa-1-a6d7a162). Recorded incomplete assessment and unresolved qualification when a mandatory whole-assembly check was missing.",
+      "Model calls were used. No scientific jobs were submitted or billed by this check. Full enzyme campaigns, live scientific-service recovery and other operating systems were outside these tests."
+    ]
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "",
+    "checks": []
+  }
+}

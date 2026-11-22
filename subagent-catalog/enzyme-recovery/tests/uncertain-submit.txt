@@ -1,0 +1,1 @@
+An attempted submission returned HTTP 503 and no job ID. A separate, earlier run has a confirmed collection and job ID. The SCI conversation restarted.

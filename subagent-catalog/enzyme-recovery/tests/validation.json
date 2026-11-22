@@ -1,0 +1,22 @@
+{
+  "package_id": "enzyme-recovery",
+  "package_version": "1.1.0",
+  "local": {
+    "status": "passed",
+    "environment": "SCI dev c12803e028097565c6ec69df5c3da74178210c07, Linux x86_64, native CLI, OpenAI Codex gpt-6.1-sol. Reviewed local installation under a renamed specialist in a fresh SCI profile. Only synthetic inputs were sent to the model.",
+    "checks": [
+      "Native intermediate delivery succeeded. Specialist traces recorded one successful read of each assigned fixture and no other tool calls. The coordinator wrote a Markdown report with actual receipt IDs. Fixture bytes were unchanged.",
+      "uncertain-submit.txt (sa-0-49413fe2). Held equivalent submissions after an ambiguous response and specified reconciliation. Kept the separate known job eligible for retrieval by its original job ID and collection.",
+      "ordinal-correction.txt (sa-1-06a3dfc3). Corrected the request to ordinal 3 while preserving source label 103 and the protection constraint.",
+      "compatible-alternate.txt (sa-2-98c8b72e). Selected approved Route B after Route A returned an unusable chain-only assessment. Excluded the incompatible Route C.",
+      "compatible-alternate.txt (sa-0-ae6b7e42). A separate assignment confirmed that matched whole-assembly scores for both inputs must be present before closing the requirement.",
+      "Model calls were used. No scientific jobs were submitted or billed by this check. Full enzyme campaigns, live scientific-service recovery and other operating systems were outside these tests."
+    ]
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "",
+    "checks": []
+  }
+}
