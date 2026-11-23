@@ -52,4 +52,5 @@ Install the local parent folder with the normal package installer; sibling folde
 names must match their package IDs. A recipient may rename the parent, and SCI binds
 the child tokens to actual local names. No separate child naming/setup commands are
 needed. Submit all new packages and required version changes through the same PR to
-dev. Test the merged dev team, then record its exact tested commit before promotion.
+dev. Test the installed merged-dev team and inform maintainers of the result.
+No evidence-only follow-up PR is required; maintainers review and promote approved versions.

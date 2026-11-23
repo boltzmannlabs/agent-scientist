@@ -16,7 +16,7 @@ def main(argv=None):
     from sci_cli.subagent_package_catalog import CATALOG, SNAPSHOT
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--write-snapshot', action='store_true')
-    parser.add_argument('--promotion', action='store_true', help='Check integrated dev evidence for changed packages before main')
+    parser.add_argument('--promotion', action='store_true', help='Check published versions and a fresh release snapshot for main promotion')
     parser.add_argument('--check-snapshot', action='store_true', help='Require release snapshot freshness (main promotion/release)')
     parser.add_argument('--base', help='Reviewed base Git commit (full SHA) for immutable-version checks')
     args = parser.parse_args(argv)
@@ -24,6 +24,8 @@ def main(argv=None):
         parser.error('Choose --write-snapshot or --check-snapshot.')
     if args.promotion and not args.base:
         parser.error('--promotion requires --base.')
+    if args.promotion and not args.write_snapshot:
+        args.check_snapshot = True
     if args.base:
         import re
         if not re.fullmatch('[0-9a-f]{40}', args.base):
@@ -65,7 +67,7 @@ def main(argv=None):
         hierarchy = resolve_graph(packages, [key])
         from sci_cli.subagent_package_review import evidence
         if any(packages[member]['changed'] for member in hierarchy):
-            evidence(Path(row['path']), manifest, repo=ROOT if args.promotion else None, packages=packages)
+            evidence(Path(row['path']), manifest)
         from sci_cli.subagent_package_io import LOCK, checksums
         files[LOCK] = (json.dumps(checksums(files), sort_keys=True, indent=2) + '\n').encode()
         snapshot[key] = {'manifest': manifest, 'digest': digest,

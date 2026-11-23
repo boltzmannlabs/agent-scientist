@@ -5,14 +5,14 @@ steps whether you prepare the contribution yourself or ask a coding assistant to
 help. A team follows the same process as a standalone specialist.
 
 **Create and test in SCI → prepare package(s) → test installed packages → PR to dev
-→ test merged dev → record evidence → maintainer promotion to main.**
+→ test merged dev → inform maintainers → maintainer promotion to main.**
 
 | Stage | Who does it | What establishes completion |
 | --- | --- | --- |
 | Create specialists | Contributor | Saved specialists perform the intended assignment in SCI. |
 | Package and test | Contributor | A fresh installation works without the creator's private state. |
 | Submit to dev | Contributor, then reviewers | Package PR is reviewed and merged into dev. |
-| Test merged dev | Contributor | Actual results are recorded against the exact merged dev commit. |
+| Test merged dev | Contributor | Installation/execution from merged dev works; contributor informs maintainers. |
 | Promote and distribute | Maintainers | Approved packages and the release catalog reach main and recipients. |
 
 Opening a PR does not merge it. A dev merge does not finish integrated testing or
@@ -126,7 +126,7 @@ For **every package**:
 4. Supply meaningful fixture/expected files. Each child needs its own test; the
    parent also needs an end-to-end test.
 5. Set matching ID/version in tests/validation.json. Begin with local status
-   "not_run" and integrated status "pending".
+   "not_run". The optional integrated section may remain pending; no follow-up evidence PR is required.
 
 Do not include .env, secret values, OAuth tokens, authorization receipts, history,
 memory, private datasets, run logs, caches, environments, installed binaries or
@@ -266,12 +266,6 @@ observations; do not copy a passed status for unrun tests:
       "Actual child runs returned 3 data rows, 2 columns, 1 empty cell and 1 duplicate row for the starter fixture.",
       "The input remained unchanged and the review worker checked the reader artifact."
     ]
-  },
-  "integrated": {
-    "status": "pending",
-    "tested_commit": null,
-    "environment": "",
-    "checks": []
   }
 }
 ~~~
@@ -308,86 +302,75 @@ List the hierarchy, child version requirements and versions exercised. Submit al
 required new/changed packages together.
 
 **Stop this stage at the open PR and report its URL.** Reviewers decide when it
-merges. Keep integrated evidence pending until merged-dev testing is complete.
-Preparing a contribution does not itself authorize merging or promotion.
+merges. After merge, test the installed package and inform maintainers of the result.
+No second evidence-only PR is required. Preparing a contribution does not itself
+authorize merging or promotion.
 
 CI checks format, portability, declared resources, evidence consistency, version
 changes and controlled regressions. It never executes contributed fixture scripts
 or uses production credentials. Contributors remain responsible for their tests.
 
-## 5. Test the merged dev revision
+## 5. Test installation and execution from merged dev
 
-After the initial PR merges, create a separate checkout of merged dev.
-
-**Terminal, from a repository checkout:**
+After the initial PR merges, test the version available on dev in a fresh SCI
+profile. On a test installation, use the normal updater in a terminal outside SCI:
 
 ~~~bash
-git fetch origin dev
-git worktree add --detach ../agent-sci-dev-validation origin/dev
-cd ../agent-sci-dev-validation
-git rev-parse HEAD
+sci update --branch dev
+sci profile create subagent-dev-test
+sci -p subagent-dev-test
 ~~~
 
-Save the **full 40-character commit SHA**. In this dev checkout, repeat the fresh
-environment setup from step 3 and launch .venv/bin/python -m sci_cli.main. Do not
-test through a global launcher that still runs your normal main installation.
+Restart SCI after updating. The updater changes application code for all profiles
+of that test installation; the fresh profile keeps test configuration and saved
+specialists separate. Configure the model and required integrations through normal
+setup. Do not copy creator definitions or authorization receipts.
 
-In that SCI session, use /subagent catalog to select the package, or install it
-directly:
+Alternatively, use a separate merged-dev checkout and isolated environment as in
+step 3. Launch that checkout explicitly instead of a global launcher pointing to
+your normal installation.
+
+Inside SCI, install the parent from the updated checkout's source folder:
 
 ~~~text
-/subagent package install catalog:table-team --name dev-team
+/subagent package install <updated-checkout>/subagent-catalog/table-team --name dev-team
+/new
 ~~~
 
-Choose **Current owning profile**, complete approved setup, then enter /new.
-Repeat the actual fixture assignments through dev-team, including child delegation
-and output inspection. For a standalone package, use its own ID/name. Record the
-commit, package versions, environment, integrations, observed results and costs.
+Choose **Current owning profile**, review access and complete normal setup. The
+installer resolves the declared children. Use source folders at this stage;
+release-catalog publication happens during main promotion.
 
-If anything fails, submit a correction to dev, wait for its merge and test the new
-merged revision. An earlier local installation is not evidence for the new dev
-revision. Any execution-content change after testing requires relevant retesting.
+Repeat the actual fixture assignments through dev-team and inspect the output
+files, counts and child runs. Check input preservation and exact artifact handoffs.
+If something fails, report it and submit a correction to dev, then retest the
+corrected version. A successful installation alone does not establish execution.
 
-## 6. Submit merged-dev evidence
+## 6. Inform maintainers
 
-After successful integrated testing, update each affected package's validation file
-through a **follow-up PR to dev**. Preserve local evidence and fill the integrated
-section with actual observations:
+Tell the maintainer whether installation and execution from merged dev worked,
+and mention any failures or limitations. For example:
 
-~~~json
-{
-  "status": "passed",
-  "tested_commit": "<actual full 40-character tested dev SHA>",
-  "environment": "<actual SCI, OS/architecture, backend, model/provider and integrations>",
-  "checks": [
-    "<actual integrated check and observed result>",
-    "<another actual check>"
-  ]
-}
+~~~text
+Installed the merged-dev team in a fresh profile. Both fixtures produced the
+expected files and counts through the reader and reviewer. No blockers observed.
 ~~~
 
-Replace only the existing integrated object with your actual values, keeping the
-package identity and local evidence in the surrounding JSON file.
-Use the exact package ID/version. The tested commit must exist in fetched origin/dev
-history. Do not substitute an untested PR branch SHA or invent results.
+Package/version and SCI commit information are useful when available. Detailed
+receipts and integrated JSON records are optional supporting evidence, not a
+second contributor task. **No evidence-only follow-up PR is required.** Preserve
+existing local evidence and historical records; do not change pending records to
+passed without actual results.
 
-Base the evidence PR on current dev. Stage only the appropriate validation files.
-Evidence-only updates need no version bump. Changes to instructions, skills,
-dependencies, fixtures or other execution content require a version increase and
-new tests.
-
-A compatible child update changes the parent's tested workflow even when its own
-source/version stays unchanged. Retest every affected parent on the new merged dev
-revision and update its evidence too. Promotion checks the full reachable hierarchy
-against that parent's exact tested commit.
-
-**Stop at the evidence PR and report its URL.** Maintainer acceptance and main
-promotion are separate stages.
+Maintainers use the contributor's confirmation and normal review to approve the
+specific package versions. Record that confirmation in the promotion PR description.
+When a child changes, review/test the affected parent's workflow as well; the
+installer and catalog validator continue checking the complete dependency graph.
 
 ## 7. Maintainer promotion and release
 
-Maintainers review exact-dev-commit evidence, perform final acceptance and select
-approved changes for a main-promotion branch. If dev contains unfinished work,
+Maintainers review the contributor's merged-dev test confirmation and select
+approved package versions and their required shared fixes for a main-promotion branch. If dev contains unfinished work,
 select the approved changes rather than merging the entire branch.
 
 On that reviewed checkout, fetch history and use its PM interpreter to generate
@@ -402,14 +385,14 @@ git add sci_cli/data/subagent_catalog.json
 ~~~
 
 Replace the base placeholder with the full origin/main SHA printed above. The
-checker requires passed local/integrated evidence, a tested commit in dev history,
-matching execution content and a current snapshot. For a parent, this includes its
-children/grandchildren, even when only a descendant changed. Validation evidence
-and generated integrity files are excluded from the execution-content comparison.
-Release snapshots include actual versions and integrity digests.
+checker validates package format, local evidence, published-version changes,
+complete dependency graphs and a current release snapshot with integrity digests.
+It does not require integrated JSON records or a second contributor PR. Maintainer
+review confirms which tested versions and shared runtime fixes are being promoted.
+Keep existing validation records unchanged unless reporting actual new results.
 
 The validator is inert: it does not execute contributor code or scientific jobs.
-Passing checks evidence consistency, not scientific truth.
+Passing validates package consistency, not scientific accuracy.
 
 Maintainers open/review the promotion PR to main, then release normally. Required
 reviews and acceptance checks for dev/main are repository-admin settings; this guide
@@ -451,8 +434,8 @@ retain their current prompt/tool snapshots until a new conversation.
 | Child cannot be resolved | Its sibling folder matches its package ID, or it exists in the reviewed catalog; its version satisfies the requirement. |
 | New specialist/tools are absent | Complete approved setup, enter /new, and verify the owning profile and actual launcher/checkout. |
 | Service appears but cannot execute | Inspect required access, credentials and connection readiness; do not substitute another service silently. |
-| Promotion says evidence is stale | Compare parent/child content with the recorded dev commit and retest the changed workflow. |
-| Only local tests are complete | Open the initial dev PR with integrated evidence pending; test integrated behavior after merge. |
+| Promotion says the snapshot is stale | Maintainers regenerate the release catalog after reviewing the selected package versions. |
+| Only local tests are complete | Open the dev PR, then test the merged-dev installation and inform maintainers; no evidence-only follow-up PR is required. |
 
 When handing this process to another person or coding assistant, provide **this
 guide**, the owning profile, specialist names/hierarchy, approved fixtures/expected
