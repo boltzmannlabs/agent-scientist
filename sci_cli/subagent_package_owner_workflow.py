@@ -18,7 +18,7 @@ def available(owner):
     metadata = directory / '.install-metadata.json'
     cfg = read_user_config_raw(owner / 'config.yaml').get('plugins', {})
     if (directory.is_symlink() or target.exists() or target.is_symlink() or metadata.is_symlink() or
-            (metadata.exists() and KEY in json.loads(metadata.read_text())) or
+            (metadata.exists() and KEY in json.loads(metadata.read_text(encoding='utf-8-sig'))) or
             KEY in cfg.get('entries', {}) or KEY in cfg.get('disabled', ()) or KEY in cfg.get('enabled', ())):
         raise ValueError('Existing owner workflow configuration or installation; use a fresh profile. Nothing overwritten.')
 
@@ -68,7 +68,7 @@ def activate(owner, private, name, dependency):
     if ('workflow_specialist_name' not in manifest.config_schema or
             not {'start_retrosynthesis_workflow', 'retrosynthesis_workflow_status'} <= set(manifest.provides_tools)):
         raise ValueError('Pinned plugin does not support portable owner workflow installation.')
-    metadata = json.loads((private / 'plugins/.install-metadata.json').read_text())[KEY]
+    metadata = json.loads((private / 'plugins/.install-metadata.json').read_text(encoding='utf-8-sig'))[KEY]
     if metadata.get('pinned') is not True or any(metadata.get(k) != dependency[k] for k in ('revision', 'source')):
         raise ValueError('Reviewed owner plugin provenance mismatch.')
     directory = owner / 'plugins'
