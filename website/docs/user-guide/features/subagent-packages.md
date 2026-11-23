@@ -216,6 +216,15 @@ commit `revision`, required `tools` and `skills`. Setup reuses native source sca
 PM dependency admission, capability consent and credential prompts. Plugins have
 whole-plugin host access; per-tool selection is not a process sandbox. Third-party
 plugin source belongs in its own repository, not copied into every specialist.
+
+The `route-proposer` package can request a second installation of its reviewed
+support plugin in Main's scope with `owner_workflow: true`. This is a specific
+supported integration, not a general install hook. Review the separate owner
+permission: it enables the combined workflow, which can submit a scientific job
+and invoke the active model. The child keeps its five private tools. Use a fresh
+profile if an owner installation or configuration already exists; the installer
+does not replace it silently. Service authentication remains profile-specific.
+
 MCP commands should use portable names or declared program/resource tokens. Arbitrary
 interpreter/package-runner commands are displayed and require execution consent.
 

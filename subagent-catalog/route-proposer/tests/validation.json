@@ -1,21 +1,19 @@
 {
   "package_id": "route-proposer",
-  "package_version": "0.6.0",
+  "package_version": "0.7.0",
   "local": {
     "status": "passed",
-    "environment": "2026-11-22 Linux amd64; exact published 8f22ee2da3bd0fb7ac548cc34372f7a724ffa377; schema1 standalone; official reviewed local and remote private installations with proposed URL/version prerequisites.",
+    "environment": "Linux amd64. No-budget candidate d6da0f7f65e98cf46f77cca184b32ed0a70a4dde uses SCI schema v2 for unlimited specialist assignment duration.",
     "checks": [
-      "624 backend/native tests passed;90.63%coverage; separate482standalone suite.",
-      "Schema compatibility:3RED then9GREEN (3compatibility+6repeatednative); counts not additive.",
-      "Exact published clean installation;28runtime hashes match; deterministic renamed private child empty/nonempty receipts and wrong-target/hash rejection passed; advertised schemas checked.",
-      "Fresh live GLM5.3 achiral:1hypothesis,121.7813s,5calls,62942input/4834output; stereo:1hypothesis,127.4177s,6calls,84083input/6094output.",
-      "Both live child results accepted by host owner backend API; live parent LLM selection not tested (separate deterministic parent test). All74pluginfiles unchanged; temporary specialistdisabled; other specialists/ownerconfig unchanged; no credentialcopy.",
-      "Achiral has no exact retrieved evidence; stereo analogue-only with unresolved catalyst-to-product mapping. No chemical superiority, cost savings or experimental validation.",
-      "Fresh concurrent run:740.44s total,251.64s overlap;2modelroutes preserved with unchanged publicoutput;0agentaddition after later providercheckfailure.",
-      "Prior newer-schema installfailure and2preflightstatedirectoryfailures preserved; no model calls in failedpreflights. Exactmergeddev pending.",
-      "Final fresh concurrent success:682.3668s total;115.9883s overlap;2original routes preserved+1unique proposer graph=3selected; originalpublicoutputunchanged. Proposer counts1proposed/schema/structural/unique/retained,0stock-connected/chemically-assessed/rejected.0acceptedchemical/costimprovements.",
-      "Observed exact outputs, provenance and missing-target reply are bundled in tests/observed-results.json; observations not runtimeexamples. Missing-target correctlyblocked in15.14s,1call,0tools,asksSMILES.",
-      "Finaltemporaryspecialistdisabled; all74files unchanged; otherspecialists/ownerconfigpreserved. Unknowncost remainsunknown."
+      "Clean reviewed installation passed on servers 6 and 16. Server 6 ordinary-prompt fixture used the actual installed workflow, a synthetic service and a scripted model. One submission, five polls on the same job, one download after a 7,201-second virtual-clock advance; one model graph and one additional proposer graph survived the terminal merge.",
+      "On server 16, 62 deployed-code regressions passed. The revised unbounded observer recovered all 25 real model records from an existing authenticated REBOLT receipt.",
+      "Authenticated vanillin run 04f386aaaedc466fa3b46a350f841228 completed both branches. Main and the specialist used Codex via boltzmann_models. REBOLT returned 30 raw records and 26 passed the workflow limits. The specialist contributed two distinct graphs, and round seven stopped when REBOLT completed. Branch overlap was 651.056 s. Chemical feasibility was unassessed.",
+      "Exact candidate supporting plugin suite passed 498 tests and 265 subtests, with 88% statement coverage.",
+      "Virtual-time regression advanced active search and proposal tasks by 7,201 seconds. Both continued, retained a graph, and stopped the pending proposal upon model completion.",
+      "REBOLT observer test checked the same accepted receipt across pending responses, with no duplicate submission. Main admission and runner tests verified that old template budgets are removed.",
+      "Earlier candidate da4fcbae established live automatic delegation using codex / boltzmann_models. Separate retrospective retrieval yielded 25 model graphs and 6 additional distinct proposer graphs. The earlier workflow stopped at its local deadline.",
+      "A fresh profile installed through public GitHub. Both Main and the private specialist installed the exact pinned revision. The specialist was enabled with timeout_seconds=0 and Main bound the reviewed workflow to the installed specialist alias.",
+      "Integrated merged-dev validation is pending."
     ]
   },
   "integrated": {
