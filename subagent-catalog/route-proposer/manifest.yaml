@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "id": "route-proposer",
   "name": "route-proposer",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "authors": [
     "Gopi Krishna"
   ],
@@ -10,7 +10,7 @@
   "description": "Generate independent complete route hypotheses and explicit stereochemical control plans using retrieved literature.",
   "sci_requires": ">=0.1.1",
   "instructions": "instructions.md",
-  "output": "Prefer the unchanged compact verification output with exactly status=completed, receipt_id and response_sha256, requested through compact_handoff=true. Full verified routes remain in the persisted receipt and are revalidated by Main. Legacy full envelopes with status, result and receipt_id remain supported; failed verification retains diagnostics. Main uses its explicitly installed owner plugin accept_specialist_retrosynthesis_result, passing the actual installed specialist name (including renames), final_envelope unchanged, and original target, requested_count, max_depth and max_total_reactions. The pinned dependency contains this owner bridge; recipient owner-plugin setup is required. Main must preserve original task constraints and accept only an authentic verification receipt. Graph acceptance is not chemical validation.",
+  "output": "Return the unchanged compact verification receipt (status, receipt_id, response_sha256). Main revalidates the saved specialist's receipt under its original target and limits. In combined workflows Main receives the checked routes from both branches; duplicate graphs are counted once. Route hypotheses do not establish chemical feasibility.",
   "automatic": true,
   "tools": [
     "read_retrosynthesis_task",
@@ -24,8 +24,9 @@
     {
       "id": "retrosynthesis-support",
       "kind": "plugin",
+      "owner_workflow": true,
       "source": "https://github.com/krish-200212/retrosynthesis-specialists",
-      "revision": "8f22ee2da3bd0fb7ac548cc34372f7a724ffa377",
+      "revision": "d6da0f7f65e98cf46f77cca184b32ed0a70a4dde",
       "tools": [
         "read_retrosynthesis_task",
         "inspect_target_stereochemistry",
@@ -39,7 +40,7 @@
   "references": [],
   "limits": {
     "max_iterations": 10,
-    "timeout_seconds": 300
+    "timeout_seconds": 0
   },
   "platforms": [
     "linux-amd64"

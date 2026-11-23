@@ -133,6 +133,12 @@ def _install_locked(root, owner, cli, ui, *, name, source, selection=None,
                 '; dependencies changed=' + ', '.join(changed) +
                 f'; content {previous.package_info["digest"]} -> {digest}. All new declarations above require review.')
     ui.choose('Prepare this package?', ['Prepare package', 'Cancel'])
+    from sci_cli import subagent_package_owner_workflow as workflow
+    owner_workflow = next((dep for dep in manifest['dependencies'] if dep.get('owner_workflow')), None)
+    if owner_workflow:
+        if manifest['id'] != 'route-proposer' or not publish:
+            raise ValueError('Combined owner workflow requires a standalone route-proposer installation.')
+        workflow.review(owner, name, ui)
     if previous and previous.extension_id:
         old = extension_home(previous)
         if fingerprint(old) != previous.extension_revision:
@@ -315,6 +321,8 @@ def _install_locked(root, owner, cli, ui, *, name, source, selection=None,
     if sum(len(doc['text']) for doc in item.source_documents) > 40_000 or len(item.source_documents) > 20:
         from agent.specialist_source_library import store_library
         item = replace(item, source_manifest=store_library(item.source_documents), source_documents=())
+    if owner_workflow and not missing:
+        workflow.configure_private(home)
     state = 'setup_required' if missing else 'ready'
     info = {'id': manifest['id'], 'version': manifest['version'], 'digest': digest, 'source': source,
             'state': state, 'resolved': resolved, 'missing': missing}
@@ -329,7 +337,8 @@ def _install_locked(root, owner, cli, ui, *, name, source, selection=None,
     if not publish:
         ui.show(f'Prepared {item.name}. Hierarchy definitions are published only after the complete review.')
         return item
-    saved = save(item, expected_revision=previous.revision if previous else None)
+    with workflow.activate(owner, home, name, owner_workflow) if owner_workflow and not missing else nullcontext():
+        saved = save(item, expected_revision=previous.revision if previous else None)
     ui.show(f'Installed {saved.name}: {owner / "subagents" / (saved.name + ".json")}. '
             + ('Disabled. Setup required; retry package installation to finish.' if missing else 'Enabled. Available in your next conversation; use /new.'))
     return saved
