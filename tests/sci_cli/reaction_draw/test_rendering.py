@@ -21,6 +21,8 @@ BUNDLE = ROOT / "third_party" / "reaction_draw" / "upstream"
 SKILL = ROOT / "skills" / "science" / "chemistry" / "reaction-draw"
 CASES = sorted((BUNDLE / "templates").glob("*.json")) + sorted(
     (Path(__file__).resolve().parent.parent / "reaction_draw_cases").glob("*.json"))
+CASES += sorted(path for path in (SKILL / "templates").glob("*.json")
+                if not (BUNDLE / "templates" / path.name).is_file())
 
 
 @pytest.fixture
