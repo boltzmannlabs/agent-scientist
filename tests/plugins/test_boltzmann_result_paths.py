@@ -13,7 +13,11 @@ def test_status_includes_gcp_paths_from_output_data(monkeypatch):
             "outputFilePath": {
                 "path": "gs://fixture-bucket/jobs/fixture/output.csv",
                 "download_link": [signed_url],
-            }
+            },
+            "pockets_zip_path": {
+                "path": "users/fixture/Binding_Site_Prediction/fpocket/job/6NZP_pockets.zip",
+                "download_link": ["https://storage.example.invalid/pockets.zip?token=zip-secret"],
+            },
         },
     }
     monkeypatch.setattr(nodeapi_helpers, "_resolve_token", lambda token: "fixture-key")
@@ -25,5 +29,7 @@ def test_status_includes_gcp_paths_from_output_data(monkeypatch):
 
     result = nodeapi_helpers.fetch_status("fixture-job", "fixture-id", token="fixture-key")
 
-    assert result["gcp_paths"] == ["gs://fixture-bucket/jobs/fixture/output.csv"]
+    assert result["gcp_paths"] == [artifact["path"] for artifact in payload["OutputData"].values()]
+    assert result["OutputData"] == payload["OutputData"]
+    assert all(not path.startswith("https://") for path in result["gcp_paths"])
     assert signed_url not in result["gcp_paths"]

@@ -77,6 +77,13 @@ Binding Affinity Energy, Molecular Docking and FEP. Product navigation paths
 are not API endpoints, and documented product features without an established
 job/schema must not be presented as executable connector tools.
 
+Binding Site Prediction / fpocket (`Binding_Site_Prediction`): read
+`references/modules/small-molecule-toolbox.md` and `references/fpocket-results.md`.
+Successful output includes `OutputData.pockets_zip_path` with `path` and a
+`download_link` array for the pocket-PDB archive, alongside pocket records,
+statistics CSV and protein PDB. Preserve and inspect all requested artifacts;
+refresh the same job status for expired links. This is an output field, not an input.
+
 Agriculture Properties (`global_agriculture_properties`) is enabled under QSPR Modelling.
 Load `references/modules/small-molecule-qspr.md` and `references/agriculture-properties.md`.
 Direct input must use one SMILES string plus `input_csv: ""`; never send a SMILES array.
