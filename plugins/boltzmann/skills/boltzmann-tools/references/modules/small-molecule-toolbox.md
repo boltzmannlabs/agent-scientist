@@ -9,7 +9,9 @@ and inspect all returned artifacts. Never invent inputs or reuse another user's 
 
 ## Binding Site Prediction (fpocket)
 
-Binding Site Prediction (fpocket)
+Predict protein binding pockets with fpocket from a PDB ID, AlphaFold UniProt ID or uploaded PDB. Successful status returns pocket records and downloadable statistics CSV, protein PDB, and a pocket-PDB ZIP in OutputData.pockets_zip_path (path plus download_link array). Preserve all artifacts and refresh the same job status for expired links.
+
+[Product description and result interpretation](../fpocket-results.md)
 
 Exact job name: `Binding_Site_Prediction`.
 
