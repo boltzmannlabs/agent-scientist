@@ -55,7 +55,8 @@
     "CLI plus built-in skill; isolated PM-locked RDKit/Playwright runtime",
     "Native Windows/POSIX output locking with deterministic release",
     "Managed Chromium executable discovery",
-    "BOM-tolerant UTF-8 file reads and explicit UTF-8 subprocess decoding"
+    "BOM-tolerant UTF-8 file reads and explicit UTF-8 subprocess decoding",
+    "Bound long electron-arrow searches by requested endpoint distances and permit longer obstacle-avoiding arcs; rebuilt adapter from the pinned Octet source."
   ],
   "renderer": "Octet Draw prebuilt adapter; upstream notices retained",
   "adapted_files": {

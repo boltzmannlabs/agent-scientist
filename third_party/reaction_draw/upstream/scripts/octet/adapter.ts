@@ -923,16 +923,22 @@ function routeArrows(mol: any, ctx: Ctx, job: any, seats: Box[] = []) {
     // with those two ends, the bend that keeps off the seats is taken.
     let bestFree: any = null;
     const withEnds = new Map<string, any>();
+    // Intramolecular closure and proton transfers can span more than 4.5 bonds.
+    // Bound the search by the requested atoms, rather than dropping their arrow.
+    const endpointDistance = Math.max(...req.src.atoms.flatMap((i) =>
+      req.snk.atoms.map((j) => dist(px[i], px[j]))));
+    const maxChord = Math.max((repair ? 4.5 : 3.2) * L, endpointDistance + L);
+    const maxArcRatio = endpointDistance > 3.2 * L ? 3 : 2;
     for (const s of srcPts) for (const e of snkPts) {
       const chord = dist(s.p, e.p);
-      if (chord < (compactHook ? 0.12 : 0.28) * L || chord > (repair ? 4.5 : 3.2) * L) continue;
+      if (chord < (compactHook ? 0.12 : 0.28) * L || chord > maxChord) continue;
       for (const bend of bends) {
         const a: any = {id: 900 + done.length, kind, from: native(s.p), to: native(e.p), bend, colour: '#000000'};
         if (kind === 'curved') { a.start = 'none'; a.end = 'full'; }
         const path = arrowPath(a, L) as Pt[];
         let len = 0; for (let k = 1; k < path.length; k++) len += dist(path[k - 1], path[k]);
         if (len < minLen) continue;
-        if ((repair || req.snk.kind === 'gap') && len > 2 * chord) continue;
+        if ((repair || req.snk.kind === 'gap') && len > maxArcRatio * chord) continue;
         const polys = arrowShapes(a, f, L) as number[][][];
         let worst = 1e9, soft = 0;
         // the deliberate gaps at both ends (within 0.17 bond length of the end points) are not penalized again

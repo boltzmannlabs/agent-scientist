@@ -7,6 +7,8 @@ import { BOX_CLOSE, BOX_OPEN, texToUnicode } from '../lib/mathUnicode.js'
 import { highlightLine, isHighlightable } from '../lib/syntax.js'
 import type { Theme } from '../theme.js'
 
+import { ImagePreview, isPreviewImage } from './imagePreview.js'
+
 // `\boxed{X}` regions in `texToUnicode` output are marked with the
 // non-printable U+0001 / U+0002 sentinels. Split on them and render the
 // boxed segment with `inverse + bold` so it reads as a highlighter-pen
@@ -86,7 +88,7 @@ const MATH_BLOCK_OPEN_RE = /^\s*(\$\$|\\\[)(.*)$/
 const MATH_BLOCK_CLOSE_DOLLAR_RE = /^(.*?)\$\$\s*$/
 const MATH_BLOCK_CLOSE_BRACKET_RE = /^(.*?)\\\]\s*$/
 
-export const MEDIA_LINE_RE = /^\s*[`"']?MEDIA:\s*(\S+?)[`"']?\s*$/
+export const MEDIA_LINE_RE = /^\s*[`"']?MEDIA:\s*(.+?)[`"']?\s*$/
 export const AUDIO_DIRECTIVE_RE = /^\s*\[\[audio_as_voice\]\]\s*$/
 
 // Inline markdown tokens, in priority order. The outer regex picks the
@@ -743,10 +745,21 @@ function MdImpl({ cols, compact, t, text }: MdProps) {
         continue
       }
 
-      const media = line.match(MEDIA_LINE_RE)?.[1]
+      const media = line.match(MEDIA_LINE_RE)?.[1]?.replace(/^[`"']+|[`"']+$/g, '')
+
+      const figure = line.trim().match(/^(?:[-*]\s+)?Figure:\s+((?:\/|[a-z]:[\\/]).+?\.(?:png|jpe?g|gif|bmp|webp))(?:\s+\(also [^()]*\))?$/i)?.[1]
+
+      if (figure && !media) {
+        nodes.push(<ImagePreview cols={cols ?? 80} key={`figure-${key}`} path={figure} />)
+      }
 
       if (media) {
         start('paragraph')
+
+        if (isPreviewImage(media)) {
+          nodes.push(<ImagePreview cols={cols ?? 80} key={`image-${key}`} path={media} />)
+        }
+
         nodes.push(
           <Text color={t.color.muted} key={key} wrap="wrap-trim">
             {'▸ '}

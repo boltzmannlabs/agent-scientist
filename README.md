@@ -39,8 +39,9 @@ See [the bundled package guide](third_party/agriformulations/README.md).
 ## Chemical structures and reaction mechanisms
 
 The built-in `reaction-draw` skill creates chemical structures, reaction schemes
-and curved-arrow mechanisms as PNG, SVG and editable CDXML files. Ask Sci to draw
-or edit a mechanism from a description, structure or supplied source. Drawings
+and curved-arrow mechanisms as PNG, SVG and editable CDXML files. Sci can select
+the skill during a reaction discussion, or draw and edit a mechanism from an
+explicit request, structure or supplied source. Drawings
 retain source/uncertainty information and pass chemistry/drawing consistency checks;
 those checks do not experimentally establish a proposed mechanism.
 

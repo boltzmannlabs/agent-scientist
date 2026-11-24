@@ -1,5 +1,7 @@
 # Drawing scripts
 
+Agent Scientist adaptation: managed CLI invocations and typography/edit guidance.
+
 A single command converts a JSON input file into a validated figure drawn with [Octet Draw](https://github.com/SamChemMan/Octet-Draw)'s rendering code, producing `.oct`, `.cdxml` (for ChemDraw), SVG, PNG, and a check summary. See [`../SKILL.md`](../SKILL.md) for the full workflow.
 
 If any dependency is missing, run `sci reaction-draw --check-env` to see what to install.
@@ -23,6 +25,7 @@ Example structure (full example: [`templates/beza.json`](../templates/beza.json)
 | Key | Meaning |
 |---|---|
 | `format` | `2` |
+| `style` | Figure-wide typography and bond dimensions, for example `{"font_size_pt": 12, "title_size_pt": 14, "bond_length_pt": 17.28}`. Values are in points except relative double-bond spacing; see [layout and edits](layout-and-edits.md) before changing sizes. DPI controls raster resolution, not SVG text size. |
 | `name` | Figure name (default: input filename) |
 | `source` | Free-text source citation (e.g., paper and figure number) |
 | `panels` | Ordered list of panels (see [Panels](#panels)) |

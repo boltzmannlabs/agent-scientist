@@ -1,0 +1,138 @@
+{
+  "format": 2,
+  "name": "fischer_esterification_steps1-3",
+  "source": "Illustrative textbook Fischer esterification (acid-catalyzed acetic acid + ethanol), steps 1-3. Proton transfers drawn through one solvent water for atom tracking; the real proton pool is delocalized.",
+  "panels": [
+    {
+      "id": "S1",
+      "title": "1  Protonation of the carbonyl oxygen",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[CH3:1][C:2](=[O:3])[O:4][H:5]",
+          "keep_h": [5]
+        },
+        {
+          "id": "wat",
+          "smiles": "[H:6][O+:11]([H:12])[H:13]",
+          "keep_h": [6, 12, 13]
+        },
+        {
+          "id": "etoh",
+          "smiles": "[H:8][O:7][CH2:9][CH3:10]",
+          "keep_h": [8]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A1",
+          "from": "sub:3",
+          "to": ["sub:3", "wat:6"]
+        },
+        {
+          "id": "A2",
+          "from": "wat:6-11",
+          "to": "wat:11"
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "title": "2  Ethanol attacks the activated carbonyl carbon",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[CH3:1][C:2](=[O+:3][H:6])[O:4][H:5]",
+          "keep_h": [5, 6]
+        },
+        {
+          "id": "wat",
+          "smiles": "[O:11]([H:12])[H:13]",
+          "keep_h": [12, 13]
+        },
+        {
+          "id": "etoh",
+          "smiles": "[H:8][O:7][CH2:9][CH3:10]",
+          "keep_h": [8]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A3",
+          "from": "etoh:7",
+          "to": "sub:2"
+        },
+        {
+          "id": "A4",
+          "from": "sub:2=3",
+          "to": "sub:3"
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "title": "3  Deprotonation of the ethyl oxonium",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[CH3:1][C:2]([O:3][H:6])([O:4][H:5])[O+:7]([H:8])[CH2:9][CH3:10]",
+          "keep_h": [5, 6, 8]
+        },
+        {
+          "id": "wat",
+          "smiles": "[O:11]([H:12])[H:13]",
+          "keep_h": [12, 13]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A5",
+          "from": "wat:11",
+          "to": ["wat:11", "sub:8"]
+        },
+        {
+          "id": "A6",
+          "from": "sub:7-8",
+          "to": "sub:7"
+        }
+      ]
+    },
+    {
+      "id": "I0",
+      "title": "Neutral tetrahedral intermediate",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[CH3:1][C:2]([O:3][H:6])([O:4][H:5])[O:7][CH2:9][CH3:10]",
+          "keep_h": [5, 6]
+        },
+        {
+          "id": "wat",
+          "smiles": "[H:8][O+:11]([H:12])[H:13]",
+          "keep_h": [8, 12, 13]
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "S1",
+      "to": "S2",
+      "kind": "equilibrium",
+      "above": "step 1"
+    },
+    {
+      "from": "S2",
+      "to": "S3",
+      "kind": "equilibrium",
+      "above": "step 2"
+    },
+    {
+      "from": "S3",
+      "to": "I0",
+      "kind": "equilibrium",
+      "above": "step 3"
+    }
+  ],
+  "rows": [["S1", "S2"], ["S3", "I0"]]
+}

@@ -9909,9 +9909,12 @@ function routeArrows(mol, ctx, job, seats = []) {
     const wishLen = (tight ? 0.6 : 0.85) * L, wishChord = (tight ? 0.5 : 0.8) * L;
     let bestFree = null;
     const withEnds = /* @__PURE__ */ new Map();
+    const endpointDistance = Math.max(...req.src.atoms.flatMap((i) => req.snk.atoms.map((j) => dist(px[i], px[j]))));
+    const maxChord = Math.max((repair ? 4.5 : 3.2) * L, endpointDistance + L);
+    const maxArcRatio = endpointDistance > 3.2 * L ? 3 : 2;
     for (const s of srcPts) for (const e of snkPts) {
       const chord = dist(s.p, e.p);
-      if (chord < (compactHook ? 0.12 : 0.28) * L || chord > (repair ? 4.5 : 3.2) * L) continue;
+      if (chord < (compactHook ? 0.12 : 0.28) * L || chord > maxChord) continue;
       for (const bend of bends) {
         const a = { id: 900 + done.length, kind, from: native(s.p), to: native(e.p), bend, colour: "#000000" };
         if (kind === "curved") {
@@ -9922,7 +9925,7 @@ function routeArrows(mol, ctx, job, seats = []) {
         let len3 = 0;
         for (let k = 1; k < path.length; k++) len3 += dist(path[k - 1], path[k]);
         if (len3 < minLen) continue;
-        if ((repair || req.snk.kind === "gap") && len3 > 2 * chord) continue;
+        if ((repair || req.snk.kind === "gap") && len3 > maxArcRatio * chord) continue;
         const polys = arrowShapes(a, f, L);
         let worst = 1e9, soft = 0;
         const exempt = (p) => dist(p, s.p) < 0.17 * L || dist(p, e.p) < 0.17 * L;

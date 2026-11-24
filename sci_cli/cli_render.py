@@ -390,6 +390,27 @@ def _render_final_assistant_content(text: str, mode: str = "render"):
     return terminal_markdown(plain)
 
 
+def print_assistant_image_previews(text: str, width: int) -> None:
+    """Paint delivered raster files once, after final text or transcript replay."""
+    import sys
+    from pathlib import Path
+    if not sys.stdout.isatty():
+        return
+    from tui_gateway.image_preview import media_references, read_image_preview
+    from cli import _cprint
+    for path in dict.fromkeys(media_references(text)):
+        if Path(path).suffix.lower() not in {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp"}:
+            continue
+        try:
+            preview = read_image_preview(path, cols=width - 2)
+            for row in preview["grid"]:
+                cells = (f"\033[38;2;{r};{g};{b}m\033[48;2;{r2};{g2};{b2}m▀"
+                         for r, g, b, _, r2, g2, b2, _ in row)
+                _cprint("".join(cells) + "\033[0m")
+        except Exception:
+            _cprint("Image preview unavailable. Open the original file.")
+
+
 def assistant_message_panel(text: str, *, mode: str = "render", width: int | None = None):
     """Use one response presentation for live chat and retained transcript replay."""
     from rich import box

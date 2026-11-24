@@ -121,6 +121,8 @@
   "chatBits.entry.heapClimbing",
   "chatBits.entry.memoryDump",
   "chatBits.entry.noTty",
+  "chatBits.imagePreview.detail",
+  "chatBits.imagePreview.unavailable",
   "chatBits.messageLine.chars",
   "chatBits.messageLine.emptyToolResult",
   "chatBits.messageLine.longMessage",

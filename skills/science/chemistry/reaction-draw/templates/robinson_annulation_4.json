@@ -1,0 +1,120 @@
+{
+  "format": 2,
+  "name": "robinson_4_dehydration",
+  "source": "Illustrative E1cB dehydration gives the fused conjugated enone; hydroxide catalyst is regenerated.",
+  "expected_stereo": {
+    "R.sub:2": "unspecified",
+    "R.sub:1": "unspecified",
+    "I.sub:2": "unspecified",
+    "I.sub:1": "unspecified",
+    "P.sub:2": "unspecified"
+  },
+  "panels": [
+    {
+      "id": "R",
+      "title": "E1cB: remove C11 proton",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[C:1]12([OH:7])[CH:2]([CH2:8][CH2:9][C:10](=[O:12])[CH:11]1[H:23])[CH2:3][CH2:4][CH2:5][CH2:6]2",
+          "keep_h": [
+            23
+          ]
+        },
+        {
+          "id": "base",
+          "smiles": "[OH-:20]"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "a",
+          "from": "base:20",
+          "to": [
+            "base:20",
+            "sub:23"
+          ]
+        },
+        {
+          "id": "b",
+          "from": "sub:11-23",
+          "to": "sub:10-11"
+        },
+        {
+          "id": "c",
+          "from": "sub:10-12",
+          "to": "sub:12"
+        }
+      ]
+    },
+    {
+      "id": "I",
+      "title": "Enolate eliminates hydroxide",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[C:1]12([OH:7])[CH:2]([CH2:8][CH2:9][C:10]([O-:12])=[CH:11]1)[CH2:3][CH2:4][CH2:5][CH2:6]2"
+        },
+        {
+          "id": "water",
+          "smiles": "[OH:20][H:23]",
+          "keep_h": [
+            23
+          ]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "d",
+          "from": "sub:12",
+          "to": "sub:10-12"
+        },
+        {
+          "id": "e",
+          "from": "sub:10-11",
+          "to": "sub:1-11"
+        },
+        {
+          "id": "f",
+          "from": "sub:1-7",
+          "to": "sub:7"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "Fused enone + water + hydroxide",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[C:1]12(=[CH:11][C:10](=[O:12])[CH2:9][CH2:8][CH:2]1[CH2:3][CH2:4][CH2:5][CH2:6]2)"
+        },
+        {
+          "id": "water",
+          "smiles": "[OH:20][H:23]",
+          "keep_h": [
+            23
+          ]
+        },
+        {
+          "id": "base",
+          "smiles": "[OH-:7]"
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "R",
+      "to": "I",
+      "kind": "equilibrium",
+      "above": "enolate"
+    },
+    {
+      "from": "I",
+      "to": "P",
+      "kind": "single",
+      "above": "elimination"
+    }
+  ]
+}

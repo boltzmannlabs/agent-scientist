@@ -1,0 +1,252 @@
+{
+  "format": 2,
+  "name": "robinson_3_aldol",
+  "source": "Illustrative methyl enolate generation, ring-closing aldol and aqueous protonation of the alkoxide.",
+  "expected_stereo": {
+    "R.sub:2": "unspecified",
+    "I.sub:2": "unspecified",
+    "A.sub:2": "unspecified",
+    "A.sub:1": "unspecified",
+    "P.sub:2": "unspecified",
+    "P.sub:1": "unspecified",
+    "J.sub:2": "unspecified"
+  },
+  "panels": [
+    {
+      "id": "R",
+      "title": "Enolate formation at C11",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[C:1]1(=[O:7])[CH:2]([CH2:8][CH2:9][C:10](=[O:12])[CH2:11][H:22])[CH2:3][CH2:4][CH2:5][CH2:6]1",
+          "keep_h": [
+            22
+          ]
+        },
+        {
+          "id": "base",
+          "smiles": "[OH-:20]"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "a",
+          "from": "base:20",
+          "to": [
+            "base:20",
+            "sub:22"
+          ]
+        },
+        {
+          "id": "b",
+          "from": "sub:11-22",
+          "to": "sub:10-11"
+        },
+        {
+          "id": "c",
+          "from": "sub:10-12",
+          "to": "sub:12"
+        }
+      ]
+    },
+    {
+      "id": "I",
+      "title": "Enolate resonance contributors",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[C:1]1(=[O:7])[CH:2]([CH2:8][CH2:9][C:10]([O-:12])=[CH2:11])[CH2:3][CH2:4][CH2:5][CH2:6]1"
+        },
+        {
+          "id": "base",
+          "smiles": "[OH:20][H:22]",
+          "keep_h": [
+            22
+          ]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "res1",
+          "from": "sub:12",
+          "to": "sub:10-12"
+        },
+        {
+          "id": "res2",
+          "from": "sub:10-11",
+          "to": "sub:11"
+        }
+      ]
+    },
+    {
+      "id": "J",
+      "title": "Aldol C11-C1 bond formation",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[C:1]1(=[O:7])[CH:2]([CH2:8][CH2:9][C:10](=[O:12])[CH2-:11])[CH2:3][CH2:4][CH2:5][CH2:6]1",
+          "xy": {
+            "1": [
+              0,
+              0
+            ],
+            "2": [
+              0.8660254,
+              0.5
+            ],
+            "3": [
+              0.8660254,
+              1.5
+            ],
+            "4": [
+              0,
+              2
+            ],
+            "5": [
+              -0.8660254,
+              1.5
+            ],
+            "6": [
+              -0.8660254,
+              0.5
+            ],
+            "7": [
+              0,
+              -1
+            ],
+            "8": [
+              1.7320508,
+              0
+            ],
+            "9": [
+              2.5980762,
+              0.5
+            ],
+            "10": [
+              3.4641016,
+              0
+            ],
+            "11": [
+              3.4641016,
+              -1
+            ],
+            "12": [
+              4.330127,
+              0.5
+            ]
+          }
+        },
+        {
+          "id": "base",
+          "smiles": "[OH:20][H:22]",
+          "keep_h": [
+            22
+          ]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "attack",
+          "from": "sub:11",
+          "to": [
+            "sub:11",
+            "sub:1"
+          ]
+        },
+        {
+          "id": "collapse",
+          "from": "sub:1-7",
+          "to": "sub:7"
+        }
+      ]
+    },
+    {
+      "id": "A",
+      "title": "Bicyclic alkoxide + water",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[C:1]12([O-:7])[CH:2]([CH2:8][CH2:9][C:10](=[O:12])[CH2:11]1)[CH2:3][CH2:4][CH2:5][CH2:6]2"
+        },
+        {
+          "id": "base",
+          "smiles": "[OH:20][H:22]",
+          "keep_h": [
+            22
+          ]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "g",
+          "from": "sub:7",
+          "to": [
+            "sub:7",
+            "base:22"
+          ]
+        },
+        {
+          "id": "h",
+          "from": "base:20-22",
+          "to": "base:20"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "Bicyclic beta-hydroxy ketone",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[C:1]12([O:7][H:22])[CH:2]([CH2:8][CH2:9][C:10](=[O:12])[CH2:11]1)[CH2:3][CH2:4][CH2:5][CH2:6]2",
+          "keep_h": [
+            22
+          ]
+        },
+        {
+          "id": "base",
+          "smiles": "[OH-:20]"
+        }
+      ]
+    }
+  ],
+  "rows": [
+    [
+      "R",
+      "I"
+    ],
+    [
+      "J",
+      "A"
+    ],
+    [
+      "P"
+    ]
+  ],
+  "reaction_arrows": [
+    {
+      "from": "R",
+      "to": "I",
+      "kind": "equilibrium",
+      "above": "enolate"
+    },
+    {
+      "from": "I",
+      "to": "J",
+      "kind": "resonance",
+      "above": "resonance"
+    },
+    {
+      "from": "J",
+      "to": "A",
+      "kind": "single",
+      "above": "aldol closure"
+    },
+    {
+      "from": "A",
+      "to": "P",
+      "kind": "single",
+      "above": "protonation"
+    }
+  ]
+}
