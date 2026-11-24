@@ -53,6 +53,12 @@ def test_package_install_a_b_a_private_scope_conflicts_updates_and_cache(tmp_pat
     for home in homes:
         owner(home)
     package = example(tmp_path)
+    import sci_yaml as yaml
+    manifest_path = package / 'manifest.yaml'
+    manifest = yaml.safe_load(manifest_path.read_text())
+    manifest['automatic'] = False
+    manifest_path.write_text(yaml.safe_dump(manifest))
+    seal(package)
     agent = SimpleNamespace(system_prompt='cached-prefix', tools=[{'name': 'original'}])
     cli = SimpleNamespace(agent=agent)
     created = []
@@ -60,7 +66,7 @@ def test_package_install_a_b_a_private_scope_conflicts_updates_and_cache(tmp_pat
         before = (home / 'config.yaml').read_bytes()
         with profile_scope(home):
             item = install(package, home, cli, UI(['Prepare package', 'Save and enable for the next conversation']))
-            assert item.enabled and item.package_info['state'] == 'ready'
+            assert item.enabled and item.automatic and item.package_info['state'] == 'ready'
             assert item.private_skills == ('table-quality',)
             assert item.tools == ('read_file',)
             assert load(item.name).revision == item.revision
@@ -73,7 +79,6 @@ def test_package_install_a_b_a_private_scope_conflicts_updates_and_cache(tmp_pat
     with profile_scope(homes[0]):
         assert load('table-reviewer').extension_id == created[0].extension_id
         # User changes stay authoritative: a higher package version must not overwrite them.
-        import sci_yaml as yaml
         manifest_path = package / 'manifest.yaml'
         manifest = yaml.safe_load(manifest_path.read_text())
         manifest['version'] = '1.1.0'

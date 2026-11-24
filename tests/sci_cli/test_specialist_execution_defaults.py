@@ -47,7 +47,7 @@ def test_main_profile_migration_and_new_specialist_defaults_a_b_a(tmp_path, monk
         from sci_cli.specialist_commands import dispatch
         save(Specialist('old-reviewer', 'Review data', tools=('read_file',)))
         class EditorUI:
-            answers = iter(['Use standard tools', 'Save and enable for the next conversation'])
+            answers = iter(['Save and enable for the next conversation'])
             def show(self, message):
                 pass
             def choose(self, question, options):
@@ -55,7 +55,7 @@ def test_main_profile_migration_and_new_specialist_defaults_a_b_a(tmp_path, monk
                 assert value in options
                 return value
         dispatch(SimpleNamespace(agent=None), '/Update_subagent old-reviewer', EditorUI())
-        assert {'terminal', 'execute_code', 'read_file', 'search_files'} <= set(load('old-reviewer').tools)
+        assert load('old-reviewer').tools == ('read_file',)
 
 
 def test_python_reference_executes_only_when_explicitly_called(tmp_path, monkeypatch):

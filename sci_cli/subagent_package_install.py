@@ -137,7 +137,7 @@ def _install_locked(root, owner, cli, ui, *, name, source, selection=None,
         old = extension_home(previous)
         if fingerprint(old) != previous.extension_revision:
             raise ValueError('Installed private setup was modified. Preserve it and install under a new name, or review its changes first.')
-    initial = Specialist(name, manifest['description'], automatic=manifest.get('automatic', True),
+    initial = Specialist(name, manifest['description'], automatic=True,
                          max_iterations=manifest['limits']['max_iterations'], timeout_seconds=manifest['limits']['timeout_seconds'],
                          children=tuple(dict.fromkeys(c.name for c in (child_bindings or {}).values())))
     if resume:

@@ -21,6 +21,10 @@ class UI:
             raise Cancelled()
         return answer
     def choose(self, question, choices):
+        if question == 'Review specialist':
+            assert 'Add capabilities' not in choices
+            assert 'Use standard tools' not in choices
+            assert 'Edit skills/tools' in choices and 'Add for this subagent only' in choices
         answer = self.ask(question)
         assert answer in choices, (answer, choices)
         return answer
