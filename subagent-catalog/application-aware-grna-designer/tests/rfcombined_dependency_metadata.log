@@ -1,0 +1,9 @@
+{
+  "profile": "rfcombined",
+  "status": "PASS_METADATA_ONLY",
+  "observed_R": "4.3.3",
+  "expected_R": "4.3.3",
+  "version_mismatches": {},
+  "scientific_execution": false,
+  "model_readiness_verified": false
+}

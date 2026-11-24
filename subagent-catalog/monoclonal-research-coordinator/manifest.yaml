@@ -1,0 +1,50 @@
+schema_version: 2
+id: monoclonal-research-coordinator
+name: monoclonal-research-coordinator
+version: 1.0.0
+authors:
+  - Naga Jyothi
+license: MIT
+description: Coordinate five approved research and review workers for MAIN execution.
+sci_requires: '>=0'
+instructions: instructions.md
+output: Concise evidence-backed phase return with actual run IDs, sources/artifact paths and hashes, uncertainties, stage blockers and next MAIN action; follow the selected handoff schema when requested.
+automatic: false
+tools:
+    - delegate_task
+    - read_file
+    - search_files
+skills:
+  - id: monoclonal-research-team
+    kind: package
+    path: skills/monoclonal-research-team
+  - id: monoclonal-research-handoffs
+    kind: package
+    path: skills/monoclonal-research-handoffs
+dependencies: []
+references: []
+limits:
+  max_iterations: 160
+  timeout_seconds: 0
+platforms:
+  - any
+fixtures:
+  - input: tests/fixture.json
+    expected: tests/expected.json
+    description: Synthetic monoclonal research fixture with observable counts.
+children:
+  - role: antigen_researcher
+    package: monoclonal-antigen-researcher
+    version: '>=1.0.0,<2.0.0'
+  - role: tool_scout
+    package: monoclonal-tool-scout
+    version: '>=1.0.0,<2.0.0'
+  - role: workflow_scientist
+    package: monoclonal-workflow-scientist
+    version: '>=1.0.0,<2.0.0'
+  - role: benchmark_analyst
+    package: monoclonal-benchmark-analyst
+    version: '>=1.0.0,<2.0.0'
+  - role: evidence_reviewer
+    package: monoclonal-evidence-reviewer
+    version: '>=1.0.0,<2.0.0'

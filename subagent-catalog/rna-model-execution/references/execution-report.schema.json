@@ -1,0 +1,143 @@
+{
+  "$id": "urn:rna-agents:execution-report-v1",
+  "title": "ExecutionReport v1",
+  "description": "Execution output contract: mechanical installation/inference evidence for a ModelIntegrationSpec. A passing report never establishes biological validity.",
+  "type": "object",
+  "required": [
+    "report_version",
+    "model_identity",
+    "installation_status",
+    "checkpoint_verification",
+    "inference_status",
+    "registry_update",
+    "runtime",
+    "hardware",
+    "logs",
+    "output_artifacts",
+    "validation_results",
+    "known_limitations"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "report_version": { "const": 1 },
+    "spec_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "spec_path": { "type": "string" },
+        "model_name": { "type": "string" }
+      }
+    },
+    "model_identity": {
+      "type": "object",
+      "required": ["name", "repository", "commit"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "repository": { "type": "string", "minLength": 1 },
+        "commit": { "type": "string", "minLength": 7 },
+        "registry_id": { "type": "string" }
+      }
+    },
+    "installation_status": {
+      "type": "object",
+      "required": ["status", "environment_path"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "type": "string", "enum": ["NOT_RUN", "BLOCKED", "IN_PROGRESS", "COMPLETED", "FAILED"] },
+        "environment_path": { "type": "string" },
+        "environment_kind": { "type": "string", "enum": ["venv", "conda", "container", "system_approved"] },
+        "installed_packages_receipt": { "type": "string" },
+        "blockers": { "type": "array", "items": { "type": "string" } },
+        "resume_hint": { "type": "string" }
+      }
+    },
+    "checkpoint_verification": {
+      "type": "object",
+      "required": ["status"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "type": "string", "enum": ["NOT_APPLICABLE", "NOT_RUN", "BLOCKED", "VERIFIED", "MISMATCH", "MISSING"] },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["file", "outcome"],
+            "additionalProperties": false,
+            "properties": {
+              "file": { "type": "string" },
+              "source_url": { "type": "string" },
+              "algorithm": { "type": "string", "enum": ["sha256", "sha512", "md5", "none"] },
+              "expected": { "type": "string" },
+              "observed": { "type": "string" },
+              "outcome": { "type": "string", "enum": ["VERIFIED", "MISMATCH", "NO_CHECKSUM_PUBLISHED", "MISSING"] }
+            }
+          }
+        }
+      }
+    },
+    "inference_status": {
+      "type": "object",
+      "required": ["status", "successful_records", "failed_records"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "type": "string", "enum": ["NOT_RUN", "BLOCKED", "COMPLETED", "PARTIAL", "FAILED"] },
+        "successful_records": { "type": "integer", "minimum": 0 },
+        "failed_records": { "type": "integer", "minimum": 0 },
+        "input_manifest": { "type": "string" },
+        "output_manifest": { "type": "string" },
+        "adapter_path": { "type": "string" },
+        "blockers": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "registry_update": {
+      "type": "object",
+      "required": ["registry_path", "entry_id", "state_reached"],
+      "additionalProperties": false,
+      "properties": {
+        "registry_path": { "type": "string" },
+        "entry_id": { "type": "string" },
+        "state_reached": {
+          "type": "string",
+          "enum": ["DISCOVERED", "EVIDENCE_REVIEWED", "WEIGHTS_AVAILABLE", "INSTALLED",
+                   "EXECUTION_TESTED", "BENCHMARK_VALIDATED", "PRODUCTION_APPROVED", "UNCHANGED"]
+        },
+        "transition_evidence": { "type": "string" }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "setup_seconds": { "type": "number" },
+        "inference_seconds": { "type": "number" },
+        "total_seconds": { "type": "number" }
+      }
+    },
+    "hardware": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "gpu": { "type": ["string", "null"] },
+        "cpu": { "type": "string" },
+        "ram_gb": { "type": "number" }
+      }
+    },
+    "logs": { "type": "array", "items": { "type": "string" } },
+    "output_artifacts": { "type": "array", "items": { "type": "string" } },
+    "validation_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["check", "outcome"],
+        "additionalProperties": false,
+        "properties": {
+          "check": { "type": "string" },
+          "outcome": { "type": "string", "enum": ["PASS", "FAIL", "NOT_RUN"] },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "known_limitations": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+  }
+}

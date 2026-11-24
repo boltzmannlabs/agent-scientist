@@ -1,0 +1,10 @@
+# Observed package versions, not a clean-install lock or a readiness guarantee.
+# Separate interpreter: Python 2.7.15; do not merge profiles.
+numpy==1.16.5
+scipy==1.2.1
+pandas==0.24.2
+scikit-learn==0.19.2
+biopython==1.76
+bx-python==0.8.9
+pysam==0.20.0
+configparser==4.0.2

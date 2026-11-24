@@ -1,0 +1,44 @@
+{
+  "kind": "HISTORICAL_SUMMARY_NOT_EXECUTED_BY_THIS_PACKAGE",
+  "source_run": "Run-6_2026-11-16",
+  "full_cohort_n": 322,
+  "auc": {
+    "RN.Ai_source": 0.7021,
+    "RN.Ai_core19": 0.7056,
+    "RNAiSpline": 0.6769,
+    "OligoFormer_fresh_native": 0.6355
+  },
+  "three_target_macro": {
+    "source": 0.7115,
+    "core19": 0.7203,
+    "other_target_selected": 0.7102
+  },
+  "published_context": {
+    "SiaRNA_Simone_auc": 0.7586,
+    "OligoFormer_Mixset_average_auc": 0.8163,
+    "matched_protocol_delta": null
+  },
+  "conclusion": "No reliable transferable improvement or matched published-protocol superiority established",
+  "caveats": [
+    "Previously examined labels; paired target-specific exploratory intervals included zero",
+    "Repeated task frames are not independent scientific cohorts",
+    "Mixed label cutoff conventions and different published protocols",
+    "Clinical site recovery is not potency; small MYC/immune cohorts are not robust validation"
+  ],
+  "primary_pointers": [
+    {
+      "title": "Improved nucleic acid descriptors for siRNA efficacy prediction",
+      "pmid": "23241392",
+      "doi": "10.1093/nar/gks1191"
+    },
+    {
+      "title": "OligoFormer: an accurate and robust prediction method for siRNA design",
+      "pmid": "39321261",
+      "doi": "10.1093/bioinformatics/btae577"
+    },
+    {
+      "title": "SiaRNA: a siamese neural network with bidirectional cross-attention for pairwise siRNA-mRNA efficacy prediction",
+      "pmcid": "PMC13488420"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "decision": "propose",
+  "case_id": "synthetic-workflow-parameter",
+  "baseline_sha256": "e7379ae47f550252e4024ff97e876df66a52fdd9398c0878ccf87b1c3c00f4df",
+  "evidence": [
+    "transform-result",
+    "evaluation",
+    "tool-contracts.v1",
+    "file-input-contracts.v1",
+    "input-limits.v1"
+  ],
+  "diagnosis": "The transform hit capacity 8 with 12 valid input rows.",
+  "success_criterion": "Recover more verified rows under the same audit and original input.",
+  "change": {
+    "kind": "parameter",
+    "stage": "transform",
+    "field": "capacity",
+    "new": 16,
+    "contract": "tool-contracts.v1",
+    "tool": "synthetic_text_filter",
+    "old": 8
+  },
+  "fixed_conditions": "Keep source bytes and audit rules fixed.",
+  "expected_benefit": "Recover verified rows lost by the baseline.",
+  "cost_and_risk": "Potential processing overhead and row-normalization differences.",
+  "validation_plan": "Rerun the transform and audit the exact row identities.",
+  "reversal_criterion": "Revert if identity changes or the audit does not improve."
+}

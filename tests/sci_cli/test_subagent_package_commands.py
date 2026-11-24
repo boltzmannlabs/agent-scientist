@@ -75,7 +75,10 @@ def test_embedded_wheel_catalog_matches_tree_and_rejects_tampered_metadata(tmp_p
     import sci_cli.subagent_package_catalog as catalog
     from sci_cli.subagent_package_schema import validate
     import pytest
-    assert catalog.catalog() == {}  # No example specialist is shipped.
+    empty = tmp_path / 'empty-catalog'
+    empty.mkdir()
+    monkeypatch.setattr(catalog, 'CATALOG', empty)
+    assert catalog.catalog() == {}
     catalog = fixture_catalog(tmp_path, monkeypatch)
     direct = catalog.catalog()
     snapshot = tmp_path / 'catalog.json'

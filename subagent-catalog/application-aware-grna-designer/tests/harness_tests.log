@@ -1,0 +1,40 @@
+test_cli_artifact_reads_need_explicit_root_and_output_is_exclusive (__main__.ArtifactTests.test_cli_artifact_reads_need_explicit_root_and_output_is_exclusive) ... ok
+test_empty_verification_is_not_artifact_integrity_pass (__main__.ArtifactTests.test_empty_verification_is_not_artifact_integrity_pass) ... ok
+test_raster_decode_and_nonconstant_pixels (__main__.ArtifactTests.test_raster_decode_and_nonconstant_pixels) ... ok
+test_real_hash_and_csv_row_count (__main__.ArtifactTests.test_real_hash_and_csv_row_count) ... ok
+test_symlink_outside_root_is_rejected (__main__.ArtifactTests.test_symlink_outside_root_is_rejected) ... ok
+test_wrong_hash_and_escape_are_rejected (__main__.ArtifactTests.test_wrong_hash_and_escape_are_rejected) ... ok
+test_boolean_counts_are_not_integers (__main__.RecordTests.test_boolean_counts_are_not_integers) ... ok
+test_cache_requires_hash (__main__.RecordTests.test_cache_requires_hash) ... ok
+test_cached_score_is_not_fresh_native (__main__.RecordTests.test_cached_score_is_not_fresh_native) ... ok
+test_cardinality_mismatch (__main__.RecordTests.test_cardinality_mismatch) ... ok
+test_completed_record_cannot_hide_unrun_stage (__main__.RecordTests.test_completed_record_cannot_hide_unrun_stage) ... ok
+test_consistent_declared_native_metadata_does_not_certify_readiness (__main__.RecordTests.test_consistent_declared_native_metadata_does_not_certify_readiness) ... ok
+test_contextual_comparison_has_no_matched_delta (__main__.RecordTests.test_contextual_comparison_has_no_matched_delta) ... ok
+test_exact_task_tokens (__main__.RecordTests.test_exact_task_tokens) ... ok
+test_legacy_record_is_not_silently_promoted (__main__.RecordTests.test_legacy_record_is_not_silently_promoted) ... ok
+test_malformed_metadata_types_do_not_crash (__main__.RecordTests.test_malformed_metadata_types_do_not_crash) ... ok
+test_metadata_audit_does_not_read_artifacts (__main__.RecordTests.test_metadata_audit_does_not_read_artifacts) ... ok
+test_native_class_requires_actual_declared_stage (__main__.RecordTests.test_native_class_requires_actual_declared_stage) ... ok
+test_native_dropout_warning (__main__.RecordTests.test_native_dropout_warning) ... ok
+test_native_exit_failure (__main__.RecordTests.test_native_exit_failure) ... ok
+test_native_forward_flag_required (__main__.RecordTests.test_native_forward_flag_required) ... ok
+test_nonfinite_delta_rejected (__main__.RecordTests.test_nonfinite_delta_rejected) ... ok
+test_pretrained_only_blocks_new_training (__main__.RecordTests.test_pretrained_only_blocks_new_training) ... ok
+test_random_learned_features_block_native_pass (__main__.RecordTests.test_random_learned_features_block_native_pass) ... ok
+test_required_provenance (__main__.RecordTests.test_required_provenance) ... ok
+test_schema_fixture_and_rejection_shapes (__main__.RecordTests.test_schema_fixture_and_rejection_shapes) ... ok
+test_software_fixture_exact_expected (__main__.RecordTests.test_software_fixture_exact_expected) ... ok
+test_software_only_cannot_enter_completed_benchmarks (__main__.RecordTests.test_software_only_cannot_enter_completed_benchmarks) ... ok
+test_synthetic_metadata_never_becomes_measured_benchmark (__main__.RecordTests.test_synthetic_metadata_never_becomes_measured_benchmark) ... ok
+test_boolean_paths_do_not_satisfy_required_input (__main__.RequestAndDependencyTests.test_boolean_paths_do_not_satisfy_required_input) ... ok
+test_distribution_names_are_canonicalized (__main__.RequestAndDependencyTests.test_distribution_names_are_canonicalized) ... ok
+test_duplicate_metadata_is_reported_without_last_entry_override (__main__.RequestAndDependencyTests.test_duplicate_metadata_is_reported_without_last_entry_override) ... ok
+test_malformed_json_has_structured_rejection (__main__.RequestAndDependencyTests.test_malformed_json_has_structured_rejection) ... ok
+test_sirna_is_not_cas13_and_safety_still_takes_precedence (__main__.RequestAndDependencyTests.test_sirna_is_not_cas13_and_safety_still_takes_precedence) ... ok
+test_unhashable_task_and_mode_are_rejected (__main__.RequestAndDependencyTests.test_unhashable_task_and_mode_are_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 35 tests in 0.371s
+
+OK

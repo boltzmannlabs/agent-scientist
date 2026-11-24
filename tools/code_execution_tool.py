@@ -937,7 +937,9 @@ def build_execute_code_schema(enabled_sandbox_tools: set = None,
                 "code": {"type": "string", "description": (
                     "Python code to execute. Import tools with "
                     f"`from sci_tools import {import_str}` "
-                    "and print your final result to stdout.")},
+                    "and print your final result to stdout. When producing files for dependent workers, "
+                    "print one JSON object with files_modified: [absolute output paths] alongside your findings; "
+                    "SCI verifies and records these files for assignment handoffs on the local backend.")},
                 "reset": {"type": "boolean", "description": (
                     "Discard the kernel's persistent state and start fresh before running this code.")},
             },

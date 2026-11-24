@@ -1,0 +1,14 @@
+{
+  "package_id": "monoclonal-research-coordinator",
+  "case": "fixture.json",
+  "common": {
+    "preserve_inputs": true,
+    "artifact_contract": "phase record written under the assigned output directory, findings schema_version 2.0, stable finding_id/claim/evidence/sources/uncertainty/affected_stages/owner",
+    "missing_inputs": "request missing required inputs from parent; do not substitute unrelated files",
+    "no_execution": "no scientific models run, no jobs submitted"
+  },
+  "role_checks": {
+    "hierarchy": "all five worker children actually run (antigen_researcher, tool_scout, benchmark_analyst first; workflow_scientist after; evidence_reviewer last)",
+    "outputs": "consolidated package retains every leaf finding unchanged; child_returns carry actual run IDs, record paths and hashes"
+  }
+}

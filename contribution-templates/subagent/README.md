@@ -10,7 +10,8 @@ all required supporting files. Add license/provenance, permissions, data transfe
 service charges, platform/backend requirements and known limitations here.
 
 After real local testing fill `tests/validation.json` local evidence and open a PR
-**to dev**. Leave integrated status pending until the merged dev revision is tested.
+**to dev**. After merge, test installation/execution from merged dev and inform the
+maintainer. No evidence-only follow-up PR is required; integrated records are optional.
 Do not include generated catalog snapshots/checksums or local SCI state. Do not copy
 API keys, authorization receipts, conversations, private datasets or installed software.
 

@@ -1,0 +1,4 @@
+# Core specialist metadata fixtures and request preflight use Python standard library only.
+# There are no third-party core pip dependencies to install.
+# Native scientific profiles are optional and MUST be installed in separate interpreters.
+# See dependencies.json and DEPENDENCIES.md; never install all profiles together.

@@ -1,0 +1,57 @@
+{
+  "spec_version": 1,
+  "task_definition": {
+    "capability": "translation-efficiency-prediction",
+    "biological_task": "Predict relative translation efficiency from CDS and UTR sequence for a human mRNA construct",
+    "domain": "mrna",
+    "context": "Synthetic fixture for schema validation; not a real evaluation."
+  },
+  "selected_model": {
+    "name": "SYNTHETIC-FIXTURE-MODEL",
+    "repository_url": "example.invalid/synthetic-model",
+    "commit": "deadbee000000",
+    "license": "MIT",
+    "commercial_use_permitted": true,
+    "publication_references": ["doi:10.0000/synthetic.fixture"],
+    "architecture": "fixture encoder (no real architecture)",
+    "checkpoint": {
+      "urls": ["example.invalid/weights/fixture.pt"],
+      "checksums": [
+        { "file": "fixture.pt", "algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000" }
+      ],
+      "notes": "Synthetic URL; resolves nowhere."
+    }
+  },
+  "weights_availability": "WEIGHTS_PUBLIC",
+  "alternatives_considered": [
+    {
+      "name": "SYNTHETIC-ALT-A",
+      "repository_url": "example.invalid/alt-a",
+      "weights_availability": "NO_WEIGHTS",
+      "verdict": "training-only release; not inference-ready",
+      "evidence": "fixture"
+    }
+  ],
+  "input_schema": { "sequence": "string (DNA/RNA)", "utr5": "string optional", "utr3": "string optional" },
+  "output_schema": { "translation_efficiency": "float relative" },
+  "dependencies": ["torch>=1.10 (fixture only)"],
+  "runtime_requirements": {
+    "frameworks": ["pytorch"],
+    "gpu_required": false,
+    "minimum_ram_gb": 4,
+    "inference_interface": "python_api"
+  },
+  "official_inference_instructions": "Fixture: python model/predict.py --input in.json (from the synthetic repository README)",
+  "benchmark_evidence": [
+    { "claim": "fixture claim only", "source": "example.invalid/paper", "cohort_endpoint_context": "synthetic" }
+  ],
+  "known_limitations": [
+    "Synthetic fixture; no real model exists at these URLs",
+    "Benchmark evidence is fabricated for schema testing and must never be cited"
+  ],
+  "selection_rationale": "Fixture selected to exercise the schema validator; no scientific selection occurred.",
+  "provenance": {
+    "discovered_by": "rna-model-discovery test fixture generator",
+    "discovery_date": "2026-11-17"
+  }
+}

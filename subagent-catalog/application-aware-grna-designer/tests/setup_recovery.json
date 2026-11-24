@@ -1,0 +1,18 @@
+{
+  "scope": "Package QA only; no scientific inference or installation",
+  "observed_failures": [
+    {
+      "stage": "artifact generation host",
+      "error": "ModuleNotFoundError: yaml",
+      "resolution": "Used standard-library generation; did not install into SCI."
+    },
+    {
+      "stage": "bare historical interpreter validation",
+      "error": "PyYAML unavailable",
+      "resolution": "Inspected actual committed installed SCI environment, selected existing matching SDK interpreter; kept historical profile distinct."
+    }
+  ],
+  "sdk_qa_observed_python": "3.14.7",
+  "parser": "Approved existing installed SCI sci_yaml fallback",
+  "clean_environment_reconstruction": false
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "package_id": "rna-agent",
+  "package_version": "1.2.0",
+  "core": {
+    "python": ">=3.12",
+    "third_party_required": [],
+    "note": "Core scripts (router, dependency planner/verifier, registry CLI, package validation) are standard-library only."
+  },
+  "installation_policy": {
+    "installs_anything": false,
+    "network": "none by this package; host verification is read-only version probing",
+    "environments": "no interpreter profiles of its own; stewards the leaves' profiles via the dependency matrix"
+  },
+  "external_assets_required": [
+    "four child packages reviewed and bound by the native schema-v2 hierarchy installer",
+    "parent-owned shared registry path",
+    "parent-supplied output roots and authorizations per directive"
+  ],
+  "setup_validation_scope": "Routing fixtures and host probes only; no delegation, installation or inference is performed by validating this package."
+}

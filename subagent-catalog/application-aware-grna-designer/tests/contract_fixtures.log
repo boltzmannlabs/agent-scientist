@@ -1,0 +1,9 @@
+PASS missing_knockout_parameters
+PASS pathogen_review_gate
+PASS plant_native_design_inactive
+PASS benchmark_missing_original_model
+PASS malformed_task_identifier_preserved
+PASS audit_metadata_only
+PASS unknown_mode
+PASS missing_organism_context
+8 metadata fixtures passed; scientific execution NOT tested

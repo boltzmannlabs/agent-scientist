@@ -1,0 +1,18 @@
+{
+  "package_id": "monoclonal-tool-scout",
+  "case": "fixture.json",
+  "common": {
+    "preserve_inputs": true,
+    "artifact_contract": "phase record written under the assigned output directory, findings schema_version 2.0, stable finding_id/claim/evidence/sources/uncertainty/affected_stages/owner",
+    "missing_inputs": "request missing required inputs from parent; do not substitute unrelated files",
+    "no_execution": "no scientific models run, no jobs submitted"
+  },
+  "role_checks": {
+    "observable_counts": {
+      "tools_in_supplied_metadata": 3,
+      "tools_compatible_with_sequence_mask_scope": 1,
+      "recommended_shortlist_size_range": "1-2",
+      "default_priority_order_when_user_silent": "Boltzmann -> ToolUniverse -> open source"
+    }
+  }
+}

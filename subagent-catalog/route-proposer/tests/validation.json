@@ -1,0 +1,27 @@
+{
+  "package_id": "route-proposer",
+  "package_version": "0.6.0",
+  "local": {
+    "status": "passed",
+    "environment": "2026-11-22 Linux amd64; exact published 8f22ee2da3bd0fb7ac548cc34372f7a724ffa377; schema1 standalone; official reviewed local and remote private installations with proposed URL/version prerequisites.",
+    "checks": [
+      "624 backend/native tests passed;90.63%coverage; separate482standalone suite.",
+      "Schema compatibility:3RED then9GREEN (3compatibility+6repeatednative); counts not additive.",
+      "Exact published clean installation;28runtime hashes match; deterministic renamed private child empty/nonempty receipts and wrong-target/hash rejection passed; advertised schemas checked.",
+      "Fresh live GLM5.3 achiral:1hypothesis,121.7813s,5calls,62942input/4834output; stereo:1hypothesis,127.4177s,6calls,84083input/6094output.",
+      "Both live child results accepted by host owner backend API; live parent LLM selection not tested (separate deterministic parent test). All74pluginfiles unchanged; temporary specialistdisabled; other specialists/ownerconfig unchanged; no credentialcopy.",
+      "Achiral has no exact retrieved evidence; stereo analogue-only with unresolved catalyst-to-product mapping. No chemical superiority, cost savings or experimental validation.",
+      "Fresh concurrent run:740.44s total,251.64s overlap;2modelroutes preserved with unchanged publicoutput;0agentaddition after later providercheckfailure.",
+      "Prior newer-schema installfailure and2preflightstatedirectoryfailures preserved; no model calls in failedpreflights. Exactmergeddev pending.",
+      "Final fresh concurrent success:682.3668s total;115.9883s overlap;2original routes preserved+1unique proposer graph=3selected; originalpublicoutputunchanged. Proposer counts1proposed/schema/structural/unique/retained,0stock-connected/chemically-assessed/rejected.0acceptedchemical/costimprovements.",
+      "Observed exact outputs, provenance and missing-target reply are bundled in tests/observed-results.json; observations not runtimeexamples. Missing-target correctlyblocked in15.14s,1call,0tools,asksSMILES.",
+      "Finaltemporaryspecialistdisabled; all74files unchanged; otherspecialists/ownerconfigpreserved. Unknowncost remainsunknown."
+    ]
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "",
+    "checks": []
+  }
+}

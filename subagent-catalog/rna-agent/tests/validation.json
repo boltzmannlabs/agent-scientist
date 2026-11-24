@@ -1,0 +1,27 @@
+{
+  "package_id": "rna-agent",
+  "package_version": "1.2.0",
+  "local": {
+    "status": "passed",
+    "environment": "Linux; Python 3.14.7; isolated temporary SCI homes; controlled metadata-only package installation; optional programs and services deferred",
+    "checks": [
+      "Native schema-v2 parent/child package installation in profiles A -> B -> A",
+      "Renamed parent and actual child-name bindings; no creator installer or credentials",
+      "Owning-profile dependency lookup without fallback to main or sticky profile",
+      "Existing prompt/tool cache and profile credential preservation",
+      "Offline router, dependency-plan and registry contract tests (12 passed)",
+      "Package acceptance regression: checkout catalog remains valid after canonical test preparation"
+    ],
+    "failures": []
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "Not yet installed/enabled in an owning profile against a dev commit",
+    "checks": []
+  },
+  "scientific_execution": false,
+  "live_agent_tested": false,
+  "clean_install_tested": true,
+  "clean_install_scope": "Metadata-only hierarchy installation; optional scientific dependencies and Boltzmann setup deferred. No inference or scientific readiness claim."
+}

@@ -1,0 +1,18 @@
+{
+  "fixture_kind": "SYNTHETIC_METADATA_ONLY",
+  "routing_cases": [
+    { "name": "sirna_route", "text": "Design siRNA candidates for human KRAS knockdown by RNA interference" },
+    { "name": "grna_route", "text": "We need CRISPR base editing guides for splice site 3" },
+    { "name": "discovery_route", "text": "Find an open-source model with pretrained weights for RNA folding propensity" },
+    { "name": "execution_route", "text": "Install the model from the approved spec, verify the checkpoint and run inference" },
+    { "name": "ambiguous_silence", "text": "help me silence gene X expression" },
+    { "name": "not_covered_aso", "text": "design an antisense oligo gapmer for me" }
+  ],
+  "preflight_cases": [
+    { "name": "setup_missing", "request": { "mode": "SETUP" } },
+    { "name": "setup_ready", "request": { "mode": "SETUP", "target_leaves": ["rna-model-discovery"], "output_root": "outputs/setup" } },
+    { "name": "audit_only", "request": { "mode": "AUDIT" } },
+    { "name": "bad_mode", "request": { "mode": "deploy" } },
+    { "name": "route_no_text", "request": { "mode": "ROUTE" } }
+  ]
+}

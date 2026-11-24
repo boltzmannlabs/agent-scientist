@@ -1,0 +1,16 @@
+case_id,mode,task_id,safety_context,organism
+setup,SETUP,,,
+audit,AUDIT,,,
+unknownmode,design,001,noninfectious_human_research,human
+badtoken,DESIGN,1,noninfectious_human_research,human
+missing_scope,DESIGN,001,,human
+unsafe_scope,DESIGN,001,pathogen,human
+plant,DESIGN,001,noninfectious_human_research,plant
+missingorganism,DESIGN,001,noninfectious_human_research,
+design_missing,DESIGN,002,noninfectious_human_research,human
+allele_missing,DESIGN,004,noninfectious_human_research,human
+cns_missing,DESIGN,007,noninfectious_human_research,human
+evaluation_missing,EVALUATE,001,noninfectious_human_research,human
+benchmark_missing,BENCHMARK,009,noninfectious_human_research,human
+explore_missing,EXPLORATORY,003,noninfectious_human_research,human
+unsupportedtask,DESIGN,012,noninfectious_human_research,human

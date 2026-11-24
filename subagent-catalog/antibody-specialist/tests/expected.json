@@ -1,0 +1,14 @@
+{
+  "package_id": "antibody-specialist",
+  "case": "fixture.json",
+  "common": {
+    "preserve_inputs": true,
+    "artifact_contract": "phase record written under the assigned output directory, findings schema_version 2.0, stable finding_id/claim/evidence/sources/uncertainty/affected_stages/owner",
+    "missing_inputs": "request missing required inputs from parent; do not substitute unrelated files",
+    "no_execution": "no scientific models run, no jobs submitted"
+  },
+  "role_checks": {
+    "hierarchy": "one actual delegated run to the coordinator child; final return carries the coordinator run ID and worker run IDs",
+    "outputs": "consolidated phase return with actual run IDs, artifact paths + SHA-256, blockers, next actions for MAIN"
+  }
+}

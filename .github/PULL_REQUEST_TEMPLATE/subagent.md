@@ -21,7 +21,7 @@ Author, provenance and redistribution license:
 - [ ] No keys, tokens, private SCI state, machine paths or installed environments are included.
 - [ ] Local install/execution, output inspection and missing-input/authorization behavior were tested.
 - [ ] `tests/validation.json` identifies this ID/version and actual local environment/checks.
-- [ ] Integrated status is pending until the merged `dev` commit is tested.
+- [ ] After merge, I will test installation/execution from dev and inform maintainers of the result.
 - [ ] This PR targets `dev`; generated release snapshot/checksums are maintainer work.
 
 ### After merge to dev
@@ -31,8 +31,9 @@ actually exercised. Include affected parents when a child changes, even if their
 own manifests are unchanged. Verify installation into a differently named profile,
 actual nested delegation, missing child setup and cancellation/update recovery.
 
-Post the exact merged dev commit tested, environment, integrations exercised and
-observed results. Submit fixes through further PRs to dev; retest the corrected
-commit. Update `tests/validation.json` with passed integrated evidence only after
-those tests. Maintainers perform final review and main promotion; a report is not
-proof of scientific correctness or permission to use company credentials.
+Inform maintainers whether installation/execution from merged dev worked and report
+any failures or limitations. Version/environment details and detailed receipts are
+useful when available, but no evidence-only follow-up PR or integrated JSON update
+is required. Submit fixes through corrective PRs to dev and retest affected behavior.
+Maintainers record the team's confirmation in the promotion PR and perform final
+review; confirmation does not grant service access or certify scientific accuracy.

@@ -1,0 +1,51 @@
+{
+  "schema_version": 2,
+  "id": "enzyme-recovery",
+  "name": "enzyme-recovery",
+  "version": "1.1.0",
+  "authors": [
+    "Boltzmann Labs"
+  ],
+  "license": "MIT",
+  "description": "Diagnose an execution failure or unusable result",
+  "sci_requires": ">=0",
+  "instructions": "instructions.md",
+  "output": "Observed phase, evidence, acceptance status, justified action, corrected fields or missing diagnostic.",
+  "automatic": false,
+  "tools": [
+    "read_file"
+  ],
+  "skills": [
+    {
+      "id": "enzyme-recovery",
+      "kind": "package",
+      "path": "skills/enzyme-recovery"
+    }
+  ],
+  "dependencies": [],
+  "references": [],
+  "limits": {
+    "max_iterations": 30,
+    "timeout_seconds": 0
+  },
+  "platforms": [
+    "any"
+  ],
+  "fixtures": [
+    {
+      "input": "tests/uncertain-submit.txt",
+      "expected": "tests/uncertain-submit.expected.json",
+      "description": "An attempted submission returned HTTP 503 and no job ID. A separate, earlier run has a confirmed collection and job ID. The SCI conversation restarted."
+    },
+    {
+      "input": "tests/ordinal-correction.txt",
+      "expected": "tests/ordinal-correction.expected.json",
+      "description": "A terminal pre-calculation schema rejection reports that protected_indices [103] exceeds a four-residue input length. The frozen protected source label is 103, independently mapped to one-based ordinal 3. The contract takes ordinals."
+    },
+    {
+      "input": "tests/compatible-alternate.txt",
+      "expected": "tests/compatible-alternate.expected.json",
+      "description": "Synthetic case for choosing an authorized compatible replacement after an unusable result."
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "scientific_execution": false,
+  "model_readiness_verified": false,
+  "authorization_granted": false,
+  "production_default_changed": false,
+  "status": "POLICY_ONLY_REQUIRES_PARENT_AND_NATIVE_CHECKS",
+  "model_id": "DEEPPRIME_PE2",
+  "profile": "editing",
+  "recommendation": "Native five-checkpoint ensemble (model_0 through model_4)",
+  "decision": "RETAIN_NATIVE_ENSEMBLE",
+  "limitations": "Single checkpoints and numeric-only replacements underperformed. Batch256 was appropriate on the tested CPU, not a universal speed optimum.",
+  "native_checks_required": [
+    "exact editor/system/tracr/scaffold and endpoint contract",
+    "original features and genuine sequence context",
+    "source/weights/checkpoints and historical training exposure",
+    "approved isolated runtime and measured-label evaluation",
+    "actual biological safety/source/egress/execution authorization"
+  ]
+}

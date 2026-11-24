@@ -1,0 +1,22 @@
+{
+  "package_id": "postrun-workflow-reviewer",
+  "package_version": "0.3.0",
+  "local": {
+    "status": "passed",
+    "environment": "SCI 0.1.1 dev 8cc5b08b380022d64d3041195524bc59dedfd6d0, Python 3.14.7, Linux x86_64. Native managed installs in disposable profiles. Only fabricated workflow data sent to openai-codex / gpt-6.2-sol at the approved Codex endpoint.",
+    "checks": [
+      "All 11 package workflow gate tests passed.",
+      "With a completed, frozen and transfer-approved synthetic workflow, the main agent selected the automatic reviewer once without its name appearing in the user request. Run sa-0-2d74f533 read exactly 12 approved files and returned the expected integer parameter change. Its native schema and full workflow-gate screening passed.",
+      "For a running synthetic workflow, the main agent reported the pending status without attempting to invoke a specialist.",
+      "For a completed synthetic workflow with a frozen packet and sharing approval pending, the main agent reported the missing approval. It made no reviewer invocation attempt.",
+      "A later operator smoke test in Ankith selected the automatic reviewer without naming it in the user request. Synthetic run sa-0-b64bd139 proposed capacity 8 to 16 and passed native JSON Schema and full workflow-gate validation. No execution was authorized.",
+      "Selection is model-driven. The two negative controls exercised parent selection. The package retains SCI's native file-scope enforcement and does not add a deterministic workflow-completion trigger. No scientific jobs or real project transfers occurred."
+    ]
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "",
+    "checks": []
+  }
+}

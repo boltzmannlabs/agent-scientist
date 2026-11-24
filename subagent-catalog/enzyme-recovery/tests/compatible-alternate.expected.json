@@ -1,0 +1,5 @@
+{
+  "decision": "Run approved Route B",
+  "reason": "Route B supports the required endpoint on the same assembly and controls.",
+  "verify_after_execution": "Verify a returned whole-assembly score for both matched inputs before closing the requirement."
+}

@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "id": "rna-model-discovery",
+  "name": "rna-model-discovery",
+  "version": "1.1.1",
+  "authors": [
+    "Agent Scientist"
+  ],
+  "license": "MIT",
+  "description": "RNA model discovery and integration specialist: classifies biological tasks, identifies missing capabilities, searches approved open-source sources, verifies pretrained-weight availability, evaluates candidates on evidence, and produces schema-validated ModelIntegrationSpecs. Never installs, executes or overstates models.",
+  "sci_requires": ">=0",
+  "instructions": "instructions.md",
+  "output": "Task classification, capability-gap statement, evidence-ranked candidate table, weights-availability verdict per candidate, a schema-validated ModelIntegrationSpec for the selected candidate, explicit NOT_DISCOVERED/NEEDS_INPUT/BLOCKED stages, and registry-update directives with the DISCOVERED/EVIDENCE_REVIEWED/WEIGHTS_AVAILABLE states. No inference, installation or benchmark claim.",
+  "automatic": false,
+  "tools": [
+    "read_file",
+    "search_files",
+    "write_file",
+    "patch",
+    "terminal",
+    "execute_code",
+    "skill_view"
+  ],
+  "skills": [
+    {
+      "id": "rna-model-discovery",
+      "kind": "package",
+      "path": "skills/rna-model-discovery"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "python_core",
+      "kind": "program",
+      "optional": true,
+      "version": ">=3.12",
+      "version_args": [
+        "--version"
+      ],
+      "version_contains": "Python 3.",
+      "artifacts": []
+    }
+  ],
+  "references": [
+    {
+      "path": "dependencies.json",
+      "label": "Observed software profile, not network or connector readiness",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "DEPENDENCIES.md",
+      "label": "Reviewed setup sequence and approval boundaries",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/model-integration-spec.schema.json",
+      "label": "ModelIntegrationSpec contract version 1",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/registry.schema.json",
+      "label": "Shared RNA model and tool registry entry contract",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    },
+    {
+      "path": "references/evidence-rules.md",
+      "label": "Evidence, weights-availability and selection honesty rules",
+      "license": "MIT",
+      "required": true,
+      "mode": "snapshot"
+    }
+  ],
+  "limits": {
+    "max_iterations": 55,
+    "timeout_seconds": 5400
+  },
+  "platforms": [
+    "linux"
+  ],
+  "fixtures": [
+    {
+      "input": "tests/cases.json",
+      "expected": "tests/expected.json",
+      "description": "Six synthetic request-metadata cases; no search, evaluation or model claims."
+    },
+    {
+      "input": "tests/synthetic_spec.json",
+      "expected": "tests/expected_spec.json",
+      "description": "Synthetic ModelIntegrationSpec; validates structurally, never a measured evaluation."
+    }
+  ]
+}

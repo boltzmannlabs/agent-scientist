@@ -1,0 +1,240 @@
+{
+  "title": "Monoclonal research or review return",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "task_id",
+    "run_id",
+    "phase",
+    "worker",
+    "status",
+    "scientific_execution_performed",
+    "findings",
+    "artifacts",
+    "blockers",
+    "next_action"
+  ],
+  "properties": {
+    "schema_version": {
+      "enum": [
+        "1.0",
+        "2.0"
+      ]
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "phase": {
+      "enum": [
+        "research",
+        "preflight_review",
+        "result_analysis",
+        "result_review"
+      ]
+    },
+    "worker": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "blocked",
+        "incomplete"
+      ]
+    },
+    "scientific_execution_performed": {
+      "const": false
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim",
+          "basis",
+          "sources",
+          "uncertainty"
+        ],
+        "properties": {
+          "claim": {
+            "type": "string"
+          },
+          "basis": {
+            "enum": [
+              "source_reported",
+              "artifact_observed",
+              "interpretation"
+            ]
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "uncertainty": {
+            "type": "string"
+          },
+          "finding_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "affected_stages": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warning",
+              "blocking"
+            ]
+          },
+          "next_action": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stage",
+          "reason",
+          "owner",
+          "next_action"
+        ],
+        "properties": {
+          "stage": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "next_action": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "next_action": {
+      "type": "string"
+    },
+    "native_run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "parent_native_run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "child_returns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "worker",
+          "native_run_id",
+          "status",
+          "record_path",
+          "sha256"
+        ],
+        "properties": {
+          "worker": {
+            "type": "string",
+            "minLength": 1
+          },
+          "native_run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "completed",
+              "blocked",
+              "incomplete"
+            ]
+          },
+          "record_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "2.0"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "findings": {
+            "items": {
+              "required": [
+                "finding_id",
+                "affected_stages",
+                "owner"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

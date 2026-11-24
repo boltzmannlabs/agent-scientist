@@ -1,0 +1,5 @@
+# Optional harness QA only. Observed pins, not a complete solver lock.
+jsonschema==4.19.2
+PyYAML==6.0.3
+packaging==26.3
+Pillow==11.3.0

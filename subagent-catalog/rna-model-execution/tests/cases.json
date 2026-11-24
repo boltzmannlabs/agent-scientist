@@ -1,0 +1,14 @@
+{
+  "fixture_kind": "SYNTHETIC_METADATA_ONLY",
+  "cases": [
+    { "name": "setup_mode", "request": { "mode": "SETUP" } },
+    { "name": "audit_mode", "request": { "mode": "AUDIT" } },
+    { "name": "unknown_mode", "request": { "mode": "install" } },
+    { "name": "install_missing_all", "request": { "mode": "INSTALL" } },
+    { "name": "install_no_egress", "request": { "mode": "INSTALL", "model_integration_spec": "specs/m1.json", "approved_destination": "envs/m1", "output_root": "outputs/m1" } },
+    { "name": "install_complete", "request": { "mode": "INSTALL", "model_integration_spec": "specs/m1.json", "approved_destination": "envs/m1", "egress_authorization": "PARENT_EGRESS_2026", "output_root": "outputs/m1" } },
+    { "name": "run_missing_inputs", "request": { "mode": "RUN", "model_integration_spec": "specs/m1.json", "output_root": "outputs/m1" } },
+    { "name": "register_missing_evidence", "request": { "mode": "REGISTER", "registry_path": "outputs/reg.json", "entry_id": "m1", "target_state": "INSTALLED" } },
+    { "name": "malformed_task", "request": "not-an-object" }
+  ]
+}

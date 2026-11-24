@@ -1,0 +1,18 @@
+{
+  "fixture_kind": "SYNTHETIC_METADATA_ONLY",
+  "routing_cases": [
+    { "name": "sirna_route", "status": "ROUTED", "leaf": "application-aware-sirna-designer" },
+    { "name": "grna_route", "status": "ROUTED", "leaf": "application-aware-grna-designer" },
+    { "name": "discovery_route", "status": "ROUTED", "leaf": "rna-model-discovery" },
+    { "name": "execution_route", "status": "ROUTED", "leaf": "rna-model-execution" },
+    { "name": "ambiguous_silence", "status": "ASK" },
+    { "name": "not_covered_aso", "status": "NOT_COVERED" }
+  ],
+  "preflight_cases": [
+    { "name": "setup_missing", "status": "NEEDS_INPUT", "missing_inputs": ["target_leaves", "output_root"] },
+    { "name": "setup_ready", "status": "SETUP_PLAN_READY", "missing_inputs": [] },
+    { "name": "audit_only", "status": "AUDIT_ONLY", "missing_inputs": [] },
+    { "name": "bad_mode", "status": "INVALID_REQUEST", "missing_inputs": [] },
+    { "name": "route_no_text", "status": "INVALID_REQUEST", "missing_inputs": [] }
+  ]
+}

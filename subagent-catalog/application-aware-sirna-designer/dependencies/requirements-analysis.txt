@@ -1,0 +1,6 @@
+# Observed direct pins; verify distribution availability and licenses before installation.
+numpy==2.5.4
+pandas==3.0.6
+scipy==1.18.1
+scikit-learn==1.8.0
+matplotlib==3.10.1+dfsg1

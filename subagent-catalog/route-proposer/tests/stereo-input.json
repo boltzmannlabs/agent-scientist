@@ -1,0 +1,7 @@
+{
+  "target": "C[C@@H](O)c1ccccc1",
+  "requested_count": 1,
+  "max_depth": 3,
+  "max_total_reactions": 3,
+  "assignment": "Propose up to one complete route to the exact encoded stereoisomer; retrieve evidence, inspect control-origin structures, validate and verify."
+}

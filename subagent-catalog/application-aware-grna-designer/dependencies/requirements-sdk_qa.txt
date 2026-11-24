@@ -1,0 +1,4 @@
+# Observed current SDK QA distributions; existing SCI source supplies sci_yaml if needed.
+jsonschema==4.26.0
+packaging==26.0
+Pillow==12.3.0

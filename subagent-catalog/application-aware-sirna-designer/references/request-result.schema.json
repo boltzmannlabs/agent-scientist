@@ -1,0 +1,50 @@
+{
+  "$comment": "JSON Schema Draft 2020-12, selected explicitly by QA validator",
+  "type": "object",
+  "required": [
+    "status",
+    "missing_inputs",
+    "required_stages",
+    "notes",
+    "scientific_execution",
+    "authorization_granted"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "INVALID_REQUEST",
+        "SETUP_FIRST",
+        "AUDIT_ONLY",
+        "REVIEW_ONLY",
+        "NEEDS_INPUT",
+        "OUT_OF_SCOPE",
+        "METADATA_COMPLETE_REQUIRES_NATIVE_AND_PARENT_CHECKS"
+      ]
+    },
+    "missing_inputs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_stages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "scientific_execution": {
+      "const": false
+    },
+    "authorization_granted": {
+      "const": false
+    }
+  },
+  "additionalProperties": false
+}

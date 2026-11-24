@@ -1,0 +1,137 @@
+{
+  "$id": "urn:rna-agents:model-integration-spec-v1",
+  "title": "ModelIntegrationSpec v1",
+  "description": "Discovery output contract: a selected RNA model with the evidence and requirements needed for isolated execution. A spec is a plan, never proof of installation, execution or validity.",
+  "type": "object",
+  "required": [
+    "spec_version",
+    "task_definition",
+    "selected_model",
+    "weights_availability",
+    "alternatives_considered",
+    "input_schema",
+    "output_schema",
+    "dependencies",
+    "runtime_requirements",
+    "official_inference_instructions",
+    "known_limitations",
+    "selection_rationale"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": { "const": 1 },
+    "task_definition": {
+      "type": "object",
+      "required": ["capability", "biological_task", "domain"],
+      "additionalProperties": false,
+      "properties": {
+        "capability": { "type": "string", "minLength": 1 },
+        "biological_task": { "type": "string", "minLength": 1 },
+        "domain": {
+          "type": "string",
+          "enum": ["mrna", "sirna", "aso", "grna", "circrna", "rna_structure", "rna_protein", "rna_ligand", "general_rna"]
+        },
+        "context": { "type": "string" }
+      }
+    },
+    "selected_model": {
+      "type": "object",
+      "required": ["name", "repository_url", "commit", "license", "publication_references"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "repository_url": { "type": "string", "pattern": "^(?:https?://|file\u003a//|/|[A-Za-z0-9][A-Za-z0-9.-]*\\.[A-Za-z]{2,})", "description": "http(s)/file URL, absolute local path, or scheme-less host. Local paths are for parent-supplied fixtures only." },
+        "commit": { "type": "string", "minLength": 7 },
+        "license": { "type": "string", "minLength": 1 },
+        "commercial_use_permitted": { "type": ["boolean", "null"] },
+        "publication_references": { "type": "array", "items": { "type": "string" }, "minItems": 1, "description": "Provenance references: publication DOI/URL, or an explicit parent-supplied fixture provenance statement naming the evidence source. Never a fabricated citation." },
+        "architecture": { "type": "string" },
+        "checkpoint": {
+          "type": "object",
+          "required": ["urls"],
+          "additionalProperties": false,
+          "properties": {
+            "urls": { "type": "array", "items": { "type": "string" } },
+            "checksums": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["file", "algorithm", "value"],
+                "additionalProperties": false,
+                "properties": {
+                  "file": { "type": "string" },
+                  "algorithm": { "type": "string", "enum": ["sha256", "sha512", "md5"] },
+                  "value": { "type": "string", "minLength": 8 }
+                }
+              }
+            },
+            "notes": { "type": "string" }
+          }
+        }
+      }
+    },
+    "weights_availability": {
+      "type": "string",
+      "enum": ["WEIGHTS_PUBLIC", "WEIGHTS_RESTRICTED", "NO_WEIGHTS", "WEIGHTS_VERIFIED_LOCAL"],
+      "description": "WEIGHTS_VERIFIED_LOCAL: artifact checksum verified locally; public availability unverified (offline/fixture integrations)."
+    },
+    "alternatives_considered": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "repository_url", "weights_availability", "verdict"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "repository_url": { "type": "string" },
+          "weights_availability": { "type": "string", "enum": ["WEIGHTS_PUBLIC", "WEIGHTS_RESTRICTED", "NO_WEIGHTS", "UNVERIFIED"] },
+          "verdict": { "type": "string" },
+          "evidence": { "type": "string" }
+        }
+      }
+    },
+    "input_schema": { "type": "object" },
+    "output_schema": { "type": "object" },
+    "dependencies": { "type": "array", "items": { "type": "string" } },
+    "runtime_requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "frameworks": { "type": "array", "items": { "type": "string" } },
+        "gpu_required": { "type": "boolean" },
+        "minimum_ram_gb": { "type": "number" },
+        "estimated_inference_time_per_record": { "type": "string" },
+        "inference_interface": {
+          "type": "string",
+          "enum": ["python_api", "cli", "pytorch", "hf_transformers", "docker", "bioinformatics_cli", "rest_or_mcp"]
+        }
+      }
+    },
+    "official_inference_instructions": { "type": "string", "minLength": 1 },
+    "benchmark_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim", "source"],
+        "additionalProperties": false,
+        "properties": {
+          "claim": { "type": "string" },
+          "source": { "type": "string" },
+          "cohort_endpoint_context": { "type": "string" }
+        }
+      }
+    },
+    "known_limitations": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "selection_rationale": { "type": "string", "minLength": 1 },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "discovered_by": { "type": "string" },
+        "discovery_date": { "type": "string" },
+        "evidence_manifest_path": { "type": "string" },
+        "search_authorization_reference": { "type": "string" }
+      }
+    }
+  }
+}

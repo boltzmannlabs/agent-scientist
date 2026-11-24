@@ -1,0 +1,13 @@
+{
+  "workflow_evidence_id": "workflow",
+  "catalog": "tool-contracts.v1",
+  "options": [
+    {
+      "kind": "parameter",
+      "stage": "transform",
+      "field": "capacity",
+      "new": 16,
+      "contract": "tool-contracts.v1"
+    }
+  ]
+}
