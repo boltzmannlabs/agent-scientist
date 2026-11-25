@@ -16,7 +16,7 @@ strip private integrations/references. Contributors prepare source packages usin
 | `/subagent package update <local-name> [path-or-catalog:id]` | Reviewed update/resume in the active owning profile |
 
 After successful install: `/new`, then `/subagent run <name> <assignment>`.
-A ready package also supports automatic matching when its definition allows it.
+A ready, enabled package supports both automatic matching and explicit requests.
 Updates take effect next conversation; current prompts/tool snapshots stay unchanged.
 
 ## Storage and files
@@ -63,7 +63,7 @@ The top-level manifest fields are:
 | `limits` | Positive `max_iterations`; v2 accepts `timeout_seconds: 0` for no overall deadline. V1 retains positive timeouts. |
 | `platforms` | Nonempty supported platforms, e.g. `[any]` or `[linux-amd64]` |
 | `fixtures` | Nonempty input/expected JSON file pairs with optional description |
-| `automatic` | Optional boolean: matching-task use as well as explicit requests |
+| `automatic` | Legacy optional boolean; all ready, enabled specialists support matching tasks and explicit requests, including packages declaring `false` |
 | `children` | V2-only list of role, package ID and compatible version requirements |
 
 Unknown fields are rejected. Nonempty `children` is unsupported in v1; `unresolved` marks a
@@ -97,8 +97,8 @@ to the installed local names. A parent must declare `delegate_task`. Each child 
 its own tools, skills, references and setup dependencies; those capabilities do not become
 the parent's direct tools. Children can themselves declare children. Role names are unique
 within their parent; several roles or parents may reference the same package.
-Set `automatic: false` on workers intended only for explicit assignments or approved
-parent delegation; their parent can still invoke them through its reviewed child grants.
+Workers support automatic matching and explicit assignments by default. A parent can invoke
+only its approved children; automatic matching does not expand that hierarchy grant.
 
 Install the parent through the existing command:
 

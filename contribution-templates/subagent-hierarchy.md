@@ -11,8 +11,8 @@ subagent-catalog/
 
 Give each manifest and `tests/validation.json` its own matching package ID/version.
 Each child keeps its own instructions, tools, skills and required integrations.
-Use `automatic: false` for children that should only run through approved parent
-delegation or explicit user requests.
+All ready, enabled specialists support automatic matching and explicit user requests.
+Parents may delegate only to their approved children.
 For `table-team`, set schema version 2 and merge these fields into its manifest:
 
 ```yaml

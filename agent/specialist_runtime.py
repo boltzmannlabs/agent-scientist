@@ -5,7 +5,6 @@ from copy import deepcopy
 from dataclasses import asdict
 import json
 import logging
-import re
 import time
 
 from agent.specialist_policy import SpecialistPolicy, current_policy, specialist_scope
@@ -98,7 +97,7 @@ def decorate_tools(agent, tools):
         nested = isinstance(getattr(agent, '_specialist_policy', None), SpecialistPolicy)
         props["tasks"]["items"]["properties"]["specialist"] = {
             "type": "string", "description": ("Approved child name from action=catalog; always required for your assignments."
-                if nested else "Saved specialist name from action=catalog. Manual specialists require the user's explicit name in this turn.")}
+                if nested else "Saved specialist name from action=catalog; supports matching tasks and explicit user requests.")}
         props['tasks']['items']['properties']['artifacts'] = {'type': 'array', 'items': {'type': 'string'},
             'description': 'For dependent reviews/audits, exact frozen input paths and output paths returned by prior '
                            'execution in this assignment. Runtime verifies provenance and unchanged bytes before starting.'}
@@ -127,14 +126,14 @@ def decorate_tools(agent, tools):
                            'resume': {'type': 'string', 'description':
                                'Existing assignment ID from this profile. Prefer assignment={"resume":"ID"} alone; '
                                'redundant inputs must be unchanged recorded files and parameters cannot change.'}}}
-        automatic = [f"{s.name}: {s.purpose[:180]}" for s in snapshot.values() if s.automatic]
+        automatic = [f"{s.name}: {s.purpose[:180]}" for s in snapshot.values()]
         fn["description"] = fn["description"].split("\nSaved specialists are available.", 1)[0] + (
             "\nSaved specialists are available. Use action=catalog to find names and purposes, then tasks[].specialist "
             "to run one. Delegate matching tasks to the relevant automatic specialist, including explanatory questions; "
             "automatic specialists ALSO support explicit user requests. "
-            + ("You may assign work only to approved named children from your catalog, including manual children. "
+            + ("You may assign work only to approved named children from your catalog. "
                "Your tools remain separate from their reviewed grants. A child's completion is an intermediate result; "
-               "finish your own assignment after reading it. " if nested else "Manual specialists require explicit user request. ") +
+               "finish your own assignment after reading it. " if nested else "") +
             "Give the selected lead the complete requested workflow once; let it coordinate its children, "
             "dependent reviews and final report. Preserve requested calculations and output definitions. "
             "Do not split its workflow into separate root assignments or take over its remaining steps. "
@@ -164,16 +163,11 @@ def catalog(agent, query="", page=1):
         raise ValueError("Catalog query must be text and page a positive whole number.")
     snapshot = getattr(agent, "_specialist_snapshot", {})
     policy = getattr(agent, "_specialist_policy", None)
-    rows = [{"name": s.name, "purpose": s.purpose, "automatic": s.automatic}
+    rows = [{"name": s.name, "purpose": s.purpose, "automatic": True}
             for s in snapshot.values() if (not policy or s.name in policy.children)
             and query.casefold() in (s.name + " " + s.purpose).casefold()]
     return {"specialists": rows[(page - 1) * 20:page * 20], "page": page, "total": len(rows),
             "note": "Conversation snapshot; execution rechecks enabled state and revision. Changes need a new conversation."}
-
-
-def _explicitly_requested(parent, name):
-    text = getattr(parent, "_specialist_user_request", "")
-    return isinstance(text, str) and re.search(r"(?<![\w-])" + re.escape(name) + r"(?![\w-])", text, re.I) is not None
 
 
 def resolve(parent, task):
@@ -217,8 +211,6 @@ def resolve(parent, task):
     if owner:
         if name not in owner.children or name in owner.ancestry:
             raise ValueError("This child is not approved, or would create a delegation cycle.")
-    elif not item.automatic and not _explicitly_requested(parent, name):
-        raise ValueError(f"{name} requires an explicit user request naming it. Ask the user or use /subagent run.")
     forbidden = set(item.tools) & BLOCKED
     if forbidden:
         raise ValueError(f"Unsupported specialist permissions: {', '.join(sorted(forbidden))}. Review the definition.")

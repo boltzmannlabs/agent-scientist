@@ -171,8 +171,8 @@ Collect the requested findings and output paths. Preserve the original input.
 ~~~
 
 Each child keeps its own permissions and integrations; they do not become the
-parent's direct tools. Use automatic: false for workers intended only for approved
-parent delegation or explicit assignments. Children may themselves declare children;
+parent's direct tools. All ready, enabled specialists support automatic matching and explicit
+assignments. Parents may delegate only to their approved children. Children may themselves declare children;
 include every required new package, including grandchildren.
 
 For local installation, place child folders beside the parent using package IDs as

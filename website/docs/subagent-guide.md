@@ -54,7 +54,7 @@ From final review, Add for this subagent only offers:
 
 Private additions are scoped to that specialist. They are not automatically exposed to main or sibling specialists. Approved terminal programs and plugin/MCP code retain their backend’s host access; private configuration is not an operating-system sandbox.
 
-Existing specialists can use Use standard tools to add available standard capabilities for review. Missing dependencies, permissions or authentication must be resolved before the affected execution can work.
+Existing specialists retain their saved tool selections. Use Edit skills/tools to change them. Missing dependencies, permissions or authentication must be resolved before the affected execution can work.
 
 ### 5. Add reference material
 

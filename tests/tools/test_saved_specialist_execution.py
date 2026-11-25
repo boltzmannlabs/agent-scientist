@@ -77,6 +77,79 @@ def model_server(tool_name=None, tool_args=None):
         thread.join(5)
 
 
+def test_automatic_defaults_cover_package_install_and_legacy_load_a_b_a(tmp_path, monkeypatch):
+    from dataclasses import asdict
+    import shutil
+    from types import SimpleNamespace
+    import sci_yaml as yaml
+    from agent.secret_scope import set_multiplex_context, reset_multiplex_context
+    from sci_cli.config import atomic_config_replace
+    from sci_cli.native_profile_creation import profile_scope
+    from sci_cli.subagent_package_install import install, definition_digest
+    from run_agent import AIAgent
+    from tools.delegate_tool import delegate_task
+
+    monkeypatch.setattr(Path, 'home', lambda: tmp_path)
+    homes = [tmp_path / name for name in ('a', 'b')]
+    monkeypatch.setenv('SCI_HOME', str(homes[0]))
+    monkeypatch.setattr('agent.model_metadata.get_model_context_length', lambda *a, **k: 131072)
+    monkeypatch.setattr('agent.context_compressor.get_model_context_length', lambda *a, **k: 131072)
+    monkeypatch.setattr('agent.title_generator.maybe_auto_title', lambda *a, **k: None)
+    package = tmp_path / 'package'
+    shutil.copytree(Path(__file__).resolve().parents[2] / 'contribution-templates/subagent', package)
+    manifest = yaml.safe_load((package / 'manifest.yaml').read_text())
+    manifest['automatic'] = False  # Older contributed packages must work without editing their source.
+    (package / 'manifest.yaml').write_text(yaml.safe_dump(manifest))
+    class UI:
+        def show(self, message):
+            pass
+        def choose(self, question, choices):
+            return next(c for c in choices if c in {'Prepare package', 'Save and enable for the next conversation'})
+
+    token = set_multiplex_context(True)
+    try:
+        with model_server() as (url, calls):
+            for home in homes:
+                home.mkdir()
+                atomic_config_replace(home / 'config.yaml', {
+                    'model': {'default': 'fixture-model', 'provider': 'custom', 'base_url': url,
+                              'context_length': 131072},
+                    'platform_toolsets': {'cli': ['file', 'skills', 'delegation']},
+                    'plugins': {'enabled': [], 'disabled': []}, 'mcp_servers': {},
+                    'tool_search': {'enabled': 'off'}, 'memory': {'enabled': False},
+                    'delegation': {'max_iterations': 3},
+                })
+                with profile_scope(home):
+                    item = install(package, home, SimpleNamespace(agent=None), UI(), name='installed-reviewer')
+                    assert item.automatic
+                    # Simulate an existing managed installation with the old flag and valid identity.
+                    old = replace(item, automatic=False)
+                    raw = asdict(old)
+                    raw['package_info']['definition_digest'] = definition_digest(old)
+                    (home / 'subagents' / f'{item.name}.json').write_text(json.dumps(raw))
+            for home in (homes[0], homes[1], homes[0]):
+                with profile_scope(home):
+                    parent = AIAgent(model='fixture-model', provider='custom', api_key='fixture-key',
+                        base_url=url, api_mode='chat_completions', enabled_toolsets=['file', 'delegation'],
+                        quiet_mode=True, skip_context_files=True, skip_memory=True, max_iterations=3)
+                    try:
+                        parent._cached_system_prompt = 'Unchanged parent prefix'
+                        before = json.dumps(parent.tools, sort_keys=True)
+                        parent._specialist_user_request = 'Review the supplied evidence.'
+                        result = json.loads(delegate_task(tasks=[{'specialist': 'installed-reviewer',
+                            'goal': 'Review the supplied evidence.'}], parent_agent=parent))
+                        assert result['results'][0]['status'] == 'completed', result
+                        assert REPORT in result['results'][0]['summary']
+                        assert parent._specialist_snapshot['installed-reviewer'].automatic
+                        assert json.dumps(parent.tools, sort_keys=True) == before
+                        assert parent._cached_system_prompt == 'Unchanged parent prefix'
+                    finally:
+                        parent.close()
+            assert len(calls) == 3
+    finally:
+        reset_multiplex_context(token)
+
+
 def test_real_child_permissions_provider_result_and_parent_cache(tmp_path, monkeypatch):
     from sci_cli.config import atomic_config_replace
     from run_agent import AIAgent

@@ -150,3 +150,58 @@ def test_deadlines_migrate_only_the_old_implicit_default(tmp_path):
     for invalid in (-1, True, '0'):
         with pytest.raises(ValueError, match='timeout_seconds'):
             Specialist.parse({**asdict(defaults), 'timeout_seconds': invalid})
+
+
+def test_automatic_defaults_migrate_without_changing_package_identity(tmp_path, monkeypatch):
+    from dataclasses import asdict
+    import json
+    from types import SimpleNamespace
+    from sci_cli.subagent_package_install import definition_digest
+    from sci_cli.specialist_portability import import_definition
+
+    monkeypatch.setattr(Path, 'home', lambda: tmp_path)
+    homes = [tmp_path / name for name in ('a', 'b')]
+    monkeypatch.setenv('SCI_HOME', str(homes[0]))
+    assert Specialist('new-reviewer', 'Review').automatic
+    for home in homes:
+        (home / 'subagents').mkdir(parents=True)
+        for version in (1, 2):
+            old = Specialist(f'legacy-{version}', 'Review supplied evidence', automatic=False,
+                             tools=('read_file',), version=version, timeout_seconds=900,
+                             package_info={'state': 'ready', 'missing': []})
+            raw = asdict(old)
+            raw['package_info']['definition_digest'] = definition_digest(old)
+            (home / 'subagents' / f'{old.name}.json').write_text(json.dumps(raw))
+
+    for home in (homes[0], homes[1], homes[0]):
+        with profile_scope(home):
+            for version in (1, 2):
+                path = home / 'subagents' / f'legacy-{version}.json'
+                before = path.read_bytes()
+                raw = json.loads(before)
+                migrated = load(f'legacy-{version}')
+                assert migrated.automatic and migrated.tools == tuple(raw['tools'])
+                assert migrated.revision == raw['revision']
+                assert migrated.timeout_seconds == (0 if version == 1 else 900)
+                assert migrated.package_info['definition_digest'] == definition_digest(migrated)
+                customized = Specialist.parse({**raw, 'purpose': 'A local customization'})
+                assert customized.package_info['definition_digest'] != definition_digest(customized)
+                assert path.read_bytes() == before  # Reading never rewrites a live profile.
+
+    with profile_scope(homes[1]):
+        copied = copy_to(load('legacy-2', homes[0]), homes[1], 'copy')
+        assert copied.automatic and not copied.enabled and copied.needs_review
+        raw = asdict(Specialist('incoming', 'Review', automatic=False))
+        source = tmp_path / 'incoming.json'
+        source.write_text(json.dumps(raw))
+        class UI:
+            def show(self, message):
+                pass
+            def choose(self, question, choices):
+                assert 'Import' in choices
+                return 'Import'
+        import_definition(SimpleNamespace(agent=None), UI(), [str(source)])
+        imported = load('incoming')
+        assert imported.automatic and not imported.enabled and imported.needs_review
+    with pytest.raises(ValueError, match='automatic'):
+        Specialist.parse({**raw, 'automatic': 'false'})
