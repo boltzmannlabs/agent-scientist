@@ -16,6 +16,28 @@ from .registry import method
 # ── prompt.submit ─────────────────────────────────────────────────────────────────────────────
 
 
+class ImagePreviewParams(Params):
+    session_id: str = Field(min_length=1)
+    path: str
+    cols: int = Field(default=80, ge=4, le=160)
+    graphics: bool = False
+
+
+class ImagePreviewResult(Result):
+    ok: bool
+    error: str | None = None
+    graphics: str | None = None
+    grid: list[list[list[int]]] | None = None
+    imageId: int | None = None
+    color: str | None = None
+    placeholder: list[str] | None = None
+    transmit: str | None = None
+
+
+method("image.preview", params=ImagePreviewParams, result=ImagePreviewResult,
+       doc="Bounded terminal preview of an image delivered in this session.")
+
+
 class ClientSurface(WireEnum):
     """Where the user typed this turn; anything else is treated as the plain app window."""
 

@@ -1,0 +1,85 @@
+{
+  "format": 2,
+  "name": "set7_9_methyl_transfer",
+  "source": "Georgieva and Himo, J. Comput. Chem. 2010, 31, 1707–1714, doi:10.1002/jcc.21458. Scheme 1 and in-line SN2 description, p.1708; Figure 1 and Model A, p.1709. Ado abbreviates adenosyl; K4 labels the histone H3 Lys4 side-chain root. Nonreacting stereocentres are unspecified as in Scheme 1.",
+  "numbers": {},
+  "expected_stereo": {
+    "sam:20": "unspecified",
+    "sam:24": "unspecified"
+  },
+  "panels": [
+    {
+      "id": "R",
+      "title": "SAM + histone H3 Lys4",
+      "species": [
+        {
+          "id": "lys",
+          "smiles": "[*:1][CH2:2][CH2:3][CH2:4][CH2:5][N:6]([H:7])[H:8]",
+          "residue": {
+            "1": "K4"
+          }
+        },
+        {
+          "id": "sam",
+          "smiles": "[*:21][S+:20]([CH3:11])[CH2:22][CH2:23][CH:24]([NH3+:25])[C:26](=[O:27])[O-:28]",
+          "abbrev": {
+            "21": "Ado"
+          },
+          "show": [
+            11
+          ],
+          "note": "The methionine alpha centre and sulfonium centre are unspecified here; copy the paper's stereo when retained in the figure."
+        }
+      ],
+      "lone_pairs": [
+        "lys:6"
+      ],
+      "arrows": [
+        {
+          "id": "N_attack",
+          "from": "lys:6",
+          "to": "sam:11",
+          "electrons": 2
+        },
+        {
+          "id": "C_S_cleavage",
+          "from": "sam:20-11",
+          "to": "sam:20",
+          "electrons": 2
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "SAH + monomethyl-Lys4",
+      "species": [
+        {
+          "id": "lys",
+          "smiles": "[*:1][CH2:2][CH2:3][CH2:4][CH2:5][N+:6]([H:7])([H:8])[CH3:11]",
+          "residue": {
+            "1": "K4"
+          },
+          "show": [
+            11
+          ]
+        },
+        {
+          "id": "sam",
+          "smiles": "[*:21][S:20][CH2:22][CH2:23][CH:24]([NH3+:25])[C:26](=[O:27])[O-:28]",
+          "abbrev": {
+            "21": "Ado"
+          }
+        }
+      ],
+      "arrows": []
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "R",
+      "to": "P",
+      "above": "SET7/9",
+      "below": "S_{N}2 methyl transfer"
+    }
+  ]
+}

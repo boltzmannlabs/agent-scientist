@@ -334,6 +334,7 @@ const sidebars: SidebarsConfig = {
                     'user-guide/skills/bundled/science/science-transcriptomics-pydeseq2',
                     'user-guide/skills/bundled/science/science-genomics-pysam',
                     'user-guide/skills/bundled/science/science-chemistry-rdkit',
+                    'user-guide/skills/bundled/science/science-chemistry-reaction-draw',
                     'user-guide/skills/bundled/science/science-single-cell-scanpy',
                     'user-guide/skills/bundled/science/science-research-scientific-critical-thinking',
                     'user-guide/skills/bundled/science/science-scientific-software-integration',

@@ -1,0 +1,214 @@
+{
+  "format": 2,
+  "name": "carbonic_anhydrase_II_CO2_hydration",
+  "source": "Schematic electron bookkeeping for the established hCA II cycle, after Kim et al., IUCrJ 5 (2018), 93\u2013102, Introduction, equations (1)\u2013(2), Figure 1; https://doi.org/10.1107/S2052252517017626. Histidine labels abbreviate their neutral imidazole N donors. Proton transfer is shown as the first water-relay hop; subsequent transfer to bulk via His64 is summarized.",
+  "panels": [
+    {
+      "id": "A",
+      "title": "1. Zinc-bound hydroxide attacks CO_{2}",
+      "species": [
+        {
+          "id": "complex",
+          "smiles": "[Zn+2:1]([*:94])([*:96])([*:119])[O-:2][H:3]",
+          "bond_style": {
+            "1-94": "coord",
+            "1-96": "coord",
+            "1-119": "coord",
+            "1-2": "coord"
+          },
+          "note": "Each His label denotes its neutral imidazole nitrogen donor. Coordination is schematic; no stereochemical configuration is assigned to Zn.",
+          "residue": {
+            "94": "His94",
+            "96": "His96",
+            "119": "His119"
+          },
+          "rotate": 30
+        },
+        {
+          "id": "co2",
+          "smiles": "[O:12]=[C:10]=[O:11]",
+          "show": [
+            10
+          ]
+        }
+      ],
+      "lone_pairs": [
+        "complex:2"
+      ],
+      "arrows": [
+        {
+          "id": "A1",
+          "from": "complex:2",
+          "to": [
+            "complex:2",
+            "co2:10"
+          ]
+        },
+        {
+          "id": "A2",
+          "from": "co2:10-12",
+          "to": "co2:12"
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "title": "2. Bound bicarbonate; water replaces product",
+      "species": [
+        {
+          "id": "complex",
+          "smiles": "[Zn+2:1]([*:94])([*:96])([*:119])[O:2]([H:3])[C:10](=[O:11])[O-:12]",
+          "bond_style": {
+            "1-94": "coord",
+            "1-96": "coord",
+            "1-119": "coord",
+            "1-2": "coord"
+          },
+          "note": "Each His label denotes its neutral imidazole nitrogen donor. Coordination is schematic; no stereochemical configuration is assigned to Zn.",
+          "show": [
+            10
+          ],
+          "residue": {
+            "94": "His94",
+            "96": "His96",
+            "119": "His119"
+          }
+        },
+        {
+          "id": "water",
+          "smiles": "[O:30]([H:31])[H:32]"
+        }
+      ],
+      "lone_pairs": [
+        "water:30"
+      ],
+      "arrows": [
+        {
+          "id": "B1",
+          "from": "complex:1-2",
+          "to": "complex:2"
+        },
+        {
+          "id": "B2",
+          "from": "water:30",
+          "to": [
+            "water:30",
+            "complex:1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "title": "3. Deprotonation starts the proton relay",
+      "species": [
+        {
+          "id": "complex",
+          "smiles": "[Zn+2:1]([*:94])([*:96])([*:119])[O:30]([H:31])[H:32]",
+          "bond_style": {
+            "1-94": "coord",
+            "1-96": "coord",
+            "1-119": "coord",
+            "1-30": "coord"
+          },
+          "note": "Each His label denotes its neutral imidazole nitrogen donor. Coordination is schematic; no stereochemical configuration is assigned to Zn.",
+          "residue": {
+            "94": "His94",
+            "96": "His96",
+            "119": "His119"
+          }
+        },
+        {
+          "id": "bicarbonate",
+          "smiles": "[O:2]([H:3])[C:10](=[O:11])[O-:12]",
+          "show": [
+            10
+          ]
+        },
+        {
+          "id": "relay",
+          "smiles": "[OH2:40]"
+        }
+      ],
+      "lone_pairs": [
+        "relay:40"
+      ],
+      "arrows": [
+        {
+          "id": "C1",
+          "from": "relay:40",
+          "to": "complex:31"
+        },
+        {
+          "id": "C2",
+          "from": "complex:30-31",
+          "to": "complex:30"
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "title": "4. Zinc-bound hydroxide regenerated",
+      "species": [
+        {
+          "id": "complex",
+          "smiles": "[Zn+2:1]([*:94])([*:96])([*:119])[O-:30][H:32]",
+          "bond_style": {
+            "1-94": "coord",
+            "1-96": "coord",
+            "1-119": "coord",
+            "1-30": "coord"
+          },
+          "note": "Each His label denotes its neutral imidazole nitrogen donor. Coordination is schematic; no stereochemical configuration is assigned to Zn.",
+          "residue": {
+            "94": "His94",
+            "96": "His96",
+            "119": "His119"
+          }
+        },
+        {
+          "id": "bicarbonate",
+          "smiles": "[O:2]([H:3])[C:10](=[O:11])[O-:12]",
+          "show": [
+            10
+          ]
+        },
+        {
+          "id": "relay",
+          "smiles": "[OH2+:40][H:31]"
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "A",
+      "to": "B",
+      "above": "C\u2013O bond formation"
+    },
+    {
+      "from": "B",
+      "to": "C",
+      "above": "HCO_{3}^{\u2212} release"
+    },
+    {
+      "from": "C",
+      "to": "D",
+      "above": "proton transfer"
+    }
+  ],
+  "rows": [
+    [
+      "A",
+      "B"
+    ],
+    [
+      "C",
+      "D"
+    ]
+  ],
+  "drawing": {
+    "charge_circles": true,
+    "dpi": 600
+  }
+}

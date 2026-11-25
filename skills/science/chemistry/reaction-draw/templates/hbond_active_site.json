@@ -1,0 +1,46 @@
+{
+  "format": 2,
+  "name": "hbond_active_site",
+  "source": "Generic ketone alpha-deprotonation and reprotonation. E64 is a carboxylate general base; G42 backbone N-H and protonated K91 donate hydrogen bonds to the carbonyl/enolate O. Replace the substrate, residue labels and protonation from the paper; the remote S center is retained. This illustrates electron flow, not an equilibrium preference.",
+  "expected_stereo": {"ket:5": "S"},
+  "panels": [
+    {"id": "R", "title": "Ketone and general base",
+     "species": [
+       {"id": "ket", "smiles": "[CH3:1][C:2](=[O:3])[CH:4]([H:9])[C@@H:5]([O:6][CH3:7])[CH2:8][CH3:11]"},
+       {"id": "base", "smiles": "[*:31][CH2:32][CH2:33][C:34](=[O:35])[O-:36]", "residue": {"31": "Glu64"}},
+       {"id": "backbone", "smiles": "[*:41][N:42]([H:43])[C:44](=[O:45])[CH3:46]", "residue": {"41": "Gly42"}},
+       {"id": "lys", "smiles": "[*:51][CH2:52][CH2:53][CH2:54][CH2:55][NH2+:56][H:57]", "residue": {"51": "Lys91"}, "offset": [-0.2, -0.3]}
+     ],
+     "hbonds": [["backbone:43", "ket:3"], ["lys:57", "ket:3"]],
+     "arrows": [
+       {"id": "A1", "from": "base:36", "to": "ket:9"},
+       {"id": "A2", "from": "ket:4-9", "to": "ket:2-4"},
+       {"id": "A3", "from": "ket:2=3", "to": "ket:3"}
+     ]},
+    {"id": "I", "title": "Hydrogen-bonded enolate",
+     "species": [
+       {"id": "ket", "smiles": "[CH3:1][C:2]([O-:3])=[CH:4][C@@H:5]([O:6][CH3:7])[CH2:8][CH3:11]"},
+       {"id": "base", "smiles": "[*:31][CH2:32][CH2:33][C:34](=[O:35])[O:36][H:9]", "residue": {"31": "Glu64"}},
+       {"id": "backbone", "smiles": "[*:41][N:42]([H:43])[C:44](=[O:45])[CH3:46]", "residue": {"41": "Gly42"}},
+       {"id": "lys", "smiles": "[*:51][CH2:52][CH2:53][CH2:54][CH2:55][NH2+:56][H:57]", "residue": {"51": "Lys91"}}
+     ],
+     "hbonds": [["backbone:43", "ket:3"], ["lys:57", "ket:3"]],
+     "arrows": [
+       {"id": "A4", "from": "ket:3", "to": "ket:2-3"},
+       {"id": "A5", "from": "ket:2=4", "to": "base:9"},
+       {"id": "A6", "from": "base:36-9", "to": "base:36"}
+     ]},
+    {"id": "P", "title": "Ketone and regenerated base",
+     "species": [
+       {"id": "ket", "smiles": "[CH3:1][C:2](=[O:3])[CH:4]([H:9])[C@@H:5]([O:6][CH3:7])[CH2:8][CH3:11]"},
+       {"id": "base", "smiles": "[*:31][CH2:32][CH2:33][C:34](=[O:35])[O-:36]", "residue": {"31": "Glu64"}},
+       {"id": "backbone", "smiles": "[*:41][N:42]([H:43])[C:44](=[O:45])[CH3:46]", "residue": {"41": "Gly42"}},
+       {"id": "lys", "smiles": "[*:51][CH2:52][CH2:53][CH2:54][CH2:55][NH2+:56][H:57]", "residue": {"51": "Lys91"}}
+     ],
+     "hbonds": [["backbone:43", "ket:3"], ["lys:57", "ket:3"]]}
+  ],
+  "reaction_arrows": [
+    {"from": "R", "to": "I", "above": "alpha-deprotonation"},
+    {"from": "I", "to": "P", "above": "reprotonation"}
+  ]
+}

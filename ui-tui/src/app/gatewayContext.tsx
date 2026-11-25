@@ -17,3 +17,5 @@ export function useGateway() {
 
   return value
 }
+
+export const useOptionalGateway = () => useContext(GatewayContext)

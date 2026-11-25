@@ -1,0 +1,131 @@
+{
+  "format": 2,
+  "name": "acyl_substitution",
+  "source": "Generic nucleophilic acyl substitution (ester hydrolysis by hydroxide). Replace the acyl group, nucleophile and leaving group from the paper; preserve maps 2 (acyl C), 3 (carbonyl O), 4 (leaving O), 6 (nucleophile O) and 7 (its H).",
+  "expected_stereo": {
+    "acyl:2": "unspecified"
+  },
+  "panels": [
+    {
+      "id": "R",
+      "title": "Nucleophilic addition",
+      "species": [
+        {
+          "id": "acyl",
+          "smiles": "[CH3:1][C:2](=[O:3])[O:4][*:5]",
+          "abbrev": {
+            "5": "R"
+          }
+        },
+        {
+          "id": "nu",
+          "smiles": "[OH-:6]"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A1",
+          "from": "nu:6",
+          "to": "acyl:2"
+        },
+        {
+          "id": "A2",
+          "from": "acyl:2=3",
+          "to": "acyl:3"
+        }
+      ]
+    },
+    {
+      "id": "I",
+      "title": "Tetrahedral intermediate",
+      "species": [
+        {
+          "id": "acyl",
+          "smiles": "[CH3:1][C:2]([O-:3])([O:4][*:5])[OH:6]",
+          "abbrev": {
+            "5": "R"
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A3",
+          "from": "acyl:3",
+          "to": "acyl:2-3"
+        },
+        {
+          "id": "A4",
+          "from": "acyl:2-4",
+          "to": "acyl:4"
+        }
+      ]
+    },
+    {
+      "id": "E",
+      "title": "Carboxylic acid and alkoxide",
+      "species": [
+        {
+          "id": "acid",
+          "smiles": "[CH3:1][C:2](=[O:3])[O:6][H:7]"
+        },
+        {
+          "id": "ro",
+          "smiles": "[O-:4][*:5]",
+          "abbrev": {
+            "5": "R"
+          },
+          "offset": [
+            -4.3,
+            -1.9
+          ]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A5",
+          "from": "ro:4",
+          "to": "acid:7"
+        },
+        {
+          "id": "A6",
+          "from": "acid:6-7",
+          "to": "acid:6"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "Carboxylate and alcohol",
+      "species": [
+        {
+          "id": "acid",
+          "smiles": "[CH3:1][C:2](=[O:3])[O-:6]"
+        },
+        {
+          "id": "ro",
+          "smiles": "[H:7][O:4][*:5]",
+          "abbrev": {
+            "5": "R"
+          }
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "R",
+      "to": "I",
+      "above": "addition"
+    },
+    {
+      "from": "I",
+      "to": "E",
+      "above": "elimination"
+    },
+    {
+      "from": "E",
+      "to": "P",
+      "above": "proton transfer"
+    }
+  ]
+}

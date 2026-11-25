@@ -1,0 +1,13 @@
+reaction-draw
+Copyright 2026 Takuto Ohmura
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product is built on Octet Draw (https://github.com/SamChemMan/Octet-Draw), which is licensed under the
+Apache License, Version 2.0. It includes scripts/octet/dist/octet-adapter.html, a prebuilt bundle of Octet Draw's
+renderer and file code at commit 934719abf213e0a8c9725256338bcbc0f305cab6 together with this product's adapter
+(scripts/octet/adapter.ts). What was bundled and what was changed are listed in third_party/octet-draw/NOTICE;
+Octet Draw's license is the same Apache License 2.0 text as LICENSE.
+
+This product is not a fork of Octet Draw, is not part of it and is not endorsed by its authors. "Octet Draw" names the upstream project
+only.

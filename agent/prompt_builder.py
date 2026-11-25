@@ -710,18 +710,16 @@ PLATFORM_HINTS = {
         "configured destination — put the primary content directly in your response."
     ),
     "cli": (
-        # Maintainer-verified live: the CLI prints raw text.
-        "You are in a plain terminal (CLI). Markdown does NOT render — asterisks, headers, and fences appear as "
-        "literal characters, so write plain text (indentation and blank lines are your only layout tools). Files: "
-        "there is no attachment channel and MEDIA:/path tags are NOT intercepted here (they print as literal text) — "
-        "deliver a file by stating its absolute path or URL in plain text; the user opens it themselves. "
+        "You are in a plain terminal (CLI). Use indentation and blank lines for layout. "
+        "For a generated raster image, put MEDIA:/absolute/path/to/figure.png alone on its own line. "
+        "Interactive chat displays a terminal preview. Deliver other files by providing their path or URL. "
         f"{_LOCAL_CRON_DELIVERY_NOTE}"
     ),
     "tui": (
-        # Same file-delivery reality as the CLI: no MEDIA: interception in tui/.
-        "You are in the Sci terminal UI (TUI). Files: there is no attachment channel and MEDIA:/path tags "
-        "are NOT intercepted here (they print as literal text) — deliver a file by stating its absolute path "
-        "or URL in plain text. "
+        "You are in the Sci terminal UI (TUI). To show a generated image in chat, put "
+        "MEDIA:/absolute/path/to/figure.png alone on a line outside code fences. The TUI shows a "
+        "terminal preview and an open-file link; preview detail depends on terminal graphics support. "
+        "For other files, state their absolute paths or URLs. "
         f"{_LOCAL_CRON_DELIVERY_NOTE}"
     ),
     "desktop": (

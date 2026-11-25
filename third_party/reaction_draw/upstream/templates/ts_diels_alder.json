@@ -1,0 +1,40 @@
+{
+  "format": 2,
+  "name": "ts_diels_alder",
+  "source": "Illustrative Diels–Alder cycloaddition of butadiene and ethylene to cyclohexene. TS bond styles describe a schematic transition state, not calculated bond orders or geometry.",
+  "panels": [
+    {
+      "id": "R",
+      "title": "Butadiene + ethylene",
+      "species": [
+        {"id": "diene", "smiles": "[CH2:1]=[CH:2][CH:3]=[CH2:4]",
+         "xy": {"1": [0.8660254, -0.5], "2": [0, 0], "3": [0, 1], "4": [0.8660254, 1.5]}},
+        {"id": "ene", "smiles": "[CH2:5]=[CH2:6]", "show": [5, 6],
+         "xy": {"5": [2.3, 1], "6": [2.3, 0]}}
+      ],
+      "arrows": [
+        {"id": "A1", "from": "diene:1=2", "to": "ene:6"},
+        {"id": "A2", "from": "ene:5=6", "to": "diene:4"},
+        {"id": "A3", "from": "diene:3=4", "to": "diene:2-3"}
+      ]
+    },
+    {
+      "id": "TS",
+      "title": "Transition state",
+      "species": [
+        {"id": "adduct", "smiles": "[CH2:1]1[CH:2][CH:3][CH2:4][CH2:5][CH2:6]1", "ts": true,
+         "bond_style": {"1-6": "partial", "4-5": "partial", "1-2": "1.5", "2-3": "1.5", "3-4": "1.5", "5-6": "1.5"},
+         "xy": {"1": [0.8660254, -0.5], "2": [0, 0], "3": [0, 1], "4": [0.8660254, 1.5], "5": [1.7320508, 1], "6": [1.7320508, 0]}}
+      ]
+    },
+    {
+      "id": "P",
+      "title": "Cyclohexene",
+      "species": [
+        {"id": "adduct", "smiles": "[CH2:1]1[CH:2]=[CH:3][CH2:4][CH2:5][CH2:6]1",
+         "xy": {"1": [0.8660254, -0.5], "2": [0, 0], "3": [0, 1], "4": [0.8660254, 1.5], "5": [1.7320508, 1], "6": [1.7320508, 0]}}
+      ]
+    }
+  ],
+  "reaction_arrows": [{"from": "R", "to": "TS"}, {"from": "TS", "to": "P"}]
+}

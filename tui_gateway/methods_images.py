@@ -93,5 +93,28 @@ def _(rid, params: dict) -> dict:
                      **({"image_data": data_url} if data_url else {})})
 
 
+@method("image.preview")
+@_registry.profile_scoped
+def _image_preview_handler(rid, params: dict) -> dict:
+    from tui_gateway.image_preview import image_is_referenced, read_image_preview
+
+    session, error = _sess_nowait(params, rid)
+    if error:
+        return error
+    path = params["path"]
+    with session["history_lock"]:
+        referenced = image_is_referenced(session["history"], path)
+    if not referenced:
+        return _ok(rid, {"ok": False, "error": "Image is not a deliverable in this conversation"})
+    try:
+        result = read_image_preview(path, cols=params.get("cols", 80), graphics=params.get("graphics", False))
+    except Exception:
+        # The original file link remains usable; do not dump backend paths/errors
+        # into the transcript when an image is missing or cannot be decoded.
+        logger.debug("Terminal image preview unavailable", exc_info=True)
+        result = {"ok": False, "error": "Image preview unavailable; open the original file"}
+    return _ok(rid, result)
+
+
 def register(server) -> None:
     bind_module(globals(), server, skip=("_",))

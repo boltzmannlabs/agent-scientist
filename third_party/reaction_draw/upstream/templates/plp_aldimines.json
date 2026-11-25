@@ -1,0 +1,301 @@
+{
+  "format": 2,
+  "name": "plp_aldimines",
+  "source": "Generic PLP aldimine exchange through the gem-diamine, and alpha-deprotonation; the last panel is the localized C-alpha carbanion resonance form, not a separate quinonoid step. Replace R, residue labels, protonation and the alpha configuration (written here as an L-amino acid) from the paper. Keep PLP ring maps 101-106, methyl 107, phosphate arm 108-113, imine C 114 and phenolic O 115 fixed.",
+  "rows": [
+    [
+      "I",
+      "G1",
+      "G2"
+    ],
+    [
+      "E",
+      "C"
+    ]
+  ],
+  "expected_stereo": {
+    "plp:114": "unspecified"
+  },
+  "panels": [
+    {
+      "id": "I",
+      "title": "Internal aldimine",
+      "species": [
+        {
+          "id": "plp",
+          "smiles": "[C:101]1([CH3:107])=[N:102][CH:103]=[C:104]([CH2:108][O:109][P:110](=[O:111])([O-:112])[O-:113])[C:105]([CH:114]=[NH+:205][CH2:206][CH2:204][CH2:203][CH2:202][*:201])=[C:106]1[OH:115]",
+          "residue": {
+            "201": "Lys"
+          },
+          "rotate": 30,
+          "note": "Lys is attached at the root of its four-methylene side chain. Copy the ring maps unchanged to all states.",
+          "xy": {
+            "110": [
+              -0.8698,
+              4.4995
+            ],
+            "111": [
+              -0.0038,
+              4.9995
+            ],
+            "112": [
+              -1.8698,
+              4.4995
+            ],
+            "113": [
+              -1.3698,
+              5.3655
+            ]
+          }
+        },
+        {
+          "id": "aa",
+          "offset": [
+            0.15,
+            0
+          ],
+          "smiles": "[NH:210]([H:217])[C@@:211]([H:212])([*:213])[C:214](=[O:215])[O-:216]",
+          "abbrev": {
+            "213": "R"
+          },
+          "note": "Fill the actual side chain and the paper's alpha configuration; write its R/S in expected_stereo.",
+          "show": [
+            211
+          ]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A1",
+          "from": "aa:210",
+          "to": [
+            "aa:210",
+            "plp:114"
+          ]
+        },
+        {
+          "id": "A2",
+          "from": "plp:114=205",
+          "to": "plp:205"
+        }
+      ]
+    },
+    {
+      "id": "G1",
+      "title": "Gem-diamine",
+      "species": [
+        {
+          "id": "plp",
+          "smiles": "[C:101]1([CH3:107])=[N:102][CH:103]=[C:104]([CH2:108][O:109][P:110](=[O:111])([O-:112])[O-:113])[C:105]([CH:114]([NH:205][CH2:206][CH2:204][CH2:203][CH2:202][*:201])[NH+:210]([H:217])[C@@:211]([H:212])([*:213])[C:214](=[O:215])[O-:216])=[C:106]1[OH:115]",
+          "residue": {
+            "201": "Lys"
+          },
+          "abbrev": {
+            "213": "R"
+          },
+          "xy": {
+            "110": [
+              -0.8698,
+              4.4995
+            ],
+            "111": [
+              -0.0038,
+              4.9995
+            ],
+            "112": [
+              -1.8698,
+              4.4995
+            ],
+            "113": [
+              -1.3698,
+              5.3655
+            ]
+          },
+          "show": [
+            211
+          ]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A3",
+          "from": "plp:205",
+          "to": "plp:217"
+        },
+        {
+          "id": "A4",
+          "from": "plp:210-217",
+          "to": "plp:210"
+        }
+      ]
+    },
+    {
+      "id": "G2",
+      "title": "Gem-diamine after proton transfer",
+      "species": [
+        {
+          "id": "plp",
+          "smiles": "[C:101]1([CH3:107])=[N:102][CH:103]=[C:104]([CH2:108][O:109][P:110](=[O:111])([O-:112])[O-:113])[C:105]([CH:114]([NH+:205]([H:217])[CH2:206][CH2:204][CH2:203][CH2:202][*:201])[NH:210][C@@:211]([H:212])([*:213])[C:214](=[O:215])[O-:216])=[C:106]1[OH:115]",
+          "residue": {
+            "201": "Lys"
+          },
+          "abbrev": {
+            "213": "R"
+          },
+          "xy": {
+            "110": [
+              -0.8698,
+              4.4995
+            ],
+            "111": [
+              -0.0038,
+              4.9995
+            ],
+            "112": [
+              -1.8698,
+              4.4995
+            ],
+            "113": [
+              -1.3698,
+              5.3655
+            ]
+          },
+          "show": [
+            211
+          ]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A5",
+          "from": "plp:210",
+          "to": "plp:114-210"
+        },
+        {
+          "id": "A6",
+          "from": "plp:114-205",
+          "to": "plp:205"
+        }
+      ]
+    },
+    {
+      "id": "E",
+      "title": "External aldimine",
+      "species": [
+        {
+          "id": "plp",
+          "smiles": "[C:101]1([CH3:107])=[N:102][CH:103]=[C:104]([CH2:108][O:109][P:110](=[O:111])([O-:112])[O-:113])[C:105]([CH:114]=[NH+:210][C@@:211]([H:212])([*:213])[C:214](=[O:215])[O-:216])=[C:106]1[OH:115]",
+          "abbrev": {
+            "213": "R"
+          },
+          "xy": {
+            "110": [
+              -0.8698,
+              4.4995
+            ],
+            "111": [
+              -0.0038,
+              4.9995
+            ],
+            "112": [
+              -1.8698,
+              4.4995
+            ],
+            "113": [
+              -1.3698,
+              5.3655
+            ]
+          },
+          "show": [
+            211
+          ]
+        },
+        {
+          "id": "lys",
+          "offset": [
+            0.15,
+            0.15
+          ],
+          "smiles": "[*:201][CH2:202][CH2:203][CH2:204][CH2:206][NH:205][H:217]",
+          "residue": {
+            "201": "Lys"
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A7",
+          "from": "lys:205",
+          "to": "plp:212"
+        },
+        {
+          "id": "A8",
+          "from": "plp:211-212",
+          "to": "plp:211"
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "title": "C-alpha carbanion",
+      "species": [
+        {
+          "id": "plp",
+          "smiles": "[C:101]1([CH3:107])=[N:102][CH:103]=[C:104]([CH2:108][O:109][P:110](=[O:111])([O-:112])[O-:113])[C:105]([CH:114]=[NH+:210][C-:211]([*:213])[C:214](=[O:215])[O-:216])=[C:106]1[OH:115]",
+          "abbrev": {
+            "213": "R"
+          },
+          "xy": {
+            "110": [
+              -0.8698,
+              4.4995
+            ],
+            "111": [
+              -0.0038,
+              4.9995
+            ],
+            "112": [
+              -1.8698,
+              4.4995
+            ],
+            "113": [
+              -1.3698,
+              5.3655
+            ]
+          },
+          "show": [
+            211
+          ]
+        },
+        {
+          "id": "lys",
+          "smiles": "[*:201][CH2:202][CH2:203][CH2:204][CH2:206][NH+:205]([H:217])[H:212]",
+          "residue": {
+            "201": "Lys"
+          }
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "I",
+      "to": "G1",
+      "kind": "equilibrium"
+    },
+    {
+      "from": "G1",
+      "to": "G2",
+      "kind": "equilibrium"
+    },
+    {
+      "from": "G2",
+      "to": "E",
+      "kind": "equilibrium"
+    },
+    {
+      "from": "E",
+      "to": "C"
+    }
+  ]
+}

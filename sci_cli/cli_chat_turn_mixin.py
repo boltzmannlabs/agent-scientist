@@ -716,6 +716,10 @@ class CLIChatTurnMixin:
                 except Exception:
                     pass
 
+        if response and ("MEDIA:" in response or "figure:" in response.lower()):
+            from sci_cli.cli_render import print_assistant_image_previews
+            print_assistant_image_previews(response, self._scrollback_box_width())
+
         self._chat_print_token_usage(turn.result)
 
     def _chat_print_token_usage(self, result):

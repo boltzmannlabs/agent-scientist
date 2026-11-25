@@ -1,0 +1,92 @@
+{
+  "repository": "https://github.com/t-0hmura/reaction-draw",
+  "revision": "dd0a01d773c4f94910f0e1f8def67dca01b5da6a",
+  "upstream_version": "1.0.0",
+  "license": "Apache-2.0",
+  "upstream_files_sha256": {
+    "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "NOTICE": "639ecf212b6fed4853ca5f3eba429f428e9a8dee50e8d846e04de87420af64f0",
+    "SKILL.md": "a559f93ee3c5891ae982ca326d971bb9657996f16a204a9b411f8fc2e6572210",
+    "references/audit-checklist.md": "4c0b58a3a2902cf39238e53245fd4efae7338029c12c8556f52db5b7634979cc",
+    "references/input-more.md": "ca4165f6b50a2cc39e739b938f15841e1f1463c5f28c8e6ffb8b3c6cfb47ecef",
+    "references/iupac-rules.md": "43409d58bd03a476603cfb2c8438e2fbade117a925acf7ba8d6c4111036e03c1",
+    "scripts/README.md": "e12c8771d56ba6d4a6ef0266b6e0fdaa2a921b49bf80ead4e85c170a254ecf84",
+    "scripts/check_rules.py": "3e91fdb4a26c806aba4a329686b7757f9f1451e04383fdf41a89dac1e74bb6e7",
+    "scripts/draw_figure.py": "0f32cd87a9e7d6c5c6bab54136ab6c1af9b6c8bb2c5ef88099975aa76ec05cac",
+    "scripts/fix_hbonds.py": "dc2d034e61007258389c7a76852adcabbb2238b3090958b9624a38a0931fec72",
+    "scripts/iupac_features.py": "57c7ec9f14144441d91e810d26cfeacd96a91291efe5061b52d5ec832b5e5f1c",
+    "scripts/layout.py": "a3de0863d32bb32ed997d3924974170c02100216c068855d179444fda1243181",
+    "scripts/layout_repair.py": "46f9ffabf2385c6535b0ab2771b7448bd4a2195129a8c165128abe6d4fb055b9",
+    "scripts/octet/.gitignore": "6713c158279e43550236590f292bdc7a073d1f70d732e404f1e8be486c3d1f5f",
+    "scripts/octet/adapter.ts": "e30bc7ba90daf6755bf03a518ef182c96e9eead77ac8f8fd6488eda88729a018",
+    "scripts/octet/build.mjs": "c0b16102526eed1141e427e3aa57e1c1fa75c7f0c762e86240ef24552add1652",
+    "scripts/octet/dist/octet-adapter.html": "d8bb69aaba3e09bae48152109e5fbfd81da21d1ddc1fbad8e742f3a2c63071da",
+    "scripts/octet/dist/octet-adapter.json": "427d4e45eb5c62fee527b743ab0a48c2ea49f163a82224f0983734ae39827012",
+    "scripts/octet/octet_draw.py": "f98c284570c5c1ff81a78678bfc069faecdf407185dc2f51a39723ca27549d31",
+    "scripts/octet/octet_run.py": "92edccff4f1d1d8882ce1e3ed566271d58b2e50c36f215230a1c0b30ea2c05fb",
+    "scripts/octet/package.json": "ed1ca438f977fdf7dd45f3fc9b78ffbce80c3ec6299bb50690e78d6bdc256be5",
+    "scripts/spec_validation.py": "997621fdf76134f6f0fb37a9aca1465622e402df11d3dc62a864bed0d9bdceae",
+    "scripts/specutil.py": "c240a2851198e56eada92aa0038098eb649cd3a9600fd33b17e27416380c71cb",
+    "scripts/stereochemistry.py": "95f09f4de7184a3d6ec5a42df6712a0ee97e505d873c310ad83754b2bfba4fb5",
+    "scripts/svg_geometry.py": "ca32645588d1ff5afc02da6590eb84d3b542c55777ec6b675ab56df0e110c92d",
+    "templates/README.md": "5ab3f503bb37e1b95bdf487f45b7492bf02dd7e4ce57a7e6539b9faa89431dca",
+    "templates/acyl_substitution.json": "4bb7d3cadefea55f831d1be89c6503a5d30440480c071d0887af1188f11829b5",
+    "templates/acyl_substitution.png": "17e23bca80c7012ad2542cbc494b1983b6d5086d689245e5c3b022d18609d9bf",
+    "templates/beza.json": "6c56935772c36e1e4853839763d1391f092d3234cea046a21b3bc6dabbd9a320",
+    "templates/beza_color_element.json": "d579ab72aa9db98510e37a87f870bc03796fd6a5505bf6394ca4e2575b34105e",
+    "templates/beza_color_origin.json": "525ed01baa25b52254e4fe9505ebca691ff7ba350df2a0e8db6c42ad5f6d945b",
+    "templates/cofactor_fragments.json": "fcdac018e20c0bbeb268886c59ecfc4dd952990283991a90c5a42bed567087e8",
+    "templates/cofactor_fragments.png": "af06a842afb6041cc4e64d2b3a32ecd004049775684f3e87c1e63b19414c54e8",
+    "templates/hbond_active_site.json": "e88ca2eef8b123997d4d0bf126c26a64ae696c01279269468bab0f24af73ee21",
+    "templates/hbond_active_site.png": "029c5f01082517e6678231036b806f2ca497f7ea540c5cd5783c26cf67e3dec4",
+    "templates/metal_substitution.json": "49a055e0451cbfe1ebd4f73408d83666c433de4308c980ab3e969eab19ec9025",
+    "templates/metal_substitution.png": "dc6e100f69caf3fe38c67272b60b9067b6fb6e4df96a90e672082bd1cc5d7cad",
+    "templates/plp_aldimines.json": "0d845ca7d1d0aec71e88780484b006f4339af7b06e749d0436b2e2161e513da2",
+    "templates/plp_aldimines.png": "571c16752e062c8477fe7f3da45121f5a916781042e3379dd9e7bb057a059d87",
+    "templates/proton_transfer.json": "fecfc55c1e6427fd5013f46d298097afedc6a4afdee371ba5acf9a068932bf89",
+    "templates/proton_transfer.png": "55d564ae9d7c95a8079b3d1c69f799ea94e3fab482293ec982cc1d1ca5e69683",
+    "templates/radical_homolysis.json": "3f216edca1d0b90fff3e08429fb84c55616eeee22d772352b919ea1eca245ea6",
+    "templates/radical_homolysis.png": "6869b88e6462dfc5a0f83da188331aeb0b72c97cff57c123742e5bcb19e9dbb4",
+    "templates/ts_diels_alder.json": "0f8650e0e775a4a63d02ef957d1fd268ff060851f7524116f460fe7e6e8fb28d",
+    "templates/ts_diels_alder.png": "a99619f8ac2c78040cfde9adbe193cc52e17b7db30b891f3b9819572a5ec849d",
+    "third_party/octet-draw/NOTICE": "1ad555223c13aa9d9c01705081b7647e0ed6b6e2d56a629285bacd2407a77f45"
+  },
+  "integration_changes": [
+    "CLI plus built-in skill; isolated PM-locked RDKit/Playwright runtime",
+    "Native Windows/POSIX output locking with deterministic release",
+    "Managed Chromium executable discovery",
+    "BOM-tolerant UTF-8 file reads and explicit UTF-8 subprocess decoding",
+    "Bound long electron-arrow searches by requested endpoint distances and permit longer obstacle-avoiding arcs; rebuilt adapter from the pinned Octet source."
+  ],
+  "renderer": "Octet Draw prebuilt adapter; upstream notices retained",
+  "adapted_files": {
+    "scripts/specutil.py": {
+      "upstream_sha256": "c240a2851198e56eada92aa0038098eb649cd3a9600fd33b17e27416380c71cb",
+      "integrated_sha256": "6ebb0dfedd4aaa1f9e5d4f8b368f3c916264e510fe1ffe97e8078efd940618a8"
+    },
+    "scripts/fix_hbonds.py": {
+      "upstream_sha256": "dc2d034e61007258389c7a76852adcabbb2238b3090958b9624a38a0931fec72",
+      "integrated_sha256": "ab028f9caa9b952af0aa715197c91b1af8e664f12e708a093ca85ad14676440d"
+    },
+    "scripts/check_rules.py": {
+      "upstream_sha256": "3e91fdb4a26c806aba4a329686b7757f9f1451e04383fdf41a89dac1e74bb6e7",
+      "integrated_sha256": "8d25f12970c0f8192b249c5ae92f863735d388abd40aa1588058343668d6096e"
+    },
+    "scripts/output_lock.py": {
+      "upstream_sha256": null,
+      "integrated_sha256": "668bd87751362afc6eb37c7a04c81e48fce74617cb2a45f303f6e18517bb9eec"
+    },
+    "scripts/draw_figure.py": {
+      "upstream_sha256": "0f32cd87a9e7d6c5c6bab54136ab6c1af9b6c8bb2c5ef88099975aa76ec05cac",
+      "integrated_sha256": "aa9542fd2a646a8815bd1c6c3e1dcbc64c3a3a38cd8f3176ac8d2e3384bade71"
+    },
+    "scripts/octet/octet_run.py": {
+      "upstream_sha256": "92edccff4f1d1d8882ce1e3ed566271d58b2e50c36f215230a1c0b30ea2c05fb",
+      "integrated_sha256": "50a19601553471f96c3225390f57c7c5c53b303254a761f6e83ad782dbe7c3b8"
+    },
+    "scripts/octet/octet_draw.py": {
+      "upstream_sha256": "f98c284570c5c1ff81a78678bfc069faecdf407185dc2f51a39723ca27549d31",
+      "integrated_sha256": "ba186348f30286a7bae13ac14a339932452aed62854801921deb1fe92fadbdb6"
+    }
+  }
+}

@@ -1,0 +1,159 @@
+{
+  "format": 2,
+  "name": "beza_mechanism",
+  "source": "Tsutsumi et al., Angew. Chem. Int. Ed. 2022, 61, e202111217, DOI 10.1002/anie.202111217; Figure 1b (PDF p. 2), Figure 4 and QM/MM discussion (PDF p. 6). Proposed two-step BezA mechanism.",
+  "numbers": {
+    "7": "7",
+    "6": "6",
+    "11": "1"
+  },
+  "expected_stereo": {
+    "gpp:2=3": "E",
+    "sam:24": "S",
+    "gpp:6": "unspecified",
+    "sam:20": "unspecified"
+  },
+  "panels": [
+    {
+      "id": "R",
+      "title": "GPP + SAM",
+      "species": [
+        {
+          "id": "gpp",
+          "smiles": "[CH3:8][C:7]([CH3:9])=[C:6]([H:13])[CH2:5][CH2:4]/[C:3]([CH3:10])=[CH:2]/[CH2:1][*:12]",
+          "abbrev": {
+            "12": "OPP"
+          }
+        },
+        {
+          "id": "sam",
+          "smiles": "[*:21][S+:20]([CH3:11])[CH2:22][CH2:23][C@H:24]([NH2:25])[C:26](=[O:27])[OH:28]",
+          "abbrev": {
+            "21": "Ado"
+          },
+          "show": [
+            11
+          ]
+        },
+        {
+          "id": "e170",
+          "smiles": "[*:31][CH2:32][CH2:33][C:34](=[O:35])[O-:36]",
+          "residue": {
+            "31": "Glu170"
+          }
+        },
+        {
+          "id": "mg",
+          "smiles": "[Mg+2:14]",
+          "near": "gpp:12"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A1",
+          "from": "gpp:6=7",
+          "to": "sam:11"
+        },
+        {
+          "id": "A2",
+          "from": "sam:20-11",
+          "to": "sam:20"
+        }
+      ]
+    },
+    {
+      "id": "I",
+      "title": "Carbocation intermediate",
+      "species": [
+        {
+          "id": "gpp",
+          "smiles": "[CH3:8][C+:7]([CH3:9])[C:6]([H:13])([CH3:11])[CH2:5][CH2:4]/[C:3]([CH3:10])=[CH:2]/[CH2:1][*:12]",
+          "abbrev": {
+            "12": "OPP"
+          },
+          "show": [
+            11
+          ]
+        },
+        {
+          "id": "sam",
+          "smiles": "[*:21][S:20][CH2:22][CH2:23][C@H:24]([NH2:25])[C:26](=[O:27])[OH:28]",
+          "abbrev": {
+            "21": "Ado"
+          }
+        },
+        {
+          "id": "e170",
+          "smiles": "[*:31][CH2:32][CH2:33][C:34](=[O:35])[O-:36]",
+          "residue": {
+            "31": "Glu170"
+          }
+        },
+        {
+          "id": "mg",
+          "smiles": "[Mg+2:14]",
+          "near": "gpp:12"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A3",
+          "from": "e170:36",
+          "to": "gpp:13"
+        },
+        {
+          "id": "A4",
+          "from": "gpp:6-13",
+          "to": "gpp:6-7"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "6MGPP + SAH",
+      "species": [
+        {
+          "id": "gpp",
+          "smiles": "[CH3:8][C:7]([CH3:9])=[C:6]([CH3:11])[CH2:5][CH2:4]/[C:3]([CH3:10])=[CH:2]/[CH2:1][*:12]",
+          "abbrev": {
+            "12": "OPP"
+          },
+          "show": [
+            11
+          ]
+        },
+        {
+          "id": "sam",
+          "smiles": "[*:21][S:20][CH2:22][CH2:23][C@H:24]([NH2:25])[C:26](=[O:27])[OH:28]",
+          "abbrev": {
+            "21": "Ado"
+          }
+        },
+        {
+          "id": "e170",
+          "smiles": "[*:31][CH2:32][CH2:33][C:34](=[O:35])[O:36][H:13]",
+          "residue": {
+            "31": "Glu170"
+          }
+        },
+        {
+          "id": "mg",
+          "smiles": "[Mg+2:14]",
+          "near": "gpp:12"
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "R",
+      "to": "I",
+      "above": "methyl transfer"
+    },
+    {
+      "from": "I",
+      "to": "P",
+      "above": "proton abstraction"
+    }
+  ]
+}

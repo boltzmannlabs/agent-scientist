@@ -76,6 +76,18 @@ The TUI startup banner groups runtime info into four collapsible sections, each 
 
 Click anywhere on a section header (or its chevron) to toggle it. The Tools list opens by default because it's the most-checked section at session start; Skills, System Prompt, and MCP Servers collapse by default so the banner stays compact even when you've installed dozens of skills or wired up many MCP servers. State is local to the banner instance, so the next launch resets to the defaults.
 
+## Generated image previews
+
+Generated PNG, JPEG, WebP, GIF and BMP files can appear directly in the chat.
+The agent emits `MEDIA:/absolute/path/to/figure.png` on its own line; the TUI
+shows a preview and preserves the original file link. Ghostty and kitty terminals
+use native graphics. Other terminals use a lower-resolution truecolor half-block
+preview; open the original image to read fine chemical labels or other small text.
+Image previews do not call a vision provider. Missing or unsupported images retain
+their file links. Local and SSH terminal workspaces are supported; other terminal
+backends currently fall back to file links. Desktop chat uses its existing native
+image display. Interactive classic CLI also draws a terminal preview and keeps the original path.
+
 ## Requirements
 
 - **Node.js** ≥ 20 — the TUI runs as a subprocess launched from the Python CLI. `sci doctor` verifies this.

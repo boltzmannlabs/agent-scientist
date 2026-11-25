@@ -1,0 +1,28 @@
+{
+  "format": 2,
+  "name": "small_molecule_proton_transfer",
+  "source": "Illustrative textbook acid-base electron flow. Adapt identities to the actual question; retain the transferred hydrogen's atom map. This template does not establish equilibrium constants or experimental validation.",
+  "panels": [
+    {
+      "id": "R",
+      "title": "Acetic acid and hydroxide",
+      "species": [
+        {"id": "acid", "smiles": "[CH3:1][C:2](=[O:3])[O:4][H:5]", "keep_h": [5]},
+        {"id": "base", "smiles": "[O-:6][H:7]", "keep_h": [7]}
+      ],
+      "arrows": [
+        {"id": "A1", "from": "base:6", "to": ["base:6", "acid:5"]},
+        {"id": "A2", "from": "acid:4-5", "to": "acid:4"}
+      ]
+    },
+    {
+      "id": "P",
+      "title": "Acetate and water",
+      "species": [
+        {"id": "acid", "smiles": "[CH3:1][C:2](=[O:3])[O-:4]"},
+        {"id": "base", "smiles": "[O:6]([H:5])[H:7]", "keep_h": [5, 7]}
+      ]
+    }
+  ],
+  "reaction_arrows": [{"from": "R", "to": "P", "kind": "equilibrium", "above": "proton transfer"}]
+}
