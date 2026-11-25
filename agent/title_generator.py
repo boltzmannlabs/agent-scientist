@@ -13,6 +13,7 @@ import threading
 import time
 import weakref
 from contextlib import suppress
+from importlib import import_module
 from typing import Any, Callable, Optional
 
 from agent.auxiliary_client import call_llm
@@ -240,6 +241,11 @@ def start_title_upgrade(upgrade: Optional[threading.Thread]) -> None:
     """Start a (deferred) title upgrade thread; joinable via ``wait_for_title_upgrades`` only once started."""
     if upgrade is None or upgrade.ident is not None:
         return
+    # OpenAI loads resources on first .chat/.responses access. Import the resource
+    # graph on the caller before the title worker can race the turn's first SDK
+    # request (opposite submodule import order can raise _ModuleLock deadlocks).
+    # Python's module lock handles concurrent callers; no extra lock or API call.
+    import_module("openai.resources")
     _UPGRADE_THREADS.add(upgrade)
     upgrade.start()
 
