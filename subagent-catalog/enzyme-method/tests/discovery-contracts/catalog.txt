@@ -1,0 +1,1 @@
+Synthetic deployed catalog. General design and assembly preparation entries are in numbered contract files in this directory. All declared operations are authorized for this test. Inspect actual contracts for capabilities and request fields. No scientific execution is permitted in this fixture.

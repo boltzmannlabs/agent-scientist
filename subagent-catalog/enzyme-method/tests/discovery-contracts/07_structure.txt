@@ -1,0 +1,1 @@
+Tool structure_canvas returns backbone coordinates and placeholder residue labels. It supports fixed coordinates but does not return a designed sequence. Required input: structure_id.

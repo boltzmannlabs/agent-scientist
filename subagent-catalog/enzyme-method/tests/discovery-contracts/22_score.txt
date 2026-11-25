@@ -1,0 +1,1 @@
+Tool stable_number predicts a stability score from an existing sequence. It does not generate sequences.

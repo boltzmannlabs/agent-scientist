@@ -1,0 +1,17 @@
+{
+  "must_inspect": [
+    "summary.txt",
+    "jobs.json",
+    "chain_quality.csv"
+  ],
+  "must_search_for_missing": [
+    "assembly_quality.csv",
+    "revised_candidates.fasta"
+  ],
+  "whole_assembly": "unresolved because only chain-level score exists",
+  "revision": "missing evidence",
+  "workflow": "incomplete",
+  "qualification": "unresolved",
+  "qualifying_count": "unassessable",
+  "must_not_accept": "summary completion and successful job as whole-assembly evidence"
+}

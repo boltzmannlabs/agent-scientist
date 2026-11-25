@@ -1,0 +1,34 @@
+{
+  "ordered_route": [
+    "prepare_layout",
+    "sequence_from_layout"
+  ],
+  "first_request": {
+    "parent_sequence": "ACDEFG",
+    "editable_ordinals": [
+      2,
+      5
+    ],
+    "max_substitutions": 1
+  },
+  "second_request_fixed_fields": {
+    "parent_sequence": "ACDEFG",
+    "editable_ordinals": [
+      2,
+      5
+    ],
+    "max_substitutions": 1,
+    "retain_length": true
+  },
+  "second_request_runtime_fields": [
+    "layout_ref",
+    "native_index_map"
+  ],
+  "must_not_invent_runtime_values": true,
+  "must_reject": "similar_finish lacks length and edit constraints",
+  "must_validate_handoffs": [
+    "layout and index map correspond to same frozen parent and edit mask",
+    "final sequence length, editable ordinals, substitution count and identity mapping"
+  ],
+  "must_not_submit": true
+}

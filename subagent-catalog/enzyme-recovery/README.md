@@ -1,3 +1,5 @@
 # enzyme-recovery
 
-Diagnose an execution failure or unusable result. Install as a standalone SCI package. Launch by name from the enzyme coordinator or with /subagent run. Supply the frozen assignment and approved inputs or contract excerpts. SCI owns the model login. The coordinator owns any scientific service access and job submission. The role has no write or scientific service integration. Its output is a review in a native specialist receipt.
+Version 1.2.0 is a standalone SCI specialist package with read_file and search_files access. Public primary-source research through web_search and web_extract requires assignment approval and a configured parent web backend. Install through the reviewed package installer and invoke the saved specialist by name. Supply the frozen assignment and explicit approved contract/evidence directories. The coordinator executes scientific jobs and handles service authorization. This specialist returns findings through its native receipt.
+
+The included fixtures cover prior decision cases and directory-based discovery or artifact inspection. Run assignments against the input file and its explicitly approved companion directory. Record actual local and merged-dev results in tests/validation.json after execution.

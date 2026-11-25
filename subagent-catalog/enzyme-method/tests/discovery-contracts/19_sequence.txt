@@ -1,0 +1,1 @@
+Tool local_sequence_builder takes parent_sequence, editable_ordinals (one-based list), max_substitutions and retain_length. It returns full-length sequences with parent-to-candidate mapping. All other ordinals remain fixed. It is ready and approved. Request fields are exactly those named here.

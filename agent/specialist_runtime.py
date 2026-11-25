@@ -275,6 +275,11 @@ def resolve(parent, task):
     from agent.specialist_inputs import approved_paths
     read_paths = approved_paths(item, getattr(parent, '_specialist_user_request', ''))
     assignment = getattr(parent, '_specialist_assignment', None) or (owner.assignment if owner else None)
+    from agent.specialist_assignment import Assignment
+    if isinstance(assignment, Assignment) and assignment.home == home:
+        # Native assignment resume keeps the original user's approved input scope.
+        # A model-written task context cannot authorize additional file paths.
+        read_paths = tuple(sorted(set(read_paths) | set(approved_paths(item, assignment.request))))
     artifacts = ()
     if task.get('artifacts'):
         if assignment is None:
