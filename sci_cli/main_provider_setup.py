@@ -941,13 +941,11 @@ def _build_provider_picker_rows(config: dict, active: str, provider_labels: dict
             slug = row["slug"]
             label = canonical_descs.get(slug, provider_labels.get(slug, slug))
             if slug == "nous":
-                # Same free-tier rule as the gateway/TUI pickers: relabel for a guest, hide
-                # when nous.guest is off, untouched for a real account.
+                # Setup must offer a named sign-in even if an old guest session cannot run models.
                 from sci_cli.model_switch_providers import _free_tier_nous_row
                 tier_row = _free_tier_nous_row({"name": label, "models": []})
-                if tier_row is None:
-                    continue
-                label = tier_row["name"]
+                if tier_row is not None:
+                    label = tier_row["name"]
             _add(slug, label, [], bool(active) and slug == active)
 
     for key, provider_info in custom_provider_map.items():

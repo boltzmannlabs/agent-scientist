@@ -472,11 +472,12 @@ class TestLoginNousSkipKeepsCurrent:
         monkeypatch.setattr(ns, "prompt_enable_tool_gateway", lambda cfg: None)
         return free_tier_calls
 
-    def test_skip_keep_current_preserves_provider_and_model(self, tmp_path, monkeypatch):
-        """User picks Skip → config.yaml untouched, Nous creds still saved."""
+    @pytest.mark.parametrize("interrupted", [False, True])
+    def test_leaving_picker_preserves_provider_and_model(self, tmp_path, monkeypatch, interrupted):
+        """Leaving the post-login picker preserves the current selection and the new credentials."""
         import argparse
         import sci_yaml as yaml
-        from sci_cli.auth import PROVIDER_REGISTRY, _login_nous
+        from sci_cli import auth
 
         sci_home, config_path, auth_path = self._setup_home_with_openrouter(
             tmp_path, monkeypatch,
@@ -487,7 +488,16 @@ class TestLoginNousSkipKeepsCurrent:
             portal_url=None, inference_url=None, client_id=None, scope=None,
             no_browser=True, timeout=15.0, ca_bundle=None, insecure=False,
         )
-        _login_nous(args, PROVIDER_REGISTRY["nous"])
+        if interrupted:
+            def cancel_picker(*args, **kwargs):
+                raise KeyboardInterrupt
+
+            monkeypatch.setattr(auth, "_prompt_model_selection", cancel_picker)
+            with pytest.raises(SystemExit) as exit_info:
+                auth._login_nous(args, auth.PROVIDER_REGISTRY["nous"])
+            assert exit_info.value.code == 130
+        else:
+            auth._login_nous(args, auth.PROVIDER_REGISTRY["nous"])
 
         # config.yaml model section must be unchanged
         cfg_after = yaml.safe_load(config_path.read_text())
@@ -495,7 +505,7 @@ class TestLoginNousSkipKeepsCurrent:
         assert cfg_after["model"]["default"] == "anthropic/claude-opus-4.6"
         assert "base_url" not in cfg_after["model"]
 
-        # auth.json: active_provider restored to openrouter, but Nous creds saved
+        # Save the Nous credentials while retaining the active provider.
         auth_after = json.loads(auth_path.read_text())
         assert auth_after["active_provider"] == "openrouter"
         assert "nous" in auth_after["providers"]

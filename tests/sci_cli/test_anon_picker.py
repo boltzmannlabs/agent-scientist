@@ -1,9 +1,8 @@
 """Model pickers under a Nous free-tier identity.
 
 A guest identity carrying inference shows one row, "Nous · free tier", with the single model
-``nous/welcome``; the same guest with ``nous.guest: false`` shows no Nous row at all. The rule lives
-in one helper (``_free_tier_nous_row``) and this file exercises it through the real row builders
-against a temp ``SCI_HOME`` with the network catalog fetch stubbed.
+``nous/welcome``. With ``nous.guest: false``, the runtime picker hides that model and setup offers
+named Portal sign-in. These tests exercise the real row builders against a temp ``SCI_HOME``.
 """
 
 from __future__ import annotations
@@ -83,14 +82,25 @@ def test_guest_identity_shows_free_tier_row_with_only_welcome_model(guest_home, 
     assert "guest" not in cli_rows[0][1].lower() and "anonymous" not in cli_rows[0][1].lower()
 
 
-def test_guest_identity_with_guest_off_hides_the_nous_row(guest_home, monkeypatch):
+def test_guest_off_preserves_named_nous_sign_in(guest_home, monkeypatch):
     _write_config(monkeypatch, guest_home, "nous:\n  guest: false\n")
     from sci_cli import anon_auth
     assert anon_auth.has_guest() and not anon_auth.guest_enabled()
 
     from sci_cli.model_switch_providers import list_picker_providers
     assert _nous_rows(list_picker_providers("nous", "", None, None, 50, "nous/welcome")) == []
-    assert _cli_nous_rows({"nous": {"guest": False}}) == []
+    config = {"nous": {"guest": False}}
+    [(_, setup_label)] = _cli_nous_rows(config)
+    assert "Nous Portal" in setup_label
+
+    from sci_cli import auth, nous_subscription
+    from sci_cli.model_setup_flows import _model_flow_nous
+
+    portals = []
+    monkeypatch.setattr(auth, "_login_nous", lambda args, provider: portals.append(provider))
+    monkeypatch.setattr(nous_subscription, "prompt_enable_tool_gateway", lambda config: None)
+    _model_flow_nous(config)
+    assert portals == [auth.PROVIDER_REGISTRY["nous"]]
 
 
 def test_desktop_picker_payload_never_locks_the_free_tier_row(guest_home, monkeypatch):

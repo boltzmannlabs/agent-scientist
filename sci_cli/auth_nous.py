@@ -1565,22 +1565,10 @@ def _offer_shared_nous_import(timeout_seconds: float) -> Optional[Dict[str, Any]
     return auth_state
 
 
-def _restore_active_provider(prior_active_provider: Any) -> None:
-    """Undo the ``active_provider="nous"`` that ``_save_provider_state`` wrote during login."""
-    from sci_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
-    with _auth_store_lock():
-        auth_store = _load_auth_store()
-        if prior_active_provider:
-            auth_store["active_provider"] = prior_active_provider
-        else:
-            auth_store.pop("active_provider", None)
-        _save_auth_store(auth_store)
-
-
 def _login_nous(args, pconfig: ProviderConfig) -> None:
     """Nous Portal device authorization flow."""
     from sci_cli.auth import (
-        _auth_store_lock, _load_auth_store, _nous_device_code_login, _save_active_provider_state,
+        _auth_file_path, _nous_device_code_login, _persist_provider_state_to_store,
         _save_model_choice, _sync_nous_pool_from_auth_store, _update_config_for_provider,
         _write_shared_nous_state, format_auth_error)
     timeout_seconds = getattr(args, "timeout", None) or 15.0
@@ -1599,11 +1587,8 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
                 timeout_seconds=timeout_seconds, insecure=bool(getattr(args, "insecure", False)),
                 ca_bundle=ca_bundle)
         inference_base_url = auth_state["inference_base_url"]
-        # Snapshot BEFORE _save_provider_state overwrites active_provider to "nous", so a
-        # model-picker "Skip (keep current)" can restore the user's previous provider.
-        with _auth_store_lock():
-            prior_active_provider = _load_auth_store().get("active_provider")
-        saved_to = _save_active_provider_state("nous", auth_state)
+        # The saved provider only changes after an explicit model choice, even if setup is interrupted.
+        saved_to = _persist_provider_state_to_store("nous", auth_state, _auth_file_path())
         # Mirror to the shared store so other profiles can one-tap import (best-effort inside).
         _write_shared_nous_state(auth_state)
         _sync_nous_pool_from_auth_store()
@@ -1618,10 +1603,7 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
             message = format_auth_error(exc) if isinstance(exc, AuthError) else str(exc)
             print()
             print(f"Login succeeded, but could not fetch available models. Reason: {message}")
-        # No model (Skip, fetch failed, nothing curated): keep the previous provider rather than
-        # switch to Nous with a mismatched model; the Nous tokens stay saved for future use.
         if not selected_model:
-            _restore_active_provider(prior_active_provider)
             print()
             print("No provider change. Nous credentials saved for future use.")
             print("  Run `sci model` again to switch to Nous Portal.")
