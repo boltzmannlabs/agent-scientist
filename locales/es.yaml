@@ -2341,6 +2341,7 @@ cli:
     enable_disable_hint: "Activar/desactivar: sci plugins enable/disable <name>"
     system_error: "Error del sistema de plugins: {error}"
   queue:
+    dock_collapsed: "Cola · {count} pendientes"
     usage: "Uso: /queue <prompt> | /queue list | /queue edit N <prompt> | /queue rm N | /queue move DESDE HASTA | /queue clear"
     queued: "En cola: {preview}"
     queued_next_turn: "En cola para el siguiente turno: {preview}"

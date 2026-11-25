@@ -2341,6 +2341,7 @@ cli:
     enable_disable_hint: "有効化/無効化: sci plugins enable/disable <name>"
     system_error: "プラグインシステムのエラー: {error}"
   queue:
+    dock_collapsed: "キュー · {count} 件待機中"
     usage: "使い方: /queue <prompt> | /queue list | /queue edit N <prompt> | /queue rm N | /queue move FROM TO | /queue clear"
     queued: "キューに追加しました: {preview}"
     queued_next_turn: "次のターン用にキューに追加しました: {preview}"

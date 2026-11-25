@@ -2341,6 +2341,7 @@ cli:
     enable_disable_hint: "启用/禁用：sci plugins enable/disable <name>"
     system_error: "插件系统错误：{error}"
   queue:
+    dock_collapsed: "队列 · {count} 条待处理"
     usage: "用法：/queue <prompt> | /queue list | /queue edit N <prompt> | /queue rm N | /queue move FROM TO | /queue clear"
     queued: "已排队：{preview}"
     queued_next_turn: "已排入下一回合：{preview}"
