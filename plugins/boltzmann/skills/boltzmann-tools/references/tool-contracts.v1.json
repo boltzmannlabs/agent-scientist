@@ -3175,7 +3175,7 @@
             "x-input-kind": "file"
           },
           "global_models": {
-            "description": "Selected model objects with name, min_threshold and max_threshold; preserve user-supplied bounds and documented empty bounds.",
+            "description": "Required: select at least one global property model with name and numeric min_threshold and max_threshold bounds. Empty bounds are rejected by the service. Custom models are optional and do not replace this selection.",
             "type": "array",
             "items": {
               "type": "object",
@@ -3241,16 +3241,14 @@
                     "number",
                     "string"
                   ],
-                  "x-numeric-string": true,
-                  "x-allow-empty": true
+                  "x-numeric-string": true
                 },
                 "max_threshold": {
                   "type": [
                     "number",
                     "string"
                   ],
-                  "x-numeric-string": true,
-                  "x-allow-empty": true
+                  "x-numeric-string": true
                 }
               },
               "required": [
@@ -3260,7 +3258,8 @@
               ],
               "additionalProperties": false
             },
-            "x-input-kind": "value"
+            "x-input-kind": "value",
+            "minItems": 1
           },
           "custom_models": {
             "description": "Optional custom property models in `{id, min_threshold, max_threshold}` form.",
@@ -3300,7 +3299,8 @@
         },
         "required": [
           "ref_mol",
-          "library_path"
+          "library_path",
+          "global_models"
         ],
         "additionalProperties": true
       },
@@ -3754,7 +3754,7 @@
             "x-input-kind": "value"
           },
           "global_models": {
-            "description": "Selected model objects with name, min_threshold and max_threshold; preserve user-supplied bounds and documented empty bounds.",
+            "description": "Required: select at least one global property model with name and numeric min_threshold and max_threshold bounds. Empty bounds are rejected by the service. Custom models are optional and do not replace this selection.",
             "type": "array",
             "items": {
               "type": "object",
@@ -3820,16 +3820,14 @@
                     "number",
                     "string"
                   ],
-                  "x-numeric-string": true,
-                  "x-allow-empty": true
+                  "x-numeric-string": true
                 },
                 "max_threshold": {
                   "type": [
                     "number",
                     "string"
                   ],
-                  "x-numeric-string": true,
-                  "x-allow-empty": true
+                  "x-numeric-string": true
                 }
               },
               "required": [
@@ -3839,7 +3837,8 @@
               ],
               "additionalProperties": false
             },
-            "x-input-kind": "value"
+            "x-input-kind": "value",
+            "minItems": 1
           },
           "custom_models": {
             "description": "Optional custom property models in `{id, min_threshold, max_threshold}` form.",
@@ -3880,7 +3879,8 @@
         "required": [
           "smiles",
           "n_mols",
-          "n_steps"
+          "n_steps",
+          "global_models"
         ],
         "additionalProperties": true
       },
@@ -4754,7 +4754,7 @@
             "x-input-kind": "value"
           },
           "global_models": {
-            "description": "Selected model objects with name, min_threshold and max_threshold; preserve user-supplied bounds and documented empty bounds.",
+            "description": "Required: select at least one global property model with name and numeric min_threshold and max_threshold bounds. Empty bounds are rejected by the service. Custom models are optional and do not replace this selection.",
             "type": "array",
             "items": {
               "type": "object",
@@ -4820,16 +4820,14 @@
                     "number",
                     "string"
                   ],
-                  "x-numeric-string": true,
-                  "x-allow-empty": true
+                  "x-numeric-string": true
                 },
                 "max_threshold": {
                   "type": [
                     "number",
                     "string"
                   ],
-                  "x-numeric-string": true,
-                  "x-allow-empty": true
+                  "x-numeric-string": true
                 }
               },
               "required": [
@@ -4839,7 +4837,8 @@
               ],
               "additionalProperties": false
             },
-            "x-input-kind": "value"
+            "x-input-kind": "value",
+            "minItems": 1
           },
           "custom_models": {
             "description": "Optional custom property models in `{id, min_threshold, max_threshold}` form.",
@@ -4879,7 +4878,8 @@
         },
         "required": [
           "n_mols",
-          "hit_smile"
+          "hit_smile",
+          "global_models"
         ],
         "additionalProperties": true
       },
@@ -4925,7 +4925,7 @@
             "x-input-kind": "value"
           },
           "global_models": {
-            "description": "Selected model objects with name, min_threshold and max_threshold; preserve user-supplied bounds and documented empty bounds.",
+            "description": "Required: select at least one global property model with name and numeric min_threshold and max_threshold bounds. Empty bounds are rejected by the service. Custom models are optional and do not replace this selection.",
             "type": "array",
             "items": {
               "type": "object",
@@ -4991,16 +4991,14 @@
                     "number",
                     "string"
                   ],
-                  "x-numeric-string": true,
-                  "x-allow-empty": true
+                  "x-numeric-string": true
                 },
                 "max_threshold": {
                   "type": [
                     "number",
                     "string"
                   ],
-                  "x-numeric-string": true,
-                  "x-allow-empty": true
+                  "x-numeric-string": true
                 }
               },
               "required": [
@@ -5010,7 +5008,8 @@
               ],
               "additionalProperties": false
             },
-            "x-input-kind": "value"
+            "x-input-kind": "value",
+            "minItems": 1
           },
           "custom_models": {
             "description": "Optional custom property models in `{id, min_threshold, max_threshold}` form.",
@@ -5051,7 +5050,8 @@
         "required": [
           "smiles",
           "n_mols",
-          "n_steps"
+          "n_steps",
+          "global_models"
         ],
         "additionalProperties": true
       },

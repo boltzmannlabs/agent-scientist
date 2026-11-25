@@ -1,12 +1,20 @@
 <!-- canonical-contracts:start -->
-> Request fields and catalog status: `../tool-contracts.v1.json`.
-> File rules: `../file-input-contracts.v1.json`. Limits: `../input-limits.v1.json`.
+> Request fields and catalog status: `../../../skills/boltzmann-tools/references/tool-contracts.v1.json`.
+> File rules: `../../../skills/boltzmann-tools/references/file-input-contracts.v1.json`. Limits: `../../../skills/boltzmann-tools/references/input-limits.v1.json`.
 > Missing detailed file rules mean partial validation, not a submission ban.
 > Known invalid inputs and explicitly blocked tools still stop. Historical output
 > verification is separate from request readiness; report uncertainty honestly.
 <!-- canonical-contracts:end -->
 
 # Molecule Optimization
+
+Current requirement correction (2026-11-23): MCTS, Mars Plus, Graph GA and
+Fragment-Based Optimization require at least one `global_models` entry.
+Both global-model threshold bounds must be numeric; empty strings were rejected
+by live service validation on 2026-11-23. `custom_models` remains optional.
+Current executable definitions are in
+`skills/boltzmann-tools/references/tool-contracts.v1.json` at the plugin root;
+other legacy snapshots preserve historical evidence.
 
 Domain: Small Molecule Design
 
@@ -77,7 +85,7 @@ Optimize a reference molecule with Monte Carlo tree search.
 |---|---|---|---|
 | `n_mols` | integer | yes | Number of molecules to generate during lead optimization. |
 | `hit_smile` | string | yes | Reference molecule SMILES used as the starting point. |
-| `global_models` | list[object] | no | Selected property models in `{name, min_threshold, max_threshold}` form. Use only names from the list below. |
+| `global_models` | list[object] | yes | At least one global property model is required. Selected property models in `{name, min_threshold, max_threshold}` form. Use only names from the list below. |
 | `custom_models` | list[object] | no | Custom property models in `{id, min_threshold, max_threshold}` form. |
 
 `experimentName` is required at the top level and is not part of
@@ -91,8 +99,8 @@ data = {
         "global_models": [
             {
                 "name": "CaCo2 permeability",
-                "min_threshold": "",
-                "max_threshold": "",
+                "min_threshold": 0,
+                "max_threshold": 1,
             }
         ],
     },
@@ -117,7 +125,7 @@ Generate and optimize molecules from a starting SMILES string.
 | `smiles` | string | yes | Starting molecule SMILES. |
 | `n_mols` | integer | yes | Number of molecules to generate. |
 | `n_steps` | integer | yes | Number of optimization steps. |
-| `global_models` | list[object] | no | Selected property models in `{name, min_threshold, max_threshold}` form. Use only names from the list below. |
+| `global_models` | list[object] | yes | At least one global property model is required. Selected property models in `{name, min_threshold, max_threshold}` form. Use only names from the list below. |
 | `custom_models` | list[object] | no | Custom property models in `{id, min_threshold, max_threshold}` form. |
 
 `experimentName` is required at the top level and is not part of
@@ -132,8 +140,8 @@ data = {
         "global_models": [
             {
                 "name": "CaCo2 permeability",
-                "min_threshold": "",
-                "max_threshold": "",
+                "min_threshold": 0,
+                "max_threshold": 1,
             }
         ],
     },
@@ -158,7 +166,7 @@ Generate and optimize molecules with the graph genetic algorithm workflow.
 | `smiles` | string | yes | User-supplied starting molecule SMILES. Validate it; do not reuse screenshot text. |
 | `n_mols` | integer | yes | Number of molecules to generate. |
 | `n_steps` | integer | yes | Number of optimization steps. |
-| `global_models` | list[object] | no | Selected property models in `{name, min_threshold, max_threshold}` form. Use only names from the shared list below. |
+| `global_models` | list[object] | yes | At least one global property model is required. Selected property models in `{name, min_threshold, max_threshold}` form. Use only names from the shared list below. |
 | `custom_models` | list[object] | no | Custom property models in `{id, min_threshold, max_threshold}` form. |
 
 `experimentName` is required at the top level and is not part of
@@ -173,8 +181,8 @@ data = {
         "global_models": [
             {
                 "name": selected_model_name,
-                "min_threshold": selected_minimum_or_empty_string,
-                "max_threshold": selected_maximum_or_empty_string,
+                "min_threshold": selected_numeric_minimum,
+                "max_threshold": selected_numeric_maximum,
             }
         ],
     },
@@ -199,7 +207,7 @@ library. This is distinct from the removed Fragment-Based Generation workflow.
 |---|---|---|---|
 | `ref_mol` | string | yes | User-supplied reference molecule SMILES. Validate it; do not reuse screenshot text. |
 | `library_path` | string | yes | Platform storage path returned after uploading a CSV containing a `SMILES` header. |
-| `global_models` | list[object] | no | Selected property models in `{name, min_threshold, max_threshold}` form. Use only names from the shared list below. |
+| `global_models` | list[object] | yes | At least one global property model is required. Selected property models in `{name, min_threshold, max_threshold}` form. Use only names from the shared list below. |
 | `custom_models` | list[object] | no | Custom property models in `{id, min_threshold, max_threshold}` form. |
 
 `experimentName` is required at the top level and is not part of
@@ -214,8 +222,8 @@ data = {
         "global_models": [
             {
                 "name": selected_model_name,
-                "min_threshold": selected_minimum_or_empty_string,
-                "max_threshold": selected_maximum_or_empty_string,
+                "min_threshold": selected_numeric_minimum,
+                "max_threshold": selected_numeric_maximum,
             }
         ],
     },
@@ -243,8 +251,10 @@ SR-ATAD5, SR-HSE, SR-MMP, SR-p53
 ```
 
 Each selected model object contains `name`, `min_threshold`, and
-`max_threshold`. Preserve user-supplied bounds. The supplied platform examples
-show empty strings when no bound is entered; do not invent thresholds.
+`max_threshold`. Both bounds must be numeric. Historical empty-string examples
+were rejected by live service validation on 2026-11-23. The numeric 0–1 bounds
+above are synthetic smoke-test settings, not recommended scientific defaults.
+Preserve user-supplied bounds; ask for missing bounds rather than inventing them.
 
 Neither supplied schema establishes an output contract. Poll the submitted job
 and report only output keys and artifacts actually returned by the platform.

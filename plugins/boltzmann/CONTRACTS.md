@@ -15,6 +15,14 @@ There is no separately maintained upload allowlist. File and limit records are
 sparse: an absent record means no additional documented rule, not an unavailable
 tool. Nothing may invent missing scientific requirements or service identifiers.
 
+Lead Optimization MCTS, Mars Plus, Graph GA and Fragment-Based Optimization
+require a nonempty `global_models` selection. Each entry specifies a `name`
+and numeric `min_threshold` and `max_threshold` bounds. Empty bounds were
+rejected by live service validation and fail local preflight. `custom_models`
+is optional and cannot replace the required global model. Missing or empty
+global selections fail local submission preflight, including when
+partial-validation approval is provided.
+
 ## One execution path
 
 1. Read the selected job's generated module and collect required user values.

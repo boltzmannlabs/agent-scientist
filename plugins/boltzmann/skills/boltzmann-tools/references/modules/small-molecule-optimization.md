@@ -21,7 +21,7 @@ Fields below belong in `experiment_data`. The connector generates `experiment_na
 |---|---|---|---|---|
 | `ref_mol` | string | yes | value | Validated reference molecule SMILES. Screenshot text is not a default. |
 | `library_path` | string | yes | file | Upload a CSV with a `SMILES` header and use the returned platform storage path. |
-| `global_models` | array | no / mode-dependent | value | Selected model objects with name, min_threshold and max_threshold; preserve user-supplied bounds and documented empty bounds. |
+| `global_models` | array | yes | value | Required: select at least one global property model with name and numeric min_threshold and max_threshold bounds. Empty bounds are rejected by the service. Custom models are optional and do not replace this selection. |
 | `custom_models` | array | no / mode-dependent | value | Optional custom property models in `{id, min_threshold, max_threshold}` form. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
@@ -45,7 +45,7 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "file"
     },
     "global_models": {
-      "description": "Selected model objects with name, min_threshold and max_threshold; preserve user-supplied bounds and documented empty bounds.",
+      "description": "Required: select at least one global property model with name and numeric min_threshold and max_threshold bounds. Empty bounds are rejected by the service. Custom models are optional and do not replace this selection.",
       "type": "array",
       "items": {
         "type": "object",
@@ -111,16 +111,14 @@ Only local files require a new upload. Never infer input mode from a field name.
               "number",
               "string"
             ],
-            "x-numeric-string": true,
-            "x-allow-empty": true
+            "x-numeric-string": true
           },
           "max_threshold": {
             "type": [
               "number",
               "string"
             ],
-            "x-numeric-string": true,
-            "x-allow-empty": true
+            "x-numeric-string": true
           }
         },
         "required": [
@@ -130,7 +128,8 @@ Only local files require a new upload. Never infer input mode from a field name.
         ],
         "additionalProperties": false
       },
-      "x-input-kind": "value"
+      "x-input-kind": "value",
+      "minItems": 1
     },
     "custom_models": {
       "description": "Optional custom property models in `{id, min_threshold, max_threshold}` form.",
@@ -170,7 +169,8 @@ Only local files require a new upload. Never infer input mode from a field name.
   },
   "required": [
     "ref_mol",
-    "library_path"
+    "library_path",
+    "global_models"
   ],
   "additionalProperties": true
 }
@@ -185,7 +185,8 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
   "experiment_name": "<optional; generated if omitted>",
   "experiment_data": {
     "ref_mol": "<user value; see ref_mol schema>",
-    "library_path": "<user value; see library_path schema>"
+    "library_path": "<user value; see library_path schema>",
+    "global_models": "<user value; see global_models schema>"
   }
 }
 ```
@@ -234,7 +235,7 @@ Fields below belong in `experiment_data`. The connector generates `experiment_na
 | `smiles` | string | yes | value | Validated starting molecule SMILES. Screenshot text is not a default. |
 | `n_mols` | integer | yes | value | Number of molecules to generate. |
 | `n_steps` | integer | yes | value | Number of optimization steps. |
-| `global_models` | array | no / mode-dependent | value | Selected model objects with name, min_threshold and max_threshold; preserve user-supplied bounds and documented empty bounds. |
+| `global_models` | array | yes | value | Required: select at least one global property model with name and numeric min_threshold and max_threshold bounds. Empty bounds are rejected by the service. Custom models are optional and do not replace this selection. |
 | `custom_models` | array | no / mode-dependent | value | Optional custom property models in `{id, min_threshold, max_threshold}` form. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
@@ -263,7 +264,7 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "value"
     },
     "global_models": {
-      "description": "Selected model objects with name, min_threshold and max_threshold; preserve user-supplied bounds and documented empty bounds.",
+      "description": "Required: select at least one global property model with name and numeric min_threshold and max_threshold bounds. Empty bounds are rejected by the service. Custom models are optional and do not replace this selection.",
       "type": "array",
       "items": {
         "type": "object",
@@ -329,16 +330,14 @@ Only local files require a new upload. Never infer input mode from a field name.
               "number",
               "string"
             ],
-            "x-numeric-string": true,
-            "x-allow-empty": true
+            "x-numeric-string": true
           },
           "max_threshold": {
             "type": [
               "number",
               "string"
             ],
-            "x-numeric-string": true,
-            "x-allow-empty": true
+            "x-numeric-string": true
           }
         },
         "required": [
@@ -348,7 +347,8 @@ Only local files require a new upload. Never infer input mode from a field name.
         ],
         "additionalProperties": false
       },
-      "x-input-kind": "value"
+      "x-input-kind": "value",
+      "minItems": 1
     },
     "custom_models": {
       "description": "Optional custom property models in `{id, min_threshold, max_threshold}` form.",
@@ -389,7 +389,8 @@ Only local files require a new upload. Never infer input mode from a field name.
   "required": [
     "smiles",
     "n_mols",
-    "n_steps"
+    "n_steps",
+    "global_models"
   ],
   "additionalProperties": true
 }
@@ -405,7 +406,8 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
   "experiment_data": {
     "smiles": "<user value; see smiles schema>",
     "n_mols": "<user value; see n_mols schema>",
-    "n_steps": "<user value; see n_steps schema>"
+    "n_steps": "<user value; see n_steps schema>",
+    "global_models": "<user value; see global_models schema>"
   }
 }
 ```
@@ -930,7 +932,7 @@ Fields below belong in `experiment_data`. The connector generates `experiment_na
 |---|---|---|---|---|
 | `n_mols` | integer | yes | value | Number of molecules to generate during lead optimization. |
 | `hit_smile` | string | yes | value | Reference molecule SMILES used as the starting point. Use the exact field `hit_smile`. |
-| `global_models` | array | no / mode-dependent | value | Selected model objects with name, min_threshold and max_threshold; preserve user-supplied bounds and documented empty bounds. |
+| `global_models` | array | yes | value | Required: select at least one global property model with name and numeric min_threshold and max_threshold bounds. Empty bounds are rejected by the service. Custom models are optional and do not replace this selection. |
 | `custom_models` | array | no / mode-dependent | value | Optional custom property models in `{id, min_threshold, max_threshold}` form. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
@@ -954,7 +956,7 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "value"
     },
     "global_models": {
-      "description": "Selected model objects with name, min_threshold and max_threshold; preserve user-supplied bounds and documented empty bounds.",
+      "description": "Required: select at least one global property model with name and numeric min_threshold and max_threshold bounds. Empty bounds are rejected by the service. Custom models are optional and do not replace this selection.",
       "type": "array",
       "items": {
         "type": "object",
@@ -1020,16 +1022,14 @@ Only local files require a new upload. Never infer input mode from a field name.
               "number",
               "string"
             ],
-            "x-numeric-string": true,
-            "x-allow-empty": true
+            "x-numeric-string": true
           },
           "max_threshold": {
             "type": [
               "number",
               "string"
             ],
-            "x-numeric-string": true,
-            "x-allow-empty": true
+            "x-numeric-string": true
           }
         },
         "required": [
@@ -1039,7 +1039,8 @@ Only local files require a new upload. Never infer input mode from a field name.
         ],
         "additionalProperties": false
       },
-      "x-input-kind": "value"
+      "x-input-kind": "value",
+      "minItems": 1
     },
     "custom_models": {
       "description": "Optional custom property models in `{id, min_threshold, max_threshold}` form.",
@@ -1079,7 +1080,8 @@ Only local files require a new upload. Never infer input mode from a field name.
   },
   "required": [
     "n_mols",
-    "hit_smile"
+    "hit_smile",
+    "global_models"
   ],
   "additionalProperties": true
 }
@@ -1094,7 +1096,8 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
   "experiment_name": "<optional; generated if omitted>",
   "experiment_data": {
     "n_mols": "<user value; see n_mols schema>",
-    "hit_smile": "<user value; see hit_smile schema>"
+    "hit_smile": "<user value; see hit_smile schema>",
+    "global_models": "<user value; see global_models schema>"
   }
 }
 ```
@@ -1122,7 +1125,7 @@ Fields below belong in `experiment_data`. The connector generates `experiment_na
 | `smiles` | string | yes | value | Starting molecule SMILES string. |
 | `n_mols` | integer | yes | value | Number of molecules to generate. |
 | `n_steps` | integer | yes | value | Number of optimization steps. |
-| `global_models` | array | no / mode-dependent | value | Selected model objects with name, min_threshold and max_threshold; preserve user-supplied bounds and documented empty bounds. |
+| `global_models` | array | yes | value | Required: select at least one global property model with name and numeric min_threshold and max_threshold bounds. Empty bounds are rejected by the service. Custom models are optional and do not replace this selection. |
 | `custom_models` | array | no / mode-dependent | value | Optional custom property models in `{id, min_threshold, max_threshold}` form. |
 
 Input kinds: `value` is inline data; `file` requires a platform file reference;
@@ -1151,7 +1154,7 @@ Only local files require a new upload. Never infer input mode from a field name.
       "x-input-kind": "value"
     },
     "global_models": {
-      "description": "Selected model objects with name, min_threshold and max_threshold; preserve user-supplied bounds and documented empty bounds.",
+      "description": "Required: select at least one global property model with name and numeric min_threshold and max_threshold bounds. Empty bounds are rejected by the service. Custom models are optional and do not replace this selection.",
       "type": "array",
       "items": {
         "type": "object",
@@ -1217,16 +1220,14 @@ Only local files require a new upload. Never infer input mode from a field name.
               "number",
               "string"
             ],
-            "x-numeric-string": true,
-            "x-allow-empty": true
+            "x-numeric-string": true
           },
           "max_threshold": {
             "type": [
               "number",
               "string"
             ],
-            "x-numeric-string": true,
-            "x-allow-empty": true
+            "x-numeric-string": true
           }
         },
         "required": [
@@ -1236,7 +1237,8 @@ Only local files require a new upload. Never infer input mode from a field name.
         ],
         "additionalProperties": false
       },
-      "x-input-kind": "value"
+      "x-input-kind": "value",
+      "minItems": 1
     },
     "custom_models": {
       "description": "Optional custom property models in `{id, min_threshold, max_threshold}` form.",
@@ -1277,7 +1279,8 @@ Only local files require a new upload. Never infer input mode from a field name.
   "required": [
     "smiles",
     "n_mols",
-    "n_steps"
+    "n_steps",
+    "global_models"
   ],
   "additionalProperties": true
 }
@@ -1293,7 +1296,8 @@ Shape only: replace placeholders with the user's values. This is not a runnable 
   "experiment_data": {
     "smiles": "<user value; see smiles schema>",
     "n_mols": "<user value; see n_mols schema>",
-    "n_steps": "<user value; see n_steps schema>"
+    "n_steps": "<user value; see n_steps schema>",
+    "global_models": "<user value; see global_models schema>"
   }
 }
 ```
