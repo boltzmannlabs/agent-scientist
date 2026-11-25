@@ -37,12 +37,17 @@ Create a specialist:
 The wizard asks only for a name, purpose, skills/modules, tools/packages and expected output.
 The review offers additional instructions and optional reference locations. New specialists support
 **both explicit requests and automatic matching**; there is no separate mode question.
+The same default applies to direct code creation, copies, imports and installed packages.
+Legacy `automatic: false` definitions are normalized when loaded, without requiring a manual
+re-save. Loading leaves the saved file unchanged; the next save records the normalized value.
+Disabled definitions and copies/imports awaiting review still cannot run. Automatic matching
+is model-driven and does not guarantee delegation for every matching question.
 
 New specialists include available file operations (read/search/write/patch), terminal, Python execution
 and process management from the owning profile. The final review displays these grants. Setup does
 not execute source files. Assignments may use these tools when their instructions/task require them;
 existing execution approval and backend rules remain effective. Older specialists keep their saved
-selections; **Use standard tools** in review adds the available defaults before saving. Scientific
+selections; use **Edit skills/tools** to review changes before saving. Scientific
 services still require their own credentials and authorization.
 
 For purpose, enter ordinary text **or a local `.md`, `.markdown` or `.txt` path**. Setup reads
@@ -216,9 +221,11 @@ Cancellation retains the draft **in the current CLI process and owning profile**
 `/Create_subagent` or `/Update_subagent <name>` to resume it. `Discard draft` removes it explicitly;
 previously saved definitions remain unchanged. Unfinished drafts do not survive a CLI restart.
 
-From review, **Add capabilities** opens the existing Add skill, Add tool, Connect MCP or Configure
-Boltzmann flow for the active profile. The draft remains available. Finish setup, resume the draft,
-select the added capabilities, save and start `/new`. This does not borrow another profile's access.
+For profile-wide setup, use `/Add_skill`, `/Add_tool`, `/Add_mcp` or `/add_boltzmann` directly.
+The creation/update review omits **Add capabilities** and **Use standard tools**.
+**Add for this subagent only** remains available for private setup. Finish profile setup,
+resume the draft, select the added capabilities through **Edit skills/tools**, save and start `/new`.
+This does not borrow another profile's access.
 
 ### Add capabilities for one specialist only
 
@@ -816,7 +823,7 @@ New native science profiles now include code execution in addition to file/termi
 Config migration v51 upgrades existing native/main CLI lists once and removes old exclusions for
 those baseline toolsets, preserving unrelated settings and later deliberate opt-outs. New
 specialists receive available read/search/write/patch, terminal, Python and process tools in final
-review. Existing specialists keep their selections; Use standard tools adds defaults through review
+review. Existing specialists keep their selections; Edit skills/tools changes grants through review
 and explicit save. Research services retain their key/authorization checks. Legacy restricted
 profiles retain isolation and are not silently converted. Project-specific libraries are not
 installed automatically; an unavailable runtime/dependency must be reported honestly.
@@ -840,7 +847,7 @@ needed the code-execution baseline update and have private backups under
 Nine legacy restricted profiles were preserved. No scientific jobs, production model requests or
 arbitrary dependency installs were used for testing. Remote path/mount contracts were tested;
 this does not certify a live Docker/SSH/cloud backend or every third-party package. Restart/reload
-SCI and use /new. For an existing specialist, review Use standard tools, save, then start /new.
+SCI and use /new. For an existing specialist, use Edit skills/tools, save, then start /new.
 No commit or push was performed.
 
 ## Retained-install reconciliation and blocked outcomes — 5 November 2026

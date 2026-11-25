@@ -22,15 +22,15 @@ def parent_for(item):
     return parent
 
 
-def test_manual_snapshot_revocation_and_no_privilege_escalation(tmp_path):
+def test_automatic_and_explicit_use_keep_snapshot_revocation_and_tool_limits(tmp_path):
     item = save(Specialist('reviewer', 'Review', tools=('read_file',), sources=(str(tmp_path),)))
     parent = parent_for(item)
     before = json.dumps(parent.tools, sort_keys=True)
-    with pytest.raises(ValueError, match='explicit'):
-        resolve(parent, {'specialist': item.name})
+    _, automatic_policy = resolve(parent, {'specialist': item.name})
+    assert item.automatic and automatic_policy.tools == {'read_file'}
     parent._specialist_user_request = 'Ask reviewer to compare these findings'
     _, policy = resolve(parent, {'specialist': item.name})
-    assert policy.tools == {'read_file'}
+    assert policy.tools == automatic_policy.tools
     save(replace(item, tools=('terminal',)), expected_revision=item.revision)
     with pytest.raises(ValueError, match='edited'):
         resolve(parent, {'specialist': item.name})

@@ -11,8 +11,8 @@ subagent-catalog/
 
 Give each manifest and `tests/validation.json` its own matching package ID/version.
 Each child keeps its own instructions, tools, skills and required integrations.
-Use `automatic: false` for children that should only run through approved parent
-delegation or explicit user requests.
+All ready, enabled specialists support automatic matching and explicit user requests.
+Parents may delegate only to their approved children.
 For `table-team`, set schema version 2 and merge these fields into its manifest:
 
 ```yaml
@@ -52,4 +52,5 @@ Install the local parent folder with the normal package installer; sibling folde
 names must match their package IDs. A recipient may rename the parent, and SCI binds
 the child tokens to actual local names. No separate child naming/setup commands are
 needed. Submit all new packages and required version changes through the same PR to
-dev. Test the merged dev team, then record its exact tested commit before promotion.
+dev. Test the installed merged-dev team and inform maintainers of the result.
+No evidence-only follow-up PR is required; maintainers review and promote approved versions.

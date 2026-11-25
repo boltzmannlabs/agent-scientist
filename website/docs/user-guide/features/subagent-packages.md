@@ -16,7 +16,7 @@ strip private integrations/references. Contributors prepare source packages usin
 | `/subagent package update <local-name> [path-or-catalog:id]` | Reviewed update/resume in the active owning profile |
 
 After successful install: `/new`, then `/subagent run <name> <assignment>`.
-A ready package also supports automatic matching when its definition allows it.
+A ready, enabled package supports both automatic matching and explicit requests.
 Updates take effect next conversation; current prompts/tool snapshots stay unchanged.
 
 ## Storage and files
@@ -63,7 +63,7 @@ The top-level manifest fields are:
 | `limits` | Positive `max_iterations`; v2 accepts `timeout_seconds: 0` for no overall deadline. V1 retains positive timeouts. |
 | `platforms` | Nonempty supported platforms, e.g. `[any]` or `[linux-amd64]` |
 | `fixtures` | Nonempty input/expected JSON file pairs with optional description |
-| `automatic` | Optional boolean: matching-task use as well as explicit requests |
+| `automatic` | Legacy optional boolean; all ready, enabled specialists support matching tasks and explicit requests, including packages declaring `false` |
 | `children` | V2-only list of role, package ID and compatible version requirements |
 
 Unknown fields are rejected. Nonempty `children` is unsupported in v1; `unresolved` marks a
@@ -97,8 +97,8 @@ to the installed local names. A parent must declare `delegate_task`. Each child 
 its own tools, skills, references and setup dependencies; those capabilities do not become
 the parent's direct tools. Children can themselves declare children. Role names are unique
 within their parent; several roles or parents may reference the same package.
-Set `automatic: false` on workers intended only for explicit assignments or approved
-parent delegation; their parent can still invoke them through its reviewed child grants.
+Workers support automatic matching and explicit assignments by default. A parent can invoke
+only its approved children; automatic matching does not expand that hierarchy grant.
 
 Install the parent through the existing command:
 
@@ -142,13 +142,10 @@ When a compatible child changes but the parent source/version does not, `/subage
 updates` can report a hierarchy update. Updating the parent reviews that new combination.
 Customized local definitions remain protected by the existing rename/cancel flow.
 
-For promotion, the parent's integrated test commit must cover the entire reachable hierarchy.
-The validator compares every child package's execution content with that exact fetched dev
-commit, excluding only validation evidence and generated integrity files. A changed child
-therefore requires a new parent integration test even if its version still satisfies the range.
-Evidence-only corrections do not require a package version bump. Versions and integrity digests
-are recorded in the generated release catalog and printed by the catalog validator. Inert
-validation does not run contributor scripts or certify scientific correctness.
+For promotion, maintainers review the merged-dev confirmation for the complete
+reachable hierarchy, including affected parents when a child changes. Detailed
+integrated test records are optional. Catalog checks still resolve compatible child
+versions and verify the generated release snapshot for that reviewed combination.
 
 ## Service and program requirements
 
@@ -337,18 +334,23 @@ and managed specialist updates remain explicit user choices.
 
 ## Company PR and acceptance process
 
-Follow `subagent-catalog/README.md`: prepare and test locally → PR to **dev** → merge
-and test the exact dev commit → corrective PRs if needed → notify maintainers with
-passed evidence → independent final review → approved changes to **main** → release.
+Follow `subagent-catalog/README.md`: prepare and test locally → PR to **dev** →
+merge and test installation/execution from merged dev → inform maintainers →
+maintainer review and promotion to **main** → release. A successful merged-dev test
+can be reported directly to the maintainer. No evidence-only follow-up PR is required.
+Submit corrective code/package PRs when a test exposes a problem.
 
-`tests/validation.json` identifies `package_id`, `package_version`, a local section
-and an integrated section. Each passed section needs `status: passed`, a nonempty
-`environment` and a nonempty `checks` list of checks actually performed. The integrated
-section additionally requires `tested_commit`, the exact full 40-character dev SHA.
-Initially set integrated status to pending and tested_commit to null. Do not fabricate
-successful results; the template intentionally starts untested. CI requires local
-evidence for dev contributions and integrated evidence for main promotion. If package
-content changes after the tested commit, integrated testing must be repeated.
+`tests/validation.json` identifies `package_id`, `package_version` and local test
+evidence. Local evidence needs `status: passed`, a nonempty `environment` and a
+nonempty `checks` list of checks actually performed. Integrated records are optional
+supporting information; existing pending/historical records need not be rewritten.
+Never invent successful results. The maintainer records the team's confirmation in
+the promotion PR description and reviews the specific versions being shipped.
+
+CI retains package/source validation, published-version rules, dependency checks
+and release snapshot freshness/integrity. It does not gate main promotion on an
+integrated JSON receipt or exact tested-commit field. When content changes after
+testing, review and test the relevant behavior before approving that new version.
 
 The developer-side internal validator remains available to maintainers/CI; no export,
 seal or validation slash-command workflow is provided to contributors. Generated

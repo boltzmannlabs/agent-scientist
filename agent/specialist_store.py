@@ -35,7 +35,7 @@ class Specialist:
     source_documents: tuple[dict, ...] = ()
     source_manifest: str = ''
     children: tuple[str, ...] = ()
-    automatic: bool = False
+    automatic: bool = True
     enabled: bool = True
     needs_review: bool = False
     max_iterations: int = 30
@@ -121,12 +121,17 @@ class Specialist:
                 raise ValueError("A specialist cannot delegate to itself.")
         if len(json.dumps(asdict(item)).encode()) > _MAX_BYTES:
             raise ValueError("Specialist definition exceeds 256 KB; use smaller instructions and references.")
-        if legacy and item.package_info.get('definition_digest'):
-            # A format migration is not a local edit to a reviewed package.
-            from sci_cli.subagent_package_install import definition_digest
-            original = replace(item, version=1, timeout_seconds=raw.get('timeout_seconds', 900))
-            if item.package_info['definition_digest'] == definition_digest(original):
-                item = replace(item, package_info={**item.package_info, 'definition_digest': definition_digest(item)})
+        if legacy or raw.get('automatic', False) is False:
+            # Normalize old routing preferences without enabling an unreviewed
+            # definition or disguising a local edit to a managed package.
+            original = replace(item, automatic=raw.get('automatic', False),
+                               version=1 if legacy else item.version,
+                               timeout_seconds=raw.get('timeout_seconds', 900) if legacy else item.timeout_seconds)
+            item = replace(item, automatic=True)
+            if item.package_info.get('definition_digest'):
+                from sci_cli.subagent_package_install import definition_digest
+                if item.package_info['definition_digest'] == definition_digest(original):
+                    item = replace(item, package_info={**item.package_info, 'definition_digest': definition_digest(item)})
         return item
 
 
@@ -204,5 +209,5 @@ def delete(name, home=None, *, expected_revision):
 def copy_to(item, destination_home, name=None):
     # Destination review resolves capabilities in THAT profile. Never copy private source grants or children.
     from agent.specialist_extensions import without_private
-    return save(replace(without_private(item), name=name or item.name, sources=(), source_documents=(), source_manifest='', instruction_source='', children=(), automatic=False,
+    return save(replace(without_private(item), name=name or item.name, sources=(), source_documents=(), source_manifest='', instruction_source='', children=(), automatic=True,
                         enabled=False, needs_review=True), destination_home)

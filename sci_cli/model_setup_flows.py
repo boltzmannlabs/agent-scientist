@@ -278,11 +278,14 @@ def _nous_persist_selection(selected: str, creds: dict) -> dict:
 
 def _model_flow_nous(config, current_model="", args=None):
     """Nous Portal provider: ensure logged in, then pick model."""
+    from sci_cli import anon_auth
     from sci_cli.auth import get_provider_auth_state, _prompt_model_selection, _login_nous, PROVIDER_REGISTRY
     from sci_cli.config import load_config
+    from sci_cli.model_switch_providers import _free_tier_nous_row
     from sci_cli.nous_subscription import prompt_enable_tool_gateway
     state = get_provider_auth_state("nous")
-    if not state or not state.get("access_token"):
+    tier_row = _free_tier_nous_row({"name": "Nous Portal", "models": []})
+    if not state or not state.get("access_token") or (anon_auth.is_guest_state(state) and tier_row is None):
         _say("Not logged into Nous Portal. Starting login...", "")
 
         def _login_then_offer_gateway(login_args, pconfig):
@@ -299,12 +302,7 @@ def _model_flow_nous(config, current_model="", args=None):
     # instead of the hundreds returned by the live /models endpoint.
     from sci_cli.models import check_nous_free_tier, get_curated_nous_model_ids
     from sci_cli.models_pricing import get_pricing_for_provider
-    from sci_cli.model_switch_providers import _free_tier_nous_row
-    tier_row = _free_tier_nous_row({"name": "Nous Portal", "models": []})
-    if tier_row is None:
-        print("The Nous free tier is off for this install; sign in with `sci auth upgrade` to use Nous models.")
-        return
-    if tier_row["models"]:
+    if tier_row is not None and tier_row["models"]:
         # Free-tier identity: the welcome host serves the single pinned model; no Portal catalog,
         # pricing, or account lookups apply.
         creds = _nous_verified_credentials()

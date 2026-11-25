@@ -57,35 +57,34 @@ def test_dev_checks_source_without_forcing_shared_snapshot_edits(tmp_path, monke
     command.main(['--base',base,'--check-snapshot'])
 
 
-def test_main_promotion_requires_tested_dev_content_without_evidence_version_loop(tmp_path, monkeypatch):
-    repo, root, command=world(tmp_path,monkeypatch)
-    base=commit(repo,'Package under test on dev')
-    git(repo,'update-ref','refs/remotes/origin/dev',base)
-    # Main promotion cannot claim an integrated test which was never performed/reported.
-    path=root / 'tests/validation.json'
-    report=json.loads(path.read_text())
-    report['local']['environment']+='; evidence update'
-    path.write_text(json.dumps(report))
-    with pytest.raises(ValueError,match='Integrated dev validation'):
-        command.main(['--base',base,'--promotion','--write-snapshot'])
-    report['integrated']={'status':'passed','tested_commit':base,'environment':'Fixture Linux isolated home',
-                          'checks':['Recorded integration fixture checks']}
-    path.write_text(json.dumps(report))
-    # Evidence-only updates are accepted at the same version; otherwise testing loops forever.
-    command.main(['--base',base,'--promotion','--write-snapshot'])
-    command.main(['--base',base,'--promotion','--check-snapshot'])
-    (root / 'instructions.md').write_text('New instructions after testing')
-    with pytest.raises(ValueError,match='higher version'):
-        command.main(['--base',base,'--promotion'])
+def test_main_promotion_accepts_pending_integrated_receipts_but_checks_versions_and_snapshot(tmp_path, monkeypatch):
+    repo, root, command = world(tmp_path, monkeypatch)
+    base = commit(repo, 'Locally tested package merged to dev')
+    path = root / 'tests/validation.json'
+    report = json.loads(path.read_text())
+    report['local']['environment'] += '; evidence retained for maintainer review'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    assert report['integrated']['status'] == 'pending'
+    command.main(['--base', base, '--promotion', '--write-snapshot'])
+    command.main(['--base', base, '--promotion'])
+    assert json.loads(path.read_text()) == report  # Confirmation never invents a test receipt.
+
+    (root / 'instructions.md').write_text('New instructions', encoding='utf-8')
+    with pytest.raises(ValueError, match='higher version'):
+        command.main(['--base', base, '--promotion'])
     import sci_yaml as yaml
-    manifest=yaml.safe_load((root / 'manifest.yaml').read_text());manifest['version']='1.1.0'
-    (root / 'manifest.yaml').write_text(yaml.safe_dump(manifest))
-    report['package_version']='1.1.0';path.write_text(json.dumps(report))
-    with pytest.raises(ValueError,match='changed since'):
-        command.main(['--base',base,'--promotion'])
+    manifest = yaml.safe_load((root / 'manifest.yaml').read_text())
+    manifest['version'] = '1.1.0'
+    (root / 'manifest.yaml').write_text(yaml.safe_dump(manifest), encoding='utf-8')
+    report['package_version'] = manifest['version']
+    path.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(ValueError, match='snapshot is stale'):
+        command.main(['--base', base, '--promotion'])
+    command.main(['--base', base, '--promotion', '--write-snapshot'])
+    command.main(['--base', base, '--promotion', '--check-snapshot'])
 
 
-def test_promotion_retests_unchanged_parent_when_child_content_changes(tmp_path, monkeypatch):
+def test_promotion_snapshot_tracks_transitive_child_versions_without_followup_receipts(tmp_path, monkeypatch):
     import sci_yaml as yaml
     repo, root, command = world(tmp_path, monkeypatch)
     child = root.parent / 'reader'
@@ -101,35 +100,23 @@ def test_promotion_retests_unchanged_parent_when_child_content_changes(tmp_path,
             value.update(children=[{'role': 'coordinate', 'package': 'coordinator', 'version': '>=1,<2'}], tools=['delegate_task'])
         elif folder == middle:
             value.update(children=[{'role': 'read', 'package': 'reader', 'version': '>=1,<2'}], tools=['delegate_task'])
-        (folder / 'manifest.yaml').write_text(yaml.safe_dump(value))
+        (folder / 'manifest.yaml').write_text(yaml.safe_dump(value), encoding='utf-8')
         report = json.loads((folder / 'tests/validation.json').read_text())
         report['package_id'] = identity
-        (folder / 'tests/validation.json').write_text(json.dumps(report))
+        (folder / 'tests/validation.json').write_text(json.dumps(report), encoding='utf-8')
         manifests[identity], reports[identity] = value, report
     base = commit(repo, 'Original hierarchy')
-    git(repo, 'update-ref', 'refs/remotes/origin/dev', base)
-    for folder, identity in members:
-        reports[identity]['integrated'] = {'status': 'passed', 'tested_commit': base,
-            'environment': 'Controlled Git fixture', 'checks': ['Installed team fixture']}
-        (folder / 'tests/validation.json').write_text(json.dumps(reports[identity]))
     command.main(['--base', base, '--promotion', '--write-snapshot'])
     manifests['reader']['version'] = '1.1.0'
-    reports['reader']['package_version'] = '1.1.0'
-    (child / 'manifest.yaml').write_text(yaml.safe_dump(manifests['reader']))
-    (child / 'instructions.md').write_text('Updated child behavior')
-    (child / 'tests/validation.json').write_text(json.dumps(reports['reader']))
-    tested = commit(repo, 'New compatible child version')
-    git(repo, 'update-ref', 'refs/remotes/origin/dev', tested)
-    reports['reader']['integrated']['tested_commit'] = tested
-    (child / 'tests/validation.json').write_text(json.dumps(reports['reader']))
-    with pytest.raises(ValueError, match='child hierarchy changed since'):
-        command.main(['--base', base, '--promotion', '--write-snapshot'])
-    reports['coordinator']['integrated']['tested_commit'] = tested
-    (middle / 'tests/validation.json').write_text(json.dumps(reports['coordinator']))
-    # The root must also be retested when only its grandchild changed.
-    with pytest.raises(ValueError, match='child hierarchy changed since'):
-        command.main(['--base', base, '--promotion', '--write-snapshot'])
-    reports['table-reviewer']['integrated']['tested_commit'] = tested
-    (root / 'tests/validation.json').write_text(json.dumps(reports['table-reviewer']))
+    reports['reader']['package_version'] = manifests['reader']['version']
+    (child / 'manifest.yaml').write_text(yaml.safe_dump(manifests['reader']), encoding='utf-8')
+    (child / 'instructions.md').write_text('Updated child behavior', encoding='utf-8')
+    (child / 'tests/validation.json').write_text(json.dumps(reports['reader']), encoding='utf-8')
+    with pytest.raises(ValueError, match='snapshot is stale'):
+        command.main(['--base', base, '--promotion'])
     command.main(['--base', base, '--promotion', '--write-snapshot'])
-    command.main(['--base', base, '--promotion', '--check-snapshot'])
+    command.main(['--base', base, '--promotion'])
+    snapshot = json.loads((repo / 'release-catalog.json').read_text())
+    assert snapshot['reader']['manifest']['version'] == manifests['reader']['version']
+    assert all(json.loads((folder / 'tests/validation.json').read_text())['integrated']['status'] == 'pending'
+               for folder, _ in members)

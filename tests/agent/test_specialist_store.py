@@ -8,6 +8,65 @@ from agent.specialist_store import Specialist, save, load, inventory, copy_to, d
 from sci_cli.native_profile_creation import profile_scope
 
 
+def test_automatic_matching_upgrades_legacy_without_enabling_or_masking_edits(tmp_path, monkeypatch):
+    from dataclasses import asdict
+    import json
+    from types import SimpleNamespace
+    from sci_cli.specialist_portability import import_definition
+    from sci_cli.subagent_package_install import definition_digest
+
+    monkeypatch.setattr(Path, 'home', lambda: tmp_path)
+    a, b = tmp_path / 'a', tmp_path / 'b'
+    monkeypatch.setenv('SCI_HOME', str(a))
+    assert Specialist('new', 'Review evidence').automatic
+    legacy = Specialist('legacy', 'Review evidence', automatic=False, enabled=False, needs_review=True,
+                        tools=('read_file',), children=('worker',), sources=('/private',), timeout_seconds=120,
+                        package_info={'state': 'ready', 'missing': []})
+    raw = {**asdict(legacy), 'package_info': {**legacy.package_info, 'definition_digest': definition_digest(legacy)}}
+    for home in (a, b):
+        directory = home / 'subagents'
+        directory.mkdir(parents=True)
+        (directory / 'legacy.json').write_text(json.dumps(raw))
+    for home in (a, b, a):
+        with profile_scope(home):
+            path = home / 'subagents/legacy.json'
+            before = path.read_bytes()
+            item = load('legacy')
+            assert item.automatic and not item.enabled and item.needs_review
+            assert (item.tools, item.children, item.sources, item.timeout_seconds, item.revision) == (
+                legacy.tools, legacy.children, legacy.sources, legacy.timeout_seconds, legacy.revision)
+            assert inventory()[0]['legacy'] == item and path.read_bytes() == before
+            assert item.package_info['definition_digest'] == definition_digest(item)
+    for payload in (raw, {**raw, 'version': 1, 'timeout_seconds': 900}):
+        old = replace(legacy, version=payload['version'], timeout_seconds=payload['timeout_seconds'])
+        payload = {**payload, 'package_info': {**payload['package_info'], 'definition_digest': definition_digest(old)}}
+        upgraded = Specialist.parse(payload)
+        assert upgraded.automatic and upgraded.package_info['definition_digest'] == definition_digest(upgraded)
+        edited = Specialist.parse({**payload, 'purpose': 'Local edit'})
+        assert edited.package_info['definition_digest'] != definition_digest(edited)
+    for bad in (None, 0, 'false'):
+        with pytest.raises(ValueError, match='automatic'):
+            Specialist.parse({**raw, 'automatic': bad})
+    assert Specialist.parse({k: v for k, v in raw.items() if k != 'automatic'}).automatic
+    with profile_scope(a):
+        copied = copy_to(load('legacy'), b, 'copied')
+        assert copied.automatic and copied.needs_review and not copied.enabled
+        assert not copied.children and not copied.sources
+    portable = tmp_path / 'portable.json'
+    portable.write_text(json.dumps(raw))
+    class UI:
+        def show(self, message):
+            pass
+        def choose(self, question, options):
+            assert 'Import' in options
+            return 'Import'
+    with profile_scope(b):
+        import_definition(SimpleNamespace(agent=None), UI(), [str(portable), 'imported'])
+        imported = load('imported')
+        assert imported.automatic and imported.needs_review and not imported.enabled
+        assert not imported.children and not imported.sources
+
+
 def test_main_a_b_a_copy_and_concurrent_edits(tmp_path, monkeypatch):
     from agent.secret_scope import set_multiplex_active
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
@@ -57,7 +116,7 @@ def test_store_rejects_conflicts_malformed_paths_and_copies_without_grants(tmp_p
         with pytest.raises(ValueError):
             save(replace(item, name=name), tmp_path)
     copied = copy_to(item, tmp_path, 'copy')
-    assert copied.needs_review and not copied.enabled and not copied.automatic
+    assert copied.needs_review and not copied.enabled and copied.automatic
     assert not copied.children and not copied.sources
     (tmp_path / 'subagents' / 'broken.json').write_text('{')
     items, errors = inventory(tmp_path)
@@ -91,3 +150,58 @@ def test_deadlines_migrate_only_the_old_implicit_default(tmp_path):
     for invalid in (-1, True, '0'):
         with pytest.raises(ValueError, match='timeout_seconds'):
             Specialist.parse({**asdict(defaults), 'timeout_seconds': invalid})
+
+
+def test_automatic_defaults_migrate_without_changing_package_identity(tmp_path, monkeypatch):
+    from dataclasses import asdict
+    import json
+    from types import SimpleNamespace
+    from sci_cli.subagent_package_install import definition_digest
+    from sci_cli.specialist_portability import import_definition
+
+    monkeypatch.setattr(Path, 'home', lambda: tmp_path)
+    homes = [tmp_path / name for name in ('a', 'b')]
+    monkeypatch.setenv('SCI_HOME', str(homes[0]))
+    assert Specialist('new-reviewer', 'Review').automatic
+    for home in homes:
+        (home / 'subagents').mkdir(parents=True)
+        for version in (1, 2):
+            old = Specialist(f'legacy-{version}', 'Review supplied evidence', automatic=False,
+                             tools=('read_file',), version=version, timeout_seconds=900,
+                             package_info={'state': 'ready', 'missing': []})
+            raw = asdict(old)
+            raw['package_info']['definition_digest'] = definition_digest(old)
+            (home / 'subagents' / f'{old.name}.json').write_text(json.dumps(raw))
+
+    for home in (homes[0], homes[1], homes[0]):
+        with profile_scope(home):
+            for version in (1, 2):
+                path = home / 'subagents' / f'legacy-{version}.json'
+                before = path.read_bytes()
+                raw = json.loads(before)
+                migrated = load(f'legacy-{version}')
+                assert migrated.automatic and migrated.tools == tuple(raw['tools'])
+                assert migrated.revision == raw['revision']
+                assert migrated.timeout_seconds == (0 if version == 1 else 900)
+                assert migrated.package_info['definition_digest'] == definition_digest(migrated)
+                customized = Specialist.parse({**raw, 'purpose': 'A local customization'})
+                assert customized.package_info['definition_digest'] != definition_digest(customized)
+                assert path.read_bytes() == before  # Reading never rewrites a live profile.
+
+    with profile_scope(homes[1]):
+        copied = copy_to(load('legacy-2', homes[0]), homes[1], 'copy')
+        assert copied.automatic and not copied.enabled and copied.needs_review
+        raw = asdict(Specialist('incoming', 'Review', automatic=False))
+        source = tmp_path / 'incoming.json'
+        source.write_text(json.dumps(raw))
+        class UI:
+            def show(self, message):
+                pass
+            def choose(self, question, choices):
+                assert 'Import' in choices
+                return 'Import'
+        import_definition(SimpleNamespace(agent=None), UI(), [str(source)])
+        imported = load('incoming')
+        assert imported.automatic and not imported.enabled and imported.needs_review
+    with pytest.raises(ValueError, match='automatic'):
+        Specialist.parse({**raw, 'automatic': 'false'})

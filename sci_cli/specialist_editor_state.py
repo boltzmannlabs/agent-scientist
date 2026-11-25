@@ -43,17 +43,3 @@ def drafts(cli):
 
 def remember(cli, item, existing):
     drafts(cli)[item.name] = (item, existing)
-
-
-def additional_setup(cli, ui):
-    routes = {'Add a skill': '/Add_skill', 'Add a tool': '/Add_tool', 'Connect MCP': '/Add_mcp',
-              'Configure Boltzmann': '/add_boltzmann'}
-    choice = ui.choose('Add capabilities to this owning profile; your specialist draft stays saved in this CLI.',
-                       [*routes, 'Back', 'Cancel'])
-    if choice == 'Back':
-        return False
-    command = routes[choice]
-    ui.show(f'Opening {command} for this profile. After setup, use /Create_subagent to resume your draft. '
-            'New execution permissions still require a new conversation.')
-    cli.process_command(command)
-    return True

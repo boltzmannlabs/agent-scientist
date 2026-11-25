@@ -7,14 +7,15 @@ from agent.specialist_store import Specialist, inventory, save, validate_name
 from agent.specialist_runtime import EXECUTION_TOOLS
 from sci_cli.science_profiles_catalog import select_science_items, BOLTZMANN_WORKFLOW_TOOLS
 from sci_cli.specialist_capabilities import choices, skill_menu, tool_menu, expand_tools, BOLTZMANN_PACKAGE
-from sci_cli.specialist_editor_state import drafts, remember, additional_setup
+from sci_cli.specialist_editor_state import drafts, remember
 from sci_cli.specialist_source_setup import purpose_fields, prepare_references
 
 
 def pick(ui, title, options, selected=()):
     options = {**{n: 'Previously selected; unavailable here. It will not be granted at runtime.' for n in selected}, **options}
     if not options:
-        ui.show(f'{title}: none available in this profile. You can add capabilities from the final review.')
+        ui.show(f'{title}: none available in this profile. Use /Add_skill, /Add_tool, /Add_mcp or /add_boltzmann '
+                'for profile setup, or Add for this subagent only from review.')
         return []
     return select_science_items(ui, title, options, selected=selected, filtered_controls=True)
 
@@ -89,8 +90,7 @@ def _sources(cli, ui, item, existing):
 def review_text(item):
     from sci_cli.native_profile_session import profile_label
     _, selected = tool_menu({}, item.tools)
-    use = ('explicitly by name and automatically for matching tasks' if item.automatic else
-           'explicit requests only (legacy setting; review and save to enable both)')
+    use = 'explicitly by name and automatically for matching tasks'
     children = ('\nApproved child specialists: ' + ', '.join(item.children)) if item.children else ''
     return (f'Specialist: {item.name} — profile: {profile_label()}\nPurpose: {item.purpose}\nOutput: {item.output}\n'
             f'Subagent-only skills: {", ".join(item.private_skills) or "none"}\n'
@@ -131,7 +131,8 @@ def _capabilities(cli, ui, item, existing=None):
         ui.show('Default tools included from this profile: ' + ', '.join(sorted(defaults)) + '. '
                 'Execution still follows the task and backend approval rules; reference code is not run during setup.')
     if BOLTZMANN_PACKAGE not in options:
-        ui.show('Boltzmann job access is not configured here. Use Add capabilities → Configure Boltzmann if needed.')
+        ui.show('Boltzmann job access is not configured here. Use /add_boltzmann for profile setup, '
+                'or Add for this subagent only from review.')
     selected_tools = expand_tools(pick(ui, 'Tools / integration packages', options, selected))
     selected_tools = tuple(sorted(set(selected_tools) | defaults))
     if set(selected_tools) & EXECUTION_TOOLS and existing is not None:
@@ -178,7 +179,7 @@ def edit(cli, ui, *, name=None, existing=None):
         remember(cli, item, existing)
         ui.show(review_text(item))
         action = ui.choose('Review specialist', ['Save and enable for the next conversation', 'Edit purpose/output',
-                          'Edit skills/tools', 'Use standard tools', 'Additional instructions', 'References', 'Add capabilities',
+                          'Edit skills/tools', 'Additional instructions', 'References',
                           'Add for this subagent only', 'Review installed private additions', 'Remove private capability',
                           'Approved children', 'Rename', 'Discard draft', 'Cancel'])
         if action == 'Save and enable for the next conversation':
@@ -243,18 +244,9 @@ def edit(cli, ui, *, name=None, existing=None):
                                skill_files=tuple(r for r in item.skill_files if r.partition('#')[0] != selected))
         elif action == 'Edit skills/tools':
             item = _capabilities(cli, ui, item, existing)
-        elif action == 'Use standard tools':
-            from agent.specialist_sources import DEFAULT_TOOLS
-            _, available = choices(cli)
-            item = replace(item, tools=tuple(sorted(set(item.tools) | (DEFAULT_TOOLS & set(available)))))
-            ui.show('Available standard file, terminal, Python and process tools added to this review. '
-                    'Save to approve them for the next conversation. No code has run.')
         elif action == 'Additional instructions':
             from sci_cli.specialist_source_setup import edit_instructions
             item = edit_instructions(ui, item)
-        elif action == 'Add capabilities':
-            if additional_setup(cli, ui):
-                return
         elif action == 'Rename':
             new_name = _name(ui)
             pending.pop(item.name, None)

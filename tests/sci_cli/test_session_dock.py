@@ -40,6 +40,7 @@ def test_dock_paints_goal_on_top_and_queue_last_and_follows_their_lifecycle(sci_
     dock = SubagentMonitor(cli)
 
     assert dock.refresh() and dock.has_rows
+    dock.queue_expanded = True  # explicitly expanded previews; the normal view is compact
     lines = dock.dock_text(columns=80, rows=40).splitlines()
     assert "⊙ Goal (active, 0/20 turns): ship the dock feature" in lines[0]
     queue_at = next(i for i, line in enumerate(lines) if "Queue · 4 queued" in line)

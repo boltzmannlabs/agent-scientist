@@ -43,6 +43,7 @@ class SubagentMonitor:
         self.app = None
         self.opening = False
         self.collapsed = False
+        self.queue_expanded = False
 
     @property
     def has_rows(self):
@@ -240,6 +241,9 @@ class SubagentMonitor:
                 self.jobs, now=self._snapshot_time, rows=rows))
         if self.queued:
             # Last, so the next prompt to run sits right above the input it came from.
+            if not self.queue_expanded:
+                lines.append(_clip(' ' + t('cli.queue.dock_collapsed', count=len(self.queued)), columns))
+                return '\n'.join(' ' + line for line in lines)
             shown = min(len(self.queued), session_rows.QUEUE_ROWS if rows >= 24 else 1)
             controls = '' if self.entries or self.processes else t('cli.subagents.controls_collapse')
             lines.append(_clip(
@@ -461,7 +465,11 @@ def open_monitor(cli):
 def toggle_dock(cli):
     monitor = getattr(cli, '_subagent_monitor', None)
     if monitor is not None:
-        monitor.collapsed = not monitor.collapsed
+        if monitor.queued and not (monitor.entries or monitor.processes or monitor.jobs or monitor.goal):
+            monitor.queue_expanded = not monitor.queue_expanded
+            monitor.collapsed = False
+        else:
+            monitor.collapsed = not monitor.collapsed
         cli._invalidate()
 
 
