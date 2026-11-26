@@ -1,0 +1,25 @@
+{
+  "must_search_directory": "discovery-contracts",
+  "selected_tool": "local_sequence_builder",
+  "exact_request": {
+    "parent_sequence": "ACDEFG",
+    "editable_ordinals": [
+      2,
+      5
+    ],
+    "max_substitutions": 1,
+    "retain_length": true
+  },
+  "output_checks": [
+    "six residues",
+    "unchanged protected ordinals",
+    "at most one substitution",
+    "actual nonparent candidate"
+  ],
+  "must_reject": [
+    "unchanged retry of initial route",
+    "backbone-only output",
+    "score-only output"
+  ],
+  "must_not_submit": true
+}

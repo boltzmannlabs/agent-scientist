@@ -1,0 +1,9 @@
+{
+  "jobs": [
+    {
+      "job_id": "synthetic-quality-1",
+      "status": "Success",
+      "artifact": "chain_quality.csv"
+    }
+  ]
+}

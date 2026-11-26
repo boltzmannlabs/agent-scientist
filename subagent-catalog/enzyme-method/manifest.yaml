@@ -2,7 +2,7 @@
   "schema_version": 2,
   "id": "enzyme-method",
   "name": "enzyme-method",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "authors": [
     "Boltzmann Labs"
   ],
@@ -10,10 +10,13 @@
   "description": "Select a method and interpret a comparable batch",
   "sci_requires": ">=0",
   "instructions": "instructions.md",
-  "output": "Method, reason, exact request or prerequisite, input references, expected observation and next decision.",
+  "output": "Verified tool route, contract references, compatible input/output handoffs, exact next request or missing prerequisite, acceptance check and rejected alternatives.",
   "automatic": false,
   "tools": [
-    "read_file"
+    "read_file",
+    "search_files",
+    "web_search",
+    "web_extract"
   ],
   "skills": [
     {
@@ -41,6 +44,16 @@
       "input": "tests/construct-mismatch.txt",
       "expected": "tests/construct-mismatch.expected.json",
       "description": "The supplied sequence differs from the frozen 70-residue parent at ordinal 24. A compatible stability scoring tool is available. Decide whether to prepare an executable request."
+    },
+    {
+      "input": "tests/discover-compatible-route.txt",
+      "expected": "tests/discover-compatible-route.expected.json",
+      "description": "Search the approved sibling discovery-contracts directory to find a documented fallback absent from the original shortlist."
+    },
+    {
+      "input": "tests/compose-compatible-route.txt",
+      "expected": "tests/compose-compatible-route.expected.json",
+      "description": "Search sibling composition-contracts and establish a compatible two-operation route, including dependent artifacts."
     }
   ]
 }

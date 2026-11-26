@@ -2,7 +2,7 @@
   "schema_version": 2,
   "id": "enzyme-recovery",
   "name": "enzyme-recovery",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "authors": [
     "Boltzmann Labs"
   ],
@@ -10,10 +10,13 @@
   "description": "Diagnose an execution failure or unusable result",
   "sci_requires": ">=0",
   "instructions": "instructions.md",
-  "output": "Observed phase, evidence, acceptance status, justified action, corrected fields or missing diagnostic.",
+  "output": "Observed failure phase, acceptance state, inspected routes, evidence-backed correction or compatible route, exact next action and output checks.",
   "automatic": false,
   "tools": [
-    "read_file"
+    "read_file",
+    "search_files",
+    "web_search",
+    "web_extract"
   ],
   "skills": [
     {
@@ -46,6 +49,11 @@
       "input": "tests/compatible-alternate.txt",
       "expected": "tests/compatible-alternate.expected.json",
       "description": "Synthetic case for choosing an authorized compatible replacement after an unusable result."
+    },
+    {
+      "input": "tests/discover-compatible-route.txt",
+      "expected": "tests/discover-compatible-route.expected.json",
+      "description": "Search the approved sibling discovery-contracts directory to find a documented fallback absent from the original shortlist."
     }
   ]
 }

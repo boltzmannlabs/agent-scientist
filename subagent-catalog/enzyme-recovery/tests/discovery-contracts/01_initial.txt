@@ -1,0 +1,1 @@
+Route initial is terminal Success and returned only 8-residue sequences for a required 6-residue parent. Output is rejected. Contract has no fixed-parent-length support. Repeating this route unchanged has no supported correction.
