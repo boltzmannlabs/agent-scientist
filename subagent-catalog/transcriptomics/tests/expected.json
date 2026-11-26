@@ -1,0 +1,31 @@
+{
+  "provenance": "Synthetic contributor-created data; not biological reference datasets.",
+  "expected_observations_by_fixture": {
+    "sample.csv": {
+      "columns": ["cell_id", "condition", "gene", "count"],
+      "data_rows": 24,
+      "unique_cells": 8,
+      "genes": ["IL7R", "ISG15", "LYZ"],
+      "cells_per_condition": {"control": 4, "stimulated": 4},
+      "all_counts_nonnegative_integers": true,
+      "sum_counts_by_condition_and_gene": {
+        "control": {"IL7R": 42, "LYZ": 4, "ISG15": 1},
+        "stimulated": {"IL7R": 32, "LYZ": 20, "ISG15": 47}
+      },
+      "interpretation_limit": "Synthetic fixture with only three genes; descriptive checks only. No biological cell-type annotation, clustering, differential-expression significance, or scientific conclusion is justified."
+    },
+    "second.csv": {
+      "columns": ["cell_id", "condition", "gene", "count"],
+      "data_rows": 12,
+      "unique_cells": 6,
+      "genes": ["HBB", "IFIT1"],
+      "cells_per_condition": {"baseline": 3, "treated": 3},
+      "all_counts_nonnegative_integers": true,
+      "sum_counts_by_condition_and_gene": {
+        "baseline": {"HBB": 27, "IFIT1": 2},
+        "treated": {"HBB": 20, "IFIT1": 30}
+      },
+      "interpretation_limit": "Synthetic fixture with only two genes; descriptive checks only. No biological cell-type annotation, clustering, differential-expression significance, or scientific conclusion is justified."
+    }
+  }
+}

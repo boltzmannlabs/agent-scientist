@@ -1,0 +1,13 @@
+cell_id,condition,gene,count
+A1,baseline,HBB,9
+A1,baseline,IFIT1,1
+A2,baseline,HBB,10
+A2,baseline,IFIT1,0
+A3,baseline,HBB,8
+A3,baseline,IFIT1,1
+B1,treated,HBB,7
+B1,treated,IFIT1,9
+B2,treated,HBB,6
+B2,treated,IFIT1,11
+B3,treated,HBB,7
+B3,treated,IFIT1,10

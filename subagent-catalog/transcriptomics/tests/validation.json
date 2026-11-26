@@ -1,0 +1,20 @@
+{
+  "package_id": "transcriptomics",
+  "package_version": "1.0.0",
+  "local": {
+    "status": "passed",
+    "environment": "Linux x86_64; Agent Scientist dev source commit 2ecef925e090c61c106eb6342d402f76ccb1cf3e; installed/tested package digest 4f2dc90f155e45d8a01c20a3415653bff62bb26e375b15e4a4fafe960ac0830d; Python 3.14.7; local backend; fresh isolated SCI_HOME=/tmp/transcriptomics-package-test-home; model/provider gpt-6-sol (openai-codex). After fixture runs, author attribution was added to manifest and license; runtime instructions and fixtures were not changed. The catalog validator passed after the attribution update.",
+    "checks": [
+      "Installed the current source package transcriptomics 1.0.0 through the reviewed local package installer as installed-transcriptomics-verified. SCI reported ready and enabled; the installed digest matched the checkout digest. Resolved python_core to Python 3.14.7 and approved its --version check.",
+      "Fixture tests/task-sample.md completed in run sa-0-ae5d5722. inspection.json and report.md were written/read back; 24 rows, 8 unique cells, 3 genes, condition-by-gene sums and nonnegative integer counts matched tests/expected.json. Report matched JSON; input was reported preserved; interpretation was appropriately limited. Artifact SHA-256: inspection.json ca4d026eedbca33ce13aa82edb8daf079ba20ff5822fd356f4503c45344720ea; report.md 11cd700e7e6e48c3e7001a24218d387de4fe4f5b9a69f1a4f08f3f1272a565a4.",
+      "Fixture tests/task-second.md completed in run sa-0-269519c8. inspection.json and report.md were written/read back; input checksum matched; 12 rows, 6 unique cells, 2 genes, condition-by-gene sums and nonnegative integer counts matched tests/expected.json. Report matched JSON; interpretation was appropriately limited. Artifact SHA-256: inspection.json b184399907ab36a96f77360570f53a7d24224c4851e5c6b10d6327e69b69434c; report.md e2a9bafc6f5a13d5909e23e245f1db66b947da49c639338c56fbd0541ef50751.",
+      "These synthetic fixtures verify descriptive long-form CSV inspection only. Bulk/single-cell/spatial scientific analyses, other input formats, alternate operating systems/providers, and failure/recovery behavior were not tested. No scientific service or job was invoked; provider charges were not separately measured."
+    ]
+  },
+  "integrated": {
+    "status": "pending",
+    "tested_commit": null,
+    "environment": "",
+    "checks": []
+  }
+}

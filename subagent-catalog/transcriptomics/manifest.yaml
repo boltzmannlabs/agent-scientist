@@ -1,0 +1,41 @@
+schema_version: 1
+id: transcriptomics
+name: transcriptomics
+version: '1.0.0'
+authors:
+  - 'Saneeya Kalangutkar'
+license: MIT
+description: Analyze supplied bulk, single-cell, and spatial transcriptomics data with explicit methods, validated outputs, and stated limitations.
+sci_requires: '>=0'
+instructions: instructions.md
+output: For the included inspection fixtures, write inspection.json with the task's required descriptive counts and report.md with methods, results, and limitations into the caller-supplied output directory. For other assignments, produce the exact task-requested files and a concise matching report.
+automatic: true
+tools:
+  - execute_code
+  - read_file
+  - search_files
+  - terminal
+  - write_file
+  - patch
+dependencies:
+  - id: python_core
+    kind: program
+    version: '>=3.12'
+    version_args:
+      - --version
+    version_contains: 'Python 3.'
+    artifacts: []
+skills: []
+references: []
+limits:
+  max_iterations: 30
+  timeout_seconds: 1800
+platforms:
+  - linux-amd64
+fixtures:
+  - input: tests/task-sample.md
+    expected: tests/expected.json
+    description: Synthetic count-table inspection task; expected values are maintainer assertions and not part of the task input.
+  - input: tests/task-second.md
+    expected: tests/expected.json
+    description: Second synthetic count-table task with different values; expected values are maintainer assertions.
