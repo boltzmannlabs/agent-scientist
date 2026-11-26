@@ -2605,6 +2605,22 @@ export interface PetScaleResult {
   ok: boolean
   scale: number
 }
+export interface ImagePreviewParams {
+  session_id: string
+  path: string
+  cols?: number
+  graphics?: boolean
+}
+export interface ImagePreviewResult {
+  ok: boolean
+  error?: string | null
+  graphics?: string | null
+  grid?: number[][][] | null
+  imageId?: number | null
+  color?: string | null
+  placeholder?: string[] | null
+  transmit?: string | null
+}
 /** ``text`` is normally a string; the relay / hosted paths may hand a structured (parts list) payload, and the busy path renders it. Truncation (rewind / edit / regenerate) needs explicit consent: ``confirm_truncate`` plus one durable target (``truncate_before_row_id`` preferred, ``truncate_before_message_id``, or the legacy ``truncate_before_user_ordinal``). */
 export interface PromptSubmitParams {
   session_id: string
@@ -5041,6 +5057,8 @@ export interface RpcMethods {
   'image.detach': { params: ImageDetachParams; result: ImageDetachResult }
   /** Generate an image through the tool's provider dispatcher and hand the renderer a data URL. */
   'image.generate': { params: ImageGenerateParams; result: ImageGenerateResult }
+  /** Bounded terminal preview of an image delivered in this session. */
+  'image.preview': { params: ImagePreviewParams; result: ImagePreviewResult }
   /** Recognise a terminal file drop pasted into the composer and turn it into an attachment. */
   'input.detect_drop': { params: InputDetectDropParams; result: InputDetectDropResult }
   /** Session/message counts over the last ``days`` for the (optionally scoped) profile store. */
@@ -5458,6 +5476,7 @@ export const RPC_METHODS = [
   'image.attach_bytes',
   'image.detach',
   'image.generate',
+  'image.preview',
   'input.detect_drop',
   'insights.get',
   'learning.delete',

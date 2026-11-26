@@ -1,0 +1,357 @@
+{
+  "format": 2,
+  "name": "orf30_proposed_mechanism",
+  "source": "Zhou et al., DOI 10.1021/jacs.6c13085, Supporting Information Figure S14 (PDF p.26), main-text catalytic cycle (PDF p.7). Both localized and delocalized resonance forms of the quinonoid are shown. Aldimine exchange and solvent proton transfers are summarized; formal charges made valence-consistent.",
+  "expected_stereo": {
+    "I.aa:211": "S",
+    "I.aa:214": "R",
+    "E.plp:211": "S",
+    "E.plp:214": "R",
+    "Q.plp:214": "R",
+    "R.acc:211": "S",
+    "R.acc:214": "S",
+    "P.bound_product:211": "S",
+    "P.bound_product:214": "S",
+    "C.plp:214": "R",
+    "aa:220": "unspecified",
+    "plp:220": "unspecified"
+  },
+  "panels": [
+    {
+      "id": "I",
+      "title": "1  Internal aldimine + substrate",
+      "species": [
+        {
+          "id": "plp",
+          "smiles": "[C:101]1([CH3:107])=[NH+:102][CH:103]=[C:104]([CH2:108][*:109])[C:105]([CH:114]=[N:205][CH2:206][CH2:204][CH2:203][CH2:202][*:201])=[C:106]1[O-:115]",
+          "abbrev": {
+            "109": {
+              "text": "OP",
+              "element": "O",
+              "chemical": false
+            }
+          },
+          "show": [
+            107
+          ],
+          "residue": {
+            "201": "Lys238"
+          }
+        },
+        {
+          "id": "aa",
+          "smiles": "[NH3+:210][C@@:211]([H:212])([CH2:213][C@@H:214]([CH3:217])[S+:220]([CH3:221])[*:222])[C:215](=[O:218])[O-:219]",
+          "abbrev": {
+            "222": {
+              "text": "Ado",
+              "element": "C"
+            }
+          },
+          "show": [
+            217,
+            221
+          ],
+          "offset": [
+            0,
+            -1.1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E",
+      "title": "2  External aldimine: C2″–H abstraction",
+      "species": [
+        {
+          "id": "plp",
+          "smiles": "[C:101]1([CH3:107])=[NH+:102][CH:103]=[C:104]([CH2:108][*:109])[C:105]([CH:114]=[NH+:210][C@@:211]([H:212])([CH2:213][C@@H:214]([CH3:217])[S+:220]([CH3:221])[*:222])[C:215](=[O:218])[O-:219])=[C:106]1[O-:115]",
+          "abbrev": {
+            "109": {
+              "text": "OP",
+              "element": "O",
+              "chemical": false
+            },
+            "222": {
+              "text": "Ado",
+              "element": "C"
+            }
+          },
+          "show": [
+            107,
+            217,
+            221
+          ]
+        },
+        {
+          "id": "lys",
+          "smiles": "[*:201][CH2:202][CH2:203][CH2:204][CH2:206][NH2:205]",
+          "residue": {
+            "201": "Lys238"
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "E1",
+          "from": "lys:205",
+          "to": "plp:212"
+        },
+        {
+          "id": "E2",
+          "from": "plp:211-212",
+          "to": "plp:211"
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "title": "3a  Quinonoid: Cα-carbanion resonance form",
+      "species": [
+        {
+          "id": "plp",
+          "smiles": "[C:101]1([CH3:107])=[NH+:102][CH:103]=[C:104]([CH2:108][*:109])[C:105]([CH:114]=[NH+:210][C-:211]([CH2:213][C@@H:214]([CH3:217])[S+:220]([CH3:221])[*:222])[C:215](=[O:218])[O-:219])=[C:106]1[O-:115]",
+          "abbrev": {
+            "109": {
+              "text": "OP",
+              "element": "O",
+              "chemical": false
+            },
+            "222": {
+              "text": "Ado",
+              "element": "C"
+            }
+          },
+          "show": [
+            107,
+            217,
+            221
+          ]
+        },
+        {
+          "id": "lys",
+          "smiles": "[*:201][CH2:202][CH2:203][CH2:204][CH2:206][NH2+:205][H:212]",
+          "residue": {
+            "201": "Lys238"
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "C1",
+          "from": "plp:211",
+          "to": "plp:210-211"
+        },
+        {
+          "id": "C2",
+          "from": "plp:114-210",
+          "to": "plp:105-114"
+        },
+        {
+          "id": "C3",
+          "from": "plp:105-106",
+          "to": "plp:101-106"
+        },
+        {
+          "id": "C4",
+          "from": "plp:101-102",
+          "to": "plp:102"
+        }
+      ]
+    },
+    {
+      "id": "Q",
+      "title": "3b  Quinonoid: direct cyclopropanation",
+      "species": [
+        {
+          "id": "plp",
+          "smiles": "[C:101]1([CH3:107])[NH:102][CH:103]=[C:104]([CH2:108][*:109])[C:105](=[CH:114][NH+:210]=[C:211]([CH2:213][C@@H:214]([CH3:217])[S+:220]([CH3:221])[*:222])[C:215](=[O:218])[O-:219])[C:106]=1[O-:115]",
+          "abbrev": {
+            "109": {
+              "text": "OP",
+              "element": "O",
+              "chemical": false
+            },
+            "222": {
+              "text": "Ado",
+              "element": "C"
+            }
+          },
+          "show": [
+            107,
+            217,
+            221
+          ]
+        },
+        {
+          "id": "lys",
+          "smiles": "[*:201][CH2:202][CH2:203][CH2:204][CH2:206][NH2+:205][H:212]",
+          "residue": {
+            "201": "Lys238"
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "Q1",
+          "from": "plp:102",
+          "to": "plp:102-101"
+        },
+        {
+          "id": "Q2",
+          "from": "plp:101-106",
+          "to": "plp:106-105"
+        },
+        {
+          "id": "Q3",
+          "from": "plp:105-114",
+          "to": "plp:114-210"
+        },
+        {
+          "id": "Q4",
+          "from": "plp:210-211",
+          "to": [
+            "plp:211",
+            "plp:214"
+          ]
+        },
+        {
+          "id": "Q5",
+          "from": "plp:214-220",
+          "to": "plp:220"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "4  Product external aldimine + MTA",
+      "species": [
+        {
+          "id": "bound_product",
+          "smiles": "[C:101]1([CH3:107])=[NH+:102][CH:103]=[C:104]([CH2:108][*:109])[C:105]([CH:114]=[NH+:210][C@@:211]2([C:215](=[O:218])[O-:219])[CH2:213][C@@H:214]2[CH3:217])=[C:106]1[O-:115]",
+          "abbrev": {
+            "109": {
+              "text": "OP",
+              "element": "O",
+              "chemical": false
+            }
+          },
+          "show": [
+            107,
+            217
+          ]
+        },
+        {
+          "id": "lys",
+          "smiles": "[*:201][CH2:202][CH2:203][CH2:204][CH2:206][NH2+:205][H:212]",
+          "residue": {
+            "201": "Lys238"
+          }
+        },
+        {
+          "id": "mta",
+          "smiles": "[CH3:221][S:220][*:222]",
+          "abbrev": {
+            "222": {
+              "text": "Ado",
+              "element": "C"
+            }
+          },
+          "show": [
+            221
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R",
+      "title": "5  Regenerated enzyme + (1S,2S)-2-methyl-ACC",
+      "species": [
+        {
+          "id": "plp",
+          "smiles": "[C:101]1([CH3:107])=[NH+:102][CH:103]=[C:104]([CH2:108][*:109])[C:105]([CH:114]=[N:205][CH2:206][CH2:204][CH2:203][CH2:202][*:201])=[C:106]1[O-:115]",
+          "abbrev": {
+            "109": {
+              "text": "OP",
+              "element": "O",
+              "chemical": false
+            }
+          },
+          "show": [
+            107
+          ],
+          "residue": {
+            "201": "Lys238"
+          }
+        },
+        {
+          "id": "acc",
+          "smiles": "[NH3+:210][C@@:211]2([C:215](=[O:218])[O-:219])[CH2:213][C@@H:214]2[CH3:217]",
+          "show": [
+            217
+          ]
+        },
+        {
+          "id": "proton",
+          "smiles": "[H+:212]"
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "I",
+      "to": "E",
+      "kind": "equilibrium",
+      "above": "aldimine exchange",
+      "summary": true
+    },
+    {
+      "from": "E",
+      "to": "C",
+      "above": "Lys238 base"
+    },
+    {
+      "from": "C",
+      "to": "Q",
+      "kind": "resonance",
+      "above": "resonance"
+    },
+    {
+      "from": "Q",
+      "to": "P",
+      "above": "C2″–C4″ closure",
+      "below": "C4″–S cleavage"
+    },
+    {
+      "from": "P",
+      "to": "R",
+      "above": "aldimine exchange",
+      "below": "proton exchange",
+      "summary": true
+    }
+  ],
+  "rows": [
+    [
+      "I",
+      "E",
+      "C"
+    ],
+    [
+      "Q",
+      "P",
+      "R"
+    ]
+  ],
+  "drawing": {
+    "charge_circles": false,
+    "dpi": 600
+  },
+  "numbers": {
+    "Q.plp:211": "2″",
+    "Q.plp:214": "4″",
+    "R.acc:211": "C1",
+    "R.acc:214": "C2",
+    "P.bound_product:211": "C1",
+    "P.bound_product:214": "C2"
+  }
+}

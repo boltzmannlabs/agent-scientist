@@ -2341,6 +2341,7 @@ cli:
     enable_disable_hint: "Cumasaigh/díchumasaigh: sci plugins enable/disable <name>"
     system_error: "Earráid i gcóras na mbreiseán: {error}"
   queue:
+    dock_collapsed: "Scuaine · {count} ar feitheamh"
     usage: "Úsáid: /queue <prompt> | /queue list | /queue edit N <prompt> | /queue rm N | /queue move FROM TO | /queue clear"
     queued: "Curtha i scuaine: {preview}"
     queued_next_turn: "Curtha i scuaine don chéad seal eile: {preview}"

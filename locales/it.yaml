@@ -2341,6 +2341,7 @@ cli:
     enable_disable_hint: "Attiva/disattiva: sci plugins enable/disable <name>"
     system_error: "Errore del sistema plugin: {error}"
   queue:
+    dock_collapsed: "Coda · {count} in attesa"
     usage: "Uso: /queue <prompt> | /queue list | /queue edit N <prompt> | /queue rm N | /queue move FROM TO | /queue clear"
     queued: "In coda: {preview}"
     queued_next_turn: "In coda per il prossimo turno: {preview}"

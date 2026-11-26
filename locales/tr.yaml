@@ -2341,6 +2341,7 @@ cli:
     enable_disable_hint: "Etkinleştir/devre dışı bırak: sci plugins enable/disable <name>"
     system_error: "Eklenti sistemi hatası: {error}"
   queue:
+    dock_collapsed: "Kuyruk · {count} bekliyor"
     usage: "Kullanım: /queue <prompt> | /queue list | /queue edit N <prompt> | /queue rm N | /queue move FROM TO | /queue clear"
     queued: "Sıraya alındı: {preview}"
     queued_next_turn: "Sonraki tur için sıraya alındı: {preview}"

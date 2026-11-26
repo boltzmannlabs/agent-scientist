@@ -1,0 +1,119 @@
+{
+  "format": 2,
+  "name": "robinson_2_michael",
+  "source": "Illustrative conjugate Michael addition and carbon protonation; hydroxide/water is the conceptual proton shuttle.",
+  "expected_stereo": {
+    "I.sub:2": "unspecified",
+    "P.sub:2": "unspecified"
+  },
+  "panels": [
+    {
+      "id": "R",
+      "title": "Michael addition",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[C:1]1([O-:7])=[CH:2][CH2:3][CH2:4][CH2:5][CH2:6]1"
+        },
+        {
+          "id": "mvk",
+          "smiles": "[CH3:11][C:10](=[O:12])[CH:9]=[CH2:8]"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "a",
+          "from": "sub:7",
+          "to": "sub:1-7"
+        },
+        {
+          "id": "b",
+          "from": "sub:1-2",
+          "to": [
+            "sub:2",
+            "mvk:8"
+          ]
+        },
+        {
+          "id": "c",
+          "from": "mvk:8-9",
+          "to": "mvk:9-10"
+        },
+        {
+          "id": "d",
+          "from": "mvk:10-12",
+          "to": "mvk:12"
+        }
+      ]
+    },
+    {
+      "id": "I",
+      "title": "Michael enolate + water",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[C:1]1(=[O:7])[CH:2]([CH2:8][CH:9]=[C:10]([O-:12])[CH3:11])[CH2:3][CH2:4][CH2:5][CH2:6]1"
+        },
+        {
+          "id": "water",
+          "smiles": "[OH:20][H:21]",
+          "keep_h": [
+            21
+          ],
+          "offset": [
+            1,
+            0
+          ]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "e",
+          "from": "sub:12",
+          "to": "sub:10-12"
+        },
+        {
+          "id": "f",
+          "from": "sub:9-10",
+          "to": [
+            "sub:9",
+            "water:21"
+          ]
+        },
+        {
+          "id": "g",
+          "from": "water:20-21",
+          "to": "water:20"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "1,5-Diketone + hydroxide",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[C:1]1(=[O:7])[CH:2]([CH2:8][CH2:9][C:10](=[O:12])[CH3:11])[CH2:3][CH2:4][CH2:5][CH2:6]1"
+        },
+        {
+          "id": "water",
+          "smiles": "[OH-:20]"
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "R",
+      "to": "I",
+      "kind": "single",
+      "above": "C2-C8 bond"
+    },
+    {
+      "from": "I",
+      "to": "P",
+      "kind": "single",
+      "above": "protonation"
+    }
+  ]
+}

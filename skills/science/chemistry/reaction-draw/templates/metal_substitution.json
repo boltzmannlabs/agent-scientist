@@ -1,0 +1,16 @@
+{
+  "format": 2,
+  "name": "metal_substitution",
+  "source": "Generic ligand exchange at a linear silver(I) center: one neutral ammonia ligand is replaced by water; arrows specify electron bookkeeping, not a kinetic mechanism.",
+  "panels": [
+    {"id": "R", "title": "Ligand exchange",
+     "species": [{"id": "complex", "smiles": "[NH3:2][Ag+:1][NH3:3]", "bond_style": {"2-1": "coord", "1-3": "coord"}, "geometry": {"1": "linear"}},
+                 {"id": "water", "smiles": "[OH2:4]", "offset": [0, -0.15]}],
+     "arrows": [{"id": "A1", "from": "complex:1-3", "to": "complex:3"},
+                {"id": "A2", "from": "water:4", "to": ["water:4", "complex:1"]}]},
+    {"id": "P", "title": "Substituted complex",
+     "species": [{"id": "complex", "smiles": "[NH3:2][Ag+:1][OH2:4]", "bond_style": {"2-1": "coord", "1-4": "coord"}, "geometry": {"1": "linear"}},
+                 {"id": "ammonia", "smiles": "[NH3:3]"}]}
+  ],
+  "reaction_arrows": [{"from": "R", "to": "P", "kind": "equilibrium"}]
+}

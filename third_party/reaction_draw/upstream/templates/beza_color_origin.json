@@ -1,0 +1,185 @@
+{
+  "format": 2,
+  "name": "beza_color_origin",
+  "source": "Tsutsumi et al., Angew. Chem. Int. Ed. 2022, 61, e202111217 (DOI 10.1002/anie.202111217), p.6, Figure 4",
+  "numbers": {
+    "7": "7",
+    "6": "6",
+    "11": "1"
+  },
+  "colors": {
+    "origin": [
+      {
+        "name": "GPP",
+        "color": "#0072B2",
+        "atoms": [
+          "gpp"
+        ]
+      },
+      {
+        "name": "methyl from SAM",
+        "color": "#D55E00",
+        "atoms": [
+          "sam:11",
+          "gpp:11"
+        ]
+      },
+      {
+        "name": "rest of SAM/SAH",
+        "color": "#009E73",
+        "atoms": [
+          "sam"
+        ]
+      },
+      {
+        "name": "Glu170",
+        "color": "#CC79A7",
+        "atoms": [
+          "e170"
+        ]
+      }
+    ]
+  },
+  "expected_stereo": {
+    "gpp:2=3": "E",
+    "gpp:6": "unspecified",
+    "sam:20": "unspecified",
+    "sam:24": "unspecified"
+  },
+  "panels": [
+    {
+      "id": "R",
+      "title": "Reactant",
+      "species": [
+        {
+          "id": "gpp",
+          "smiles": "[CH3:8][C:7]([CH3:9])=[C:6]([H:13])[CH2:5][CH2:4]/[C:3]([CH3:10])=[CH:2]/[CH2:1][*:12]",
+          "abbrev": {
+            "12": "OPP"
+          }
+        },
+        {
+          "id": "sam",
+          "smiles": "[*:21][S+:20]([CH3:11])[CH2:22][CH2:23][CH:24]([NH3+:25])[C:26](=[O:27])[O-:28]",
+          "abbrev": {
+            "21": "Ado"
+          },
+          "show": [
+            11
+          ]
+        },
+        {
+          "id": "e170",
+          "smiles": "[*:31][CH2:32][CH2:33][C:34](=[O:35])[O-:36]",
+          "residue": {
+            "31": "Glu170"
+          }
+        },
+        {
+          "id": "mg",
+          "smiles": "[Mg+2:14]",
+          "near": "gpp:12"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A1",
+          "from": "gpp:6=7",
+          "to": "sam:11"
+        },
+        {
+          "id": "A2",
+          "from": "sam:20-11",
+          "to": "sam:20"
+        }
+      ]
+    },
+    {
+      "id": "I",
+      "title": "Carbocation intermediate",
+      "species": [
+        {
+          "id": "gpp",
+          "smiles": "[CH3:8][C+:7]([CH3:9])[C:6]([H:13])([CH3:11])[CH2:5][CH2:4]/[C:3]([CH3:10])=[CH:2]/[CH2:1][*:12]",
+          "abbrev": {
+            "12": "OPP"
+          },
+          "show": [
+            11
+          ]
+        },
+        {
+          "id": "sam",
+          "smiles": "[*:21][S:20][CH2:22][CH2:23][CH:24]([NH3+:25])[C:26](=[O:27])[O-:28]",
+          "abbrev": {
+            "21": "Ado"
+          }
+        },
+        {
+          "id": "e170",
+          "smiles": "[*:31][CH2:32][CH2:33][C:34](=[O:35])[O-:36]",
+          "residue": {
+            "31": "Glu170"
+          }
+        },
+        {
+          "id": "mg",
+          "smiles": "[Mg+2:14]",
+          "near": "gpp:12"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A3",
+          "from": "e170:36",
+          "to": "gpp:13"
+        },
+        {
+          "id": "A4",
+          "from": "gpp:6-13",
+          "to": "gpp:6-7"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "6-Methyl-GPP",
+      "species": [
+        {
+          "id": "gpp",
+          "smiles": "[CH3:8][C:7]([CH3:9])=[C:6]([CH3:11])[CH2:5][CH2:4]/[C:3]([CH3:10])=[CH:2]/[CH2:1][*:12]",
+          "abbrev": {
+            "12": "OPP"
+          },
+          "show": [
+            11
+          ]
+        },
+        {
+          "id": "e170",
+          "smiles": "[*:31][CH2:32][CH2:33][C:34](=[O:35])[OH:36]",
+          "residue": {
+            "31": "Glu170"
+          }
+        },
+        {
+          "id": "mg",
+          "smiles": "[Mg+2:14]",
+          "near": "gpp:12"
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "R",
+      "to": "I",
+      "above": "methyl transfer"
+    },
+    {
+      "from": "I",
+      "to": "P",
+      "above": "proton abstraction"
+    }
+  ]
+}

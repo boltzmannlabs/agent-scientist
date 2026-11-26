@@ -1,0 +1,17 @@
+{
+  "format": 2,
+  "name": "radical_homolysis",
+  "source": "Generic chlorine homolysis and radical recombination; each fishhook carries one electron.",
+  "panels": [
+    {"id": "R", "title": "Homolysis", "species": [{"id": "chlorine", "smiles": "[Cl:1][Cl:2]"}],
+     "arrows": [{"id": "A1", "from": "chlorine:1-2", "to": "chlorine:1", "electrons": 1},
+                {"id": "A2", "from": "chlorine:1-2", "to": "chlorine:2", "electrons": 1}]},
+    {"id": "I", "title": "Radical recombination",
+     "species": [{"id": "left", "smiles": "[Cl:1]", "radicals": {"1": 1}, "xy": {"1": [0, 0]}},
+                 {"id": "right", "smiles": "[Cl:2]", "radicals": {"2": 1}, "xy": {"2": [3.2, 0]}}],
+     "arrows": [{"id": "A3", "from": "left:1", "to": ["left:1", "right:2"], "electrons": 1},
+                {"id": "A4", "from": "right:2", "to": ["left:1", "right:2"], "electrons": 1}]},
+    {"id": "P", "title": "Chlorine", "species": [{"id": "chlorine", "smiles": "[Cl:1][Cl:2]"}]}
+  ],
+  "reaction_arrows": [{"from": "R", "to": "I", "above": "hν"}, {"from": "I", "to": "P"}]
+}

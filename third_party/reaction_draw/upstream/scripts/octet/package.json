@@ -1,0 +1,13 @@
+{
+  "name": "reaction-draw-octet-adapter",
+  "version": "0.1.0",
+  "description": "Maintainers only: rebuilds dist/octet-adapter.html (adapter.ts bundled with Octet Draw's source) with esbuild",
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

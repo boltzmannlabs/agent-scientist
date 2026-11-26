@@ -46,7 +46,7 @@ def hash_value(value):
 def dependency(dep):
     common = {'id', 'kind', 'optional'}
     fields = {
-        'mcp': {'config', 'tools'}, 'plugin': {'source', 'revision', 'tools', 'skills'},
+        'mcp': {'config', 'tools'}, 'plugin': {'source', 'revision', 'tools', 'skills', 'owner_workflow'},
         'program': {'version', 'version_args', 'version_contains', 'artifacts'},
         'boltzmann': {'modules', 'contract_sha256'},
     }
@@ -82,6 +82,9 @@ def _mcp_dependency(dep):
 
 
 def _plugin_dependency(dep):
+    if 'owner_workflow' in dep and (dep['owner_workflow'] is not True or dep.get('optional') or
+            dep['id'] != 'retrosynthesis-support' or dep.get('source') != 'https://github.com/krish-200212/retrosynthesis-specialists'):
+        raise ValueError('Unsupported owner workflow dependency.')
     https(dep.get('source', ''))
     if not isinstance(dep.get('revision'), str) or not re.fullmatch('[a-fA-F0-9]{40}', dep['revision']):
         raise ValueError('Plugin sources require an exact 40-character commit SHA.')

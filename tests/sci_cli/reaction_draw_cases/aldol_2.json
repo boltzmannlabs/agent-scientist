@@ -1,0 +1,336 @@
+{
+  "format": 2,
+  "name": "acetaldehyde_aldol_condensation",
+  "source": "Standard textbook mechanism, independently drawn for the user request; checked against McMurry, Organic Chemistry (OpenStax), sections 23.1 and 23.3: https://openstax.org/books/organic-chemistry/pages/23-1-carbonyl-condensations-the-aldol-reaction ; https://openstax.org/books/organic-chemistry/pages/23-3-dehydration-of-aldol-products-synthesis-of-enones .",
+  "expected_stereo": {
+    "P.donor:1=12": "E",
+    "donor:12": "unspecified"
+  },
+  "panels": [
+    {
+      "id": "R",
+      "title": "1. Acetaldehyde + hydroxide",
+      "species": [
+        {
+          "id": "donor",
+          "smiles": "[CH:1]([H:4])([H:5])[CH:2]=[O:3]",
+          "show": [
+            1,
+            2
+          ]
+        },
+        {
+          "id": "base",
+          "smiles": "[O-:30][H:31]"
+        },
+        {
+          "id": "acceptor",
+          "smiles": "[CH3:11][CH:12]=[O:13]",
+          "show": [
+            11,
+            12
+          ]
+        }
+      ],
+      "lone_pairs": [
+        "base:30"
+      ],
+      "arrows": [
+        {
+          "id": "a1",
+          "from": "base:30",
+          "to": "donor:4"
+        },
+        {
+          "id": "a2",
+          "from": "donor:1-4",
+          "to": "donor:1-2"
+        },
+        {
+          "id": "a3",
+          "from": "donor:2=3",
+          "to": "donor:3"
+        }
+      ]
+    },
+    {
+      "id": "EN",
+      "title": "2. Enolate attacks acetaldehyde",
+      "species": [
+        {
+          "id": "donor",
+          "smiles": "[CH:1]([H:5])=[CH:2][O-:3]",
+          "show": [
+            1,
+            2
+          ]
+        },
+        {
+          "id": "acceptor",
+          "smiles": "[CH3:11][CH:12]=[O:13]",
+          "show": [
+            11,
+            12
+          ]
+        },
+        {
+          "id": "base",
+          "smiles": "[O:30]([H:31])[H:4]"
+        }
+      ],
+      "lone_pairs": [
+        "donor:3"
+      ],
+      "arrows": [
+        {
+          "id": "a4",
+          "from": "donor:3",
+          "to": "donor:2-3"
+        },
+        {
+          "id": "a5",
+          "from": "donor:1=2",
+          "to": [
+            "donor:1",
+            "acceptor:12"
+          ]
+        },
+        {
+          "id": "a6",
+          "from": "acceptor:12=13",
+          "to": "acceptor:13"
+        }
+      ]
+    },
+    {
+      "id": "ALK",
+      "title": "3. Alkoxide protonation",
+      "species": [
+        {
+          "id": "donor",
+          "smiles": "[O:3]=[CH:2][CH:1]([H:5])[CH:12]([O-:13])[CH3:11]",
+          "show": [
+            2,
+            11
+          ]
+        },
+        {
+          "id": "base",
+          "smiles": "[O:30]([H:31])[H:4]",
+          "offset": [
+            -1.5,
+            0
+          ]
+        }
+      ],
+      "lone_pairs": [
+        "donor:13"
+      ],
+      "arrows": [
+        {
+          "id": "a7",
+          "from": "donor:13",
+          "to": "base:4"
+        },
+        {
+          "id": "a8",
+          "from": "base:30-4",
+          "to": "base:30"
+        }
+      ]
+    },
+    {
+      "id": "ALD",
+      "title": "4. 3-Hydroxybutanal (aldol)",
+      "species": [
+        {
+          "id": "donor",
+          "smiles": "[O:3]=[CH:2][CH:1]([H:5])[CH:12]([O:13][H:4])[CH3:11]",
+          "show": [
+            2,
+            11
+          ]
+        },
+        {
+          "id": "base",
+          "smiles": "[O-:30][H:31]",
+          "offset": [
+            2.3,
+            2.7
+          ]
+        }
+      ],
+      "lone_pairs": [
+        "base:30"
+      ],
+      "arrows": [
+        {
+          "id": "a9",
+          "from": "base:30",
+          "to": "donor:5"
+        },
+        {
+          "id": "a10",
+          "from": "donor:1-5",
+          "to": "donor:1-2"
+        },
+        {
+          "id": "a11",
+          "from": "donor:2=3",
+          "to": "donor:3"
+        }
+      ]
+    },
+    {
+      "id": "EN2",
+      "title": "5. E1cB enolate intermediate",
+      "species": [
+        {
+          "id": "donor",
+          "smiles": "[O-:3][CH:2]=[CH:1][CH:12]([O:13][H:4])[CH3:11]",
+          "show": [
+            2,
+            11
+          ]
+        },
+        {
+          "id": "base",
+          "smiles": "[O:30]([H:31])[H:5]"
+        }
+      ],
+      "lone_pairs": [
+        "donor:3"
+      ],
+      "arrows": [
+        {
+          "id": "a12",
+          "from": "donor:3",
+          "to": "donor:2-3"
+        },
+        {
+          "id": "a13",
+          "from": "donor:1=2",
+          "to": "donor:1-12"
+        },
+        {
+          "id": "a14",
+          "from": "donor:12-13",
+          "to": "donor:13"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "(E)-Crotonaldehyde + water + hydroxide",
+      "species": [
+        {
+          "id": "donor",
+          "smiles": "[O:3]=[CH:2]/[CH:1]=[CH:12]/[CH3:11]",
+          "show": [
+            2,
+            11
+          ],
+          "xy": {
+            "11": [
+              0,
+              0
+            ],
+            "12": [
+              0.8660254,
+              0.5
+            ],
+            "1": [
+              1.7320508,
+              0
+            ],
+            "2": [
+              2.5980762,
+              0.5
+            ],
+            "3": [
+              3.4641016,
+              0
+            ]
+          }
+        },
+        {
+          "id": "base",
+          "smiles": "[O:30]([H:31])[H:5]",
+          "xy": {
+            "30": [
+              5.8,
+              0.25
+            ],
+            "31": [
+              4.9339746,
+              0.75
+            ],
+            "5": [
+              6.6660254,
+              0.75
+            ]
+          }
+        },
+        {
+          "id": "leaving",
+          "smiles": "[O-:13][H:4]",
+          "xy": {
+            "13": [
+              8.6,
+              0.25
+            ],
+            "4": [
+              9.4660254,
+              0.75
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "R",
+      "to": "EN",
+      "kind": "equilibrium",
+      "above": "alpha-H removal"
+    },
+    {
+      "from": "EN",
+      "to": "ALK",
+      "kind": "equilibrium",
+      "above": "C-C bond formation"
+    },
+    {
+      "from": "ALK",
+      "to": "ALD",
+      "kind": "equilibrium",
+      "above": "proton transfer"
+    },
+    {
+      "from": "ALD",
+      "to": "EN2",
+      "kind": "equilibrium",
+      "above": "alpha-H removal; heat"
+    },
+    {
+      "from": "EN2",
+      "to": "P",
+      "above": "OH elimination (E1cB)"
+    }
+  ],
+  "rows": [
+    [
+      "R",
+      "EN"
+    ],
+    [
+      "ALK",
+      "ALD"
+    ],
+    [
+      "EN2",
+      "P"
+    ]
+  ]
+}

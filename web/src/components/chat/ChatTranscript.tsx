@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, Copy, LoaderCircle } from 'lucide-react';
 import { BoltzmannParticleLogo } from '@/components/BoltzmannParticleLogo';
+import { ReplyImages } from './ReplyImages';
 import { Markdown } from '@/components/Markdown';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import type { WebChatState } from '@/lib/web-chat-state';
@@ -58,6 +59,7 @@ export function ChatTranscript({ state, children, onSuggestion, active = true, s
         <pre>{message.text || (message.running ? 'Waiting for output…' : message.outputAvailable ? 'No output returned.' : 'Output is not available in this transcript.')}</pre>
       </details>{!message.running && <ToolFiles text={message.text} scope={fileScope} />}</div> : <article className={`chat-message chat-message--${message.role}`} key={message.id} aria-label={message.role === 'user' ? 'You' : 'Agent Scientist'}>
         {message.role === 'assistant' && <div className="chat-speaker">Agent Scientist</div>}
+        {message.role === 'assistant' && <ReplyImages text={message.text} scope={fileScope} />}
         <div className="chat-message-content">{message.role === 'user' ? <p>{message.text}</p> : <Markdown content={message.text} />}</div>
         {message.role === 'assistant' && <ResponseFiles text={message.text} known={artifacts.byMessage.get(message.id) || []} scope={fileScope} />}
         {message.role === 'assistant' && <button className="chat-copy" aria-label="Copy response" onClick={() => void copy(message.id, message.text)}>{copied === message.id ? <Check size={14} /> : <Copy size={14} />}{copied === message.id ? 'Copied' : 'Copy'}</button>}

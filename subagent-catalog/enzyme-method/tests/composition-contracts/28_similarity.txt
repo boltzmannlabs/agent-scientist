@@ -1,0 +1,1 @@
+Tool similar_finish takes a layout_ref and returns homologous sequences of arbitrary length. It cannot constrain edit positions or substitutions.

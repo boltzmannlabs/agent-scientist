@@ -1,0 +1,140 @@
+{
+  "format": 2,
+  "name": "fischer_esterification_steps4-6",
+  "source": "Illustrative textbook Fischer esterification (acid-catalyzed acetic acid + ethanol), steps 4-6 from the neutral tetrahedral intermediate. Continues fischer_esterification_1.json with identical atom maps; the proton shown returning to the same water is an atom-tracking device.",
+  "expected_stereo": {
+    "sub:2": "unspecified"
+  },
+  "panels": [
+    {
+      "id": "S4",
+      "title": "4  Protonation of the leaving hydroxyl",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[CH3:1][C:2]([O:3][H:6])([O:4][H:5])[O:7][CH2:9][CH3:10]",
+          "keep_h": [5, 6]
+        },
+        {
+          "id": "wat",
+          "smiles": "[H:8][O+:11]([H:12])[H:13]",
+          "keep_h": [8, 12, 13]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A7",
+          "from": "sub:4",
+          "to": ["sub:4", "wat:8"]
+        },
+        {
+          "id": "A8",
+          "from": "wat:8-11",
+          "to": "wat:11"
+        }
+      ]
+    },
+    {
+      "id": "S5",
+      "title": "5  Collapse of the intermediate, water leaves",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[CH3:1][C:2]([O:3][H:6])([O+:4]([H:5])[H:8])[O:7][CH2:9][CH3:10]",
+          "keep_h": [5, 6, 8]
+        },
+        {
+          "id": "wat",
+          "smiles": "[O:11]([H:12])[H:13]",
+          "keep_h": [12, 13]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A9",
+          "from": "sub:3",
+          "to": "sub:2-3"
+        },
+        {
+          "id": "A10",
+          "from": "sub:2-4",
+          "to": "sub:4"
+        }
+      ]
+    },
+    {
+      "id": "S6",
+      "title": "6  Deprotonation regenerates the acid catalyst",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[CH3:1][C:2](=[O+:3][H:6])[O:7][CH2:9][CH3:10]",
+          "keep_h": [6]
+        },
+        {
+          "id": "byw",
+          "smiles": "[H:5][O:4][H:8]",
+          "keep_h": [5, 8]
+        },
+        {
+          "id": "wat",
+          "smiles": "[O:11]([H:12])[H:13]",
+          "keep_h": [12, 13]
+        }
+      ],
+      "arrows": [
+        {
+          "id": "A11",
+          "from": "wat:11",
+          "to": ["wat:11", "sub:6"]
+        },
+        {
+          "id": "A12",
+          "from": "sub:3-6",
+          "to": "sub:3"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "Ethyl acetate, water, and regenerated H3O+",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[CH3:1][C:2](=[O:3])[O:7][CH2:9][CH3:10]"
+        },
+        {
+          "id": "byw",
+          "smiles": "[H:5][O:4][H:8]",
+          "keep_h": [5, 8]
+        },
+        {
+          "id": "wat",
+          "smiles": "[H:6][O+:11]([H:12])[H:13]",
+          "keep_h": [6, 12, 13]
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "S4",
+      "to": "S5",
+      "kind": "equilibrium",
+      "above": "step 4"
+    },
+    {
+      "from": "S5",
+      "to": "S6",
+      "kind": "equilibrium",
+      "above": "step 5, -H2O"
+    },
+    {
+      "from": "S6",
+      "to": "P",
+      "kind": "equilibrium",
+      "above": "step 6"
+    }
+  ],
+  "rows": [["S4", "S5"], ["S6", "P"]]
+}

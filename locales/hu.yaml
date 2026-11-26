@@ -2358,6 +2358,7 @@ cli:
     enable_disable_hint: "Be-/kikapcsolás: sci plugins enable/disable <name>"
     system_error: "Pluginrendszer-hiba: {error}"
   queue:
+    dock_collapsed: "Várólista · {count} várakozik"
     usage: "Használat: /queue <prompt> | /queue list | /queue edit N <prompt> | /queue rm N | /queue move FROM TO | /queue clear"
     queued: "Sorba állítva: {preview}"
     queued_next_turn: "Sorba állítva a következő körre: {preview}"

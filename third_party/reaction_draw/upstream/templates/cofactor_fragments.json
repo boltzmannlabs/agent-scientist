@@ -1,0 +1,149 @@
+{
+  "format": 2,
+  "name": "cofactor_fragments",
+  "source": "Reusable mapped cofactor fragments, not a reaction or a choice of protonation state. Copy the required species, keep its maps, and replace abbreviations or protonation from the paper. Ado means adenosyl, ADPR the adenosine diphosphoribosyl remainder; SCoA includes the thioester sulfur. PLP ring maps 101-106 match plp_aldimines.json. See README.md for chemical references.",
+  "rows": [
+    [
+      "SAM",
+      "SAH"
+    ],
+    [
+      "PLP"
+    ],
+    [
+      "NADox",
+      "NADred"
+    ],
+    [
+      "ATP",
+      "AcCoA"
+    ]
+  ],
+  "expected_stereo": {
+    "atp:403": "unspecified",
+    "atp:407": "unspecified",
+    "sam:20": "unspecified",
+    "sam:24": "unspecified"
+  },
+  "panels": [
+    {
+      "id": "SAM",
+      "title": "SAM fragment",
+      "species": [
+        {
+          "id": "sam",
+          "smiles": "[*:21][S+:20]([CH3:11])[CH2:22][CH2:23][CH:24]([NH3+:25])[C:26](=[O:27])[O-:28]",
+          "abbrev": {
+            "21": "Ado"
+          },
+          "show": [
+            11
+          ],
+          "note": "The methionine alpha center and sulfonium center are unspecified here; copy the paper's stereo when retained in the figure."
+        }
+      ]
+    },
+    {
+      "id": "SAH",
+      "title": "SAH fragment",
+      "species": [
+        {
+          "id": "sam",
+          "smiles": "[*:21][S:20][CH2:22][CH2:23][CH:24]([NH3+:25])[C:26](=[O:27])[O-:28]",
+          "abbrev": {
+            "21": "Ado"
+          }
+        }
+      ]
+    },
+    {
+      "id": "PLP",
+      "title": "PLP",
+      "species": [
+        {
+          "id": "plp",
+          "smiles": "[C:101]1([CH3:107])=[N:102][CH:103]=[C:104]([CH2:108][O:109][P:110](=[O:111])([O-:112])[O-:113])[C:105]([CH:114]=[O:116])=[C:106]1[OH:115]",
+          "xy": {
+            "110": [
+              4.5016,
+              -0.857
+            ],
+            "111": [
+              5.0016,
+              -1.723
+            ],
+            "112": [
+              4.5016,
+              0.143
+            ],
+            "113": [
+              5.3676,
+              -0.357
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "NADox",
+      "title": "NAD+ nicotinamide fragment",
+      "species": [
+        {
+          "id": "nad",
+          "smiles": "[N+:301]1([*:307])=[CH:302][C:303]([C:308]([NH2:309])=[O:310])=[CH:304][CH:305]=[CH:306]1",
+          "abbrev": {
+            "307": {
+              "text": "ADPR",
+              "element": "C"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "NADred",
+      "title": "NADH nicotinamide fragment",
+      "species": [
+        {
+          "id": "nad",
+          "smiles": "[N:301]1([*:307])[CH:302]=[C:303]([C:308]([NH2:309])=[O:310])[CH2:304][CH:305]=[CH:306]1",
+          "abbrev": {
+            "307": {
+              "text": "ADPR",
+              "element": "C"
+            }
+          },
+          "note": "Map 304 is C4; use an explicit mapped H and the source's face selectivity for hydride-transfer mechanisms."
+        }
+      ]
+    },
+    {
+      "id": "ATP",
+      "title": "ATP fragment",
+      "species": [
+        {
+          "id": "atp",
+          "smiles": "[*:401][O:402][P:403](=[O:404])([O-:405])[O:406][P:407](=[O:408])([O-:409])[O:410][P:411](=[O:412])([O-:413])[O-:414]",
+          "abbrev": {
+            "401": "Ado"
+          },
+          "note": "Phosphate P maps 403, 407, 411 are alpha, beta, gamma; the Ado stub ends at the ribose C5-prime and O402 is explicit."
+        }
+      ]
+    },
+    {
+      "id": "AcCoA",
+      "title": "Acetyl-CoA fragment",
+      "species": [
+        {
+          "id": "accoa",
+          "smiles": "[CH3:501][C:502](=[O:503])[*:504]",
+          "abbrev": {
+            "504": "SCoA"
+          },
+          "note": "Map 504 is the SCoA abbreviation and includes S. Expand it to an explicit mapped S plus the CoA remainder if S participates in arrows or carries a charge."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,246 @@
+{
+ "format": 2,
+ "name": "aldol_condensation",
+ "source": "Textbook mechanism of the hydroxide-catalysed aldol condensation of acetaldehyde (enolate formation, aldol addition, protonation, E1cB dehydration), e.g. Clayden, Greeves, Warren, Organic Chemistry, 2nd ed., ch. 26. Maps: 1-3 donor acetaldehyde (C-alpha, C=O carbon, O), 5-7 acceptor acetaldehyde (CH3, C=O carbon, O), 4 and 8 the two alpha-H removed, 10 catalytic hydroxide O.",
+ "rows": [
+  [
+   "A",
+   "B",
+   "C"
+  ],
+  [
+   "D",
+   "E",
+   "P"
+  ]
+ ],
+ "expected_stereo": {
+  "P.ald:1=6": "E",
+  "ald:6": "unspecified"
+ },
+ "panels": [
+  {
+   "id": "A",
+   "title": "Acetaldehyde",
+   "species": [
+    {
+     "id": "ald",
+     "smiles": "[H:4][CH2:1][CH:2]=[O:3]"
+    },
+    {
+     "id": "hyd",
+     "smiles": "[OH-:10]"
+    }
+   ],
+   "arrows": [
+    {
+     "id": "A1",
+     "from": "hyd:10",
+     "to": "ald:4"
+    },
+    {
+     "id": "A2",
+     "from": "ald:1-4",
+     "to": "ald:1-2"
+    },
+    {
+     "id": "A3",
+     "from": "ald:2=3",
+     "to": "ald:3"
+    }
+   ]
+  },
+  {
+   "id": "B",
+   "title": "Enolate",
+   "species": [
+    {
+     "id": "ald",
+     "smiles": "[CH2:1]=[CH:2][O-:3]"
+    },
+    {
+     "id": "acc",
+     "smiles": "[CH3:5][CH:6]=[O:7]",
+     "xy": {
+      "6": [
+       -1.126,
+       -0.65
+      ],
+      "7": [
+       -1.126,
+       -1.65
+      ],
+      "5": [
+       -1.992,
+       -0.15
+      ]
+     }
+    }
+   ],
+   "arrows": [
+    {
+     "id": "B1",
+     "from": "ald:3",
+     "to": "ald:2-3"
+    },
+    {
+     "id": "B2",
+     "from": "ald:1=2",
+     "to": "acc:6"
+    },
+    {
+     "id": "B3",
+     "from": "acc:6=7",
+     "to": "acc:7"
+    }
+   ]
+  },
+  {
+   "id": "C",
+   "title": "Alkoxide",
+   "species": [
+    {
+     "id": "ald",
+     "smiles": "[O:3]=[CH:2][CH2:1][CH:6]([CH3:5])[O-:7]"
+    },
+    {
+     "id": "hyd",
+     "smiles": "[OH:10][H:4]",
+     "xy": {
+      "4": [
+       -4.2,
+       -1.5
+      ],
+      "10": [
+       -5.5,
+       -1.5
+      ]
+     }
+    }
+   ],
+   "arrows": [
+    {
+     "id": "C1",
+     "from": "ald:7",
+     "to": "hyd:4"
+    },
+    {
+     "id": "C2",
+     "from": "hyd:10-4",
+     "to": "hyd:10"
+    }
+   ]
+  },
+  {
+   "id": "D",
+   "title": "Aldol (3-hydroxybutanal)",
+   "species": [
+    {
+     "id": "ald",
+     "smiles": "[O:3]=[CH:2][CH:1]([H:8])[CH:6]([CH3:5])[OH:7]"
+    },
+    {
+     "id": "hyd",
+     "smiles": "[OH-:10]",
+     "xy": {
+      "10": [
+       -3.2,
+       1.55
+      ]
+     }
+    }
+   ],
+   "arrows": [
+    {
+     "id": "D1",
+     "from": "hyd:10",
+     "to": "ald:8"
+    },
+    {
+     "id": "D2",
+     "from": "ald:1-8",
+     "to": "ald:1-2"
+    },
+    {
+     "id": "D3",
+     "from": "ald:2=3",
+     "to": "ald:3"
+    }
+   ]
+  },
+  {
+   "id": "E",
+   "title": "Enolate",
+   "species": [
+    {
+     "id": "ald",
+     "smiles": "[O-:3][CH:2]=[CH:1][CH:6]([CH3:5])[OH:7]"
+    }
+   ],
+   "arrows": [
+    {
+     "id": "E1",
+     "from": "ald:3",
+     "to": "ald:2-3"
+    },
+    {
+     "id": "E2",
+     "from": "ald:1=2",
+     "to": "ald:1-6"
+    },
+    {
+     "id": "E3",
+     "from": "ald:6-7",
+     "to": "ald:7"
+    }
+   ]
+  },
+  {
+   "id": "P",
+   "title": "Crotonaldehyde",
+   "species": [
+    {
+     "id": "ald",
+     "smiles": "[O:3]=[CH:2]/[CH:1]=[CH:6]/[CH3:5]"
+    },
+    {
+     "id": "lg",
+     "smiles": "[OH-:7]"
+    }
+   ]
+  }
+ ],
+ "reaction_arrows": [
+  {
+   "from": "A",
+   "to": "B",
+   "kind": "equilibrium",
+   "above": "deprotonation",
+   "below": "−H_{2}O"
+  },
+  {
+   "from": "B",
+   "to": "C",
+   "kind": "equilibrium",
+   "above": "aldol addition"
+  },
+  {
+   "from": "C",
+   "to": "D",
+   "kind": "equilibrium",
+   "above": "protonation"
+  },
+  {
+   "from": "D",
+   "to": "E",
+   "kind": "equilibrium",
+   "above": "deprotonation",
+   "below": "−H_{2}O"
+  },
+  {
+   "from": "E",
+   "to": "P",
+   "above": "E1cB elimination"
+  }
+ ]
+}

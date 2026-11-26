@@ -2341,6 +2341,7 @@ cli:
     enable_disable_hint: "التفعيل/التعطيل: sci plugins enable/disable <name>"
     system_error: "خطأ في نظام الإضافات: {error}"
   queue:
+    dock_collapsed: "قائمة الانتظار · {count} قيد الانتظار"
     usage: "الاستخدام: /queue <prompt> | /queue list | /queue edit N <prompt> | /queue rm N | /queue move FROM TO | /queue clear"
     queued: "في قائمة الانتظار: {preview}"
     queued_next_turn: "في قائمة الانتظار للدور التالي: {preview}"

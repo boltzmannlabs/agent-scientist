@@ -36,6 +36,19 @@ question in a new conversation; the agent uses these skills and the package
 through its existing execution tools. No plugin activation is required.
 See [the bundled package guide](third_party/agriformulations/README.md).
 
+## Chemical structures and reaction mechanisms
+
+The built-in `reaction-draw` skill creates chemical structures, reaction schemes
+and curved-arrow mechanisms as PNG, SVG and editable CDXML files. Sci can select
+the skill during a reaction discussion, or draw and edit a mechanism from an
+explicit request, structure or supplied source. Drawings
+retain source/uncertainty information and pass chemistry/drawing consistency checks;
+those checks do not experimentally establish a proposed mechanism.
+
+`sci reaction-draw --setup` prepares the isolated scientific runtime and checks
+managed Chromium and fonts. The host needs Arial or Liberation Sans and the
+browser's native libraries. See [the bundled renderer guide](third_party/reaction_draw/README.md).
+
 ## Installation
 
 Install from this repository as your normal user. The installers prepare a managed

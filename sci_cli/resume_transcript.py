@@ -28,7 +28,7 @@ def tool_summary(body):
 
 def render_transcript(cli, entries):
     from cli import _record_output_history_entry, _suspend_output_history
-    from sci_cli.cli_render import assistant_message_panel
+    from sci_cli.cli_render import assistant_message_panel, print_assistant_image_previews
     from sci_cli.cli_status_bar_mixin import CLIStatusBarMixin
     from cli import _accent_hex
     from rich.rule import Rule
@@ -56,5 +56,7 @@ def render_transcript(cli, entries):
             lambda role=role, body=body: cli._render_resume_history_panel_lines(render(role, body)))
         with _suspend_output_history():
             cli._console_print(render(role, body))
+            if role == "assistant":
+                print_assistant_image_previews(body, CLIStatusBarMixin._scrollback_box_width())
     cli._console_print(Text("Conversation restored. Ctrl+O / F8: browse transcript and expand tool details. "
                             "Scroll up to review; continue below. Nothing was rerun.", style="dim"))

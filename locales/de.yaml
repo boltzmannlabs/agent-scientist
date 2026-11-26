@@ -2341,6 +2341,7 @@ cli:
     enable_disable_hint: "Aktivieren/Deaktivieren: sci plugins enable/disable <name>"
     system_error: "Fehler im Plugin-System: {error}"
   queue:
+    dock_collapsed: "Warteschlange · {count} ausstehend"
     usage: "Verwendung: /queue <prompt> | /queue list | /queue edit N <prompt> | /queue rm N | /queue move FROM TO | /queue clear"
     queued: "Eingereiht: {preview}"
     queued_next_turn: "Für den nächsten Zug eingereiht: {preview}"

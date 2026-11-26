@@ -14,7 +14,7 @@ def recover_plugin_publication(project: Path, row: dict, journal: Path) -> None:
 
 
 def publish_plugin(staged: Path, target: Path, old_metadata: dict, new_metadata: dict,
-                   *, target_digest: str | None = None, require_consent: bool = False) -> None:
+                   *, target_digest: str | None = None, require_consent: bool = False, new_only: bool = False) -> None:
     from pm.client import sync_venv
     from pm.plugin_inputs import StagedUpdate
     from pm.store import tree_digest
@@ -33,7 +33,7 @@ def publish_plugin(staged: Path, target: Path, old_metadata: dict, new_metadata:
     sync_venv(explicit=True, plugins=StagedUpdate({
         "staged": str(staged.resolve()), "target": str(target.absolute()),
         "old_metadata": old_metadata, "new_metadata": new_metadata,
-        "target_digest": target_digest if target_digest is not None else (tree_digest(target) if target.exists() else None),
+        "target_digest": None if new_only else (target_digest if target_digest is not None else (tree_digest(target) if target.exists() else None)),
     }))
 
 

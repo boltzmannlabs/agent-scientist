@@ -1,0 +1,69 @@
+{
+  "format": 2,
+  "name": "robinson_1_enolate",
+  "source": "Illustrative base-catalyzed Robinson annulation of cyclohexanone and methyl vinyl ketone; atom labels are arbitrary maps, not IUPAC numbering.",
+  "panels": [
+    {
+      "id": "R",
+      "title": "Cyclohexanone enolate formation",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[C:1]1(=[O:7])[CH:2]([H:21])[CH2:3][CH2:4][CH2:5][CH2:6]1",
+          "keep_h": [
+            21
+          ]
+        },
+        {
+          "id": "base",
+          "smiles": "[OH-:20]"
+        }
+      ],
+      "arrows": [
+        {
+          "id": "a",
+          "from": "base:20",
+          "to": [
+            "base:20",
+            "sub:21"
+          ]
+        },
+        {
+          "id": "b",
+          "from": "sub:2-21",
+          "to": "sub:1-2"
+        },
+        {
+          "id": "c",
+          "from": "sub:1=7",
+          "to": "sub:7"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "Cyclohexanone enolate + water",
+      "species": [
+        {
+          "id": "sub",
+          "smiles": "[C:1]1([O-:7])=[CH:2][CH2:3][CH2:4][CH2:5][CH2:6]1"
+        },
+        {
+          "id": "base",
+          "smiles": "[OH:20][H:21]",
+          "keep_h": [
+            21
+          ]
+        }
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "R",
+      "to": "P",
+      "kind": "equilibrium",
+      "above": "enolate formation"
+    }
+  ]
+}

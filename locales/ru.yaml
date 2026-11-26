@@ -2341,6 +2341,7 @@ cli:
     enable_disable_hint: "Включить/выключить: sci plugins enable/disable <имя>"
     system_error: "Ошибка системы плагинов: {error}"
   queue:
+    dock_collapsed: "Очередь · ожидают: {count}"
     usage: "Использование: /queue <промпт> | /queue list | /queue edit N <промпт> | /queue rm N | /queue move FROM TO | /queue clear"
     queued: "В очереди: {preview}"
     queued_next_turn: "В очереди на следующий ход: {preview}"

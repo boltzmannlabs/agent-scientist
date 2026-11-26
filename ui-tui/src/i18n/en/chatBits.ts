@@ -10,6 +10,10 @@
 
 export const chatBitsEn = {
   chatBits: {
+    imagePreview: {
+      detail: 'Image preview — open the PNG for full detail.',
+      unavailable: 'Image preview unavailable — open the original file.'
+    },
     branding: {
       tagFull: 'Nous Research · Messenger of the Digital Gods',
       tagMid: 'Messenger of the Digital Gods',

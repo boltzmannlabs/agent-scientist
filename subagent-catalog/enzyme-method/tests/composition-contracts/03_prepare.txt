@@ -1,0 +1,1 @@
+Tool prepare_layout takes parent_sequence, editable_ordinals and max_substitutions. It returns layout_ref and native_index_map. The same six-residue parent identity and editable mask are carried without deletion or insertion. It does not produce designed sequences.

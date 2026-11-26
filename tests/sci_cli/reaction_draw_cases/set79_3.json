@@ -1,0 +1,139 @@
+{
+  "format": 2,
+  "name": "SET7_9_methyl_transfer",
+  "source": "Georgieva and Himo, J. Comput. Chem. 31 (2010) 1707\u20131714, DOI 10.1002/jcc.21458. Scheme 1, p.1708; Fig.3, p.1710; Model C, p.1711; Fig.4, p.1712. Simplified core SN2 mechanism; other Model D environment omitted.",
+  "panels": [
+    {
+      "id": "R",
+      "title": "Lys4 + SAM",
+      "species": [
+        {
+          "id": "lys",
+          "smiles": "[*:1][CH2:5][N:6]([H:7])[H:8]",
+          "residue": {
+            "1": "Lys4"
+          },
+          "note": "Lys4 root label abbreviates the remaining substrate side chain and histone backbone; terminal CH2 and NH2 are expanded."
+        },
+        {
+          "id": "sam",
+          "smiles": "[*:21][S+:20]([CH3:11])[*:22]",
+          "abbrev": {
+            "21": "Ado",
+            "22": {
+              "text": "R",
+              "element": "C"
+            }
+          },
+          "show": [
+            11
+          ],
+          "note": "Nonreacting methionine-side-chain remainder abbreviated R; source Scheme 1. No expanded stereocentres."
+        },
+        {
+          "id": "tyr245",
+          "smiles": "[*:31][OH:32]",
+          "residue": {
+            "31": "Tyr245"
+          }
+        },
+        {
+          "id": "tyr305",
+          "smiles": "[*:41][OH:42]",
+          "residue": {
+            "41": "Tyr305"
+          }
+        }
+      ],
+      "hbonds": [
+        [
+          "lys:7",
+          "tyr245:32"
+        ],
+        [
+          "lys:8",
+          "tyr305:42"
+        ]
+      ],
+      "lone_pairs": [
+        "lys:6"
+      ],
+      "arrows": [
+        {
+          "id": "A1",
+          "from": "lys:6",
+          "to": [
+            "lys:6",
+            "sam:11"
+          ]
+        },
+        {
+          "id": "A2",
+          "from": "sam:20-11",
+          "to": "sam:20"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "title": "N-methyl-Lys4 + SAH",
+      "species": [
+        {
+          "id": "lys",
+          "smiles": "[*:1][CH2:5][N+:6]([H:7])([H:8])[CH3:11]",
+          "residue": {
+            "1": "Lys4"
+          },
+          "show": [
+            11
+          ],
+          "note": "Lys4 root label abbreviates the remaining substrate side chain and histone backbone; terminal CH2 and NH2 are expanded."
+        },
+        {
+          "id": "sam",
+          "smiles": "[*:21][S:20][*:22]",
+          "abbrev": {
+            "21": "Ado",
+            "22": {
+              "text": "R",
+              "element": "C"
+            }
+          },
+          "note": "Nonreacting methionine-side-chain remainder abbreviated R; source Scheme 1. No expanded stereocentres."
+        },
+        {
+          "id": "tyr245",
+          "smiles": "[*:31][OH:32]",
+          "residue": {
+            "31": "Tyr245"
+          }
+        },
+        {
+          "id": "tyr305",
+          "smiles": "[*:41][OH:42]",
+          "residue": {
+            "41": "Tyr305"
+          }
+        }
+      ],
+      "hbonds": [
+        [
+          "lys:7",
+          "tyr245:32"
+        ],
+        [
+          "lys:8",
+          "tyr305:42"
+        ]
+      ]
+    }
+  ],
+  "reaction_arrows": [
+    {
+      "from": "R",
+      "to": "P",
+      "above": "SET7/9",
+      "below": "concerted S_{N}2"
+    }
+  ]
+}

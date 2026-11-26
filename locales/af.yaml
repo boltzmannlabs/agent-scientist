@@ -2341,6 +2341,7 @@ cli:
     enable_disable_hint: "Aktiveer/deaktiveer: sci plugins enable/disable <name>"
     system_error: "Plugin-stelselfout: {error}"
   queue:
+    dock_collapsed: "Tou · {count} wagtend"
     usage: "Gebruik: /queue <prompt> | /queue list | /queue edit N <prompt> | /queue rm N | /queue move FROM TO | /queue clear"
     queued: "In tou geplaas: {preview}"
     queued_next_turn: "In tou geplaas vir die volgende beurt: {preview}"

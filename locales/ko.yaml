@@ -2341,6 +2341,7 @@ cli:
     enable_disable_hint: "활성화/비활성화: sci plugins enable/disable <name>"
     system_error: "플러그인 시스템 오류: {error}"
   queue:
+    dock_collapsed: "대기열 · {count}개 대기 중"
     usage: "사용법: /queue <prompt> | /queue list | /queue edit N <prompt> | /queue rm N | /queue move FROM TO | /queue clear"
     queued: "대기열에 추가됨: {preview}"
     queued_next_turn: "다음 턴에 실행하도록 대기열에 추가했어요: {preview}"
