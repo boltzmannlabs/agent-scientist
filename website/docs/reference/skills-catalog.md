@@ -134,6 +134,7 @@ If a skill is missing from this list but present in the repo, the catalog is reg
 | [`anndata`](../user-guide/skills/bundled/science/science-single-cell-anndata.md) | Manage annotated matrices and h5ad data structures. | `science/single-cell/anndata` |
 | [`biopython`](../user-guide/skills/bundled/science/science-bioinformatics-biopython.md) | Read biological files and perform sequence data analysis. | `science/bioinformatics/biopython` |
 | [`bioservices`](../user-guide/skills/bundled/science/science-bioinformatics-bioservices.md) | Query biological databases and map record identifiers. | `science/bioinformatics/bioservices` |
+| [`cheme-as-code`](../user-guide/skills/bundled/science/science-process-engineering-cheme-as-code.md) | Calculate, validate and draw chemical process designs. | `science/process-engineering/cheme-as-code` |
 | [`citation-management`](../user-guide/skills/bundled/science/science-research-citation-management.md) | Verify paper metadata and produce clean BibTeX references. | `science/research/citation-management` |
 | [`experimental-design`](../user-guide/skills/bundled/science/science-data-analysis-experimental-design.md) | Plan controls, replication, randomization, and blocking. | `science/data-analysis/experimental-design` |
 | [`exploratory-data-analysis`](../user-guide/skills/bundled/science/science-data-analysis-exploratory-data-analysis.md) | Inspect datasets, missingness, leakage, and distributions. | `science/data-analysis/exploratory-data-analysis` |
@@ -146,7 +147,7 @@ If a skill is missing from this list but present in the repo, the catalog is reg
 | [`pydeseq2`](../user-guide/skills/bundled/science/science-transcriptomics-pydeseq2.md) | Analyze differential expression from bulk gene counts. | `science/transcriptomics/pydeseq2` |
 | [`pysam`](../user-guide/skills/bundled/science/science-genomics-pysam.md) | Inspect and process sequencing files with pysam. | `science/genomics/pysam` |
 | [`rdkit`](../user-guide/skills/bundled/science/science-chemistry-rdkit.md) | Inspect molecular structures, descriptors, and similarity. | `science/chemistry/rdkit` |
-| [`reaction-draw`](../user-guide/skills/bundled/science/science-chemistry-reaction-draw.md) | Draw reactions and stepwise mechanisms discussed in chat. | `science/chemistry/reaction-draw` |
+| [`reaction-draw`](../user-guide/skills/bundled/science/science-chemistry-reaction-draw.md) | Draw mechanisms when explaining chemical reactions. | `science/chemistry/reaction-draw` |
 | [`scanpy`](../user-guide/skills/bundled/science/science-single-cell-scanpy.md) | Analyze single-cell data with QC, clustering, and markers. | `science/single-cell/scanpy` |
 | [`scientific-critical-thinking`](../user-guide/skills/bundled/science/science-research-scientific-critical-thinking.md) | Assess evidence quality, bias, confounding, and claims. | `science/research/scientific-critical-thinking` |
 | [`scientific-software-integration`](../user-guide/skills/bundled/science/science-scientific-software-integration.md) | Use when adding scientific software as agent tools. | `science/scientific-software-integration` |

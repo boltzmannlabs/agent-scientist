@@ -396,17 +396,35 @@ def print_assistant_image_previews(text: str, width: int) -> None:
     from pathlib import Path
     if not sys.stdout.isatty():
         return
-    from tui_gateway.image_preview import media_references, read_image_preview
+    from tui_gateway.image_preview import media_references, image_preview, read_image_bytes
+    from agent.pet.render import detect_terminal_graphics
+    from sci_cli.terminal_images import native_preview
+    from sci_cli.chafa_images import chafa_preview
+    from sci_cli.terminal_links import ImageANSI
     from cli import _cprint
     for path in dict.fromkeys(media_references(text)):
         if Path(path).suffix.lower() not in {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp"}:
             continue
         try:
-            preview = read_image_preview(path, cols=width - 2)
+            data = read_image_bytes(path)
+            rendered = chafa_preview(data, cols=width - 2)
+            if rendered is not None:
+                for line in rendered:
+                    _cprint(ImageANSI(line, history_text=f"Image preview: {path}") if "\001" in line else line)
+                continue
+            mode = detect_terminal_graphics()
+            if mode in {"kitty", "iterm", "sixel"}:
+                # ANSI's explicit zero-width span preserves graphics protocols;
+                # otherwise prompt_toolkit treats the payload as ordinary text.
+                _cprint(ImageANSI("\001" + native_preview(data, cols=width - 2, mode=mode) + "\002",
+                                 history_text=f"Image preview: {path}"))
+                continue
+            preview = image_preview(data, cols=width - 2)
             for row in preview["grid"]:
                 cells = (f"\033[38;2;{r};{g};{b}m\033[48;2;{r2};{g2};{b2}m▀"
                          for r, g, b, _, r2, g2, b2, _ in row)
                 _cprint("".join(cells) + "\033[0m")
+            _cprint(f"Low-resolution terminal preview. Full-resolution image: {path}")
         except Exception:
             _cprint("Image preview unavailable. Open the original file.")
 
@@ -491,7 +509,10 @@ def _record_output_history(text: str, *, force: bool = False) -> None:
     """Record ``text`` as painted now. ``force`` skips the recording check when the caller
     made it at print-request time (the print itself was deferred to the app loop)."""
     from cli import _output_history_recording
+    from sci_cli.terminal_links import ImageANSI
     if force or _output_history_recording():
+        if isinstance(text, ImageANSI):
+            text = text.history_text
         width = _painted_columns()
         lines = []
         # One entry per printed line: ``_pt_print`` ends every text with a newline, so "" and a

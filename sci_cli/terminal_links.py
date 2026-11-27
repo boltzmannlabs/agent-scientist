@@ -116,10 +116,22 @@ def terminal_hyperlinks(text: str) -> str:
     return result + _CLOSE if active else result
 
 
+class ImageANSI(str):
+    """Trusted renderer output, never model text; binary payloads stay out of history."""
+
+    def __new__(cls, value: str, *, history_text: str):
+        instance = super().__new__(cls, value)
+        instance.history_text = history_text
+        return instance
+
+
 class TerminalANSI(ANSI):
     """Carry validated links through prompt_toolkit as zero-width escapes."""
 
     def __init__(self, value: str):
+        if isinstance(value, ImageANSI):
+            super().__init__(value.replace("\x02\x01", ""))
+            return
         value = terminal_hyperlinks(value)
         # ANSI normally discards OSC and may expose its payload as visible text.
         value = _OSC.sub(lambda match: "\x01" + match[0] + "\x02", value)

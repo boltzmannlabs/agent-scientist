@@ -656,6 +656,16 @@ _LOCAL_CRON_DELIVERY_NOTE = (
     "default-deliver cron job will message them in this session."
 )
 
+_TERMINAL_EQUATION_NOTE = (
+    "The terminal does not typeset LaTeX. In ordinary explanations, write equations as readable "
+    "plain text or Unicode, preserving coefficients, charges, grouping and reaction direction. "
+    "Use arrows such as → and ⇌, and write reaction conditions in words alongside the equation. "
+    "Do not emit LaTeX commands or math delimiters in ordinary chat text. "
+    "If the user explicitly requests LaTeX source, provide it in a fenced code block. "
+    "These rules apply only to written equations: continue using relevant visualization skills "
+    "and delivering images when the task calls for diagrams. "
+)
+
 PLATFORM_HINTS = {
     "whatsapp": (
         "You are on WhatsApp. Standard markdown auto-converts to WhatsApp syntax (*bold*, _italic_, ~strike~, "
@@ -711,11 +721,13 @@ PLATFORM_HINTS = {
     ),
     "cli": (
         "You are in a plain terminal (CLI). Use indentation and blank lines for layout. "
+        f"{_TERMINAL_EQUATION_NOTE}"
         "For a generated raster image, put MEDIA:/absolute/path/to/figure.png alone on its own line. "
         "Interactive chat displays a terminal preview. Deliver other files by providing their path or URL. "
         f"{_LOCAL_CRON_DELIVERY_NOTE}"
     ),
     "tui": (
+        f"{_TERMINAL_EQUATION_NOTE}"
         "You are in the Sci terminal UI (TUI). To show a generated image in chat, put "
         "MEDIA:/absolute/path/to/figure.png alone on a line outside code fences. The TUI shows a "
         "terminal preview and an open-file link; preview detail depends on terminal graphics support. "
