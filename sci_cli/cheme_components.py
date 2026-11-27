@@ -37,7 +37,7 @@ def prepare_source(environment: dict[str, str]) -> Path:
     git = command("git")
     if destination.exists():
         revision = subprocess.check_output([*git, "rev-parse", "HEAD"], cwd=destination,
-                                           env=environment, text=True, timeout=30).strip()
+                                           env=environment, text=True, encoding="utf-8", timeout=30).strip()
         if revision != REVISION:
             raise RuntimeError("ChemE component source revision differs from the pinned revision")
         return destination
@@ -68,7 +68,7 @@ def setup_viewer(environment: dict[str, str]) -> None:
         built = Path(stage) / "viewer"
         shutil.copytree(source / "dist", built)
         (built / "provenance.json").write_text(json.dumps({"source": SOURCE, "revision": REVISION,
-                                                         "license": "AGPL-3.0-or-later"}) + "\n")
+                                                         "license": "AGPL-3.0-or-later"}) + "\n", encoding="utf-8")
         shutil.copy2(source.parent / "LICENSE", built / "LICENSE")
         if destination.exists():
             shutil.rmtree(destination)
@@ -118,7 +118,7 @@ def backend_status(environment: dict[str, str]) -> dict:
         probe = subprocess.run([python, "-I", "-c", "import json,idaes; from pyomo.environ import SolverFactory; "
                                 "s=SolverFactory('ipopt'); print(json.dumps({'version':idaes.__version__,"
                                 "'ready':s.available(exception_flag=False)}))"], env=env, capture_output=True,
-                               text=True, timeout=30)
+                               text=True, encoding="utf-8", timeout=30)
         if probe.returncode == 0:
             status["idaes"] = json.loads(probe.stdout.splitlines()[-1])
         else:
@@ -130,7 +130,7 @@ def backend_status(environment: dict[str, str]) -> dict:
     docker = locate_command("docker").command
     if docker:
         probe = subprocess.run([*docker, "image", "inspect", DWSIM_IMAGE], env=env,
-                               capture_output=True, text=True, timeout=30)
+                               capture_output=True, text=True, encoding="utf-8", timeout=30)
         status["dwsim"] = {"ready": probe.returncode == 0, "image": DWSIM_IMAGE,
                             "detail": "Image present; numerical benchmark required"}
     return status
