@@ -59,7 +59,7 @@ def focused_svg(source: str, *, table: bool = False) -> str:
 def _raster(python: Path, environment: dict, source: Path, output: Path, scale: float):
     code = ("import sys; from pathlib import Path; "
             "from chemeascode.domains.piping.render import svg_to_png; "
-            "Path(sys.argv[2]).write_bytes(svg_to_png(Path(sys.argv[1]).read_text(),float(sys.argv[3])))")
+            "Path(sys.argv[2]).write_bytes(svg_to_png(Path(sys.argv[1]).read_text(encoding='utf-8-sig'),float(sys.argv[3])))")
     subprocess.run([str(python), "-c", code, str(source), str(output), str(scale)],
                    env=environment, check=True, timeout=120)
 
@@ -82,13 +82,13 @@ def export_diagrams(project: Path, python: Path, environment: dict) -> list[Path
                            env=environment, check=True, timeout=120, stdout=subprocess.DEVNULL)
             for table in (False, True):
                 try:
-                    svg = focused_svg(original.read_text(), table=table)
+                    svg = focused_svg(original.read_text(encoding="utf-8-sig"), table=table)
                 except ValueError:
                     if table:
                         continue
                     raise
                 working = stage / "focus.svg"
-                working.write_text(svg)
+                working.write_text(svg, encoding="utf-8")
                 measure = stage / "bounds.png"
                 _raster(python, environment, working, measure, 2)
                 with Image.open(measure) as image:
@@ -109,7 +109,7 @@ def export_diagrams(project: Path, python: Path, environment: dict) -> list[Path
                 root.insert(0, background)
                 suffix = "streams" if table else "chat"
                 target = build / f"{name}-{suffix}.svg"
-                target.write_text(ET.tostring(root, encoding="unicode"))
+                target.write_text(ET.tostring(root, encoding="unicode"), encoding="utf-8")
                 # Export from vector data at up to 3200 x 4000 pixels. No bitmap upscaling.
                 scale = min(3200 / width, 4000 / height, 40)
                 png = target.with_suffix(".png")
