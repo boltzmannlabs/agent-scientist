@@ -322,6 +322,7 @@ const sidebars: SidebarsConfig = {
                     'user-guide/skills/bundled/science/science-single-cell-anndata',
                     'user-guide/skills/bundled/science/science-bioinformatics-biopython',
                     'user-guide/skills/bundled/science/science-bioinformatics-bioservices',
+                    'user-guide/skills/bundled/science/science-process-engineering-cheme-as-code',
                     'user-guide/skills/bundled/science/science-research-citation-management',
                     'user-guide/skills/bundled/science/science-data-analysis-experimental-design',
                     'user-guide/skills/bundled/science/science-data-analysis-exploratory-data-analysis',

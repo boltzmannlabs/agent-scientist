@@ -845,6 +845,11 @@ include = [
 sci_cli = [
   "observability/schemas/*.json",
   "data/*.json",
+  "data/cheme-runtime/*.toml",
+  "data/cheme-runtime/*.lock",
+  "data/cheme-runtime/*.json",
+  "data/cheme-idaes-runtime/*.toml",
+  "data/cheme-idaes-runtime/*.lock",
   "local_runtime/*.json",
 ]
 # gateway/assets/ ships status_phrases.yaml and the Telegram BotFather

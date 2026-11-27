@@ -1,0 +1,8 @@
+{
+  "project": "ChemE-as-Code",
+  "url": "https://github.com/ChemE-as-Code/core",
+  "revision": "5b0576c63ae6e82ecad28db745c83f2ef2eb8994",
+  "version": "1.13.0",
+  "license": "AGPL-3.0-or-later",
+  "integration": "Upstream installed unmodified in a separate PM-managed environment. No upstream source or skills are vendored. Optional commands prepare the pinned Viewer and DWSIM image outside the source tree, and a separate locked IDAES/IPOPT environment."
+}

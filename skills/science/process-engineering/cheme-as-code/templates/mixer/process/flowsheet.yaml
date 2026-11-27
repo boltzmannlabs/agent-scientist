@@ -1,0 +1,51 @@
+schema: cheme/process/v1
+kind: flowsheet
+title: Illustrative ethanol-water blending
+units: {pressure: kPa(a), temperature: K, flow: kg/h, duty: kW, enthalpy: kJ/kmol}
+cases:
+  - {id: design, description: Synthetic demonstration inputs, default: true}
+# Propagation serializes mole fractions to six decimals; allow 0.001 kg/h component rounding.
+tolerance: {abs: 0.001, rel: 0.000001}
+feeds:
+  - {id: F1, title: Ethanol feed, ports: [{id: out, direction: out}]}
+  - {id: F2, title: Water feed, ports: [{id: out, direction: out}]}
+products:
+  - {id: PRODUCT, title: Blended product, ports: [{id: in, direction: in}]}
+blocks:
+  - id: BLEND
+    title: Blending
+    class: Mixing
+    ports: [{id: ethanol, direction: in}, {id: water, direction: in}, {id: out, direction: out}]
+steps:
+  - id: M1
+    block: BLEND
+    title: Mixer
+    class: MixingSimple
+    ports:
+      - {id: ethanol, direction: in, delegates: ethanol}
+      - {id: water, direction: in, delegates: water}
+      - {id: out, direction: out, delegates: out}
+streams:
+  - id: S1
+    title: Ethanol feed
+    from: F1.out
+    to: M1.ethanol
+    template: liquid
+    state:
+      design:
+        flow: {value: 100, basis: mass, provenance: assumed, source: Synthetic demonstration input}
+        composition: {basis: mass_fraction, values: {ETOH: 1, H2O: 0}, provenance: assumed, source: Synthetic demonstration input}
+  - id: S2
+    title: Water feed
+    from: F2.out
+    to: M1.water
+    template: liquid
+    state:
+      design:
+        flow: {value: 300, basis: mass, provenance: assumed, source: Synthetic demonstration input}
+        composition: {basis: mass_fraction, values: {ETOH: 0, H2O: 1}, provenance: assumed, source: Synthetic demonstration input}
+  - id: S3
+    title: Blended product
+    from: M1.out
+    to: PRODUCT.in
+    template: liquid

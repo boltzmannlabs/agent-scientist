@@ -1,0 +1,9 @@
+schema: cheme/plant/v1
+name: Demonstration ethanol-water blending
+requires: cheme-as-code>=1.13.0
+description: Illustrative mass balance only; inputs are synthetic, not experimental.
+units: SI
+stage: concept
+sheets:
+  - {id: BFD, kind: bfd, file: process/BFD.xml, title: Blending block flow diagram}
+  - {id: PFD, kind: pfd, file: process/PFD.xml, title: Blending process flow diagram}

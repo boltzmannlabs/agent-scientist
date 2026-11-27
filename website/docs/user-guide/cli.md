@@ -16,6 +16,38 @@ One command — `sci setup --portal` — and you're ready to `sci chat`. See [No
 Sci also ships a modern TUI with modal overlays, mouse selection, and non-blocking input. Launch it with `sci --tui` — see the [TUI](tui.md) guide.
 :::
 
+## Image previews
+
+The classic CLI automatically uses an installed **Chafa** for assistant-delivered
+images. Install Chafa with your operating system's package manager and verify
+`chafa --version` (tested with 1.18.3). Sci checks PATH, user-local binaries and
+Homebrew locations. It does not download a renderer while displaying a reply.
+If Chafa is unavailable or fails, Sci uses its built-in native/text preview.
+Chafa previews fit within 160 columns and 72 rows, preserving aspect ratio; narrower
+terminals use their available width. The original image file keeps its resolution.
+
+```bash
+sci config set display.image_renderer chafa
+sci config set display.image_protocol auto
+```
+
+The renderer defaults to `auto` (prefer Chafa). Set it to `builtin` to use Sci's
+renderer. Chafa protocol choices are `auto`, `kitty`, `iterm`, `sixels`, and
+`symbols`. For example, after verifying Sixel in your viewing terminal, select
+`sci config set display.image_protocol sixels`. Protocol selection is local to
+the active profile. A forced graphics protocol requires matching terminal support.
+For iTerm-compatible output, Sci sends PNG instead of Chafa's TIFF payload so
+terminals with PNG-only image decoders can display the preview.
+
+Chafa probing is disabled during chat because reading terminal replies could
+consume prompt input. Automatic mode uses terminal identity; use the protocol
+override when SSH or a multiplexer obscures it. Native formats retain image
+detail; symbol previews remain limited by terminal cells. Open the original
+image for fine text when the terminal cannot display pixel graphics.
+
+This setting applies to `sci --cli`. The Ink TUI manages its own image placement;
+browser chat uses the original image files.
+
 ## Running the CLI
 
 Result file links in the classic CLI support Windows drive paths, UNC network

@@ -1,7 +1,7 @@
 ---
 name: reaction-draw
-description: Draw reactions and stepwise mechanisms discussed in chat.
-version: "1.0.0+sci.9"
+description: Draw mechanisms when explaining chemical reactions.
+version: "1.0.0+sci.10"
 author: Takuto Ohmura (@t-0hmura); Gopi Krishna; Sci Agent
 license: Apache-2.0
 platforms: [linux, macos, windows]
@@ -30,6 +30,14 @@ The user need not say "draw" or name this skill. Show the reaction's participati
 reactants and product; for a mechanism request, expand its supported elementary
 steps with curved electron-pushing arrows. Reuse an existing checked figure when
 it covers the current question.
+
+Requests to explain a reaction mechanism, show its elementary steps, or
+illustrate a transformation call for checked figures alongside the explanation.
+For example, "show enolate formation" and "illustrate the supported mechanism"
+should select this skill without an explicit image request. Plain-text equations
+or a no-LaTeX preference do not mean text-only output. Omit figures when the user
+explicitly requests a text-only answer; if rendering is blocked, explain the
+specific limitation instead of silently replacing the figure with prose.
 
 Keep the scope to the reaction or reactions actually discussed. Retrosynthesis
 route planning and route visualization belong to the existing retrosynthesis tool.
@@ -201,3 +209,11 @@ Image delivery does not require a successful vision-provider call. If visual
 inspection is unavailable, still deliver a passing render with its preview on
 supported surfaces, and clearly mark visual inspection as pending. Do not describe
 automated or SVG-only checks as a completed visual review.
+
+When visual review flags a specific arrow, compare its source and destination
+with the saved input and inspect that step before accepting the critique.
+If a combined figure is too crowded to judge, split it into readable per-step
+figures and retain the existing repair limit. Deliver independently valid steps
+with their PNG directives and label any unresolved gap. A generic statement that
+"a figure was generated" is not image delivery. Withhold a demonstrably incorrect
+figure, but do not silently discard all valid figures because one step is unclear.

@@ -824,6 +824,9 @@ DEFAULT_CONFIG = {
     },
 
     "display": {
+        # Classic CLI: prefer an installed Chafa, or use Sci's built-in preview.
+        "image_renderer": "auto",  # auto | chafa | builtin
+        "image_protocol": "auto",  # auto | kitty | iterm | sixels | symbols (Chafa only)
         "compact": True,
         "personality": "",
         "busy_input_mode": "queue",  # queue | steer | interrupt

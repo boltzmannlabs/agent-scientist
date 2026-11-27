@@ -85,3 +85,24 @@ def test_only_valid_hyperlinks_reach_terminal_and_paths_stay_literal():
     for source in ("/help", "```\nC:\\results\\file.csv\n```", "`relative/file.csv`"):
         parsed = terminal_markdown(source).parsed
         assert not any(t.type == "link_open" for block in parsed for t in (block.children or []))
+
+
+def test_trusted_image_packets_reach_output_but_never_become_binary_history(monkeypatch):
+    import cli
+    from sci_cli.terminal_links import ImageANSI, TerminalANSI
+
+    packet = "\x1b]1337;File=inline=1:UE5H\x07"
+    image = ImageANSI("\x01" + packet + "\x02", history_text="Image preview: /work/figure.png")
+    stream = StringIO()
+    output = Vt100_Output(stream, lambda: Size(rows=30, columns=80), term="xterm", enable_cpr=False)
+    monkeypatch.setattr(cli, "_pt_print", lambda value: print_formatted_text(output, value, Style([])))
+    cli._configure_output_history(True, 100)
+    try:
+        cli._cprint(image)
+        assert packet in stream.getvalue()
+        assert any("Image preview: /work/figure.png" in line for line in cli._OUTPUT_HISTORY)
+        assert not any("UE5H" in line for line in cli._OUTPUT_HISTORY)
+        # Untrusted text cannot opt into the renderer path using control characters.
+        assert packet not in "".join(body for _, body in to_formatted_text(TerminalANSI(str(image))))
+    finally:
+        cli._configure_output_history(False, 100)

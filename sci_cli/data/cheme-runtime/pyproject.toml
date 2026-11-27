@@ -1,0 +1,10 @@
+[project]
+name = "sci-cheme-runtime"
+version = "1.0.0"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "cheme-as-code[png,props,units,serve] @ git+https://github.com/ChemE-as-Code/core.git@5b0576c63ae6e82ecad28db745c83f2ef2eb8994",
+]
+
+[tool.uv]
+package = false

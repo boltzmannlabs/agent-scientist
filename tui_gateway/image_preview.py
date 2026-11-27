@@ -42,11 +42,8 @@ def image_is_referenced(history: list, path: str) -> bool:
     return False
 
 
-def image_preview(data: bytes, *, cols: int, graphics: bool = False) -> dict:
+def decode_image_preview(data: bytes, *, graphics: bool = False):
     from PIL import Image, UnidentifiedImageError
-    from agent.pet.render import (
-        _downscale_cells, _encode_kitty_virtual, kitty_color_hex, kitty_placeholder_rows,
-    )
 
     if len(data) > MAX_IMAGE_BYTES:
         raise ValueError("Image exceeds the preview size limit")
@@ -54,18 +51,27 @@ def image_preview(data: bytes, *, cols: int, graphics: bool = False) -> dict:
         with Image.open(io.BytesIO(data)) as source:
             if source.width * source.height > MAX_IMAGE_PIXELS:
                 raise ValueError("Image exceeds the preview pixel limit")
-            source.thumbnail((1920, 1152), Image.Resampling.LANCZOS)
-            frame = source.convert("RGBA")
+            source.thumbnail((4096, 4096) if graphics else (1920, 1152), Image.Resampling.LANCZOS)
+            return source.convert("RGBA")
     except (UnidentifiedImageError, Image.DecompressionBombError) as exc:
         raise ValueError("Unsupported image preview") from exc
+
+
+def image_preview(data: bytes, *, cols: int, graphics: bool = False) -> dict:
+    from PIL import Image
+    from agent.pet.render import (
+        _downscale_cells, _encode_kitty_virtual, kitty_color_hex, kitty_placeholder_rows,
+    )
+
+    frame = decode_image_preview(data, graphics=graphics)
     cols = max(4, min(cols, 160))
     # A terminal cell is approximately twice as tall as it is wide. Bound
     # portrait figures too, so a single image cannot consume the transcript.
-    cols = max(4, min(cols, int(72 * frame.width / frame.height)))
-    rows = max(1, min(36, round(cols * frame.height / frame.width / 2)))
+    max_rows = 72 if graphics else 36
+    cols = max(4, min(cols, int(2 * max_rows * frame.width / frame.height)))
+    rows = max(1, min(max_rows, round(cols * frame.height / frame.width / 2)))
     if graphics:
         image_id = 0x800000 | (int.from_bytes(hashlib.sha256(data).digest()[:3]) & 0x7FFFFF)
-        frame.thumbnail((1920, 1152), Image.Resampling.LANCZOS)
         return {"ok": True, "graphics": "kitty", "imageId": image_id,
                 "color": kitty_color_hex(image_id),
                 "placeholder": kitty_placeholder_rows(cols, rows),
@@ -80,6 +86,10 @@ def image_preview(data: bytes, *, cols: int, graphics: bool = False) -> dict:
 
 
 def read_image_preview(path: str, *, cols: int, graphics: bool = False) -> dict:
+    return image_preview(read_image_bytes(path), cols=cols, graphics=graphics)
+
+
+def read_image_bytes(path: str) -> bytes:
     """Use the same profile-scoped local/remote filesystem policy as file downloads."""
     from sci_cli.web_routers.files import _fs_regular_file, _is_sensitive_path
     from sci_cli.config import load_config
@@ -111,4 +121,4 @@ def read_image_preview(path: str, *, cols: int, graphics: bool = False) -> dict:
             raise ValueError("Image exceeds the preview size limit")
         with target.open("rb") as stream:
             data = stream.read(MAX_IMAGE_BYTES + 1)
-    return image_preview(data, cols=cols, graphics=graphics)
+    return data

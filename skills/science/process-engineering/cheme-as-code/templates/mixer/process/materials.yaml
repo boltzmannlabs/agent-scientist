@@ -1,0 +1,8 @@
+schema: cheme/process/v1
+kind: materials
+components:
+  - {id: ETOH, name: Ethanol, formula: C2H6O, cas: 64-17-5, molar_mass: 46.069}
+  - {id: H2O, name: Water, formula: H2O, cas: 7732-18-5, molar_mass: 18.015}
+templates:
+  - {id: liquid, title: Ethanol-water, components: [ETOH, H2O]}
+property_method: {adapter: thermo, status: placeholder}

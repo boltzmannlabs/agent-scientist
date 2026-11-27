@@ -40,6 +40,19 @@ def test_native_graphics_has_real_png_payload_and_reserved_image_id():
     assert base64.b64decode(payload).startswith(b"\x89PNG\r\n\x1a\n")
 
 
+def test_native_preview_preserves_detail_and_uses_more_space_than_text_fallback():
+    import base64
+    import re
+
+    data = png((2400, 1800))
+    native = image_preview(data, cols=120, graphics=True)
+    text = image_preview(data, cols=120)
+    assert len(native['placeholder']) > len(text['grid'])
+    payload = ''.join(re.findall(r'\x1b_G[^;]*;([^\x1b]*)\x1b\\', native['transmit']))
+    with Image.open(io.BytesIO(base64.b64decode(payload))) as actual:
+        assert actual.size == (2400, 1800)
+
+
 def test_invalid_image_and_excessive_input_are_rejected():
     with pytest.raises(ValueError):
         image_preview(b"not an image", cols=80)
